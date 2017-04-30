@@ -18,22 +18,6 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
-.. data:: DescriptorType (enum)
-
-  Common descriptor types.
-
-  .. versionadded:: 1.6.0
-
-  =================== ===========
-  DescriptorType      Description
-  =================== ===========
-  **SERVER**          :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
-  **EXTRA**           :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
-  **MICRO**           :class:`~stem.descriptor.microdescriptor.Microdescriptor`
-  **CONSENSUS**       :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3`
-  **HIDDEN_SERVICE**  :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
-  =================== ===========
-
 .. data:: DocumentHandler (enum)
 
   Ways in which we can parse a
@@ -97,18 +81,16 @@ PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END = '-----END %s-----'
 EMPTY_COLLECTION = ([], {}, set())
 
+CRYPTO_BLOB = """
+MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
+skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
+WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
+"""
+
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
   'DOCUMENT',
   'BARE_DOCUMENT',
-)
-
-DescriptorType = stem.util.enum.Enum(
-  ('SERVER', 'server-descriptor 1.0'),
-  ('EXTRAINFO', 'extra-info 1.0'),
-  ('MICRO', 'microdescriptor 1.0'),
-  ('CONSENSUS', 'network-status-consensus-3 1.0'),
-  ('HIDDEN_SERVICE', 'hidden-service-descriptor 1.0'),
 )
 
 
@@ -353,39 +335,64 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
-def create(desc_type, attr = None, exclude = (), validate = False, sign = False):
+def _descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
   """
-  Creates a descriptor with the given attributes.
+  Constructs a minimal descriptor with the given attributes. The content we
+  provide back is of the form...
 
-  .. versionadded:: 1.6.0
+  * header_template (with matching attr filled in)
+  * unused attr entries
+  * footer_template (with matching attr filled in)
 
-  :param DescriptorType desc_type: type of descriptor to be created
+  So for instance...
+
+  ::
+
+    _descriptor_content(
+      attr = {'nickname': 'caerSidi', 'contact': 'atagar'},
+      header_template = (
+        ('nickname', 'foobar'),
+        ('fingerprint', '12345'),
+      ),
+    )
+
+  ... would result in...
+
+  ::
+
+    nickname caerSidi
+    fingerprint 12345
+    contact atagar
+
   :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor, this
-    results in an invalid descriptor
-  :param bool validate: checks the validity of the descriptor's content if
-    **True**, skips these checks otherwise
-  :param bool sign_content: includes cryptographic digest if True
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
+  :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
 
-  :returns: :class:`~stem.descriptor.Descriptor` subclass
-
-  :raises:
-    * **ValueError** if the contents is malformed and validate is True
-    * **ImportError** if cryptography is unavailable and sign is True
+  :returns: str with the requested descriptor content
   """
 
-  if desc_type == DescriptorType.SERVER:
-    pass
-  elif desc_type == DescriptorType.EXTRAINFO:
-    pass
-  elif desc_type == DescriptorType.MICRO:
-    pass
-  elif desc_type == DescriptorType.CONSENSUS:
-    pass
-  elif desc_type == DescriptorType.HIDDEN_SERVICE:
-    pass
-  else:
-    raise TypeError("'%s' isn't a valid descriptor type we can create" % desc_type)
+  header_content, footer_content = [], []
+  attr = {} if attr is None else dict(attr)  # shallow copy since we're destructive
+
+  for content, template in ((header_content, header_template),
+                            (footer_content, footer_template)):
+    for keyword, value in template:
+      if keyword in exclude:
+        continue
+
+      value = attr.pop(keyword, value)
+
+      if not value:
+        content.append(keyword)
+      elif value.startswith('\n'):
+        # some values like crypto follow the line instead
+        content.append('%s%s' % (keyword, value))
+      else:
+        content.append('%s %s' % (keyword, value))
+
+  remainder = [('%s %s' % (k, v) if v else k) for k, v in attr.items()]
+  return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
 
 
 def _value(line, entries):
@@ -521,6 +528,53 @@ class Descriptor(object):
     self._lazy_loading = lazy_load
     self._entries = {}
     self._unrecognized_lines = []
+
+  @classmethod
+  def content(cls, attr = None, exclude = (), sign = False):
+    """
+    Creates descriptor content with the given attributes. Mandatory fields are
+    filled with dummy information unless data is supplied.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool sign_content: includes cryptographic digest if True
+
+    :returns: **str** with the content of a descriptor
+
+    :raises:
+      * **ImportError** if cryptography is unavailable and sign is True
+      * **NotImplementedError** if not implemented for this descriptor type
+    """
+
+    raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+    """
+    Creates a descriptor with the given attributes. Mandatory fields are filled
+    with dummy information unless data is supplied.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool validate: checks the validity of the descriptor's content if
+      **True**, skips these checks otherwise
+    :param bool sign_content: includes cryptographic digest if True
+
+    :returns: :class:`~stem.descriptor.Descriptor` subclass
+
+    :raises:
+      * **ValueError** if the contents is malformed and validate is True
+      * **ImportError** if cryptography is unavailable and sign is True
+      * **NotImplementedError** if not implemented for this descriptor type
+    """
+
+    return cls(cls.content(attr, exclude, sign), validate = validate)
 
   def get_path(self):
     """

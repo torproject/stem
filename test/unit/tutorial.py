@@ -165,7 +165,7 @@ class TestTutorial(unittest.TestCase):
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
     reader = reader_mock().__enter__()
-    reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
+    reader.__iter__.return_value = iter([RelayDescriptor.create()])
 
     exec_documentation_example('past_descriptors.py')
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
@@ -206,16 +206,14 @@ class TestTutorial(unittest.TestCase):
           if count > 15:
             return
 
-    exit_descriptor = mocking.get_relay_server_descriptor({
-      'router': 'speedyexit 149.255.97.109 9001 0 0'
-    }, content = True).replace(b'reject *:*', b'accept *:*')
+    exit_descriptor = RelayDescriptor.content({'router': 'speedyexit 149.255.97.109 9001 0 0'}).replace(b'reject *:*', b'accept *:*')
 
     exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
     exit_descriptor = RelayDescriptor(exit_descriptor)
 
     downloader_mock().get_server_descriptors().run.return_value = [
       exit_descriptor,
-      mocking.get_relay_server_descriptor(),  # non-exit
+      RelayDescriptor.create(),  # non-exit
       exit_descriptor,
       exit_descriptor,
     ]

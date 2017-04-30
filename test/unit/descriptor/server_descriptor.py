@@ -21,7 +21,6 @@ from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
 from test.mocking import (
-  get_relay_server_descriptor,
   get_bridge_server_descriptor,
   CRYPTO_BLOB,
 )
@@ -433,8 +432,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     attributes.
     """
 
-    desc = get_relay_server_descriptor()
-
+    desc = RelayDescriptor.create()
     self.assertEqual('caerSidi', desc.nickname)
     self.assertEqual('71.35.133.197', desc.address)
     self.assertEqual(None, desc.fingerprint)
@@ -445,7 +443,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Includes an 'opt <keyword> <value>' entry.
     """
 
-    desc = get_relay_server_descriptor({'opt': 'contact www.atagar.com/contact/'})
+    desc = RelayDescriptor.create({'opt': 'contact www.atagar.com/contact/'})
     self.assertEqual(b'www.atagar.com/contact/', desc.contact)
 
   def test_unrecognized_line(self):
@@ -453,7 +451,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Includes unrecognized content in the descriptor.
     """
 
-    desc = get_relay_server_descriptor({'pepperjack': 'is oh so tasty!'})
+    desc = RelayDescriptor.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -461,79 +459,72 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Includes a line prior to the 'router' entry.
     """
 
-    desc_text = b'hibernate 1\n' + get_relay_server_descriptor(content = True)
-    self._expect_invalid_attr(desc_text)
+    desc_text = b'hibernate 1\n' + RelayDescriptor.content()
+    self._expect_invalid_attr_for_text(desc_text)
 
   def test_trailing_line(self):
     """
     Includes a line after the 'router-signature' entry.
     """
 
-    desc_text = get_relay_server_descriptor(content = True) + b'\nhibernate 1'
-    self._expect_invalid_attr(desc_text)
+    desc_text = RelayDescriptor.content() + b'\nhibernate 1'
+    self._expect_invalid_attr_for_text(desc_text)
 
   def test_nickname_missing(self):
     """
     Constructs with a malformed router entry.
     """
 
-    desc_text = get_relay_server_descriptor({'router': ' 71.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'nickname')
+    self._expect_invalid_attr({'router': ' 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_nickname_too_long(self):
     """
     Constructs with a nickname that is an invalid length.
     """
 
-    desc_text = get_relay_server_descriptor({'router': 'saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'nickname')
+    self._expect_invalid_attr({'router': 'saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_nickname_invalid_char(self):
     """
     Constructs with an invalid relay nickname.
     """
 
-    desc_text = get_relay_server_descriptor({'router': '$aberrider2008 71.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'nickname')
+    self._expect_invalid_attr({'router': '$aberrider2008 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_address_malformed(self):
     """
     Constructs with an invalid ip address.
     """
 
-    desc_text = get_relay_server_descriptor({'router': 'caerSidi 371.35.133.197 9001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'address')
+    self._expect_invalid_attr({'router': 'caerSidi 371.35.133.197 9001 0 0'}, 'address')
 
   def test_port_too_high(self):
     """
     Constructs with an ORPort that is too large.
     """
 
-    desc_text = get_relay_server_descriptor({'router': 'caerSidi 71.35.133.197 900001 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'or_port')
+    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 900001 0 0'}, 'or_port')
 
   def test_port_malformed(self):
     """
     Constructs with an ORPort that isn't numeric.
     """
 
-    desc_text = get_relay_server_descriptor({'router': 'caerSidi 71.35.133.197 900a1 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'or_port')
+    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 900a1 0 0'}, 'or_port')
 
   def test_port_newline(self):
     """
     Constructs with a newline replacing the ORPort.
     """
 
-    desc_text = get_relay_server_descriptor({'router': 'caerSidi 71.35.133.197 \n 0 0'}, content = True)
-    self._expect_invalid_attr(desc_text, 'or_port')
+    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 \n 0 0'}, 'or_port')
 
   def test_platform_empty(self):
     """
     Constructs with an empty platform entry.
     """
 
-    desc_text = get_relay_server_descriptor({'platform': ''}, content = True)
+    desc_text = RelayDescriptor.content({'platform': ''})
     desc = RelayDescriptor(desc_text, validate = False)
     self.assertEqual(b'', desc.platform)
 
@@ -547,7 +538,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parse a platform line belonging to a node-Tor relay.
     """
 
-    desc = get_relay_server_descriptor({'platform': 'node-Tor 0.1.0 on Linux x86_64'})
+    desc = RelayDescriptor.create({'platform': 'node-Tor 0.1.0 on Linux x86_64'})
     self.assertEqual(b'node-Tor 0.1.0 on Linux x86_64', desc.platform)
     self.assertEqual(stem.version.Version('0.1.0'), desc.tor_version)
     self.assertEqual('Linux x86_64', desc.operating_system)
@@ -557,8 +548,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs with a protocols line without circuit versions.
     """
 
-    desc_text = get_relay_server_descriptor({'opt': 'protocols Link 1 2'}, content = True)
-    self._expect_invalid_attr(desc_text, 'circuit_protocols')
+    self._expect_invalid_attr({'opt': 'protocols Link 1 2'}, 'circuit_protocols')
 
   @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_published_leap_year(self):
@@ -567,20 +557,17 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     invalid.
     """
 
-    desc_text = get_relay_server_descriptor({'published': '2011-02-29 04:03:19'}, content = True)
-    self._expect_invalid_attr(desc_text, 'published')
+    self._expect_invalid_attr({'published': '2011-02-29 04:03:19'}, 'published')
 
-    desc_text = get_relay_server_descriptor({'published': '2012-02-29 04:03:19'}, content = True)
-    expected_published = datetime.datetime(2012, 2, 29, 4, 3, 19)
-    self.assertEqual(expected_published, RelayDescriptor(desc_text).published)
+    desc = RelayDescriptor.create({'published': '2012-02-29 04:03:19'})
+    self.assertEqual(datetime.datetime(2012, 2, 29, 4, 3, 19), desc.published)
 
   def test_published_no_time(self):
     """
     Constructs with a published entry without a time component.
     """
 
-    desc_text = get_relay_server_descriptor({'published': '2012-01-01'}, content = True)
-    self._expect_invalid_attr(desc_text, 'published')
+    self._expect_invalid_attr({'published': '2012-01-01'}, 'published')
 
   def test_read_and_write_history(self):
     """
@@ -591,7 +578,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     for field in ('read-history', 'write-history'):
       value = '2005-12-16 18:00:48 (900 s) 81,8848,8927,8927,83,8848'
-      desc = get_relay_server_descriptor({'opt %s' % field: value})
+      desc = RelayDescriptor.create({'opt %s' % field: value})
 
       if field == 'read-history':
         attr = (desc.read_history_end, desc.read_history_interval, desc.read_history_values)
@@ -610,8 +597,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Parses a read-history with an empty value.
     """
 
-    value = '2005-12-17 01:23:11 (900 s) '
-    desc = get_relay_server_descriptor({'opt read-history': value})
+    desc = RelayDescriptor.create({'opt read-history': '2005-12-17 01:23:11 (900 s) '})
     self.assertEqual(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
     self.assertEqual(900, desc.read_history_interval)
     self.assertEqual([], desc.read_history_values)
@@ -623,7 +609,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += get_relay_server_descriptor(content = True)
+    desc_text += RelayDescriptor.content()
     desc_text += b'\ntrailing text that should be invalid, ho hum'
 
     # running _parse_file should provide an iterator with a single descriptor
@@ -631,7 +617,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertRaises(ValueError, list, desc_iter)
 
     desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += get_relay_server_descriptor(content = True)
+    desc_text += RelayDescriptor.content()
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
 
     desc_entries = list(desc_iter)
@@ -649,9 +635,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs with a field appearing twice.
     """
 
-    desc_text = get_relay_server_descriptor({'<replace>': ''}, content = True)
+    desc_text = RelayDescriptor.content({'<replace>': ''})
     desc_text = desc_text.replace(b'<replace>', b'contact foo\ncontact bar')
-    self._expect_invalid_attr(desc_text, 'contact', b'foo')
+    self._expect_invalid_attr_for_text(desc_text, 'contact', b'foo')
 
   def test_missing_required_attr(self):
     """
@@ -659,7 +645,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     for attr in stem.descriptor.server_descriptor.REQUIRED_FIELDS:
-      desc_text = get_relay_server_descriptor(exclude = [attr], content = True)
+      desc_text = RelayDescriptor.content(exclude = [attr])
       self.assertRaises(ValueError, RelayDescriptor, desc_text, True)
 
       # check that we can still construct it without validation
@@ -680,24 +666,22 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     fingerprint = '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45'
-    desc_text = get_relay_server_descriptor({'opt fingerprint': fingerprint}, content = True)
-    self._expect_invalid_attr(desc_text, 'fingerprint', fingerprint.replace(' ', ''))
+    self._expect_invalid_attr({'opt fingerprint': fingerprint}, 'fingerprint', fingerprint.replace(' ', ''))
 
   def test_ipv6_policy(self):
     """
     Checks a 'ipv6-policy' line.
     """
 
-    expected = stem.exit_policy.MicroExitPolicy('accept 22-23,53,80,110')
-    desc = get_relay_server_descriptor({'ipv6-policy': 'accept 22-23,53,80,110'})
-    self.assertEqual(expected, desc.exit_policy_v6)
+    desc = RelayDescriptor.create({'ipv6-policy': 'accept 22-23,53,80,110'})
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('accept 22-23,53,80,110'), desc.exit_policy_v6)
 
   def test_extrainfo_sha256_digest(self):
     """
     Extrainfo descriptor line with both a hex and base64 encoded sha256 digest.
     """
 
-    desc = get_relay_server_descriptor({'extra-info-digest': '03272BF7C68484AFBDA508DAE3734D809E4A5BC4 DWMz1AEdqPlcroubwx3lPEoGbT+oX7S2BH653sPIqfI'})
+    desc = RelayDescriptor.create({'extra-info-digest': '03272BF7C68484AFBDA508DAE3734D809E4A5BC4 DWMz1AEdqPlcroubwx3lPEoGbT+oX7S2BH653sPIqfI'})
     self.assertEqual('03272BF7C68484AFBDA508DAE3734D809E4A5BC4', desc.extra_info_digest)
     self.assertEqual('DWMz1AEdqPlcroubwx3lPEoGbT+oX7S2BH653sPIqfI', desc.extra_info_sha256_digest)
 
@@ -706,7 +690,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Checks a 'proto' line.
     """
 
-    desc = get_relay_server_descriptor({'proto': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
+    desc = RelayDescriptor.create({'proto': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
     self.assertEqual({'Cons': [1], 'Desc': [1], 'DirCache': [1], 'HSDir': [1], 'HSIntro': [3], 'HSRend': [1], 'Link': [1, 2, 3, 4], 'LinkAuth': [1], 'Microdesc': [1], 'Relay': [1, 2]}, desc.protocols)
 
   def test_protocols_with_no_mapping(self):
@@ -715,7 +699,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     exc_msg = "Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4"
-    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc Link=1-4'})
+    self.assertRaisesRegexp(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc Link=1-4'})
 
   def test_parse_with_non_int_version(self):
     """
@@ -723,14 +707,14 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     exc_msg = 'Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4'
-    self.assertRaisesRegexp(ValueError, exc_msg, get_relay_server_descriptor, {'proto': 'Desc=hi Link=1-4'})
+    self.assertRaisesRegexp(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc=hi Link=1-4'})
 
   def test_ntor_onion_key(self):
     """
     Checks a 'ntor-onion-key' line.
     """
 
-    desc = get_relay_server_descriptor({'ntor-onion-key': 'Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU='})
+    desc = RelayDescriptor.create({'ntor-onion-key': 'Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU='})
     self.assertEqual('Od2Sj3UXFyDjwESLXk6fhatqW9z/oBL/vAKJ+tbDqUU=', desc.ntor_onion_key)
 
   def test_minimal_bridge_descriptor(self):
@@ -775,7 +759,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     its unsanatized content.
     """
 
-    desc_text = get_relay_server_descriptor({'router-digest': '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'}, content = True)
+    desc_text = RelayDescriptor.content({'router-digest': '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'})
     desc = BridgeDescriptor(desc_text)
     self.assertFalse(desc.is_scrubbed())
 
@@ -848,7 +832,10 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc = BridgeDescriptor(desc_text)
     self.assertEqual(expected_or_addresses, desc.or_addresses)
 
-  def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
+  def _expect_invalid_attr(self, desc_attrs, attr = None, expected_value = None):
+    self._expect_invalid_attr_for_text(RelayDescriptor.content(desc_attrs), attr, expected_value)
+
+  def _expect_invalid_attr_for_text(self, desc_text, attr = None, expected_value = None):
     """
     Asserts that construction will fail due to desc_text having a malformed
     attribute. If an attr is provided then we check that it matches an expected

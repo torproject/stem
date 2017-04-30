@@ -18,12 +18,12 @@ import stem.prereq
 from stem.control import Controller
 from stem.util import str_type
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
+from stem.descriptor.server_descriptor import RelayDescriptor
 
 from test import mocking
 from test.unit import exec_documentation_example
 
 from test.mocking import (
-  get_relay_server_descriptor,
   get_router_status_entry_v3,
   ROUTER_STATUS_ENTRY_V3_HEADER,
   get_network_status_document_v3,
@@ -228,10 +228,10 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_outdated_relays(self, downloader_mock, stdout_mock):
     downloader_mock().get_server_descriptors.return_value = [
-      get_relay_server_descriptor({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
-      get_relay_server_descriptor({'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
-      get_relay_server_descriptor({'opt': 'contact Random Person admin@gtr-10.de', 'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
-      get_relay_server_descriptor({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
+      RelayDescriptor.create({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
+      RelayDescriptor.create({'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
+      RelayDescriptor.create({'opt': 'contact Random Person admin@gtr-10.de', 'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
+      RelayDescriptor.create({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
     ]
 
     exec_documentation_example('outdated_relays.py')

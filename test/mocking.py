@@ -14,7 +14,6 @@ Helper functions for creating mock objects.
     get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
 
     stem.descriptor.server_descriptor
-      get_relay_server_descriptor  - RelayDescriptor
       get_bridge_server_descriptor - BridgeDescriptor
 
     stem.descriptor.microdescriptor
@@ -79,19 +78,6 @@ DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
   '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
   '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
-
-RELAY_SERVER_HEADER = (
-  ('router', 'caerSidi 71.35.133.197 9001 0 0'),
-  ('published', '2012-03-01 17:15:27'),
-  ('bandwidth', '153600 256000 104590'),
-  ('reject', '*:*'),
-  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-  ('signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-)
-
-RELAY_SERVER_FOOTER = (
-  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
-)
 
 BRIDGE_SERVER_HEADER = (
   ('router', 'Unnamed 10.45.227.253 9001 0 0'),
@@ -364,33 +350,6 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       remainder.append(k)
 
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
-
-
-def get_relay_server_descriptor(attr = None, exclude = (), content = False, sign_content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.server_descriptor.RelayDescriptor
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-  :param bool sign_content: sets a proper digest value if True
-
-  :returns: RelayDescriptor for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
-
-  if content:
-    return desc_content
-  else:
-    if sign_content:
-      desc_content = sign_descriptor_content(desc_content)
-
-    with patch('stem.prereq.is_crypto_available', Mock(return_value = False)):
-      desc = stem.descriptor.server_descriptor.RelayDescriptor(desc_content, validate = True)
-
-    return desc
 
 
 def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
