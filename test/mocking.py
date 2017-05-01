@@ -16,9 +16,6 @@ Helper functions for creating mock objects.
     stem.descriptor.microdescriptor
       get_microdescriptor - Microdescriptor
 
-    stem.descriptor.extrainfo_descriptor
-      get_bridge_extrainfo_descriptor - BridgeExtraInfoDescriptor
-
     stem.descriptor.networkstatus
       get_directory_authority        - DirectoryAuthority
       get_key_certificate            - KeyCertificate
@@ -74,15 +71,6 @@ DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
   '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
   '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
-
-BRIDGE_EXTRAINFO_HEADER = (
-  ('extra-info', 'ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4'),
-  ('published', '2012-05-05 17:03:50'),
-)
-
-BRIDGE_EXTRAINFO_FOOTER = (
-  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
-)
 
 MICRODESCRIPTOR = (
   ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
@@ -329,26 +317,6 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       remainder.append(k)
 
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
-
-
-def get_bridge_extrainfo_descriptor(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: BridgeExtraInfoDescriptor for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor(desc_content, validate = True)
 
 
 def get_microdescriptor(attr = None, exclude = (), content = False):

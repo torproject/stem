@@ -166,6 +166,15 @@ RELAY_EXTRAINFO_FOOTER = (
   ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
+BRIDGE_EXTRAINFO_HEADER = (
+  ('extra-info', 'ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4'),
+  ('published', '2012-05-05 17:03:50'),
+)
+
+BRIDGE_EXTRAINFO_FOOTER = (
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
+)
+
 
 _timestamp_re = re.compile('^(.*) \(([0-9]+) s\)( .*)?$')
 _locale_re = re.compile('^[a-zA-Z0-9\?]{2}$')
@@ -960,6 +969,10 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     'router-digest-sha256': _parse_router_digest_sha256_line,
     'router-digest': _parse_router_digest_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
 
   def digest(self):
     return self._digest

@@ -8,9 +8,14 @@ import unittest
 
 import stem.descriptor
 
-from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponse, DirStat
+from stem.descriptor.extrainfo_descriptor import (
+  RelayExtraInfoDescriptor,
+  BridgeExtraInfoDescriptor,
+  DirResponse,
+  DirStat,
+)
 
-from test.mocking import get_bridge_extrainfo_descriptor, CRYPTO_BLOB
+from test.mocking import CRYPTO_BLOB
 
 from test.unit.descriptor import get_resource
 
@@ -677,7 +682,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Basic sanity check that we can parse a descriptor with minimal attributes.
     """
 
-    desc = get_bridge_extrainfo_descriptor()
+    desc = BridgeExtraInfoDescriptor.create()
 
     self.assertEqual('ec2bridgereaac65a3', desc.nickname)
     self.assertEqual('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
@@ -692,13 +697,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Parses the 'bridge-ip-versions' line, which only appears in bridges.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=16,v6=40'})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-versions': 'v4=16,v6=40'})
     self.assertEqual({'v4': 16, 'v6': 40}, desc.ip_versions)
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': ''})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-versions': ''})
     self.assertEqual({}, desc.ip_versions)
 
-    desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=24.5'}, content = True)
+    desc_text = BridgeExtraInfoDescriptor.content({'bridge-ip-versions': 'v4=24.5'})
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_bridge_ip_transports_line(self):
@@ -706,13 +711,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Parses the 'bridge-ip-transports' line, which only appears in bridges.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=16,<??>=40'})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-transports': '<OR>=16,<??>=40'})
     self.assertEqual({'<OR>': 16, '<??>': 40}, desc.ip_transports)
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': ''})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-transports': ''})
     self.assertEqual({}, desc.ip_transports)
 
-    desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=24.5'}, content = True)
+    desc_text = BridgeExtraInfoDescriptor.content({'bridge-ip-transports': '<OR>=24.5'})
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_transport_line(self):
@@ -720,7 +725,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Basic exercise for both a bridge and relay's transport entry.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3'})
+    desc = BridgeExtraInfoDescriptor.create({'transport': 'obfs3'})
     self.assertEqual({'obfs3': (None, None, None)}, desc.transport)
     self.assertEqual([], desc.get_unrecognized_lines())
 
@@ -729,7 +734,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual([], desc.get_unrecognized_lines())
 
     # multiple transport lines
-    desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3\ntransport obfs4'})
+    desc = BridgeExtraInfoDescriptor.create({'transport': 'obfs3\ntransport obfs4'})
     self.assertEqual({'obfs3': (None, None, None), 'obfs4': (None, None, None)}, desc.transport)
     self.assertEqual([], desc.get_unrecognized_lines())
 
