@@ -936,7 +936,7 @@ def _get_pseudo_pgp_block(remaining_contents):
     return None
 
 
-def _get_descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
+def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
   """
   Initial breakup of the server descriptor contents to make parsing easier.
 

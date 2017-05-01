@@ -82,7 +82,7 @@ from stem.descriptor import (
   Descriptor,
   _descriptor_content,
   _read_until_keywords,
-  _get_descriptor_components,
+  _descriptor_components,
   _value,
   _values,
   _parse_simple_line,
@@ -862,7 +862,7 @@ class ExtraInfoDescriptor(Descriptor):
     """
 
     super(ExtraInfoDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _descriptor_components(raw_contents, validate)
 
     if validate:
       for keyword in self._required_fields():

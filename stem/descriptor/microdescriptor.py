@@ -70,7 +70,7 @@ import stem.exit_policy
 
 from stem.descriptor import (
   Descriptor,
-  _get_descriptor_components,
+  _descriptor_components,
   _read_until_keywords,
   _values,
   _parse_simple_line,
@@ -259,7 +259,7 @@ class Microdescriptor(Descriptor):
   def __init__(self, raw_contents, validate = False, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
     self._annotation_lines = annotations if annotations else []
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _descriptor_components(raw_contents, validate)
 
     if validate:
       self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()

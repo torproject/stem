@@ -33,7 +33,7 @@ import stem.util.str_tools
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
-  _get_descriptor_components,
+  _descriptor_components,
   _read_until_keywords,
   _bytes_for_block,
   _value,
@@ -232,7 +232,7 @@ class HiddenServiceDescriptor(Descriptor):
 
   def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    entries = _get_descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
+    entries = _descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
     if validate:
       for keyword in REQUIRED_FIELDS:
@@ -371,7 +371,7 @@ class HiddenServiceDescriptor(Descriptor):
         break  # reached the end
 
       attr = dict(INTRODUCTION_POINTS_ATTR)
-      entries = _get_descriptor_components(content, False)
+      entries = _descriptor_components(content, False)
 
       for keyword, values in list(entries.items()):
         value, block_type, block_contents = values[0]

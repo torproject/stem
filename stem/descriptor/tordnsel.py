@@ -17,7 +17,7 @@ import stem.util.tor_tools
 from stem.descriptor import (
   Descriptor,
   _read_until_keywords,
-  _get_descriptor_components,
+  _descriptor_components,
 )
 
 
@@ -63,7 +63,7 @@ class TorDNSEL(Descriptor):
   def __init__(self, raw_contents, validate):
     super(TorDNSEL, self).__init__(raw_contents)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _descriptor_components(raw_contents, validate)
 
     self.fingerprint = None
     self.published = None

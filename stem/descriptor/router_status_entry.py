@@ -31,7 +31,7 @@ from stem.descriptor import (
   Descriptor,
   _value,
   _values,
-  _get_descriptor_components,
+  _descriptor_components,
   _parse_protocol_line,
   _read_until_keywords,
 )
@@ -435,7 +435,7 @@ class RouterStatusEntry(Descriptor):
 
     super(RouterStatusEntry, self).__init__(content, lazy_load = not validate)
     self.document = document
-    entries = _get_descriptor_components(content, validate)
+    entries = _descriptor_components(content, validate)
 
     if validate:
       for keyword in self._required_fields():

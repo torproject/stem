@@ -66,7 +66,7 @@ from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
   DocumentHandler,
-  _get_descriptor_components,
+  _descriptor_components,
   _read_until_keywords,
   _value,
   _parse_simple_line,
@@ -471,7 +471,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
 
-    entries = _get_descriptor_components(document_content + b'\n' + document_file.read(), validate)
+    entries = _descriptor_components(document_content + b'\n' + document_file.read(), validate)
 
     if validate:
       self._check_constraints(entries)
@@ -978,7 +978,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   def _header(self, document_file, validate):
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
-    entries = _get_descriptor_components(content, validate)
+    entries = _descriptor_components(content, validate)
     header_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
 
     if validate:
@@ -1011,7 +1011,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       self._entries.update(entries)
 
   def _footer(self, document_file, validate):
-    entries = _get_descriptor_components(document_file.read(), validate)
+    entries = _descriptor_components(document_file.read(), validate)
     footer_fields = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
 
     if validate:
@@ -1294,7 +1294,7 @@ class DirectoryAuthority(Descriptor):
     else:
       self.key_certificate = None
 
-    entries = _get_descriptor_components(content, validate)
+    entries = _descriptor_components(content, validate)
 
     if validate and 'dir-source' != list(entries.keys())[0]:
       raise ValueError("Authority entries are expected to start with a 'dir-source' line:\n%s" % (content))
@@ -1446,7 +1446,7 @@ class KeyCertificate(Descriptor):
 
   def __init__(self, raw_content, validate = False):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
-    entries = _get_descriptor_components(raw_content, validate)
+    entries = _descriptor_components(raw_content, validate)
 
     if validate:
       if 'dir-key-certificate-version' != list(entries.keys())[0]:
