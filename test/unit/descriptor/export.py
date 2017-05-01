@@ -11,12 +11,8 @@ except ImportError:
 
 import stem.prereq
 
-from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 from stem.descriptor.export import export_csv, export_csv_file
-
-from test.mocking import (
-  get_bridge_server_descriptor,
-)
 
 
 class TestExport(unittest.TestCase):
@@ -104,6 +100,4 @@ class TestExport(unittest.TestCase):
     Attempts to make a csv with multiple descriptor types.
     """
 
-    server_desc = RelayDescriptor.create()
-    bridge_desc = get_bridge_server_descriptor()
-    self.assertRaises(ValueError, export_csv, (server_desc, bridge_desc))
+    self.assertRaises(ValueError, export_csv, (RelayDescriptor.create(), BridgeDescriptor.create()))

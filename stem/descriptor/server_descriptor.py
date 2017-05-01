@@ -125,6 +125,14 @@ RELAY_SERVER_FOOTER = (
   ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
+BRIDGE_SERVER_HEADER = (
+  ('router', 'Unnamed 10.45.227.253 9001 0 0'),
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
+  ('published', '2012-03-22 17:34:38'),
+  ('bandwidth', '409600 819200 5120'),
+  ('reject', '*:*'),
+)
+
 
 def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   """
@@ -899,6 +907,10 @@ class BridgeDescriptor(ServerDescriptor):
     'router-digest-sha256': _parse_router_digest_sha256_line,
     'router-digest': _parse_router_digest_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
 
   def digest(self):
     return self._digest

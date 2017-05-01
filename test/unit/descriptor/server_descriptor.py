@@ -20,11 +20,6 @@ from stem.util import str_type
 from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
-from test.mocking import (
-  get_bridge_server_descriptor,
-  CRYPTO_BLOB,
-)
-
 from test.unit.descriptor import get_resource
 
 try:
@@ -436,7 +431,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('caerSidi', desc.nickname)
     self.assertEqual('71.35.133.197', desc.address)
     self.assertEqual(None, desc.fingerprint)
-    self.assertTrue(CRYPTO_BLOB in desc.onion_key)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.onion_key)
 
   def test_with_opt(self):
     """
@@ -722,7 +717,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Basic sanity check that we can parse a descriptor with minimal attributes.
     """
 
-    desc = get_bridge_server_descriptor()
+    desc = BridgeDescriptor.create()
 
     self.assertEqual('Unnamed', desc.nickname)
     self.assertEqual('10.45.227.253', desc.address)
@@ -744,13 +739,13 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
       {'contact': 'Damian'},
       {'or-address': '71.35.133.197:9001'},
       {'or-address': '[12ab:2e19:3bcf::02:9970]:9001'},
-      {'onion-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB},
-      {'signing-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB},
-      {'router-signature': '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB},
+      {'onion-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB},
+      {'signing-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB},
+      {'router-signature': '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % stem.descriptor.CRYPTO_BLOB},
     ]
 
     for attr in unsanitized_attr:
-      desc = get_bridge_server_descriptor(attr)
+      desc = BridgeDescriptor.create(attr)
       self.assertFalse(desc.is_scrubbed())
 
   def test_bridge_unsanitized_relay(self):
@@ -771,12 +766,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # checks with valid content
 
     router_digest = '068A2E28D4C934D9490303B7A645BA068DCA0504'
-    desc = get_bridge_server_descriptor({'router-digest': router_digest})
+    desc = BridgeDescriptor.create({'router-digest': router_digest})
     self.assertEqual(router_digest, desc.digest())
 
     # checks when missing
 
-    desc_text = get_bridge_server_descriptor(exclude = ['router-digest'], content = True)
+    desc_text = BridgeDescriptor.content(exclude = ['router-digest'])
     self.assertRaises(ValueError, BridgeDescriptor, desc_text, True)
 
     # check that we can still construct it without validation
@@ -793,7 +788,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     )
 
     for value in test_values:
-      desc_text = get_bridge_server_descriptor({'router-digest': value}, content = True)
+      desc_text = BridgeDescriptor.content({'router-digest': value})
       self.assertRaises(ValueError, BridgeDescriptor, desc_text, True)
 
       desc = BridgeDescriptor(desc_text, validate = False)
@@ -804,7 +799,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs a bridge descriptor with a sanatized IPv4 or-address entry.
     """
 
-    desc = get_bridge_server_descriptor({'or-address': '10.45.227.253:9001'})
+    desc = BridgeDescriptor.create({'or-address': '10.45.227.253:9001'})
     self.assertEqual([('10.45.227.253', 9001, False)], desc.or_addresses)
 
   def test_or_address_v6(self):
@@ -812,7 +807,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs a bridge descriptor with a sanatized IPv6 or-address entry.
     """
 
-    desc = get_bridge_server_descriptor({'or-address': '[fd9f:2e19:3bcf::02:9970]:9001'})
+    desc = BridgeDescriptor.create({'or-address': '[fd9f:2e19:3bcf::02:9970]:9001'})
     self.assertEqual([('fd9f:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
 
   def test_or_address_multiple(self):
@@ -820,9 +815,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs a bridge descriptor with multiple or-address entries and multiple ports.
     """
 
-    desc_text = b'\n'.join((get_bridge_server_descriptor(content = True),
-                            b'or-address 10.45.227.253:9001',
-                            b'or-address [fd9f:2e19:3bcf::02:9970]:443'))
+    desc_text = b'\n'.join((
+      BridgeDescriptor.content(),
+      b'or-address 10.45.227.253:9001',
+      b'or-address [fd9f:2e19:3bcf::02:9970]:443',
+    ))
 
     expected_or_addresses = [
       ('10.45.227.253', 9001, False),

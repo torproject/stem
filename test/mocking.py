@@ -13,9 +13,6 @@ Helper functions for creating mock objects.
     get_message                     - stem.response.ControlMessage
     get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
 
-    stem.descriptor.server_descriptor
-      get_bridge_server_descriptor - BridgeDescriptor
-
     stem.descriptor.microdescriptor
       get_microdescriptor - Microdescriptor
 
@@ -78,14 +75,6 @@ DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
   '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
   '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
-
-BRIDGE_SERVER_HEADER = (
-  ('router', 'Unnamed 10.45.227.253 9001 0 0'),
-  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
-  ('published', '2012-03-22 17:34:38'),
-  ('bandwidth', '409600 819200 5120'),
-  ('reject', '*:*'),
-)
 
 RELAY_EXTRAINFO_HEADER = (
   ('extra-info', 'ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48'),
@@ -350,26 +339,6 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       remainder.append(k)
 
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
-
-
-def get_bridge_server_descriptor(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.server_descriptor.BridgeDescriptor
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: BridgeDescriptor for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.server_descriptor.BridgeDescriptor(desc_content, validate = True)
 
 
 def get_relay_extrainfo_descriptor(attr = None, exclude = (), content = False):
