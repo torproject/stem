@@ -31,8 +31,10 @@ import stem.util.connection
 import stem.util.str_tools
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
+  _descriptor_content,
   _descriptor_components,
   _read_until_keywords,
   _bytes_for_block,
@@ -79,6 +81,20 @@ SINGLE_INTRODUCTION_POINT_FIELDS = [
 
 BASIC_AUTH = 1
 STEALTH_AUTH = 2
+
+HIDDEN_SERVICE_HEADER = (
+  ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
+  ('version', '2'),
+  ('permanent-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('secret-id-part', 'e24kgecavwsznj7gpbktqsiwgvngsf4e'),
+  ('publication-time', '2015-02-23 20:00:00'),
+  ('protocol-versions', '2,3'),
+  ('introduction-points', '\n-----BEGIN MESSAGE-----\n-----END MESSAGE-----'),
+)
+
+HIDDEN_SERVICE_FOOTER = (
+  ('signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
+)
 
 
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
@@ -204,6 +220,9 @@ class HiddenServiceDescriptor(Descriptor):
      Moved from the deprecated `pycrypto
      <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
      <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
+
+  .. versionchanged:: 1.6.0
+     Added the **skip_crypto_validation** constructor argument.
   """
 
   ATTRIBUTES = {
@@ -230,7 +249,15 @@ class HiddenServiceDescriptor(Descriptor):
     'signature': _parse_signature_line,
   }
 
-  def __init__(self, raw_contents, validate = False):
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, HIDDEN_SERVICE_HEADER, HIDDEN_SERVICE_FOOTER)
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True):
+    return cls(cls.content(attr, exclude), validate = validate, skip_crypto_validation = True)
+
+  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
     super(HiddenServiceDescriptor, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
@@ -248,7 +275,7 @@ class HiddenServiceDescriptor(Descriptor):
 
       self._parse(entries, validate)
 
-      if stem.prereq.is_crypto_available():
+      if not skip_crypto_validation and stem.prereq.is_crypto_available():
         signed_digest = self._digest_for_signature(self.permanent_key, self.signature)
         content_digest = self._digest_for_content(b'rendezvous-service-descriptor ', b'\nsignature\n')
 

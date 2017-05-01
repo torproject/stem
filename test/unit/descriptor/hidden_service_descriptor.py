@@ -3,19 +3,24 @@ Unit tests for stem.descriptor.hidden_service_descriptor.
 """
 
 import datetime
+import functools
 import unittest
 
 import stem.descriptor
 import stem.prereq
 
-from test.mocking import CRYPTO_BLOB, get_hidden_service_descriptor
-from test.unit.descriptor import get_resource
 from test.util import require_cryptography
 
 from stem.descriptor.hidden_service_descriptor import (
   REQUIRED_FIELDS,
   DecryptionFailure,
   HiddenServiceDescriptor,
+)
+
+from test.unit.descriptor import (
+  get_resource,
+  base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
 )
 
 MESSAGE_BLOCK = """
@@ -232,6 +237,9 @@ lj/7xMZWDrfyw5H86L0QiaZnkmD+nig1+S+Rn39mmuEgl2iwZO/ihlncUJQTEULb
 -----END MESSAGE-----\
 """
 
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptor, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptor, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
+
 
 class TestHiddenServiceDescriptor(unittest.TestCase):
   def test_for_duckduckgo_with_validation(self):
@@ -403,18 +411,18 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Basic sanity check that we can parse a hidden service descriptor with minimal attributes.
     """
 
-    desc = get_hidden_service_descriptor()
+    desc = HiddenServiceDescriptor.create()
 
     self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)
     self.assertEqual(2, desc.version)
-    self.assertTrue(CRYPTO_BLOB in desc.permanent_key)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.permanent_key)
     self.assertEqual('e24kgecavwsznj7gpbktqsiwgvngsf4e', desc.secret_id_part)
     self.assertEqual(datetime.datetime(2015, 2, 23, 20, 0, 0), desc.published)
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual('-----BEGIN MESSAGE-----\n-----END MESSAGE-----', desc.introduction_points_encoded)
     self.assertEqual([], desc.introduction_points_auth)
     self.assertEqual(b'', desc.introduction_points_content)
-    self.assertTrue(CRYPTO_BLOB in desc.signature)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.signature)
     self.assertEqual([], desc.introduction_points())
 
   def test_unrecognized_line(self):
@@ -422,7 +430,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
 
-    desc = get_hidden_service_descriptor({'pepperjack': 'is oh so tasty!'})
+    desc = HiddenServiceDescriptor.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -430,16 +438,14 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Includes a line prior to the 'rendezvous-service-descriptor' entry.
     """
 
-    desc_text = b'hibernate 1\n' + get_hidden_service_descriptor(content = True)
-    self._expect_invalid_attr(desc_text)
+    expect_invalid_attr_for_text(self, b'hibernate 1\n' + HiddenServiceDescriptor.content())
 
   def test_trailing_line(self):
     """
     Includes a line after the 'router-signature' entry.
     """
 
-    desc_text = get_hidden_service_descriptor(content = True) + b'\nhibernate 1'
-    self._expect_invalid_attr(desc_text)
+    expect_invalid_attr_for_text(self, HiddenServiceDescriptor.content() + b'\nhibernate 1')
 
   def test_required_fields(self):
     """
@@ -458,10 +464,10 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     }
 
     for line in REQUIRED_FIELDS:
-      desc_text = get_hidden_service_descriptor(content = True, exclude = (line,))
+      desc_text = HiddenServiceDescriptor.content(exclude = (line,))
 
       expected = [] if line == 'protocol-versions' else None
-      self._expect_invalid_attr(desc_text, line_to_attr[line], expected)
+      expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], expected)
 
   def test_invalid_version(self):
     """
@@ -475,8 +481,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     )
 
     for test_value in test_values:
-      desc_text = get_hidden_service_descriptor({'version': test_value}, content = True)
-      self._expect_invalid_attr(desc_text, 'version')
+      expect_invalid_attr(self, {'version': test_value}, 'version')
 
   def test_invalid_protocol_versions(self):
     """
@@ -495,8 +500,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     )
 
     for test_value in test_values:
-      desc_text = get_hidden_service_descriptor({'protocol-versions': test_value}, content = True)
-      self._expect_invalid_attr(desc_text, 'protocol_versions', [])
+      expect_invalid_attr(self, {'protocol-versions': test_value}, 'protocol_versions', [])
 
   def test_introduction_points_when_empty(self):
     """
@@ -505,14 +509,14 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     are valid according to the spec.
     """
 
-    missing_field_desc = get_hidden_service_descriptor(exclude = ('introduction-points',))
+    missing_field_desc = HiddenServiceDescriptor.create(exclude = ('introduction-points',))
 
     self.assertEqual(None, missing_field_desc.introduction_points_encoded)
     self.assertEqual([], missing_field_desc.introduction_points_auth)
     self.assertEqual(None, missing_field_desc.introduction_points_content)
     self.assertEqual([], missing_field_desc.introduction_points())
 
-    empty_field_desc = get_hidden_service_descriptor({'introduction-points': MESSAGE_BLOCK % ''})
+    empty_field_desc = HiddenServiceDescriptor.create({'introduction-points': MESSAGE_BLOCK % ''})
 
     self.assertEqual((MESSAGE_BLOCK % '').strip(), empty_field_desc.introduction_points_encoded)
     self.assertEqual([], empty_field_desc.introduction_points_auth)
@@ -530,30 +534,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     )
 
     for test_value in test_values:
-      desc_text = get_hidden_service_descriptor({'introduction-points': test_value}, content = True)
-
-      desc = self._expect_invalid_attr(desc_text, 'introduction_points_encoded', test_value.strip())
+      desc = expect_invalid_attr(self, {'introduction-points': test_value}, 'introduction_points_encoded', test_value.strip())
       self.assertEqual([], desc.introduction_points_auth)
       self.assertEqual(None, desc.introduction_points_content)
       self.assertEqual([], desc.introduction_points())
-
-  def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
-    """
-    Asserts that construction will fail due to desc_text having a malformed
-    attribute. If an attr is provided then we check that it matches an expected
-    value when we're constructed without validation.
-    """
-
-    self.assertRaises(ValueError, HiddenServiceDescriptor, desc_text, True)
-    desc = HiddenServiceDescriptor(desc_text, validate = False)
-
-    if attr:
-      # check that the invalid attribute matches the expected value when
-      # constructed without validation
-
-      self.assertEqual(expected_value, getattr(desc, attr))
-    else:
-      # check a default attribute
-      self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)
-
-    return desc
