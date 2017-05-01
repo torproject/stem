@@ -9,9 +9,9 @@ import stem.descriptor.remote
 
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
-from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
-from test import mocking
+from stem.descriptor.networkstatus import NetworkStatusDocumentV3
+from stem.descriptor.server_descriptor import RelayDescriptor
 from test.unit import exec_documentation_example
 
 try:
@@ -151,11 +151,7 @@ class TestTutorial(unittest.TestCase):
       for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
         print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
-    test_file = io.BytesIO(mocking.get_network_status_document_v3(
-      routers = [RouterStatusEntryV3.create()],
-      content = True,
-    ))
-
+    test_file = io.BytesIO(NetworkStatusDocumentV3.content(routers = [RouterStatusEntryV3.create()]))
     test_file.name = '/home/atagar/.tor/cached-consensus'
     open_mock.return_value = test_file
 

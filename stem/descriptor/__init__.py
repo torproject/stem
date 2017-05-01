@@ -383,7 +383,9 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
 
       value = attr.pop(keyword, value)
 
-      if not value:
+      if value is None:
+        continue
+      elif value == '':
         content.append(keyword)
       elif value.startswith('\n'):
         # some values like crypto follow the line instead

@@ -17,12 +17,12 @@ import stem.prereq
 
 from stem.control import Controller
 from stem.util import str_type
+from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
-from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.descriptor.router_status_entry import ROUTER_STATUS_ENTRY_V3_HEADER, RouterStatusEntryV3
+from stem.descriptor.server_descriptor import RelayDescriptor
 
 from test import mocking
-from test.mocking import get_network_status_document_v3
 from test.unit import exec_documentation_example
 
 try:
@@ -274,8 +274,8 @@ class TestTutorialExamples(unittest.TestCase):
     ]
 
     query_mock().run.side_effect = [
-      [get_network_status_document_v3(routers = (entry[0], entry[1], entry[2], entry[3], entry[4]))],
-      [get_network_status_document_v3(routers = (entry[5], entry[6], entry[7], entry[8], entry[9]))],
+      [NetworkStatusDocumentV3.create(routers = (entry[0], entry[1], entry[2], entry[3], entry[4]))],
+      [NetworkStatusDocumentV3.create(routers = (entry[5], entry[6], entry[7], entry[8], entry[9]))],
     ]
 
     exec_documentation_example('compare_flags.py')
@@ -332,7 +332,7 @@ class TestTutorialExamples(unittest.TestCase):
       for fingerprint, relay in consensus.routers.items():
         print('%s: %s' % (fingerprint, relay.nickname))
 
-    network_status = get_network_status_document_v3(routers = (RouterStatusEntryV3.create(),))
+    network_status = NetworkStatusDocumentV3.create(routers = (RouterStatusEntryV3.create(),))
     query_mock().run.return_value = [network_status]
     parse_file_mock.return_value = itertools.cycle([network_status])
 

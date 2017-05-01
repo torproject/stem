@@ -63,9 +63,11 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
   DocumentHandler,
+  _descriptor_content,
   _descriptor_components,
   _read_until_keywords,
   _value,
@@ -205,6 +207,57 @@ PARAM_RANGE = {
   'AllowNonearlyExtend': (0, 1),
   'AuthDirNumSRVAgreements': (1, MAX_PARAM),
 }
+
+AUTHORITY_HEADER = (
+  ('dir-source', 'turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090'),
+  ('contact', 'Mike Perry <email>'),
+)
+
+KEY_CERTIFICATE_HEADER = (
+  ('dir-key-certificate-version', '3'),
+  ('fingerprint', '27B6B5996C426270A5C95488AA5BCEB6BCC86956'),
+  ('dir-key-published', '2011-11-28 21:51:04'),
+  ('dir-key-expires', '2012-11-28 21:51:04'),
+  ('dir-identity-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+)
+
+KEY_CERTIFICATE_FOOTER = (
+  ('dir-key-certification', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER_V2 = (
+  ('network-status-version', '2'),
+  ('dir-source', '18.244.0.114 18.244.0.114 80'),
+  ('fingerprint', '719BE45DE224B607C53707D0E2143E2D423E74CF'),
+  ('contact', 'arma at mit dot edu'),
+  ('published', '2005-12-16 00:13:46'),
+  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER_V2 = (
+  ('directory-signature', 'moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
+)
+
+NETWORK_STATUS_DOCUMENT_HEADER = (
+  ('network-status-version', '3'),
+  ('vote-status', 'consensus'),
+  ('consensus-methods', None),
+  ('consensus-method', None),
+  ('published', None),
+  ('valid-after', '2012-09-02 22:00:00'),
+  ('fresh-until', '2012-09-02 22:00:00'),
+  ('valid-until', '2012-09-02 22:00:00'),
+  ('voting-delay', '300 300'),
+  ('client-versions', None),
+  ('server-versions', None),
+  ('package', None),
+  ('known-flags', 'Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid'),
+  ('params', None),
+)
+
+VOTE_HEADER_DEFAULTS = {'consensus-methods': '1 9', 'published': '2012-09-02 22:00:00'}
+CONSENSUS_HEADER_DEFAULTS = {'consensus-method': '9'}
 
 
 class PackageVersion(collections.namedtuple('PackageVersion', ['name', 'version', 'url', 'digests'])):
@@ -448,6 +501,10 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     'dir-options': _parse_dir_options_line,
     'directory-signature': _parse_directory_signature_line,
   }
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
 
   def __init__(self, raw_content, validate = False):
     super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
@@ -893,6 +950,60 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'directory-signature': _parse_footer_directory_signature_line,
   }
 
+  @classmethod
+  def content(cls, attr = None, exclude = (), authorities = None, routers = None):
+    attr = {} if attr is None else dict(attr)
+
+    is_vote = attr.get('vote-status') == 'vote'
+    extra_defaults = VOTE_HEADER_DEFAULTS if is_vote else CONSENSUS_HEADER_DEFAULTS
+
+    if is_vote and authorities is None:
+      authorities = [DirectoryAuthority.create(is_vote = is_vote)]
+
+    for k, v in extra_defaults.items():
+      if exclude and k in exclude:
+        continue  # explicitly excluding this field
+      elif k not in attr:
+        attr[k] = v
+
+    desc_content = _descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
+
+    # inject the authorities and/or routers between the header and footer
+
+    if authorities:
+      if b'directory-footer' in desc_content:
+        footer_div = desc_content.find(b'\ndirectory-footer') + 1
+      elif b'directory-signature' in desc_content:
+        footer_div = desc_content.find(b'\ndirectory-signature') + 1
+      else:
+        if routers:
+          desc_content += b'\n'
+
+        footer_div = len(desc_content) + 1
+
+      authority_content = stem.util.str_tools._to_bytes('\n'.join([str(a) for a in authorities]) + '\n')
+      desc_content = desc_content[:footer_div] + authority_content + desc_content[footer_div:]
+
+    if routers:
+      if b'directory-footer' in desc_content:
+        footer_div = desc_content.find(b'\ndirectory-footer') + 1
+      elif b'directory-signature' in desc_content:
+        footer_div = desc_content.find(b'\ndirectory-signature') + 1
+      else:
+        if routers:
+          desc_content += b'\n'
+
+        footer_div = len(desc_content) + 1
+
+      router_content = stem.util.str_tools._to_bytes('\n'.join([str(r) for r in routers]) + '\n')
+      desc_content = desc_content[:footer_div] + router_content + desc_content[footer_div:]
+
+    return desc_content
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, authorities = None, routers = None):
+    return cls(cls.content(attr, exclude, authorities, routers), validate = validate)
+
   def __init__(self, raw_content, validate = False, default_params = True):
     """
     Parse a v3 network status document.
@@ -1270,6 +1381,26 @@ class DirectoryAuthority(Descriptor):
     'shared-rand-current-value': _parse_shared_rand_current_value,
   }
 
+  @classmethod
+  def content(cls, attr = None, exclude = (), is_vote = False):
+    attr = {} if attr is None else dict(attr)
+
+    # include mandatory 'vote-digest' if a consensus
+
+    if not is_vote and not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
+      attr['vote-digest'] = '0B6D1E9A300B895AA2D0B427F92917B6995C3C1C'
+
+    content = _descriptor_content(attr, exclude, AUTHORITY_HEADER)
+
+    if is_vote:
+      content += b'\n' + KeyCertificate.content()
+
+    return content
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, is_vote = False):
+    return cls(cls.content(attr, exclude, is_vote), validate = validate, is_vote = is_vote)
+
   def __init__(self, raw_content, validate = False, is_vote = False):
     """
     Parse a directory authority entry in a v3 network status document.
@@ -1444,6 +1575,10 @@ class KeyCertificate(Descriptor):
     'dir-key-certification': _parse_dir_key_certification_line,
   }
 
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
+
   def __init__(self, raw_content, validate = False):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
     entries = _descriptor_components(raw_content, validate)
@@ -1583,3 +1718,17 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     )
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
+
+
+DOC_SIG = DocumentSignature(
+  'sha1',
+  '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
+  'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
+  '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB,
+)
+
+NETWORK_STATUS_DOCUMENT_FOOTER = (
+  ('directory-footer', ''),
+  ('bandwidth-weights', None),
+  ('directory-signature', '%s %s\n%s' % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
+)

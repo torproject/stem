@@ -5,13 +5,12 @@ Unit tests for the KeyCertificate of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
-from stem.descriptor.networkstatus import KeyCertificate
+import stem.descriptor
 
-from test.mocking import (
-  get_key_certificate,
-  CRYPTO_BLOB,
+from stem.descriptor.networkstatus import (
   KEY_CERTIFICATE_HEADER,
   KEY_CERTIFICATE_FOOTER,
+  KeyCertificate,
 )
 
 
@@ -21,18 +20,18 @@ class TestKeyCertificate(unittest.TestCase):
     Parses a minimal key certificate.
     """
 
-    certificate = get_key_certificate()
+    certificate = KeyCertificate.create()
 
     self.assertEqual(3, certificate.version)
     self.assertEqual(None, certificate.address)
     self.assertEqual(None, certificate.dir_port)
     self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', certificate.fingerprint)
-    self.assertTrue(CRYPTO_BLOB in certificate.identity_key)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.identity_key)
     self.assertEqual(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
     self.assertEqual(datetime.datetime(2012, 11, 28, 21, 51, 4), certificate.expires)
-    self.assertTrue(CRYPTO_BLOB in certificate.signing_key)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.signing_key)
     self.assertEqual(None, certificate.crosscert)
-    self.assertTrue(CRYPTO_BLOB in certificate.certification)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.certification)
     self.assertEqual([], certificate.get_unrecognized_lines())
 
   def test_unrecognized_line(self):
@@ -40,7 +39,7 @@ class TestKeyCertificate(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
 
-    certificate = get_key_certificate({'pepperjack': 'is oh so tasty!'})
+    certificate = KeyCertificate.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], certificate.get_unrecognized_lines())
 
   def test_first_and_last_lines(self):
@@ -49,7 +48,7 @@ class TestKeyCertificate(unittest.TestCase):
     line or after the 'dir-key-certification' line.
     """
 
-    content = get_key_certificate(content = True)
+    content = KeyCertificate.content()
 
     for cert_text in (b'dir-address 127.0.0.1:80\n' + content,
                       content + b'\ndir-address 127.0.0.1:80'):
@@ -67,7 +66,7 @@ class TestKeyCertificate(unittest.TestCase):
     mandatory_fields = [entry[0] for entry in KEY_CERTIFICATE_HEADER + KEY_CERTIFICATE_FOOTER]
 
     for excluded_field in mandatory_fields:
-      content = get_key_certificate(exclude = (excluded_field,), content = True)
+      content = KeyCertificate.content(exclude = (excluded_field,))
       self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
@@ -82,7 +81,7 @@ class TestKeyCertificate(unittest.TestCase):
     Includes blank lines, which should be ignored.
     """
 
-    certificate = get_key_certificate({'dir-key-published': '2011-11-28 21:51:04\n\n\n'})
+    certificate = KeyCertificate.create({'dir-key-published': '2011-11-28 21:51:04\n\n\n'})
     self.assertEqual(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
 
   def test_version(self):
@@ -91,14 +90,14 @@ class TestKeyCertificate(unittest.TestCase):
     different certificate version with the v3 parser.
     """
 
-    certificate = get_key_certificate({'dir-key-certificate-version': '3'})
+    certificate = KeyCertificate.create({'dir-key-certificate-version': '3'})
     self.assertEqual(3, certificate.version)
 
-    content = get_key_certificate({'dir-key-certificate-version': '4'}, content = True)
+    content = KeyCertificate.content({'dir-key-certificate-version': '4'})
     self.assertRaises(ValueError, KeyCertificate, content, True)
     self.assertEqual(4, KeyCertificate(content, False).version)
 
-    content = get_key_certificate({'dir-key-certificate-version': 'boo'}, content = True)
+    content = KeyCertificate.content({'dir-key-certificate-version': 'boo'})
     self.assertRaises(ValueError, KeyCertificate, content, True)
     self.assertEqual(None, KeyCertificate(content, False).version)
 
@@ -107,7 +106,7 @@ class TestKeyCertificate(unittest.TestCase):
     Parses the dir-address field.
     """
 
-    certificate = get_key_certificate({'dir-address': '127.0.0.1:80'})
+    certificate = KeyCertificate.create({'dir-address': '127.0.0.1:80'})
     self.assertEqual('127.0.0.1', certificate.address)
     self.assertEqual(80, certificate.dir_port)
 
@@ -123,7 +122,7 @@ class TestKeyCertificate(unittest.TestCase):
     )
 
     for test_value in test_values:
-      content = get_key_certificate({'dir-address': test_value}, content = True)
+      content = KeyCertificate.content({'dir-address': test_value})
       self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
@@ -143,7 +142,7 @@ class TestKeyCertificate(unittest.TestCase):
     )
 
     for test_value in test_values:
-      content = get_key_certificate({'fingerprint': test_value}, content = True)
+      content = KeyCertificate.content({'fingerprint': test_value})
       self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
@@ -165,7 +164,7 @@ class TestKeyCertificate(unittest.TestCase):
 
     for field, attr in (('dir-key-published', 'published'), ('dir-key-expires', 'expires')):
       for test_value in test_values:
-        content = get_key_certificate({field: test_value}, content = True)
+        content = KeyCertificate.content({field: test_value})
         self.assertRaises(ValueError, KeyCertificate, content, True)
 
         certificate = KeyCertificate(content, False)
@@ -179,16 +178,16 @@ class TestKeyCertificate(unittest.TestCase):
 
     # the only non-mandatory field that we haven't exercised yet is dir-key-crosscert
 
-    certificate = get_key_certificate({'dir-key-crosscert': '\n-----BEGIN ID SIGNATURE-----%s-----END ID SIGNATURE-----' % CRYPTO_BLOB})
-    self.assertTrue(CRYPTO_BLOB in certificate.crosscert)
+    certificate = KeyCertificate.create({'dir-key-crosscert': '\n-----BEGIN ID SIGNATURE-----%s-----END ID SIGNATURE-----' % stem.descriptor.CRYPTO_BLOB})
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.crosscert)
 
-    test_value = '\n-----BEGIN ID SIGNATURE-----%s-----END UGABUGA SIGNATURE-----' % CRYPTO_BLOB
+    test_value = '\n-----BEGIN ID SIGNATURE-----%s-----END UGABUGA SIGNATURE-----' % stem.descriptor.CRYPTO_BLOB
 
     for field, attr in (('dir-identity-key', 'identity_key'),
                         ('dir-signing-key', 'signing_key'),
                         ('dir-key-crosscert', 'crosscert'),
                         ('dir-key-certification', 'certification')):
-      content = get_key_certificate({field: test_value}, content = True)
+      content = KeyCertificate.content({field: test_value})
       self.assertRaises(ValueError, KeyCertificate, content, True)
 
       certificate = KeyCertificate(content, False)
@@ -199,5 +198,5 @@ class TestKeyCertificate(unittest.TestCase):
     Checks that we validate the type of crypto content we receive.
     """
 
-    content = get_key_certificate({'dir-identity-key': '\n-----BEGIN MD5SUM-----%s-----END MD5SUM-----' % CRYPTO_BLOB}, content = True)
+    content = KeyCertificate.content({'dir-identity-key': '\n-----BEGIN MD5SUM-----%s-----END MD5SUM-----' % stem.descriptor.CRYPTO_BLOB})
     self.assertRaises(ValueError, KeyCertificate, content, True)
