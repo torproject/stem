@@ -29,11 +29,27 @@ import stem.util.str_tools
 from stem.descriptor import (
   KEYWORD_LINE,
   Descriptor,
+  _descriptor_content,
   _value,
   _values,
   _descriptor_components,
   _parse_protocol_line,
   _read_until_keywords,
+)
+
+ROUTER_STATUS_ENTRY_V2_HEADER = (
+  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
+)
+
+ROUTER_STATUS_ENTRY_V3_HEADER = (
+  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
+  ('s', 'Fast Named Running Stable Valid'),
+)
+
+ROUTER_STATUS_ENTRY_MICRO_V3_HEADER = (
+  ('r', 'Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030'),
+  ('m', 'aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70'),
+  ('s', 'Fast Guard HSDir Named Running Stable V2Dir Valid'),
 )
 
 _parse_pr_line = _parse_protocol_line('pr', 'protocols')
@@ -511,6 +527,10 @@ class RouterStatusEntryV2(RouterStatusEntry):
     'digest': (None, _parse_r_line),
   })
 
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V2_HEADER)
+
   def _name(self, is_plural = False):
     return 'Router status entries (v2)' if is_plural else 'Router status entry (v2)'
 
@@ -604,6 +624,10 @@ class RouterStatusEntryV3(RouterStatusEntry):
     'm': _parse_m_line,
   })
 
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V3_HEADER)
+
   def _name(self, is_plural = False):
     return 'Router status entries (v3)' if is_plural else 'Router status entry (v3)'
 
@@ -672,6 +696,10 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     'm': _parse_microdescriptor_m_line,
     'pr': _parse_pr_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
 
   def _name(self, is_plural = False):
     return 'Router status entries (micro v3)' if is_plural else 'Router status entry (micro v3)'

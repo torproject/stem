@@ -19,15 +19,11 @@ from stem.control import Controller
 from stem.util import str_type
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.descriptor.router_status_entry import ROUTER_STATUS_ENTRY_V3_HEADER, RouterStatusEntryV3
 
 from test import mocking
+from test.mocking import get_network_status_document_v3
 from test.unit import exec_documentation_example
-
-from test.mocking import (
-  get_router_status_entry_v3,
-  ROUTER_STATUS_ENTRY_V3_HEADER,
-  get_network_status_document_v3,
-)
 
 try:
   # added in python 3.3
@@ -130,9 +126,9 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
     r_line = r_line.replace('p1aag7VwarGxqctS7/fS0y5FU+s', fingerprint_base64)
 
   if s_line:
-    return get_router_status_entry_v3({'r': r_line, 's': s_line})
+    return RouterStatusEntryV3.create({'r': r_line, 's': s_line})
   else:
-    return get_router_status_entry_v3({'r': r_line})
+    return RouterStatusEntryV3.create({'r': r_line})
 
 
 class TestTutorialExamples(unittest.TestCase):
@@ -299,8 +295,8 @@ class TestTutorialExamples(unittest.TestCase):
     directory_values[0].address = '131.188.40.189'
     get_authorities_mock().values.return_value = directory_values
 
-    entry_with_measurement = get_router_status_entry_v3({'w': 'Bandwidth=1 Measured=1'})
-    entry_without_measurement = get_router_status_entry_v3()
+    entry_with_measurement = RouterStatusEntryV3.create({'w': 'Bandwidth=1 Measured=1'})
+    entry_without_measurement = RouterStatusEntryV3.create()
 
     query1 = Mock()
     query1.download_url = 'http://131.188.40.189:80/tor/status-vote/current/authority'
@@ -336,7 +332,7 @@ class TestTutorialExamples(unittest.TestCase):
       for fingerprint, relay in consensus.routers.items():
         print('%s: %s' % (fingerprint, relay.nickname))
 
-    network_status = get_network_status_document_v3(routers = (get_router_status_entry_v3(),))
+    network_status = get_network_status_document_v3(routers = (RouterStatusEntryV3.create(),))
     query_mock().run.return_value = [network_status]
     parse_file_mock.return_value = itertools.cycle([network_status])
 

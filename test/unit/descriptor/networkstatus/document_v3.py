@@ -29,8 +29,6 @@ from stem.descriptor.router_status_entry import (
 )
 
 from test.mocking import (
-  get_router_status_entry_v3,
-  get_router_status_entry_micro_v3,
   get_directory_authority,
   get_network_status_document_v3,
   DOC_SIG,
@@ -400,8 +398,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     # makes a consensus with a couple routers, both with the same nickname
 
-    entry1 = get_router_status_entry_v3({'s': 'Fast'})
-    entry2 = get_router_status_entry_v3({'s': 'Valid'})
+    entry1 = RouterStatusEntryV3.create({'s': 'Fast'})
+    entry2 = RouterStatusEntryV3.create({'s': 'Valid'})
     content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
 
     # first example: parsing via the NetworkStatusDocumentV3 constructor
@@ -428,8 +426,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     # Simple sanity check that they provide the right type, and that the
     # document includes or excludes the router status entries as appropriate.
 
-    entry1 = get_router_status_entry_v3({'s': 'Fast'})
-    entry2 = get_router_status_entry_v3({
+    entry1 = RouterStatusEntryV3.create({'s': 'Fast'})
+    entry2 = RouterStatusEntryV3.create({
       'r': 'Nightfae AWt0XNId/OU2xX5xs5hVtDc5Mes 6873oEfM7fFIbxYtwllw9GPDwkA 2013-02-20 11:12:27 85.177.66.233 9001 9030',
       's': 'Valid',
     })
@@ -451,8 +449,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     Try parsing a document via the _parse_file() function.
     """
 
-    entry1 = get_router_status_entry_v3({'s': 'Fast'})
-    entry2 = get_router_status_entry_v3({'s': 'Valid'})
+    entry1 = RouterStatusEntryV3.create({'s': 'Fast'})
+    entry2 = RouterStatusEntryV3.create({'s': 'Valid'})
     content = get_network_status_document_v3(routers = (entry1, entry2), content = True)
 
     # the document that the entries refer to should actually be the minimal
@@ -1093,8 +1091,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     document.
     """
 
-    entry1 = get_router_status_entry_v3({'s': 'Fast'})
-    entry2 = get_router_status_entry_v3({
+    entry1 = RouterStatusEntryV3.create({'s': 'Fast'})
+    entry2 = RouterStatusEntryV3.create({
       'r': 'Nightfae AWt0XNId/OU2xX5xs5hVtDc5Mes 6873oEfM7fFIbxYtwllw9GPDwkA 2013-02-20 11:12:27 85.177.66.233 9001 9030',
       's': 'Valid',
     })
@@ -1106,7 +1104,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     # try with an invalid RouterStatusEntry
 
-    entry3 = RouterStatusEntryV3(get_router_status_entry_v3({'r': 'ugabuga'}, content = True), False)
+    entry3 = RouterStatusEntryV3(RouterStatusEntryV3.content({'r': 'ugabuga'}), False)
     content = get_network_status_document_v3(routers = (entry3,), content = True)
 
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
@@ -1127,8 +1125,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     document.
     """
 
-    entry1 = get_router_status_entry_micro_v3({'s': 'Fast'})
-    entry2 = get_router_status_entry_micro_v3({
+    entry1 = RouterStatusEntryMicroV3.create({'s': 'Fast'})
+    entry2 = RouterStatusEntryMicroV3.create({
       'r': 'tornodeviennasil AcWxDFxrHetHYS5m6/MVt8ZN6AM 2013-03-13 22:09:13 78.142.142.246 443 80',
       's': 'Valid',
     })
@@ -1140,7 +1138,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     # try with an invalid RouterStatusEntry
 
-    entry3 = RouterStatusEntryMicroV3(get_router_status_entry_micro_v3({'r': 'ugabuga'}, content = True), False)
+    entry3 = RouterStatusEntryMicroV3(RouterStatusEntryMicroV3.content({'r': 'ugabuga'}), False)
 
     content = get_network_status_document_v3({'network-status-version': '3 microdesc'}, routers = (entry3,), content = True)
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)

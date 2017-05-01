@@ -18,11 +18,6 @@ Helper functions for creating mock objects.
       get_key_certificate            - KeyCertificate
       get_network_status_document_v2 - NetworkStatusDocumentV2
       get_network_status_document_v3 - NetworkStatusDocumentV3
-
-    stem.descriptor.router_status_entry
-      get_router_status_entry_v2       - RouterStatusEntryV2
-      get_router_status_entry_v3       - RouterStatusEntryV3
-      get_router_status_entry_micro_v3 - RouterStatusEntryMicroV3
 """
 
 import hashlib
@@ -57,21 +52,6 @@ DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
   '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
   '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
-
-ROUTER_STATUS_ENTRY_V2_HEADER = (
-  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
-)
-
-ROUTER_STATUS_ENTRY_V3_HEADER = (
-  ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
-  ('s', 'Fast Named Running Stable Valid'),
-)
-
-ROUTER_STATUS_ENTRY_MICRO_V3_HEADER = (
-  ('r', 'Konata ARIJF2zbqirB9IwsW0mQznccWww 2012-09-24 13:40:40 69.64.48.168 9001 9030'),
-  ('m', 'aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70'),
-  ('s', 'Fast Guard HSDir Named Running Stable V2Dir Valid'),
-)
 
 AUTHORITY_HEADER = (
   ('dir-source', 'turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090'),
@@ -285,66 +265,6 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       remainder.append(k)
 
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
-
-
-def get_router_status_entry_v2(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.router_status_entry.RouterStatusEntryV2
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: RouterStatusEntryV2 for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V2_HEADER)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.router_status_entry.RouterStatusEntryV2(desc_content, validate = True)
-
-
-def get_router_status_entry_v3(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.router_status_entry.RouterStatusEntryV3
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: RouterStatusEntryV3 for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V3_HEADER)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content, validate = True)
-
-
-def get_router_status_entry_micro_v3(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: RouterStatusEntryMicroV3 for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content, validate = True)
 
 
 def get_directory_authority(attr = None, exclude = (), is_vote = False, content = False):
