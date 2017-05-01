@@ -530,7 +530,7 @@ class Descriptor(object):
     self._unrecognized_lines = []
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = ()):
     """
     Creates descriptor content with the given attributes. Mandatory fields are
     filled with dummy information unless data is supplied.
@@ -540,19 +540,16 @@ class Descriptor(object):
     :param dict attr: keyword/value mappings to be included in the descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
-    :param bool sign_content: includes cryptographic digest if True
 
     :returns: **str** with the content of a descriptor
 
-    :raises:
-      * **ImportError** if cryptography is unavailable and sign is True
-      * **NotImplementedError** if not implemented for this descriptor type
+    :raises: **NotImplementedError** if not implemented for this descriptor type
     """
 
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+  def create(cls, attr = None, exclude = (), validate = True):
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
     with dummy information unless data is supplied.
@@ -564,17 +561,15 @@ class Descriptor(object):
       results in an invalid descriptor
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
-    :param bool sign_content: includes cryptographic digest if True
 
     :returns: :class:`~stem.descriptor.Descriptor` subclass
 
     :raises:
       * **ValueError** if the contents is malformed and validate is True
-      * **ImportError** if cryptography is unavailable and sign is True
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    return cls(cls.content(attr, exclude, sign), validate = validate)
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def get_path(self):
     """

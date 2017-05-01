@@ -207,8 +207,6 @@ class TestTutorial(unittest.TestCase):
             return
 
     exit_descriptor = RelayDescriptor.content({'router': 'speedyexit 149.255.97.109 9001 0 0'}).replace(b'reject *:*', b'accept *:*')
-
-    exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
     exit_descriptor = RelayDescriptor(exit_descriptor)
 
     downloader_mock().get_server_descriptors().run.return_value = [
