@@ -77,8 +77,10 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
+  _descriptor_content,
   _read_until_keywords,
   _get_descriptor_components,
   _value,
@@ -153,6 +155,15 @@ SINGLE_FIELDS = (
   'exit-kibibytes-written',
   'exit-kibibytes-read',
   'exit-streams-opened',
+)
+
+RELAY_EXTRAINFO_HEADER = (
+  ('extra-info', 'ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48'),
+  ('published', '2012-05-05 17:03:50'),
+)
+
+RELAY_EXTRAINFO_FOOTER = (
+  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
 )
 
 
@@ -913,6 +924,10 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     'router-sig-ed25519': _parse_router_sig_ed25519_line,
     'router-signature': _parse_router_signature_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
 
   @lru_cache()
   def digest(self):
