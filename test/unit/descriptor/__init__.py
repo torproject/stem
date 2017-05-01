@@ -23,3 +23,28 @@ def get_resource(filename):
   """
 
   return os.path.join(DESCRIPTOR_TEST_DATA, filename)
+
+
+def base_expect_invalid_attr(cls, default_attr, default_value, test, desc_attrs, attr = None, expected_value = None):
+  return base_expect_invalid_attr_for_text(cls, default_attr, default_value, test, cls.content(desc_attrs), attr, expected_value)
+
+
+def base_expect_invalid_attr_for_text(cls, default_attr, default_value, test, desc_text, attr = None, expected_value = None):
+  """
+  Asserts that construction will fail due to desc_text having a malformed
+  attribute. If an attr is provided then we check that it matches an expected
+  value when we're constructed without validation.
+  """
+
+  test.assertRaises(ValueError, cls, desc_text, True)
+  desc = cls(desc_text, validate = False)
+
+  if attr:
+    # check that the invalid attribute matches the expected value when
+    # constructed without validation
+
+    test.assertEqual(expected_value, getattr(desc, attr))
+  elif default_attr and default_value:
+    test.assertEqual(default_value, getattr(desc, default_attr))  # check a default attribute
+
+  return desc

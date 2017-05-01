@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.server_descriptor.
 """
 
 import datetime
+import functools
 import io
 import pickle
 import tarfile
@@ -20,7 +21,11 @@ from stem.util import str_type
 from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
 
-from test.unit.descriptor import get_resource
+from test.unit.descriptor import (
+  get_resource,
+  base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
+)
 
 try:
   # added in python 3.3
@@ -33,6 +38,9 @@ TARFILE_FINGERPRINTS = set([
   str_type('E0BD57A11F00041A9789577C53A1B784473669E4'),
   str_type('1F43EE37A0670301AD9CB555D94AFEC2C89FDE86'),
 ])
+
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayDescriptor, 'nickname', 'caerSidi')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayDescriptor, 'nickname', 'caerSidi')
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -455,7 +463,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = b'hibernate 1\n' + RelayDescriptor.content()
-    self._expect_invalid_attr_for_text(desc_text)
+    expect_invalid_attr_for_text(self, desc_text)
 
   def test_trailing_line(self):
     """
@@ -463,56 +471,56 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     desc_text = RelayDescriptor.content() + b'\nhibernate 1'
-    self._expect_invalid_attr_for_text(desc_text)
+    expect_invalid_attr_for_text(self, desc_text)
 
   def test_nickname_missing(self):
     """
     Constructs with a malformed router entry.
     """
 
-    self._expect_invalid_attr({'router': ' 71.35.133.197 9001 0 0'}, 'nickname')
+    expect_invalid_attr(self, {'router': ' 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_nickname_too_long(self):
     """
     Constructs with a nickname that is an invalid length.
     """
 
-    self._expect_invalid_attr({'router': 'saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0'}, 'nickname')
+    expect_invalid_attr(self, {'router': 'saberrider2008ReallyLongNickname 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_nickname_invalid_char(self):
     """
     Constructs with an invalid relay nickname.
     """
 
-    self._expect_invalid_attr({'router': '$aberrider2008 71.35.133.197 9001 0 0'}, 'nickname')
+    expect_invalid_attr(self, {'router': '$aberrider2008 71.35.133.197 9001 0 0'}, 'nickname')
 
   def test_address_malformed(self):
     """
     Constructs with an invalid ip address.
     """
 
-    self._expect_invalid_attr({'router': 'caerSidi 371.35.133.197 9001 0 0'}, 'address')
+    expect_invalid_attr(self, {'router': 'caerSidi 371.35.133.197 9001 0 0'}, 'address')
 
   def test_port_too_high(self):
     """
     Constructs with an ORPort that is too large.
     """
 
-    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 900001 0 0'}, 'or_port')
+    expect_invalid_attr(self, {'router': 'caerSidi 71.35.133.197 900001 0 0'}, 'or_port')
 
   def test_port_malformed(self):
     """
     Constructs with an ORPort that isn't numeric.
     """
 
-    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 900a1 0 0'}, 'or_port')
+    expect_invalid_attr(self, {'router': 'caerSidi 71.35.133.197 900a1 0 0'}, 'or_port')
 
   def test_port_newline(self):
     """
     Constructs with a newline replacing the ORPort.
     """
 
-    self._expect_invalid_attr({'router': 'caerSidi 71.35.133.197 \n 0 0'}, 'or_port')
+    expect_invalid_attr(self, {'router': 'caerSidi 71.35.133.197 \n 0 0'}, 'or_port')
 
   def test_platform_empty(self):
     """
@@ -543,7 +551,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs with a protocols line without circuit versions.
     """
 
-    self._expect_invalid_attr({'opt': 'protocols Link 1 2'}, 'circuit_protocols')
+    expect_invalid_attr(self, {'opt': 'protocols Link 1 2'}, 'circuit_protocols')
 
   @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_published_leap_year(self):
@@ -552,7 +560,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     invalid.
     """
 
-    self._expect_invalid_attr({'published': '2011-02-29 04:03:19'}, 'published')
+    expect_invalid_attr(self, {'published': '2011-02-29 04:03:19'}, 'published')
 
     desc = RelayDescriptor.create({'published': '2012-02-29 04:03:19'})
     self.assertEqual(datetime.datetime(2012, 2, 29, 4, 3, 19), desc.published)
@@ -562,7 +570,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Constructs with a published entry without a time component.
     """
 
-    self._expect_invalid_attr({'published': '2012-01-01'}, 'published')
+    expect_invalid_attr(self, {'published': '2012-01-01'}, 'published')
 
   def test_read_and_write_history(self):
     """
@@ -632,7 +640,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc_text = RelayDescriptor.content({'<replace>': ''})
     desc_text = desc_text.replace(b'<replace>', b'contact foo\ncontact bar')
-    self._expect_invalid_attr_for_text(desc_text, 'contact', b'foo')
+    expect_invalid_attr_for_text(self, desc_text, 'contact', b'foo')
 
   def test_missing_required_attr(self):
     """
@@ -661,7 +669,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     fingerprint = '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45'
-    self._expect_invalid_attr({'opt fingerprint': fingerprint}, 'fingerprint', fingerprint.replace(' ', ''))
+    expect_invalid_attr(self, {'opt fingerprint': fingerprint}, 'fingerprint', fingerprint.replace(' ', ''))
 
   def test_ipv6_policy(self):
     """
@@ -828,28 +836,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc = BridgeDescriptor(desc_text)
     self.assertEqual(expected_or_addresses, desc.or_addresses)
-
-  def _expect_invalid_attr(self, desc_attrs, attr = None, expected_value = None):
-    self._expect_invalid_attr_for_text(RelayDescriptor.content(desc_attrs), attr, expected_value)
-
-  def _expect_invalid_attr_for_text(self, desc_text, attr = None, expected_value = None):
-    """
-    Asserts that construction will fail due to desc_text having a malformed
-    attribute. If an attr is provided then we check that it matches an expected
-    value when we're constructed without validation.
-    """
-
-    self.assertRaises(ValueError, RelayDescriptor, desc_text, True)
-    desc = RelayDescriptor(desc_text, validate = False)
-
-    if attr:
-      # check that the invalid attribute matches the expected value when
-      # constructed without validation
-
-      self.assertEqual(expected_value, getattr(desc, attr))
-    else:
-      # check a default attribute
-      self.assertEqual('caerSidi', desc.nickname)
 
   def test_pickleability(self):
     """
