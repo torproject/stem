@@ -533,7 +533,8 @@ class Descriptor(object):
   def content(cls, attr = None, exclude = ()):
     """
     Creates descriptor content with the given attributes. Mandatory fields are
-    filled with dummy information unless data is supplied.
+    filled with dummy information unless data is supplied. This doesn't yet
+    create a valid signature.
 
     .. versionadded:: 1.6.0
 
@@ -552,7 +553,8 @@ class Descriptor(object):
   def create(cls, attr = None, exclude = (), validate = True):
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
-    with dummy information unless data is supplied.
+    with dummy information unless data is supplied. This doesn't yet create a
+    valid signature.
 
     .. versionadded:: 1.6.0
 
