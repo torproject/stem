@@ -11,11 +11,6 @@ import stem.descriptor
 from stem.util import str_type
 from stem.descriptor.microdescriptor import Microdescriptor
 
-from test.mocking import (
-  get_microdescriptor,
-  CRYPTO_BLOB,
-)
-
 from test.unit.descriptor import get_resource
 
 FIRST_ONION_KEY = """\
@@ -87,9 +82,9 @@ class TestMicrodescriptor(unittest.TestCase):
     attributes.
     """
 
-    desc = get_microdescriptor()
+    desc = Microdescriptor.create()
 
-    self.assertTrue(CRYPTO_BLOB in desc.onion_key)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.onion_key)
     self.assertEqual(None, desc.ntor_onion_key)
     self.assertEqual([], desc.or_addresses)
     self.assertEqual([], desc.family)
@@ -106,7 +101,7 @@ class TestMicrodescriptor(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
 
-    desc = get_microdescriptor({'pepperjack': 'is oh so tasty!'})
+    desc = Microdescriptor.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -114,7 +109,7 @@ class TestMicrodescriptor(unittest.TestCase):
     Includes a line prior to the 'onion-key' entry.
     """
 
-    desc_text = b'family Amunet1\n' + get_microdescriptor(content = True)
+    desc_text = b'family Amunet1\n' + Microdescriptor.content()
     self.assertRaises(ValueError, Microdescriptor, desc_text, True)
 
     desc = Microdescriptor(desc_text, validate = False)
@@ -125,7 +120,7 @@ class TestMicrodescriptor(unittest.TestCase):
     Sanity test with both an IPv4 and IPv6 address.
     """
 
-    desc_text = get_microdescriptor(content = True)
+    desc_text = Microdescriptor.content()
     desc_text += b'\na 10.45.227.253:9001'
     desc_text += b'\na [fd9f:2e19:3bcf::02:9970]:9001'
 
@@ -142,12 +137,12 @@ class TestMicrodescriptor(unittest.TestCase):
     Check the family line.
     """
 
-    desc = get_microdescriptor({'family': 'Amunet1 Amunet2 Amunet3'})
+    desc = Microdescriptor.create({'family': 'Amunet1 Amunet2 Amunet3'})
     self.assertEqual(['Amunet1', 'Amunet2', 'Amunet3'], desc.family)
 
     # try multiple family lines
 
-    desc_text = get_microdescriptor(content = True)
+    desc_text = Microdescriptor.content()
     desc_text += b'\nfamily Amunet1'
     desc_text += b'\nfamily Amunet2'
 
@@ -163,7 +158,7 @@ class TestMicrodescriptor(unittest.TestCase):
     field so we're not investing much effort here.
     """
 
-    desc = get_microdescriptor({'p': 'accept 80,110,143,443'})
+    desc = Microdescriptor.create({'p': 'accept 80,110,143,443'})
     self.assertEqual(stem.exit_policy.MicroExitPolicy('accept 80,110,143,443'), desc.exit_policy)
 
   def test_protocols(self):
@@ -171,7 +166,7 @@ class TestMicrodescriptor(unittest.TestCase):
     Basic check for 'pr' lines.
     """
 
-    desc = get_microdescriptor({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
+    desc = Microdescriptor.create({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
     self.assertEqual(10, len(desc.protocols))
 
   def test_identifier(self):
@@ -179,16 +174,18 @@ class TestMicrodescriptor(unittest.TestCase):
     Basic check for 'id' lines.
     """
 
-    desc = get_microdescriptor({'id': 'rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4'})
+    desc = Microdescriptor.create({'id': 'rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4'})
     self.assertEqual({'rsa1024': 'Cd47okjCHD83YGzThGBDptXs9Z4'}, desc.identifiers)
     self.assertEqual('rsa1024', desc.identifier_type)
     self.assertEqual('Cd47okjCHD83YGzThGBDptXs9Z4', desc.identifier)
 
     # check when there's multiple key types
 
-    desc_text = b'\n'.join((get_microdescriptor(content = True),
-                            b'id rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4',
-                            b'id ed25519 50f6ddbecdc848dcc6b818b14d1'))
+    desc_text = b'\n'.join((
+      Microdescriptor.content(),
+      b'id rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4',
+      b'id ed25519 50f6ddbecdc848dcc6b818b14d1',
+    ))
 
     desc = Microdescriptor(desc_text, validate = True)
     self.assertEqual({'rsa1024': 'Cd47okjCHD83YGzThGBDptXs9Z4', 'ed25519': '50f6ddbecdc848dcc6b818b14d1'}, desc.identifiers)
@@ -197,9 +194,11 @@ class TestMicrodescriptor(unittest.TestCase):
 
     # check when there's conflicting keys
 
-    desc_text = b'\n'.join((get_microdescriptor(content = True),
-                            b'id rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4',
-                            b'id rsa1024 50f6ddbecdc848dcc6b818b14d1'))
+    desc_text = b'\n'.join((
+      Microdescriptor.content(),
+      b'id rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4',
+      b'id rsa1024 50f6ddbecdc848dcc6b818b14d1',
+    ))
 
     desc = Microdescriptor(desc_text)
     self.assertEqual({}, desc.identifiers)

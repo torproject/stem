@@ -13,9 +13,6 @@ Helper functions for creating mock objects.
     get_message                     - stem.response.ControlMessage
     get_protocolinfo_response       - stem.response.protocolinfo.ProtocolInfoResponse
 
-    stem.descriptor.microdescriptor
-      get_microdescriptor - Microdescriptor
-
     stem.descriptor.networkstatus
       get_directory_authority        - DirectoryAuthority
       get_key_certificate            - KeyCertificate
@@ -71,10 +68,6 @@ DOC_SIG = stem.descriptor.networkstatus.DocumentSignature(
   '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
   '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB)
-
-MICRODESCRIPTOR = (
-  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-)
 
 ROUTER_STATUS_ENTRY_V2_HEADER = (
   ('r', 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'),
@@ -317,26 +310,6 @@ def _get_descriptor_content(attr = None, exclude = (), header_template = (), foo
       remainder.append(k)
 
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
-
-
-def get_microdescriptor(attr = None, exclude = (), content = False):
-  """
-  Provides the descriptor content for...
-  stem.descriptor.microdescriptor.Microdescriptor
-
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool content: provides the str content of the descriptor rather than the class if True
-
-  :returns: Microdescriptor for the requested descriptor content
-  """
-
-  desc_content = _get_descriptor_content(attr, exclude, MICRODESCRIPTOR)
-
-  if content:
-    return desc_content
-  else:
-    return stem.descriptor.microdescriptor.Microdescriptor(desc_content, validate = True)
 
 
 def get_router_status_entry_v2(attr = None, exclude = (), content = False):
