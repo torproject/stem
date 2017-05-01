@@ -9,6 +9,9 @@ Unlike other descriptor types these describe a hidden service rather than a
 relay. They're created by the service, and can only be fetched via relays with
 the HSDir flag.
 
+These are only available through the Controller's
+:func:`~stem.control.get_hidden_service_descriptor` method.
+
 **Module Overview:**
 
 ::
@@ -17,9 +20,6 @@ the HSDir flag.
 
 .. versionadded:: 1.4.0
 """
-
-# TODO: Add a description for how to retrieve them when tor supports that
-# (#14847) and then update #15009.
 
 import base64
 import binascii
