@@ -9,6 +9,7 @@ with what they are and where to get them then you may want to skip to the end.
 * :ref:`where-can-i-get-the-current-descriptors`
 * :ref:`where-can-i-get-past-descriptors`
 * :ref:`can-i-get-descriptors-from-the-tor-process`
+* :ref:`can-i-create-descriptors`
 * :ref:`validating-the-descriptors-content`
 * :ref:`saving-and-loading-descriptors`
 * :ref:`putting-it-together`
@@ -163,6 +164,45 @@ through Tor's control socket...
    :language: python
 
 .. _validating-the-descriptors-content:
+
+.. _can-i-create-descriptors:
+
+Can I create descriptors?
+-------------------------
+
+Besides reading descriptors you can create them too. This is most commonly done
+for test data. To do so simply use the
+:func:`~stem.descriptor.__init__.Descriptor.create` method of
+:class:`~stem.descriptor.__init__.Descriptor` subclasses...
+
+.. literalinclude:: /_static/example/create_descriptor.py
+   :language: python
+
+Unspecified mandatory fields are filled with mock data. You can also use
+:func:`~stem.descriptor.__init__.Descriptor.content` to get a string
+descriptor...
+
+.. literalinclude:: /_static/example/create_descriptor_content.py
+   :language: python
+
+::
+
+  router demo 127.0.0.1 80 0 0
+  published 2012-03-01 17:15:27
+  bandwidth 153600 256000 104590
+  reject *:*
+  onion-key
+  -----BEGIN RSA PUBLIC KEY-----
+  MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
+  skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
+  WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
+  -----END RSA PUBLIC KEY-----
+  signing-key
+  ...
+
+**Note:** Stem doesn't yet support signing its descriptors (:trac:`10227`).
+Until it does try using `leekspin <https://pypi.python.org/pypi/leekspin>`_
+instead.
 
 Validating the descriptor's content
 -----------------------------------
