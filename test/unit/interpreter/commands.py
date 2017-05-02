@@ -5,9 +5,10 @@ import stem
 import stem.response
 import stem.version
 
+import test.util
+
 from stem.interpreter.commands import ControlInterpreter, _get_fingerprint
 
-from test import mocking
 from test.unit.interpreter import CONTROLLER
 
 try:
@@ -125,7 +126,7 @@ class TestInterpreterCommands(unittest.TestCase):
     )
 
     for content in event_contents:
-      event = mocking.get_message(content)
+      event = test.util.get_message(content)
       stem.response.convert('EVENT', event)
       interpreter._received_events.append(event)
 
@@ -170,7 +171,7 @@ class TestInterpreterCommands(unittest.TestCase):
     response = '250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\n250 OK'
 
     controller = Mock()
-    controller.msg.return_value = mocking.get_message(response)
+    controller.msg.return_value = test.util.get_message(response)
 
     interpreter = ControlInterpreter(controller)
 
@@ -185,7 +186,7 @@ class TestInterpreterCommands(unittest.TestCase):
     response = '250-Log=notice stdout\r\n250 Address'
 
     controller = Mock()
-    controller.msg.return_value = mocking.get_message(response)
+    controller.msg.return_value = test.util.get_message(response)
 
     interpreter = ControlInterpreter(controller)
 
@@ -194,7 +195,7 @@ class TestInterpreterCommands(unittest.TestCase):
 
   def test_setevents(self):
     controller = Mock()
-    controller.msg.return_value = mocking.get_message('250 OK')
+    controller.msg.return_value = test.util.get_message('250 OK')
 
     interpreter = ControlInterpreter(controller)
 

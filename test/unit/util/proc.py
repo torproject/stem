@@ -6,9 +6,10 @@ import io
 import re
 import unittest
 
+import test.util
+
 from stem.util import proc
 from stem.util.connection import Connection
-from test import mocking
 
 try:
   from unittest.mock import Mock, patch
@@ -105,7 +106,7 @@ class TestProc(unittest.TestCase):
     """
 
     # list of all combinations of args with respective return values
-    stat_combinations = mocking.get_all_combinations([
+    stat_combinations = test.util.get_all_combinations([
       ('command', 'test_program'),
       ('utime', '0.13'),
       ('stime', '0.14'),

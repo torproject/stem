@@ -8,7 +8,7 @@ import stem.response
 import stem.response.mapaddress
 import stem.socket
 
-from test import mocking
+import test.util
 
 SINGLE_RESPONSE = """250 foo=bar"""
 
@@ -36,7 +36,7 @@ class TestMapAddressResponse(unittest.TestCase):
     Parses a MAPADDRESS reply response with a single address mapping.
     """
 
-    control_message = mocking.get_message(SINGLE_RESPONSE)
+    control_message = test.util.get_message(SINGLE_RESPONSE)
     stem.response.convert('MAPADDRESS', control_message)
     self.assertEqual({'foo': 'bar'}, control_message.entries)
 
@@ -45,7 +45,7 @@ class TestMapAddressResponse(unittest.TestCase):
     Parses a MAPADDRESS reply with multiple address mappings
     """
 
-    control_message = mocking.get_message(BATCH_RESPONSE)
+    control_message = test.util.get_message(BATCH_RESPONSE)
     stem.response.convert('MAPADDRESS', control_message)
 
     expected = {
@@ -62,11 +62,11 @@ class TestMapAddressResponse(unittest.TestCase):
     Parses a MAPADDRESS replies that contain an error code due to hostname syntax errors.
     """
 
-    control_message = mocking.get_message(UNRECOGNIZED_KEYS_RESPONSE)
+    control_message = test.util.get_message(UNRECOGNIZED_KEYS_RESPONSE)
     self.assertRaises(stem.InvalidRequest, stem.response.convert, 'MAPADDRESS', control_message)
     expected = {'23': '324'}
 
-    control_message = mocking.get_message(PARTIAL_FAILURE_RESPONSE)
+    control_message = test.util.get_message(PARTIAL_FAILURE_RESPONSE)
     stem.response.convert('MAPADDRESS', control_message)
     self.assertEqual(expected, control_message.entries)
 
@@ -77,8 +77,8 @@ class TestMapAddressResponse(unittest.TestCase):
     MAPADDRESS's spec.
     """
 
-    control_message = mocking.get_message(INVALID_EMPTY_RESPONSE)
+    control_message = test.util.get_message(INVALID_EMPTY_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'MAPADDRESS', control_message)
 
-    control_message = mocking.get_message(INVALID_RESPONSE)
+    control_message = test.util.get_message(INVALID_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'MAPADDRESS', control_message)
