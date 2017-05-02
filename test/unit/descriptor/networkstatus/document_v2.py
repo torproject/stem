@@ -5,9 +5,11 @@ Unit tests for the NetworkStatusDocumentV2 of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
-import stem.descriptor
-
-from test.mocking import get_network_status_document_v2, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2
+from stem.descriptor.networkstatus import (
+  NETWORK_STATUS_DOCUMENT_HEADER_V2,
+  NETWORK_STATUS_DOCUMENT_FOOTER_V2,
+  NetworkStatusDocumentV2,
+)
 
 from test.unit.descriptor import get_resource
 
@@ -32,7 +34,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 
     with open(get_resource('cached-consensus-v2'), 'rb') as descriptor_file:
       descriptor_file.readline()  # strip header
-      document = stem.descriptor.networkstatus.NetworkStatusDocumentV2(descriptor_file.read())
+      document = NetworkStatusDocumentV2(descriptor_file.read())
 
       self.assertEqual(2, document.version)
       self.assertEqual('18.244.0.114', document.hostname)
@@ -93,7 +95,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     Parses a minimal v2 network status document.
     """
 
-    document = get_network_status_document_v2()
+    document = NetworkStatusDocumentV2.create()
 
     self.assertEqual({}, document.routers)
     self.assertEqual(2, document.version)

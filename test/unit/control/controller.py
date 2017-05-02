@@ -13,10 +13,11 @@ import stem.socket
 import stem.util.system
 import stem.version
 
+import test.util
+
 from stem import ControllerError, DescriptorUnavailable, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Listener, Controller, EventType
 from stem.exit_policy import ExitPolicy
-from test import mocking
 
 try:
   # added in python 3.3
@@ -338,13 +339,13 @@ class TestControl(unittest.TestCase):
 
     # use the handy mocked protocolinfo response
 
-    get_protocolinfo_mock.return_value = mocking.get_protocolinfo_response()
+    get_protocolinfo_mock.return_value = test.util.get_protocolinfo_response()
 
     # compare the str representation of these object, because the class
     # does not have, nor need, a direct comparison operator
 
     self.assertEqual(
-      str(mocking.get_protocolinfo_response()),
+      str(test.util.get_protocolinfo_response()),
       str(self.controller.get_protocolinfo())
     )
 

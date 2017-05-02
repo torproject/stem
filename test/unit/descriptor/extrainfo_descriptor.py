@@ -3,16 +3,27 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 """
 
 import datetime
+import functools
 import re
 import unittest
 
 import stem.descriptor
 
-from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor, DirResponse, DirStat
+from stem.descriptor.extrainfo_descriptor import (
+  RelayExtraInfoDescriptor,
+  BridgeExtraInfoDescriptor,
+  DirResponse,
+  DirStat,
+)
 
-from test.mocking import get_relay_extrainfo_descriptor, get_bridge_extrainfo_descriptor, CRYPTO_BLOB
+from test.unit.descriptor import (
+  get_resource,
+  base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
+)
 
-from test.unit.descriptor import get_resource
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayExtraInfoDescriptor, 'nickname', 'ninja')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayExtraInfoDescriptor, 'nickname', 'ninja')
 
 
 class TestExtraInfoDescriptor(unittest.TestCase):
@@ -183,18 +194,17 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     attributes.
     """
 
-    desc = get_relay_extrainfo_descriptor()
-
+    desc = RelayExtraInfoDescriptor.create()
     self.assertEqual('ninja', desc.nickname)
     self.assertEqual('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
-    self.assertTrue(CRYPTO_BLOB in desc.signature)
+    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.signature)
 
   def test_unrecognized_line(self):
     """
     Includes unrecognized content in the descriptor.
     """
 
-    desc = get_relay_extrainfo_descriptor({'pepperjack': 'is oh so tasty!'})
+    desc = RelayExtraInfoDescriptor.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -202,16 +212,14 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Includes a line prior to the 'extra-info' entry.
     """
 
-    desc_text = b'exit-streams-opened port=80\n' + get_relay_extrainfo_descriptor(content = True)
-    self._expect_invalid_attr(desc_text)
+    expect_invalid_attr_for_text(self, b'exit-streams-opened port=80\n' + RelayExtraInfoDescriptor.content())
 
   def test_trailing_line(self):
     """
     Includes a line after the 'router-signature' entry.
     """
 
-    desc_text = get_relay_extrainfo_descriptor(content = True) + b'\nexit-streams-opened port=80'
-    self._expect_invalid_attr(desc_text)
+    expect_invalid_attr_for_text(self, RelayExtraInfoDescriptor.content() + b'\nexit-streams-opened port=80')
 
   def test_extrainfo_line_missing_fields(self):
     """
@@ -228,8 +236,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'extra-info': entry}, content = True)
-      desc = self._expect_invalid_attr(desc_text, 'nickname')
+      desc = expect_invalid_attr(self, {'extra-info': entry}, 'nickname')
       self.assertEqual(None, desc.nickname)
       self.assertEqual(None, desc.fingerprint)
 
@@ -240,10 +247,10 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     geoip_db_digest = '916A3CA8B7DF61473D5AE5B21711F35F301CE9E8'
-    desc = get_relay_extrainfo_descriptor({'geoip-db-digest': geoip_db_digest})
+    desc = RelayExtraInfoDescriptor.create({'geoip-db-digest': geoip_db_digest})
     self.assertEqual(geoip_db_digest, desc.geoip_db_digest)
 
-    desc = get_relay_extrainfo_descriptor({'geoip6-db-digest': geoip_db_digest})
+    desc = RelayExtraInfoDescriptor.create({'geoip6-db-digest': geoip_db_digest})
     self.assertEqual(geoip_db_digest, desc.geoip6_db_digest)
 
     test_entries = (
@@ -255,11 +262,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'geoip-db-digest': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'geoip_db_digest')
-
-      desc_text = get_relay_extrainfo_descriptor({'geoip6-db-digest': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'geoip6_db_digest')
+      expect_invalid_attr(self, {'geoip-db-digest': entry}, 'geoip_db_digest')
+      expect_invalid_attr(self, {'geoip6-db-digest': entry}, 'geoip6_db_digest')
 
   def test_cell_circuits_per_decile(self):
     """
@@ -272,7 +276,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in ('0', '11', '25'):
-      desc = get_relay_extrainfo_descriptor({'cell-circuits-per-decile': entry})
+      desc = RelayExtraInfoDescriptor.create({'cell-circuits-per-decile': entry})
       self.assertEqual(int(entry), desc.cell_circuits_per_decile)
 
     test_entries = (
@@ -283,8 +287,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'cell-circuits-per-decile': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'cell_circuits_per_decile')
+      expect_invalid_attr(self, {'cell-circuits-per-decile': entry}, 'cell_circuits_per_decile')
 
   def test_dir_response_lines(self):
     """
@@ -297,7 +300,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       unknown_attr = attr + '_unknown'
 
       test_value = 'ok=0,unavailable=0,not-found=984,not-modified=0,something-new=7'
-      desc = get_relay_extrainfo_descriptor({keyword: test_value})
+      desc = RelayExtraInfoDescriptor.create({keyword: test_value})
       self.assertEqual(0, getattr(desc, attr)[DirResponse.OK])
       self.assertEqual(0, getattr(desc, attr)[DirResponse.UNAVAILABLE])
       self.assertEqual(984, getattr(desc, attr)[DirResponse.NOT_FOUND])
@@ -311,8 +314,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        desc = self._expect_invalid_attr(desc_text)
+        desc = expect_invalid_attr(self, {keyword: entry})
         self.assertEqual(None, getattr(desc, attr))
         self.assertEqual(None, getattr(desc, unknown_attr))
 
@@ -327,7 +329,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       unknown_attr = attr + '_unknown'
 
       test_value = 'complete=2712,timeout=32,running=4,min=741,d1=14507,d2=22702,q1=28881,d3=38277,d4=73729,md=111455,d6=168231,d7=257218,q3=319833,d8=390507,d9=616301,something-new=11,max=29917857'
-      desc = get_relay_extrainfo_descriptor({keyword: test_value})
+      desc = RelayExtraInfoDescriptor.create({keyword: test_value})
       self.assertEqual(2712, getattr(desc, attr)[DirStat.COMPLETE])
       self.assertEqual(32, getattr(desc, attr)[DirStat.TIMEOUT])
       self.assertEqual(4, getattr(desc, attr)[DirStat.RUNNING])
@@ -353,8 +355,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        desc = self._expect_invalid_attr(desc_text)
+        desc = expect_invalid_attr(self, {keyword: entry})
         self.assertEqual(None, getattr(desc, attr))
         self.assertEqual(None, getattr(desc, unknown_attr))
 
@@ -363,7 +364,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Parses the conn-bi-direct line with valid and invalid data.
     """
 
-    desc = get_relay_extrainfo_descriptor({'conn-bi-direct': '2012-05-03 12:07:50 (500 s) 277431,12089,0,2134'})
+    desc = RelayExtraInfoDescriptor.create({'conn-bi-direct': '2012-05-03 12:07:50 (500 s) 277431,12089,0,2134'})
     self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.conn_bi_direct_end)
     self.assertEqual(500, desc.conn_bi_direct_interval)
     self.assertEqual(277431, desc.conn_bi_direct_below)
@@ -384,8 +385,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'conn-bi-direct': entry}, content = True)
-      desc = self._expect_invalid_attr(desc_text)
+      desc = expect_invalid_attr(self, {'conn-bi-direct': entry})
       self.assertEqual(None, desc.conn_bi_direct_end)
       self.assertEqual(None, desc.conn_bi_direct_interval)
       self.assertEqual(None, desc.conn_bi_direct_below)
@@ -410,7 +410,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for test_value, expected_value in test_entries:
-        desc = get_relay_extrainfo_descriptor({keyword: test_value})
+        desc = RelayExtraInfoDescriptor.create({keyword: test_value})
         self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
@@ -421,8 +421,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr)
+        expect_invalid_attr(self, {keyword: entry}, attr)
 
   def test_number_list_lines(self):
     """
@@ -441,7 +440,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for test_value, expected_value in test_entries:
-        desc = get_relay_extrainfo_descriptor({keyword: test_value})
+        desc = RelayExtraInfoDescriptor.create({keyword: test_value})
         self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
@@ -451,8 +450,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry, expected in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr, expected)
+        expect_invalid_attr(self, {keyword: entry}, attr, expected)
 
   def test_timestamp_lines(self):
     """
@@ -463,7 +461,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     for keyword in ('published', 'geoip-start-time'):
       attr = keyword.replace('-', '_')
 
-      desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '2012-05-03 12:07:50'})
       self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, attr))
 
       test_entries = (
@@ -474,8 +472,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr)
+        expect_invalid_attr(self, {keyword: entry}, attr)
 
   def test_timestamp_and_interval_lines(self):
     """
@@ -487,7 +484,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       end_attr = keyword.replace('-', '_').replace('dirreq', 'dir')
       interval_attr = end_attr[:-4] + '_interval'
 
-      desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s)'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '2012-05-03 12:07:50 (500 s)'})
       self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
       self.assertEqual(500, getattr(desc, interval_attr))
 
@@ -502,8 +499,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'entry-stats-end': entry}, content = True)
-      desc = self._expect_invalid_attr(desc_text)
+      desc = expect_invalid_attr(self, {'entry-stats-end': entry})
       self.assertEqual(None, desc.entry_stats_end)
       self.assertEqual(None, desc.entry_stats_interval)
 
@@ -519,13 +515,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       interval_attr = base_attr + '_interval'
       values_attr = base_attr + '_values'
 
-      desc = get_relay_extrainfo_descriptor({keyword: '2012-05-03 12:07:50 (500 s) 50,11,5'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '2012-05-03 12:07:50 (500 s) 50,11,5'})
       self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), getattr(desc, end_attr))
       self.assertEqual(500, getattr(desc, interval_attr))
       self.assertEqual([50, 11, 5], getattr(desc, values_attr))
 
     for test_value in ('', ' '):
-      desc = get_relay_extrainfo_descriptor({'write-history': '2012-05-03 12:07:50 (500 s)%s' % test_value})
+      desc = RelayExtraInfoDescriptor.create({'write-history': '2012-05-03 12:07:50 (500 s)%s' % test_value})
       self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.write_history_end)
       self.assertEqual(500, desc.write_history_interval)
       self.assertEqual([], desc.write_history_values)
@@ -540,8 +536,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'write-history': entry}, content = True)
-      desc = self._expect_invalid_attr(desc_text)
+      desc = expect_invalid_attr(self, {'write-history': entry})
       self.assertEqual(None, desc.write_history_end)
       self.assertEqual(None, desc.write_history_interval)
       self.assertEqual(None, desc.write_history_values)
@@ -562,7 +557,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for test_value, expected_value in test_entries:
-        desc = get_relay_extrainfo_descriptor({keyword: test_value})
+        desc = RelayExtraInfoDescriptor.create({keyword: test_value})
         self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
@@ -575,15 +570,14 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr)
+        expect_invalid_attr(self, {keyword: entry}, attr)
 
   def test_hidden_service_stats_end(self):
     """
     Exercise the hidserv-stats-end, which should be a simple date.
     """
 
-    desc = get_relay_extrainfo_descriptor({'hidserv-stats-end': '2012-05-03 12:07:50'})
+    desc = RelayExtraInfoDescriptor.create({'hidserv-stats-end': '2012-05-03 12:07:50'})
     self.assertEqual(datetime.datetime(2012, 5, 3, 12, 7, 50), desc.hs_stats_end)
 
     test_entries = (
@@ -597,8 +591,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     )
 
     for entry in test_entries:
-      desc_text = get_relay_extrainfo_descriptor({'hidserv-stats-end': entry}, content = True)
-      self._expect_invalid_attr(desc_text, 'hs_stats_end')
+      expect_invalid_attr(self, {'hidserv-stats-end': entry}, 'hs_stats_end')
 
   def test_hidden_service_stats(self):
     """
@@ -623,26 +616,25 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     for keyword, stat_attr, extra_attr in attributes:
       # just the numeric stat (no extra attributes)
 
-      desc = get_relay_extrainfo_descriptor({keyword: '345'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '345'})
       self.assertEqual(345, getattr(desc, stat_attr))
       self.assertEqual({}, getattr(desc, extra_attr))
 
       # values can be negative (#15276)
 
-      desc = get_relay_extrainfo_descriptor({keyword: '-345'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '-345'})
       self.assertEqual(-345, getattr(desc, stat_attr))
       self.assertEqual({}, getattr(desc, extra_attr))
 
       # with extra attributes
 
-      desc = get_relay_extrainfo_descriptor({keyword: '345 spiffy=true snowmen=neat'})
+      desc = RelayExtraInfoDescriptor.create({keyword: '345 spiffy=true snowmen=neat'})
       self.assertEqual(345, getattr(desc, stat_attr))
       self.assertEqual({'spiffy': 'true', 'snowmen': 'neat'}, getattr(desc, extra_attr))
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, stat_attr)
-        self._expect_invalid_attr(desc_text, extra_attr, {})
+        expect_invalid_attr(self, {keyword: entry}, stat_attr)
+        expect_invalid_attr(self, {keyword: entry}, extra_attr, {})
 
   def test_locale_mapping_lines(self):
     """
@@ -659,7 +651,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for test_value, expected_value in test_entries:
-        desc = get_relay_extrainfo_descriptor({keyword: test_value})
+        desc = RelayExtraInfoDescriptor.create({keyword: test_value})
         self.assertEqual(expected_value, getattr(desc, attr))
 
       test_entries = (
@@ -670,15 +662,14 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
       )
 
       for entry in test_entries:
-        desc_text = get_relay_extrainfo_descriptor({keyword: entry}, content = True)
-        self._expect_invalid_attr(desc_text, attr)
+        expect_invalid_attr(self, {keyword: entry}, attr)
 
   def test_minimal_bridge_descriptor(self):
     """
     Basic sanity check that we can parse a descriptor with minimal attributes.
     """
 
-    desc = get_bridge_extrainfo_descriptor()
+    desc = BridgeExtraInfoDescriptor.create()
 
     self.assertEqual('ec2bridgereaac65a3', desc.nickname)
     self.assertEqual('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
@@ -693,13 +684,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Parses the 'bridge-ip-versions' line, which only appears in bridges.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=16,v6=40'})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-versions': 'v4=16,v6=40'})
     self.assertEqual({'v4': 16, 'v6': 40}, desc.ip_versions)
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-versions': ''})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-versions': ''})
     self.assertEqual({}, desc.ip_versions)
 
-    desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-versions': 'v4=24.5'}, content = True)
+    desc_text = BridgeExtraInfoDescriptor.content({'bridge-ip-versions': 'v4=24.5'})
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_bridge_ip_transports_line(self):
@@ -707,13 +698,13 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Parses the 'bridge-ip-transports' line, which only appears in bridges.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=16,<??>=40'})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-transports': '<OR>=16,<??>=40'})
     self.assertEqual({'<OR>': 16, '<??>': 40}, desc.ip_transports)
 
-    desc = get_bridge_extrainfo_descriptor({'bridge-ip-transports': ''})
+    desc = BridgeExtraInfoDescriptor.create({'bridge-ip-transports': ''})
     self.assertEqual({}, desc.ip_transports)
 
-    desc_text = get_bridge_extrainfo_descriptor({'bridge-ip-transports': '<OR>=24.5'}, content = True)
+    desc_text = BridgeExtraInfoDescriptor.content({'bridge-ip-transports': '<OR>=24.5'})
     self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
 
   def test_transport_line(self):
@@ -721,36 +712,15 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     Basic exercise for both a bridge and relay's transport entry.
     """
 
-    desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3'})
+    desc = BridgeExtraInfoDescriptor.create({'transport': 'obfs3'})
     self.assertEqual({'obfs3': (None, None, None)}, desc.transport)
     self.assertEqual([], desc.get_unrecognized_lines())
 
-    desc = get_relay_extrainfo_descriptor({'transport': 'obfs2 83.212.96.201:33570'})
+    desc = RelayExtraInfoDescriptor.create({'transport': 'obfs2 83.212.96.201:33570'})
     self.assertEqual({'obfs2': ('83.212.96.201', 33570, [])}, desc.transport)
     self.assertEqual([], desc.get_unrecognized_lines())
 
     # multiple transport lines
-    desc = get_bridge_extrainfo_descriptor({'transport': 'obfs3\ntransport obfs4'})
+    desc = BridgeExtraInfoDescriptor.create({'transport': 'obfs3\ntransport obfs4'})
     self.assertEqual({'obfs3': (None, None, None), 'obfs4': (None, None, None)}, desc.transport)
     self.assertEqual([], desc.get_unrecognized_lines())
-
-  def _expect_invalid_attr(self, desc_text, attr = None, expected_value = None):
-    """
-    Asserts that construction will fail due to desc_text having a malformed
-    attribute. If an attr is provided then we check that it matches an expected
-    value when we're constructed without validation.
-    """
-
-    self.assertRaises(ValueError, RelayExtraInfoDescriptor, desc_text, True)
-    desc = RelayExtraInfoDescriptor(desc_text, validate = False)
-
-    if attr:
-      # check that the invalid attribute matches the expected value when
-      # constructed without validation
-
-      self.assertEqual(expected_value, getattr(desc, attr))
-    else:
-      # check a default attribute
-      self.assertEqual('ninja', desc.nickname)
-
-    return desc

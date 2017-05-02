@@ -8,7 +8,7 @@ import stem.response
 import stem.response.getconf
 import stem.socket
 
-from test import mocking
+import test.util
 
 EMPTY_RESPONSE = '250 OK'
 
@@ -42,7 +42,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply without options (just calling "GETCONF").
     """
 
-    control_message = mocking.get_message(EMPTY_RESPONSE)
+    control_message = test.util.get_message(EMPTY_RESPONSE)
     stem.response.convert('GETCONF', control_message)
 
     # now this should be a GetConfResponse (ControlMessage subclass)
@@ -56,7 +56,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply response for a single parameter.
     """
 
-    control_message = mocking.get_message(SINGLE_RESPONSE)
+    control_message = test.util.get_message(SINGLE_RESPONSE)
     stem.response.convert('GETCONF', control_message)
     self.assertEqual({'DataDirectory': ['/home/neena/.tor']}, control_message.entries)
 
@@ -65,7 +65,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply for muiltiple parameters.
     """
 
-    control_message = mocking.get_message(BATCH_RESPONSE)
+    control_message = test.util.get_message(BATCH_RESPONSE)
     stem.response.convert('GETCONF', control_message)
 
     expected = {
@@ -82,7 +82,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply containing a single key with multiple parameters.
     """
 
-    control_message = mocking.get_message(MULTIVALUE_RESPONSE)
+    control_message = test.util.get_message(MULTIVALUE_RESPONSE)
     stem.response.convert('GETCONF', control_message)
 
     expected = {
@@ -97,7 +97,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply that contains an error code with an unrecognized key.
     """
 
-    control_message = mocking.get_message(UNRECOGNIZED_KEY_RESPONSE)
+    control_message = test.util.get_message(UNRECOGNIZED_KEY_RESPONSE)
     self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETCONF', control_message)
 
     try:
@@ -112,5 +112,5 @@ class TestGetConfResponse(unittest.TestCase):
     GETCONF's spec.
     """
 
-    control_message = mocking.get_message(INVALID_RESPONSE)
+    control_message = test.util.get_message(INVALID_RESPONSE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETCONF', control_message)

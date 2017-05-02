@@ -3,22 +3,27 @@ Unit tests for stem.descriptor.router_status_entry.
 """
 
 import datetime
+import functools
 import unittest
 
 import stem.descriptor
 
 from stem import Flag
-from stem.descriptor.router_status_entry import RouterStatusEntryV3, _base64_to_hex
 from stem.exit_policy import MicroExitPolicy
 from stem.version import Version
 
-from test.unit.descriptor import get_resource
+from test.unit.descriptor import (
+  get_resource,
+  base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
+)
 
-from test.mocking import (
-  get_router_status_entry_v2,
-  get_router_status_entry_v3,
-  get_router_status_entry_micro_v3,
+from stem.descriptor.router_status_entry import (
   ROUTER_STATUS_ENTRY_V3_HEADER,
+  RouterStatusEntryV2,
+  RouterStatusEntryV3,
+  RouterStatusEntryMicroV3,
+  _base64_to_hex,
 )
 
 ENTRY_WITHOUT_ED25519 = """\
@@ -46,6 +51,9 @@ m 16,17 sha256=JK2xhYr/VsCF60px+LsT990BCpfKfQTeMxRbD63o2vE
 m 18,19,20 sha256=AkZH3gIvz3wunsroqh5izBJizdYuR7kn2oVbsvqgML8
 m 21 sha256=AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE
 """
+
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RouterStatusEntryV3, 'nickname', 'caerSidi')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RouterStatusEntryV3, 'nickname', 'caerSidi')
 
 
 def vote_document():
@@ -86,7 +94,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parses a minimal v2 router status entry.
     """
 
-    entry = get_router_status_entry_v2()
+    entry = RouterStatusEntryV2.create()
 
     self.assertEqual(None, entry.document)
     self.assertEqual('caerSidi', entry.nickname)
@@ -106,7 +114,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parses a minimal v3 router status entry.
     """
 
-    entry = get_router_status_entry_v3()
+    entry = RouterStatusEntryV3.create()
 
     expected_flags = set([Flag.FAST, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.VALID])
     self.assertEqual(None, entry.document)
@@ -135,7 +143,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parses a minimal microdescriptor v3 router status entry.
     """
 
-    entry = get_router_status_entry_micro_v3()
+    entry = RouterStatusEntryMicroV3.create()
 
     expected_flags = set([Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.V2DIR, Flag.VALID])
     self.assertEqual(None, entry.document)
@@ -222,21 +230,16 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parses a router status entry that's missing fields.
     """
 
-    content = get_router_status_entry_v3(exclude = ('r', 's'), content = True)
-    self._expect_invalid_attr(content, 'address')
-
-    content = get_router_status_entry_v3(exclude = ('r',), content = True)
-    self._expect_invalid_attr(content, 'address')
-
-    content = get_router_status_entry_v3(exclude = ('s',), content = True)
-    self._expect_invalid_attr(content, 'flags')
+    expect_invalid_attr_for_text(self, RouterStatusEntryV3.content(exclude = ('r', 's')), 'address')
+    expect_invalid_attr_for_text(self, RouterStatusEntryV3.content(exclude = ('r',)), 'address')
+    expect_invalid_attr_for_text(self, RouterStatusEntryV3.content(exclude = ('s',)), 'flags')
 
   def test_unrecognized_lines(self):
     """
     Parses a router status entry with new keywords.
     """
 
-    entry = get_router_status_entry_v3({'z': 'New tor feature: sparkly unicorns!'})
+    entry = RouterStatusEntryV3.create({'z': 'New tor feature: sparkly unicorns!'})
     self.assertEqual(['z New tor feature: sparkly unicorns!'], entry.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -244,7 +247,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Includes content prior to the 'r' line.
     """
 
-    content = b'z some stuff\n' + get_router_status_entry_v3(content = True)
+    content = b'z some stuff\n' + RouterStatusEntryV3.content()
     self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
     self.assertEqual(['z some stuff'], RouterStatusEntryV3(content, False).get_unrecognized_lines())
 
@@ -253,7 +256,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Includes blank lines, which should be ignored.
     """
 
-    content = get_router_status_entry_v3(content = True) + b'\n\nv Tor 0.2.2.35\n\n'
+    content = RouterStatusEntryV3.content() + b'\n\nv Tor 0.2.2.35\n\n'
     entry = RouterStatusEntryV3(content)
     self.assertEqual('Tor 0.2.2.35', entry.version_line)
 
@@ -262,7 +265,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Duplicates linesin the entry.
     """
 
-    lines = get_router_status_entry_v3(content = True).split(b'\n')
+    lines = RouterStatusEntryV3.content().split(b'\n')
 
     for index, duplicate_line in enumerate(lines):
       content = b'\n'.join(lines[:index] + [duplicate_line] + lines[index:])
@@ -291,9 +294,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       test_components = [comp[1] for comp in components]
       test_components.remove(value)
       r_line = ' '.join(test_components)
-
-      content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, attr)
+      expect_invalid_attr(self, {'r': r_line}, attr)
 
   def test_malformed_nickname(self):
     """
@@ -308,7 +309,6 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for value in test_values:
       r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('caerSidi', value)
-      content = get_router_status_entry_v3({'r': r_line}, content = True)
 
       # TODO: Initial whitespace is consumed as part of the keyword/value
       # divider. This is a bug in the case of V3 router status entries, but
@@ -323,7 +323,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       if value == '':
         value = None
 
-      self._expect_invalid_attr(content, 'nickname')
+      expect_invalid_attr(self, {'r': r_line}, 'nickname')
 
   def test_malformed_fingerprint(self):
     """
@@ -338,8 +338,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for value in test_values:
       r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('p1aag7VwarGxqctS7/fS0y5FU+s', value)
-      content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, 'fingerprint')
+      expect_invalid_attr(self, {'r': r_line}, 'fingerprint')
 
   def test_malformed_published_date(self):
     """
@@ -364,8 +363,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for value in test_values:
       r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('2012-08-06 11:19:31', value)
-      content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, 'published')
+      expect_invalid_attr(self, {'r': r_line}, 'published')
 
   def test_malformed_address(self):
     """
@@ -382,8 +380,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     for value in test_values:
       r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('71.35.150.29', value)
-      content = get_router_status_entry_v3({'r': r_line}, content = True)
-      self._expect_invalid_attr(content, 'address')
+      expect_invalid_attr(self, {'r': r_line}, 'address')
 
   def test_malformed_port(self):
     """
@@ -412,9 +409,7 @@ class TestRouterStatusEntry(unittest.TestCase):
             r_line = r_line[:-1] + value
 
           attr = 'or_port' if include_or_port else 'dir_port'
-
-          content = get_router_status_entry_v3({'r': r_line}, content = True)
-          self._expect_invalid_attr(content, attr)
+          expect_invalid_attr(self, {'r': r_line}, attr)
 
   def test_ipv6_addresses(self):
     """
@@ -427,12 +422,12 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for a_line, expected in test_values.items():
-      entry = get_router_status_entry_v3({'a': a_line})
+      entry = RouterStatusEntryV3.create({'a': a_line})
       self.assertEqual(expected, entry.or_addresses)
 
     # includes multiple 'a' lines
 
-    content = get_router_status_entry_v3(content = True)
+    content = RouterStatusEntryV3.content()
     content += b'\na [2607:fcd0:daaa:101::602c:bd62]:443'
     content += b'\na [1148:fcd0:daaa:101::602c:bd62]:80'
 
@@ -452,8 +447,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for a_line in test_values:
-      content = get_router_status_entry_v3({'a': a_line}, content = True)
-      self._expect_invalid_attr(content, expected_value = {})
+      expect_invalid_attr(self, {'a': a_line}, expected_value = {})
 
   def test_flags(self):
     """
@@ -468,7 +462,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for s_line, expected in test_values.items():
-      entry = get_router_status_entry_v3({'s': s_line})
+      entry = RouterStatusEntryV3.create({'s': s_line})
       self.assertEqual(expected, entry.flags)
 
     # tries some invalid inputs
@@ -479,11 +473,10 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for s_line, expected in test_values.items():
-      content = get_router_status_entry_v3({'s': s_line}, content = True)
-      self._expect_invalid_attr(content, 'flags', expected)
+      expect_invalid_attr(self, {'s': s_line}, 'flags', expected)
 
   def test_protocols(self):
-    desc = get_router_status_entry_v3({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
+    desc = RouterStatusEntryV3.create({'pr': 'Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2'})
     self.assertEqual(10, len(desc.protocols))
 
   def test_versions(self):
@@ -499,13 +492,12 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for v_line, expected in test_values.items():
-      entry = get_router_status_entry_v3({'v': v_line})
+      entry = RouterStatusEntryV3.create({'v': v_line})
       self.assertEqual(expected, entry.version)
       self.assertEqual(v_line, entry.version_line)
 
     # tries an invalid input
-    content = get_router_status_entry_v3({'v': 'Tor ugabuga'}, content = True)
-    self._expect_invalid_attr(content, 'version')
+    expect_invalid_attr(self, {'v': 'Tor ugabuga'}, 'version')
 
   def test_bandwidth(self):
     """
@@ -521,7 +513,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for w_line, expected in test_values.items():
-      entry = get_router_status_entry_v3({'w': w_line})
+      entry = RouterStatusEntryV3.create({'w': w_line})
       self.assertEqual(expected[0], entry.bandwidth)
       self.assertEqual(expected[1], entry.measured)
       self.assertEqual(expected[2], entry.is_unmeasured)
@@ -547,8 +539,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for w_line in test_values:
-      content = get_router_status_entry_v3({'w': w_line}, content = True)
-      self._expect_invalid_attr(content)
+      expect_invalid_attr(self, {'w': w_line})
 
   def test_exit_policy(self):
     """
@@ -561,7 +552,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for p_line, expected in test_values.items():
-      entry = get_router_status_entry_v3({'p': p_line})
+      entry = RouterStatusEntryV3.create({'p': p_line})
       self.assertEqual(expected, entry.exit_policy)
 
     # tries some invalid inputs
@@ -573,8 +564,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for p_line in test_values:
-      content = get_router_status_entry_v3({'p': p_line}, content = True)
-      self._expect_invalid_attr(content, 'exit_policy')
+      expect_invalid_attr(self, {'p': p_line}, 'exit_policy')
 
   def test_microdescriptor_hashes(self):
     """
@@ -591,13 +581,13 @@ class TestRouterStatusEntry(unittest.TestCase):
     }
 
     for m_line, expected in test_values.items():
-      content = get_router_status_entry_v3({'m': m_line}, content = True)
+      content = RouterStatusEntryV3.content({'m': m_line})
       entry = RouterStatusEntryV3(content, document = vote_document())
       self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try with multiple 'm' lines
 
-    content = get_router_status_entry_v3(content = True)
+    content = RouterStatusEntryV3.content()
     content += b'\nm 11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'
     content += b'\nm 31,32 sha512=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs'
 
@@ -610,8 +600,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(expected, entry.microdescriptor_hashes)
 
     # try without a document
-    content = get_router_status_entry_v3({'m': '8,9,10,11,12'}, content = True)
-    self._expect_invalid_attr(content, 'microdescriptor_hashes', expected_value = [])
+    expect_invalid_attr(self, {'m': '8,9,10,11,12'}, 'microdescriptor_hashes', expected_value = [])
 
     # tries some invalid inputs
     test_values = (
@@ -621,7 +610,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for m_line in test_values:
-      content = get_router_status_entry_v3({'m': m_line}, content = True)
+      content = RouterStatusEntryV3.content({'m': m_line})
       self.assertRaises(ValueError, RouterStatusEntryV3, content, True, vote_document())
 
   def test_with_carriage_returns(self):
@@ -638,18 +627,3 @@ class TestRouterStatusEntry(unittest.TestCase):
 
       router = next(descriptors)
       self.assertEqual([Flag.FAST, Flag.RUNNING, Flag.STABLE, Flag.VALID], router.flags)
-
-  def _expect_invalid_attr(self, content, attr = None, expected_value = None):
-    """
-    Asserts that construction will fail due to content having a malformed
-    attribute. If an attr is provided then we check that it matches an expected
-    value when we're constructed without validation.
-    """
-
-    self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
-    entry = RouterStatusEntryV3(content, False)
-
-    if attr:
-      self.assertEqual(expected_value, getattr(entry, attr))
-    else:
-      self.assertEqual('caerSidi', entry.nickname)

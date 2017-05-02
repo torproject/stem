@@ -9,7 +9,7 @@ import stem.response.getinfo
 import stem.socket
 import stem.util.str_tools
 
-from test import mocking
+import test.util
 
 EMPTY_RESPONSE = '250 OK'
 
@@ -57,7 +57,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply without options (just calling "GETINFO").
     """
 
-    control_message = mocking.get_message(EMPTY_RESPONSE)
+    control_message = test.util.get_message(EMPTY_RESPONSE)
     stem.response.convert('GETINFO', control_message)
 
     # now this should be a GetInfoResponse (ControlMessage subclass)
@@ -71,7 +71,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply response for a single parameter.
     """
 
-    control_message = mocking.get_message(SINGLE_RESPONSE)
+    control_message = test.util.get_message(SINGLE_RESPONSE)
     stem.response.convert('GETINFO', control_message)
     self.assertEqual({'version': b'0.2.3.11-alpha-dev'}, control_message.entries)
 
@@ -80,7 +80,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply for muiltiple parameters.
     """
 
-    control_message = mocking.get_message(BATCH_RESPONSE)
+    control_message = test.util.get_message(BATCH_RESPONSE)
     stem.response.convert('GETINFO', control_message)
 
     expected = {
@@ -97,7 +97,7 @@ class TestGetInfoResponse(unittest.TestCase):
     value.
     """
 
-    control_message = mocking.get_message(MULTILINE_RESPONSE)
+    control_message = test.util.get_message(MULTILINE_RESPONSE)
     stem.response.convert('GETINFO', control_message)
 
     expected = {
@@ -113,7 +113,7 @@ class TestGetInfoResponse(unittest.TestCase):
     entry.
     """
 
-    control_message = mocking.get_message(NON_KEY_VALUE_ENTRY)
+    control_message = test.util.get_message(NON_KEY_VALUE_ENTRY)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)
 
   def test_unrecognized_key_response(self):
@@ -121,7 +121,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETCONF reply that contains an error code with an unrecognized key.
     """
 
-    control_message = mocking.get_message(UNRECOGNIZED_KEY_ENTRY)
+    control_message = test.util.get_message(UNRECOGNIZED_KEY_ENTRY)
     self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETINFO', control_message)
 
     try:
@@ -136,5 +136,5 @@ class TestGetInfoResponse(unittest.TestCase):
     malformed according to the GETINFO's spec.
     """
 
-    control_message = mocking.get_message(MISSING_MULTILINE_NEWLINE)
+    control_message = test.util.get_message(MISSING_MULTILINE_NEWLINE)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)

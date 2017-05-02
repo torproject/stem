@@ -69,8 +69,10 @@ import hashlib
 import stem.exit_policy
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   Descriptor,
-  _get_descriptor_components,
+  _descriptor_content,
+  _descriptor_components,
   _read_until_keywords,
   _values,
   _parse_simple_line,
@@ -100,6 +102,10 @@ SINGLE_FIELDS = (
   'p',
   'p6',
   'pr',
+)
+
+MICRODESCRIPTOR = (
+  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 
@@ -256,10 +262,14 @@ class Microdescriptor(Descriptor):
     'id': _parse_id_line,
   }
 
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, MICRODESCRIPTOR)
+
   def __init__(self, raw_contents, validate = False, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
     self._annotation_lines = annotations if annotations else []
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _descriptor_components(raw_contents, validate)
 
     if validate:
       self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()

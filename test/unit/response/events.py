@@ -10,8 +10,10 @@ import stem.response
 import stem.response.events
 import stem.util.log
 
+import test.util
+
 from stem import *  # enums and exceptions
-from test import mocking
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
 
 try:
   # added in python 3.3
@@ -455,7 +457,7 @@ TB_EMPTY_BAD_2 = '650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=-100'
 
 
 def _get_event(content):
-  controller_event = mocking.get_message(content)
+  controller_event = test.util.get_message(content)
   stem.response.convert('EVENT', controller_event)
   return controller_event
 
@@ -934,12 +936,12 @@ class TestEvents(unittest.TestCase):
   def test_new_consensus_event(self):
     expected_desc = []
 
-    expected_desc.append(mocking.get_router_status_entry_v3({
+    expected_desc.append(RouterStatusEntryV3.create({
       'r': 'Beaver /96bKo4soysolMgKn5Hex2nyFSY pAJH9dSBp/CG6sPhhVY/5bLaVPM 2012-12-02 22:02:45 77.223.43.54 9001 0',
       's': 'Fast Named Running Stable Valid',
     }))
 
-    expected_desc.append(mocking.get_router_status_entry_v3({
+    expected_desc.append(RouterStatusEntryV3.create({
       'r': 'Unnamed /+fJRWjmIGNAL2C5rRZHq3R91tA 7AnpZjfdBpYzXnMNm+w1bTsFF6Y 2012-12-02 17:51:10 91.121.184.87 9001 0',
       's': 'Fast Guard Running Stable Valid',
     }))
@@ -950,7 +952,7 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(expected_desc, event.desc)
 
   def test_ns_event(self):
-    expected_desc = mocking.get_router_status_entry_v3({
+    expected_desc = RouterStatusEntryV3.create({
       'r': 'whnetz dbBxYcJriTTrcxsuy4PUZcMRwCA VStM7KAIH/mXXoGDUpoGB1OXufg 2012-12-02 21:03:56 141.70.120.13 9001 9030',
       's': 'Fast HSDir Named Stable V2Dir Valid',
     })

@@ -13,8 +13,9 @@ import unittest
 
 import stem.connection
 
+import test.util
+
 from stem.util import log
-from test import mocking
 
 try:
   # added in python 3.3
@@ -33,7 +34,7 @@ class TestAuthenticate(unittest.TestCase):
 
     # tests where get_protocolinfo succeeds
 
-    get_protocolinfo_mock.return_value = mocking.get_protocolinfo_response(
+    get_protocolinfo_mock.return_value = test.util.get_protocolinfo_response(
       auth_methods = (stem.connection.AuthMethod.NONE, ),
     )
 
@@ -85,7 +86,7 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthChallengeFailed(None, None),
       stem.ControllerError(None))
 
-    auth_method_combinations = mocking.get_all_combinations([
+    auth_method_combinations = test.util.get_all_combinations([
       stem.connection.AuthMethod.NONE,
       stem.connection.AuthMethod.PASSWORD,
       stem.connection.AuthMethod.COOKIE,
@@ -93,7 +94,7 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthMethod.UNKNOWN,
     ], include_empty = True)
 
-    protocolinfo = mocking.get_protocolinfo_response(cookie_path = '/tmp/blah')
+    protocolinfo = test.util.get_protocolinfo_response(cookie_path = '/tmp/blah')
 
     for auth_methods in auth_method_combinations:
       for auth_none_exc in all_auth_none_exc:

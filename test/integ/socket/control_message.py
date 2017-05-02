@@ -7,12 +7,12 @@ import unittest
 
 import stem.socket
 import stem.version
-import test.mocking
 import test.runner
 
 from test.util import (
   require_controller,
   require_version,
+  random_fingerprint,
 )
 
 
@@ -162,7 +162,7 @@ class TestControlMessage(unittest.TestCase):
       # We'll receive both a CONF_CHANGED event and 'OK' response for the
       # SETCONF, but not necessarily in any specific order.
 
-      control_socket.send('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
+      control_socket.send('SETCONF NodeFamily=%s' % random_fingerprint())
       msg1 = control_socket.recv()
       msg2 = control_socket.recv()
 

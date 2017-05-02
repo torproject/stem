@@ -9,8 +9,9 @@ import stem.descriptor.remote
 
 from stem.control import Controller
 from stem.descriptor.reader import DescriptorReader
+from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
+from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
-from test import mocking
 from test.unit import exec_documentation_example
 
 try:
@@ -127,7 +128,7 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
-    downloader_mock().get_consensus().run.return_value = [mocking.get_router_status_entry_v2()]
+    downloader_mock().get_consensus().run.return_value = [RouterStatusEntryV2.create()]
 
     exec_documentation_example('current_descriptors.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
@@ -136,7 +137,7 @@ class TestTutorial(unittest.TestCase):
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
     controller = from_port_mock().__enter__()
-    controller.get_network_statuses.return_value = [mocking.get_router_status_entry_v2()]
+    controller.get_network_statuses.return_value = [RouterStatusEntryV2.create()]
 
     exec_documentation_example('descriptor_from_tor_control_socket.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
@@ -150,11 +151,7 @@ class TestTutorial(unittest.TestCase):
       for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
         print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
-    test_file = io.BytesIO(mocking.get_network_status_document_v3(
-      routers = [mocking.get_router_status_entry_v3()],
-      content = True,
-    ))
-
+    test_file = io.BytesIO(NetworkStatusDocumentV3.content(routers = [RouterStatusEntryV3.create()]))
     test_file.name = '/home/atagar/.tor/cached-consensus'
     open_mock.return_value = test_file
 
@@ -165,7 +162,7 @@ class TestTutorial(unittest.TestCase):
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
     reader = reader_mock().__enter__()
-    reader.__iter__.return_value = iter([mocking.get_relay_server_descriptor()])
+    reader.__iter__.return_value = iter([RelayDescriptor.create()])
 
     exec_documentation_example('past_descriptors.py')
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
@@ -206,16 +203,12 @@ class TestTutorial(unittest.TestCase):
           if count > 15:
             return
 
-    exit_descriptor = mocking.get_relay_server_descriptor({
-      'router': 'speedyexit 149.255.97.109 9001 0 0'
-    }, content = True).replace(b'reject *:*', b'accept *:*')
-
-    exit_descriptor = mocking.sign_descriptor_content(exit_descriptor)
+    exit_descriptor = RelayDescriptor.content({'router': 'speedyexit 149.255.97.109 9001 0 0'}).replace(b'reject *:*', b'accept *:*')
     exit_descriptor = RelayDescriptor(exit_descriptor)
 
     downloader_mock().get_server_descriptors().run.return_value = [
       exit_descriptor,
-      mocking.get_relay_server_descriptor(),  # non-exit
+      RelayDescriptor.create(),  # non-exit
       exit_descriptor,
       exit_descriptor,
     ]

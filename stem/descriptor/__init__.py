@@ -9,6 +9,7 @@ Package for parsing and processing descriptor data.
 ::
 
   parse_file - Parses the descriptors in a file.
+  create - Creates a new custom descriptor.
 
   Descriptor - Common parent for all descriptor file types.
     |- get_path - location of the descriptor on disk if it came from a file
@@ -79,6 +80,12 @@ SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
 EMPTY_COLLECTION = ([], {}, set())
+
+CRYPTO_BLOB = """
+MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
+skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
+WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
+"""
 
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
@@ -328,6 +335,68 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
+def _descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
+  """
+  Constructs a minimal descriptor with the given attributes. The content we
+  provide back is of the form...
+
+  * header_template (with matching attr filled in)
+  * unused attr entries
+  * footer_template (with matching attr filled in)
+
+  So for instance...
+
+  ::
+
+    _descriptor_content(
+      attr = {'nickname': 'caerSidi', 'contact': 'atagar'},
+      header_template = (
+        ('nickname', 'foobar'),
+        ('fingerprint', '12345'),
+      ),
+    )
+
+  ... would result in...
+
+  ::
+
+    nickname caerSidi
+    fingerprint 12345
+    contact atagar
+
+  :param dict attr: keyword/value mappings to be included in the descriptor
+  :param list exclude: mandatory keywords to exclude from the descriptor
+  :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
+  :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
+
+  :returns: str with the requested descriptor content
+  """
+
+  header_content, footer_content = [], []
+  attr = {} if attr is None else dict(attr)  # shallow copy since we're destructive
+
+  for content, template in ((header_content, header_template),
+                            (footer_content, footer_template)):
+    for keyword, value in template:
+      if keyword in exclude:
+        continue
+
+      value = attr.pop(keyword, value)
+
+      if value is None:
+        continue
+      elif value == '':
+        content.append(keyword)
+      elif value.startswith('\n'):
+        # some values like crypto follow the line instead
+        content.append('%s%s' % (keyword, value))
+      else:
+        content.append('%s %s' % (keyword, value))
+
+  remainder = [('%s %s' % (k, v) if v else k) for k, v in attr.items()]
+  return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
+
+
 def _value(line, entries):
   return entries[line][0][0]
 
@@ -461,6 +530,50 @@ class Descriptor(object):
     self._lazy_loading = lazy_load
     self._entries = {}
     self._unrecognized_lines = []
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    """
+    Creates descriptor content with the given attributes. Mandatory fields are
+    filled with dummy information unless data is supplied. This doesn't yet
+    create a valid signature.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+
+    :returns: **str** with the content of a descriptor
+
+    :raises: **NotImplementedError** if not implemented for this descriptor type
+    """
+
+    raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True):
+    """
+    Creates a descriptor with the given attributes. Mandatory fields are filled
+    with dummy information unless data is supplied. This doesn't yet create a
+    valid signature.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool validate: checks the validity of the descriptor's content if
+      **True**, skips these checks otherwise
+
+    :returns: :class:`~stem.descriptor.Descriptor` subclass
+
+    :raises:
+      * **ValueError** if the contents is malformed and validate is True
+      * **NotImplementedError** if not implemented for this descriptor type
+    """
+
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def get_path(self):
     """
@@ -825,7 +938,7 @@ def _get_pseudo_pgp_block(remaining_contents):
     return None
 
 
-def _get_descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
+def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
   """
   Initial breakup of the server descriptor contents to make parsing easier.
 

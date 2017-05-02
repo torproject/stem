@@ -11,8 +11,8 @@ import stem.control
 import stem.socket
 import stem.util.system
 
-import test.mocking
 import test.runner
+import test.util
 
 from test.util import require_controller
 
@@ -154,7 +154,7 @@ class TestBaseController(unittest.TestCase):
       controller.msg('SETEVENTS CONF_CHANGED')
 
       for i in range(10):
-        controller.msg('SETCONF NodeFamily=%s' % test.mocking.random_fingerprint())
+        controller.msg('SETCONF NodeFamily=%s' % test.util.random_fingerprint())
         test.runner.exercise_controller(self, controller)
 
       controller.msg('SETEVENTS')

@@ -77,10 +77,12 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
+  _descriptor_content,
   _read_until_keywords,
-  _get_descriptor_components,
+  _descriptor_components,
   _value,
   _values,
   _parse_simple_line,
@@ -153,6 +155,24 @@ SINGLE_FIELDS = (
   'exit-kibibytes-written',
   'exit-kibibytes-read',
   'exit-streams-opened',
+)
+
+RELAY_EXTRAINFO_HEADER = (
+  ('extra-info', 'ninja B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48'),
+  ('published', '2012-05-05 17:03:50'),
+)
+
+RELAY_EXTRAINFO_FOOTER = (
+  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
+)
+
+BRIDGE_EXTRAINFO_HEADER = (
+  ('extra-info', 'ec2bridgereaac65a3 1EC248422B57D9C0BD751892FE787585407479A4'),
+  ('published', '2012-05-05 17:03:50'),
+)
+
+BRIDGE_EXTRAINFO_FOOTER = (
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
 )
 
 
@@ -842,7 +862,7 @@ class ExtraInfoDescriptor(Descriptor):
     """
 
     super(ExtraInfoDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    entries = _get_descriptor_components(raw_contents, validate)
+    entries = _descriptor_components(raw_contents, validate)
 
     if validate:
       for keyword in self._required_fields():
@@ -914,6 +934,10 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     'router-signature': _parse_router_signature_line,
   })
 
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+
   @lru_cache()
   def digest(self):
     # our digest is calculated from everything except our signature
@@ -945,6 +969,10 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     'router-digest-sha256': _parse_router_digest_sha256_line,
     'router-digest': _parse_router_digest_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
 
   def digest(self):
     return self._digest

@@ -49,9 +49,11 @@ import stem.version
 from stem.util import str_type
 
 from stem.descriptor import (
+  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
-  _get_descriptor_components,
+  _descriptor_content,
+  _descriptor_components,
   _read_until_keywords,
   _bytes_for_block,
   _value,
@@ -109,6 +111,27 @@ SINGLE_FIELDS = (
 
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
 REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
+
+RELAY_SERVER_HEADER = (
+  ('router', 'caerSidi 71.35.133.197 9001 0 0'),
+  ('published', '2012-03-01 17:15:27'),
+  ('bandwidth', '153600 256000 104590'),
+  ('reject', '*:*'),
+  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+  ('signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
+)
+
+RELAY_SERVER_FOOTER = (
+  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
+)
+
+BRIDGE_SERVER_HEADER = (
+  ('router', 'Unnamed 10.45.227.253 9001 0 0'),
+  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
+  ('published', '2012-03-22 17:34:38'),
+  ('bandwidth', '409600 819200 5120'),
+  ('reject', '*:*'),
+)
 
 
 def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
@@ -586,7 +609,7 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, self._unparsed_exit_policy = _get_descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
+    entries, self._unparsed_exit_policy = _descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
 
     if validate:
       self._parse(entries, validate)
@@ -738,6 +761,9 @@ class RelayDescriptor(ServerDescriptor):
      Our **ed25519_certificate** is deprecated in favor of our new
      **certificate** attribute. The base64 encoded certificate is available via
      the certificate's **encoded** attribute.
+
+  .. versionchanged:: 1.6.0
+     Added the **skip_crypto_validation** constructor argument.
   """
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
@@ -765,7 +791,7 @@ class RelayDescriptor(ServerDescriptor):
     'router-signature': _parse_router_signature_line,
   })
 
-  def __init__(self, raw_contents, validate = False, annotations = None):
+  def __init__(self, raw_contents, validate = False, annotations = None, skip_crypto_validation = False):
     super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
 
     if validate:
@@ -775,7 +801,7 @@ class RelayDescriptor(ServerDescriptor):
         if key_hash != self.fingerprint.lower():
           raise ValueError('Fingerprint does not match the hash of our signing key (fingerprint: %s, signing key hash: %s)' % (self.fingerprint.lower(), key_hash))
 
-      if stem.prereq.is_crypto_available():
+      if not skip_crypto_validation and stem.prereq.is_crypto_available():
         signed_digest = self._digest_for_signature(self.signing_key, self.signature)
 
         if signed_digest != self.digest():
@@ -789,6 +815,14 @@ class RelayDescriptor(ServerDescriptor):
 
       if stem.prereq._is_pynacl_available() and self.certificate:
         self.certificate.validate(self)
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True):
+    return cls(cls.content(attr, exclude), validate = validate, skip_crypto_validation = True)
 
   @lru_cache()
   def digest(self):
@@ -873,6 +907,10 @@ class BridgeDescriptor(ServerDescriptor):
     'router-digest-sha256': _parse_router_digest_sha256_line,
     'router-digest': _parse_router_digest_line,
   })
+
+  @classmethod
+  def content(cls, attr = None, exclude = ()):
+    return _descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
 
   def digest(self):
     return self._digest

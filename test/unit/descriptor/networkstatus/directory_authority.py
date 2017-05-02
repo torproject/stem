@@ -4,8 +4,11 @@ Unit tests for the DirectoryAuthority of stem.descriptor.networkstatus.
 
 import unittest
 
-from stem.descriptor.networkstatus import DirectoryAuthority
-from test.mocking import get_directory_authority, get_key_certificate, AUTHORITY_HEADER
+from stem.descriptor.networkstatus import (
+  AUTHORITY_HEADER,
+  DirectoryAuthority,
+  KeyCertificate,
+)
 
 
 class TestDirectoryAuthority(unittest.TestCase):
@@ -14,7 +17,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Parses a minimal directory authority for a consensus.
     """
 
-    authority = get_directory_authority()
+    authority = DirectoryAuthority.create()
 
     self.assertEqual('turtles', authority.nickname)
     self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
@@ -34,7 +37,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Parses a minimal directory authority for a vote.
     """
 
-    authority = get_directory_authority(is_vote = True)
+    authority = DirectoryAuthority.create(is_vote = True)
 
     self.assertEqual('turtles', authority.nickname)
     self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
@@ -46,7 +49,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertEqual('Mike Perry <email>', authority.contact)
     self.assertEqual(None, authority.vote_digest)
     self.assertEqual(None, authority.legacy_dir_key)
-    self.assertEqual(get_key_certificate(), authority.key_certificate)
+    self.assertEqual(KeyCertificate.create(), authority.key_certificate)
     self.assertEqual([], authority.get_unrecognized_lines())
 
   def test_unrecognized_line(self):
@@ -54,7 +57,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
 
-    authority = get_directory_authority({'pepperjack': 'is oh so tasty!'})
+    authority = DirectoryAuthority.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], authority.get_unrecognized_lines())
 
   def test_legacy_authority(self):
@@ -83,7 +86,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes a non-mandatory field before the 'dir-source' line.
     """
 
-    content = b'ho-hum 567\n' + get_directory_authority(content = True)
+    content = b'ho-hum 567\n' + DirectoryAuthority.content()
     self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
     authority = DirectoryAuthority(content, False)
@@ -96,7 +99,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     """
 
     for excluded_field in ('dir-source', 'contact'):
-      content = get_directory_authority(exclude = (excluded_field,), content = True)
+      content = DirectoryAuthority.content(exclude = (excluded_field,))
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
@@ -111,7 +114,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes blank lines, which should be ignored.
     """
 
-    authority = get_directory_authority({'dir-source': AUTHORITY_HEADER[0][1] + '\n\n\n'})
+    authority = DirectoryAuthority.create({'dir-source': AUTHORITY_HEADER[0][1] + '\n\n\n'})
     self.assertEqual('Mike Perry <email>', authority.contact)
 
   def test_duplicate_lines(self):
@@ -119,7 +122,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     Duplicates linesin the entry.
     """
 
-    lines = get_directory_authority(content = True).split(b'\n')
+    lines = DirectoryAuthority.content().split(b'\n')
 
     for index, duplicate_line in enumerate(lines):
       content = b'\n'.join(lines[:index] + [duplicate_line] + lines[index:])
@@ -135,7 +138,7 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     for missing_value in AUTHORITY_HEADER[0][1].split(' '):
       dir_source = AUTHORITY_HEADER[0][1].replace(missing_value, '').replace('  ', ' ')
-      content = get_directory_authority({'dir-source': dir_source}, content = True)
+      content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
@@ -160,7 +163,7 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     for value in test_values:
       dir_source = AUTHORITY_HEADER[0][1].replace('27B6B5996C426270A5C95488AA5BCEB6BCC86956', value)
-      content = get_directory_authority({'dir-source': dir_source}, content = True)
+      content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
@@ -182,7 +185,7 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     for value in test_values:
       dir_source = AUTHORITY_HEADER[0][1].replace('76.73.17.194', value)
-      content = get_directory_authority({'dir-source': dir_source}, content = True)
+      content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
@@ -214,7 +217,7 @@ class TestDirectoryAuthority(unittest.TestCase):
           if include_dir_port:
             dir_source = dir_source.replace('9030', value)
 
-          content = get_directory_authority({'dir-source': dir_source}, content = True)
+          content = DirectoryAuthority.content({'dir-source': dir_source})
           self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
           authority = DirectoryAuthority(content, False)
@@ -228,11 +231,11 @@ class TestDirectoryAuthority(unittest.TestCase):
     """
 
     test_value = '65968CCB6BECB5AA88459C5A072624C6995B6B72'
-    authority = get_directory_authority({'legacy-dir-key': test_value}, is_vote = True)
+    authority = DirectoryAuthority.create({'legacy-dir-key': test_value}, is_vote = True)
     self.assertEqual(test_value, authority.legacy_dir_key)
 
     # check that we'll fail if legacy-dir-key appears in a consensus
-    content = get_directory_authority({'legacy-dir-key': test_value}, content = True)
+    content = DirectoryAuthority.content({'legacy-dir-key': test_value})
     self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
     test_values = (
@@ -242,7 +245,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     )
 
     for value in test_values:
-      content = get_directory_authority({'legacy-dir-key': value}, content = True)
+      content = DirectoryAuthority.content({'legacy-dir-key': value})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
@@ -253,17 +256,17 @@ class TestDirectoryAuthority(unittest.TestCase):
     Includes or exclude a key certificate from the directory entry.
     """
 
-    key_cert = get_key_certificate(content = True)
+    key_cert = KeyCertificate.content()
 
     # include a key cert with a consensus
-    content = get_directory_authority(content = True) + b'\n' + key_cert
+    content = DirectoryAuthority.content() + b'\n' + key_cert
     self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
     authority = DirectoryAuthority(content, False)
     self.assertEqual('turtles', authority.nickname)
 
     # exclude  key cert from a vote
-    content = get_directory_authority(content = True, is_vote = True).replace(b'\n' + key_cert, b'')
+    content = DirectoryAuthority.content(is_vote = True).replace(b'\n' + key_cert, b'')
     self.assertRaises(ValueError, DirectoryAuthority, content, True, True)
 
     authority = DirectoryAuthority(content, False, True)

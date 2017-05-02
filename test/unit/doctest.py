@@ -14,7 +14,6 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
-import test.mocking
 import test.util
 
 try:
@@ -84,7 +83,7 @@ class TestDocumentation(unittest.TestCase):
           'circuit-status': EXPECTED_CIRCUIT_STATUS,
         }[arg]
 
-        response = test.mocking.get_message(ADD_ONION_RESPONSE)
+        response = test.util.get_message(ADD_ONION_RESPONSE)
         stem.response.convert('ADD_ONION', response)
         controller.create_ephemeral_hidden_service.return_value = response
 
