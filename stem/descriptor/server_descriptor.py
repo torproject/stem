@@ -817,12 +817,12 @@ class RelayDescriptor(ServerDescriptor):
         self.certificate.validate(self)
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True):
-    return cls(cls.content(attr, exclude), validate = validate, skip_crypto_validation = True)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = True)
 
   @lru_cache()
   def digest(self):
@@ -909,8 +909,8 @@ class BridgeDescriptor(ServerDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, BRIDGE_SERVER_HEADER)
 
   def digest(self):
     return self._digest

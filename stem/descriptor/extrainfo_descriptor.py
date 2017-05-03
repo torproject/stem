@@ -973,8 +973,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
 
   @lru_cache()
   def digest(self):
@@ -1009,8 +1009,8 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
 
   def digest(self):
     return self._digest
