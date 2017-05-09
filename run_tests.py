@@ -233,7 +233,7 @@ def main():
       error_tracker.set_category(target)
 
       try:
-        integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
+        integ_runner.start(args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
 
         println('Running tests...\n', STATUS)
 

@@ -147,7 +147,6 @@ class _MockChrootFile(object):
 
 class Runner(object):
   def __init__(self):
-    self.run_target = None
     self.attribute_targets = []
 
     self._runner_lock = threading.RLock()
@@ -166,12 +165,11 @@ class Runner(object):
 
     self._original_recv_message = None
 
-  def start(self, run_target, attribute_targets, tor_cmd, extra_torrc_opts):
+  def start(self, attribute_targets, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
 
-    :param Target run_target: configuration we're running with
     :param list attribute_targets: **Targets** for our non-configuration attributes
     :param str tor_cmd: command to start tor with
     :param list extra_torrc_opts: additional torrc options for our test instance
@@ -180,7 +178,6 @@ class Runner(object):
     """
 
     with self._runner_lock:
-      self.run_target = run_target
       self.attribute_targets = attribute_targets
 
       # if we're holding on to a tor process (running or not) then clean up after
