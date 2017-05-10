@@ -435,10 +435,10 @@ class TestController(unittest.TestCase):
       custom_options = controller._get_custom_options()
       self.assertTrue('ControlPort' in custom_options or 'ControlSocket' in custom_options)
       self.assertEqual('1', custom_options['DownloadExtraInfo'])
-      self.assertEqual('127.0.0.1:1112', custom_options['SocksListenAddress'])
+      self.assertEqual('1112', custom_options['SocksPort'])
 
       self.assertTrue(controller.is_set('DownloadExtraInfo'))
-      self.assertTrue(controller.is_set('SocksListenAddress'))
+      self.assertTrue(controller.is_set('SocksPort'))
       self.assertFalse(controller.is_set('CellStatistics'))
       self.assertFalse(controller.is_set('ConnLimit'))
 
@@ -1070,7 +1070,7 @@ class TestController(unittest.TestCase):
         try:
           s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
           s.settimeout(30)
-          s.connect(('127.0.0.1', int(controller.get_conf('SocksListenAddress').rsplit(':', 1)[1])))
+          s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
           test.network.negotiate_socks(s, '1.2.1.2', 80)
           s.sendall(stem.util.str_tools._to_bytes(test.network.ip_request))  # make the http request for the ip address
           response = s.recv(1000)

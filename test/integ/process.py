@@ -306,7 +306,7 @@ class TestProcess(unittest.TestCase):
       t.start()
       t.join()
 
-      if 'Invalid SocksPort/SocksListenAddress' in str(raised_exc[0]):
+      if 'Invalid SocksPort' in str(raised_exc[0]):
         return None  # got to the point of invoking tor
       else:
         return raised_exc[0]

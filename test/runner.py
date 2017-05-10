@@ -58,16 +58,15 @@ CONFIG = stem.util.conf.config_dict('test', {
   'integ.log': './test/data/log',
 })
 
-SOCKS_HOST = '127.0.0.1'
 SOCKS_PORT = 1112
 
 BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %%s
-SocksListenAddress %s:%i
+SocksPort %i
 DownloadExtraInfo 1
 Log notice stdout
 Log notice file %%s/tor_log
-""" % (SOCKS_HOST, SOCKS_PORT)
+""" % SOCKS_PORT
 
 # singleton Runner instance
 INTEG_RUNNER = None
