@@ -266,23 +266,28 @@ def require(condition, message):
   return decorator
 
 
+def _can_access_controller():
+  return test.runner.get_runner().is_accessible()
+
+
+def _can_ptrace():
+  # If we're running a tor version where ptrace is disabled and we didn't
+  # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
+
+  has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
+  return not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options()
+
+
+def _is_online():
+  return Target.ONLINE in test.runner.get_runner().attribute_targets
+
+
 require_cryptography = require(stem.prereq.is_crypto_available, 'requires cryptography')
 require_pynacl = require(stem.prereq._is_pynacl_available, 'requires pynacl module')
 require_proc = require(stem.util.proc.is_available, 'proc unavailable')
-
-
-def require_controller(func):
-  """
-  Skips the test unless tor provides an endpoint for controllers to attach to.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if test.runner.get_runner().is_accessible():
-      return func(self, *args, **kwargs)
-    else:
-      self.skipTest('(no connection)')
-
-  return wrapped
+require_controller = require(_can_access_controller, 'no connection')
+require_ptrace = require(_can_ptrace, 'DisableDebuggerAttachment is set')
+require_online = require(_is_online, 'requires online target')
 
 
 def require_command(cmd):
@@ -301,41 +306,6 @@ def require_version(req_version):
   """
 
   return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
-
-
-def require_ptrace(func):
-  """
-  Skips the test unless 'DisableDebuggerAttachment' is set. This feature has a
-  lot of adverse side effects (:trac:`3313`).
-  """
-
-  def wrapped(self, *args, **kwargs):
-    # If we're running a tor version where ptrace is disabled and we didn't
-    # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-
-    has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
-
-    if not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options():
-      return func(self, *args, **kwargs)
-    else:
-      self.skipTest('(DisableDebuggerAttachment is set)')
-
-  return wrapped
-
-
-def require_online(func):
-  """
-  Skips the test if we weren't started with the ONLINE target, which indicates
-  that tests requiring network connectivity should run.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if Target.ONLINE in test.runner.get_runner().attribute_targets:
-      return func(self, *args, **kwargs)
-    else:
-      self.skipTest('(requires online target)')
-
-  return wrapped
 
 
 def check_stem_version():
