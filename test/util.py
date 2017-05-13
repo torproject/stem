@@ -303,6 +303,26 @@ def require_version(req_version):
   return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
 
 
+def require_ptrace(func):
+  """
+  Skips the test unless 'DisableDebuggerAttachment' is set. This feature has a
+  lot of adverse side effects (:trac:`3313`).
+  """
+
+  def wrapped(self, *args, **kwargs):
+    # If we're running a tor version where ptrace is disabled and we didn't
+    # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
+
+    has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
+
+    if not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options():
+      return func(self, *args, **kwargs)
+    else:
+      self.skipTest('(DisableDebuggerAttachment is set)')
+
+  return wrapped
+
+
 def require_online(func):
   """
   Skips the test if we weren't started with the ONLINE target, which indicates
@@ -636,5 +656,3 @@ class Task(object):
 
 
 import test.runner  # needs to be imported at the end to avoid a circular dependency
-
-require_ptrace = require(test.runner.get_runner().is_ptraceable, 'DisableDebuggerAttachment is set')

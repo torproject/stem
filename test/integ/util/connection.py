@@ -8,17 +8,16 @@ import unittest
 import test.runner
 
 from stem.util.connection import Resolver, get_connections, system_resolvers
+from test.util import require_ptrace
 
 
 class TestConnection(unittest.TestCase):
+  @require_ptrace
   def check_resolver(self, resolver):
     runner = test.runner.get_runner()
 
     if test.runner.Torrc.PORT not in runner.get_options():
       self.skipTest('(no control port)')
-      return
-    elif not runner.is_ptraceable():
-      self.skipTest('(DisableDebuggerAttachment set)')
       return
     elif resolver not in system_resolvers():
       self.skipTest('(resolver unavailable on this platform)')

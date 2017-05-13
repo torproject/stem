@@ -19,7 +19,6 @@ about the tor test instance they're running against.
     |- stop - stops our tor instance and cleans up any temporary files
     |- is_running - checks if our tor test instance is running
     |- is_accessible - checks if our tor instance can be connected to
-    |- is_ptraceable - checks if DisableDebuggerAttachment is set
     |- get_options - custom torrc options used for our test instance
     |- get_test_dir - testing directory path
     |- get_torrc_path - path to our tor instance's torrc
@@ -48,10 +47,9 @@ import stem.process
 import stem.socket
 import stem.util.conf
 import stem.util.enum
-import stem.version
 
 from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
-from test.util import Target, STEM_BASE, tor_version
+from test.util import Target, STEM_BASE
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
@@ -311,20 +309,6 @@ class Runner(object):
     """
 
     return Torrc.PORT in self._custom_opts or Torrc.SOCKET in self._custom_opts
-
-  def is_ptraceable(self):
-    """
-    Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
-    a lot of adverse side effects (:trac:`3313`).
-
-    :returns: True if debugger attachment is allowed, False otherwise
-    """
-
-    # If we're running a tor version where ptrace is disabled and we didn't
-    # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-
-    has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
-    return not has_option or Torrc.PTRACE in self.get_options()
 
   def get_options(self):
     """
