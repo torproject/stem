@@ -383,7 +383,7 @@ class Manual(object):
       _add_config_options(config_options, category_enum, categories.get(category_header, []))
 
     for category in categories:
-      if category.endswith(' OPTIONS') and category not in CATEGORY_SECTIONS and category != 'COMMAND-LINE OPTIONS':
+      if category.endswith(' OPTIONS') and category not in CATEGORY_SECTIONS and category not in ('COMMAND-LINE OPTIONS', 'NON-PERSISTENT OPTIONS'):
         _add_config_options(config_options, Category.UNKNOWN, categories.get(category, []))
 
     return Manual(

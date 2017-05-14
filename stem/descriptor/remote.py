@@ -1089,13 +1089,14 @@ def _fallback_directory_differences(previous_directories, new_directories):
 
   for fp in added_fp:
     directory = new_directories[fp]
+    orport_v6 = '%s:%s' % directory.orport_v6 if directory.orport_v6 else '[none]'
 
     lines += [
       '* Added %s as a new fallback directory:' % directory.fingerprint,
       '  address: %s' % directory.address,
       '  or_port: %s' % directory.or_port,
       '  dir_port: %s' % directory.dir_port,
-      '  orport_v6: %s' % directory.orport_v6 if directory.orport_v6 else '[none]',
+      '  orport_v6: %s' % orport_v6,
       '',
     ]
 

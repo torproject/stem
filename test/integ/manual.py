@@ -27,6 +27,7 @@ EXPECTED_CATEGORIES = set([
   'DIRECTORY AUTHORITY SERVER OPTIONS',
   'HIDDEN SERVICE OPTIONS',
   'TESTING NETWORK OPTIONS',
+  'NON-PERSISTENT OPTIONS',
   'SIGNALS',
   'FILES',
   'SEE ALSO',
@@ -47,8 +48,7 @@ By default, tor will act as a client only. To help the network by providing band
 
 EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)'
 
-EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
-
+EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nNote that this option, and other bandwidth-limiting options, apply to TCP data only: They do not count TCP headers or DNS traffic.\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
 
 EXPECTED_EXIT_POLICY_DESCRIPTION = """
 Set an exit policy for this server. Each policy is of the form "accept[6]|reject[6] ADDR[/MASK][:PORT]". If /MASK is omitted then this policy just applies to the host given. Instead of giving a host or network you can also use "*" to denote the universe (0.0.0.0/0 and ::/128), or *4 to denote all IPv4 addresses, and *6 to denote all IPv6 addresses.  PORT can be a single port number, an interval of ports "FROM_PORT-TO_PORT", or "*". If PORT is omitted, that means "*".
@@ -79,8 +79,7 @@ Policies are considered first to last, and the first match wins. If you want to 
     reject *:6881-6999
     accept *:*
 
-    Since the default exit policy uses accept/reject *, it applies to both
-    IPv4 and IPv6 addresses.
+Since the default exit policy uses accept/reject *, it applies to both IPv4 and IPv6 addresses.
 """.strip()
 
 
@@ -255,18 +254,13 @@ class TestManual(unittest.TestCase):
       return
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines()])
+      config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines() if line.split()[1] != 'Virtual'])
 
       # options starting with an underscore are hidden by convention
 
       for name in list(config_options_in_tor):
         if name.startswith('_'):
           config_options_in_tor.remove(name)
-
-      # hidden service options are a special snowflake
-
-      if 'HiddenServiceOptions' in config_options_in_tor:
-        config_options_in_tor.remove('HiddenServiceOptions')
 
       # TODO: Looks like options we should remove from tor...
       #

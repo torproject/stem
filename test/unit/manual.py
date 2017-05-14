@@ -62,20 +62,6 @@ EXPECTED_FILES = {
 
 EXPECTED_CONFIG_OPTIONS = OrderedDict()
 
-EXPECTED_CONFIG_OPTIONS['AllowInvalidNodes'] = stem.manual.ConfigOption(
-  name = 'AllowInvalidNodes',
-  category = 'Client',
-  usage = 'entry|exit|middle|introduction|rendezvous|...',
-  summary = 'Permits use of relays flagged as invalid by authorities',
-  description = 'If some Tor servers are obviously not working right, the directory authorities can manually mark them as invalid, meaning that it\'s not recommended you use them for entry or exit positions in your circuits. You can opt to use them in some circuit positions, though. The default is "middle,rendezvous", and other choices are not advised.')
-
-EXPECTED_CONFIG_OPTIONS['ExcludeSingleHopRelays'] = stem.manual.ConfigOption(
-  name = 'ExcludeSingleHopRelays',
-  category = 'Client',
-  usage = '0|1',
-  summary = 'Permits use of relays that allow single hop connections',
-  description = 'This option controls whether circuits built by Tor will include relays with the AllowSingleHopExits flag set to true. If ExcludeSingleHopRelays is set to 0, these relays will be included. Note that these relays might be at higher risk of being seized or observed, so they are not normally included. Also note that relatively few clients turn off this option, so using these relays might make your client stand out. (Default: 1)')
-
 EXPECTED_CONFIG_OPTIONS['Bridge'] = stem.manual.ConfigOption(
   name = 'Bridge',
   category = 'Client',
