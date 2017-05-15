@@ -163,8 +163,6 @@ through Tor's control socket...
 .. literalinclude:: /_static/example/descriptor_from_tor_data_directory.py
    :language: python
 
-.. _validating-the-descriptors-content:
-
 .. _can-i-create-descriptors:
 
 Can I create descriptors?
@@ -203,6 +201,8 @@ descriptor...
 **Note:** Stem doesn't yet support signing its descriptors (:trac:`10227`).
 Until it does try using `leekspin <https://pypi.python.org/pypi/leekspin>`_
 instead.
+
+.. _validating-the-descriptors-content:
 
 Validating the descriptor's content
 -----------------------------------
