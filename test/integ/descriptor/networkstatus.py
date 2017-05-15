@@ -7,17 +7,30 @@ import unittest
 
 import stem
 import stem.descriptor
-import stem.descriptor.networkstatus
+import stem.descriptor.remote
 import stem.version
 import test.runner
 
 from test.util import (
   register_new_capability,
   only_run_once,
+  require_cryptography,
+  require_online,
 )
 
 
 class TestNetworkStatus(unittest.TestCase):
+  @require_online
+  @require_cryptography
+  @only_run_once
+  def test_signature_validation(self):
+    """
+    The full consensus is pretty sizable so rather than storing a copy of it
+    using the remote module. Chekcing the signature on the current consensus.
+    """
+
+    stem.descriptor.remote.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT, validate = True).run()
+
   @only_run_once
   def test_cached_consensus(self):
     """

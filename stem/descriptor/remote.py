@@ -98,6 +98,7 @@ except ImportError:
   import urllib2 as urllib
 
 import stem.descriptor
+import stem.prereq
 
 from stem import Flag
 from stem.util import _hash_attr, connection, log, str_tools, tor_tools
@@ -628,7 +629,17 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    return self.query(resource + '.z', **query_args)
+    consensus_query = self.query(resource + '.z', **query_args)
+
+    # if we're performing validation then check that it's signed by the
+    # authority key certificates
+
+    if consensus_query.validate and consensus_query.document_handler == stem.descriptor.DocumentHandler.DOCUMENT and stem.prereq.is_crypto_available():
+      consensus = list(consensus_query.run())[0]
+      key_certs = self.get_key_certificates(**query_args).run()
+      consensus.validate_signatures(key_certs)
+
+    return consensus_query
 
   def get_vote(self, authority, **query_args):
     """

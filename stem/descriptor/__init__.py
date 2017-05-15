@@ -681,17 +681,14 @@ class Descriptor(object):
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives.serialization import load_der_public_key
     from cryptography.utils import int_to_bytes, int_from_bytes
-
     key = load_der_public_key(_bytes_for_block(signing_key), default_backend())
     modulus = key.public_numbers().n
     public_exponent = key.public_numbers().e
-
     sig_as_bytes = _bytes_for_block(signature)
     sig_as_long = int_from_bytes(sig_as_bytes, byteorder='big')  # convert signature to an int
-    blocksize = 128  # block size will always be 128 for a 1024 bit key
+    blocksize = len(sig_as_bytes)  # 256B for NetworkStatusDocuments, 128B for others
 
     # use the public exponent[e] & the modulus[n] to decrypt the int
-
     decrypted_int = pow(sig_as_long, public_exponent, modulus)
 
     # convert the int to a byte array
@@ -708,7 +705,6 @@ class Descriptor(object):
     # More info here http://www.ietf.org/rfc/rfc2313.txt
     #                esp the Notes in section 8.1
     ############################################################################
-
     try:
       if decrypted_bytes.index(b'\x00\x01') != 0:
         raise ValueError('Verification failed, identifier missing')

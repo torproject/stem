@@ -1055,6 +1055,39 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
     self._footer(document_file, validate)
 
+  def validate_signatures(self, key_certs):
+    """
+    Validates we're properly signed by the signing certificates.
+
+    .. versionadded:: 1.6.0
+
+    :param list key_certs: :class:`~stem.descriptor.networkstatus.KeyCertificates`
+      to validate the consensus against
+
+    :raises: **ValueError** if an insufficient number of valid signatures are present.
+    """
+
+    # sha1 hash of the body and header
+
+    local_digest = self._digest_for_content(b'network-status-version', b'directory-signature ')
+
+    valid_digests, total_digests = 0, 0
+    required_digests = len(self.signatures) / 2.0
+    signing_keys = dict([(cert.fingerprint, cert.signing_key) for cert in key_certs])
+
+    for sig in self.signatures:
+      if sig.identity not in signing_keys:
+        continue
+
+      signed_digest = self._digest_for_signature(signing_keys[sig.identity], sig.signature)
+      total_digests += 1
+
+      if signed_digest == local_digest:
+        valid_digests += 1
+
+    if valid_digests < required_digests:
+      raise ValueError('Network Status Document has %i valid signatures out of %i total, needed %i' % (valid_digests, total_digests, required_digests))
+
   def get_unrecognized_lines(self):
     if self._lazy_loading:
       self._parse(self._header_entries, False, parser_for_line = self.HEADER_PARSER_FOR_LINE)
