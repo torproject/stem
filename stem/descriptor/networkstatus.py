@@ -159,6 +159,8 @@ DEFAULT_PARAMS = {
   'UseOptimisticData': 1,
   'Support022HiddenServices': 1,
   'usecreatefast': 1,
+  'max-consensuses-age-to-cache-for-diff': 72,
+  'try-diff-for-consensus-newer-than': 72,
 }
 
 # KeyCertificate fields, tuple is of the form...
@@ -206,6 +208,8 @@ PARAM_RANGE = {
   'NumNTorsPerTAP': (1, 100000),
   'AllowNonearlyExtend': (0, 1),
   'AuthDirNumSRVAgreements': (1, MAX_PARAM),
+  'max-consensuses-age-to-cache-for-diff': (0, 8192),
+  'try-diff-for-consensus-newer-than': (0, 8192),
 }
 
 AUTHORITY_HEADER = (
