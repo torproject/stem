@@ -161,6 +161,8 @@ DEFAULT_PARAMS = {
   'usecreatefast': 1,
   'max-consensuses-age-to-cache-for-diff': 72,
   'try-diff-for-consensus-newer-than': 72,
+  'onion-key-rotation-days': 28,
+  'onion-key-grace-period-days': 7,
 }
 
 # KeyCertificate fields, tuple is of the form...
@@ -210,6 +212,8 @@ PARAM_RANGE = {
   'AuthDirNumSRVAgreements': (1, MAX_PARAM),
   'max-consensuses-age-to-cache-for-diff': (0, 8192),
   'try-diff-for-consensus-newer-than': (0, 8192),
+  'onion-key-rotation-days': (1, 90),
+  'onion-key-grace-period-days': (1, 90),  # max is the highest onion-key-rotation-days
 }
 
 AUTHORITY_HEADER = (
