@@ -636,6 +636,49 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
         expect_invalid_attr(self, {keyword: entry}, stat_attr)
         expect_invalid_attr(self, {keyword: entry}, extra_attr, {})
 
+  def test_padding_counts(self):
+    """
+    Check the 'hidserv-dir-onions-seen' lines.
+    """
+
+    desc = RelayExtraInfoDescriptor.create({'padding-counts': '2017-05-17 11:02:58 (86400 s) bin-size=10000 write-drop=0 write-pad=10000 write-total=10000 read-drop=0 read-pad=10000 read-total=3780000 enabled-read-pad=0 enabled-read-total=0 enabled-write-pad=0 enabled-write-total=0 max-chanpad-timers=0 non-numeric=test'})
+
+    self.assertEqual({
+      'bin-size': 10000,
+      'write-drop': 0,
+      'write-pad': 10000,
+      'write-total': 10000,
+      'read-drop': 0,
+      'read-pad': 10000,
+      'read-total': 3780000,
+      'enabled-read-pad': 0,
+      'enabled-read-total': 0,
+      'enabled-write-pad': 0,
+      'enabled-write-total': 0,
+      'max-chanpad-timers': 0,
+      'non-numeric': 'test',  # presently all values are ints but the spec allows for anything
+    }, desc.padding_counts)
+
+    self.assertEqual(datetime.datetime(2017, 5, 17, 11, 2, 58), desc.padding_counts_end)
+    self.assertEqual(86400, desc.padding_counts_interval)
+
+    test_entries = (
+      '',
+      '2012-05-03',
+      '2012-05-03 12:07:60 (500 s)',
+      '2012-05-03 12:07:50 (500 s',
+      '2012-05-03 12:07:50 (500s)',
+      '2012-05-03 12:07:50 (500 s)bin-size=10',
+      '2012-05-03 12:07:50 (500 s) bin-size',
+      '2012-05-03 12:07:50 (500 s) bin-size=',
+    )
+
+    for entry in test_entries:
+      desc = expect_invalid_attr(self, {'padding-counts': entry})
+      self.assertEqual({}, desc.padding_counts)
+      self.assertEqual(None, desc.padding_counts_end)
+      self.assertEqual(None, desc.padding_counts_interval)
+
   def test_locale_mapping_lines(self):
     """
     Uses valid and invalid data to tests lines of the form...

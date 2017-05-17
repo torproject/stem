@@ -331,6 +331,29 @@ def _parse_cell_circuits_per_decline_line(descriptor, entries):
   descriptor.cell_circuits_per_decile = int(value)
 
 
+def _parse_padding_counts_line(descriptor, entries):
+  # "padding-counts" YYYY-MM-DD HH:MM:SS (NSEC s) key=val key=val...
+
+  value = _value('padding-counts', entries)
+  timestamp, interval, remainder = _parse_timestamp_and_interval('padding-counts', value)
+  entries = {}
+
+  for entry in remainder.split(' '):
+    if '=' not in entry:
+      raise ValueError('Entries in padding-counts line should be key=value mappings: padding-counts %s' % value)
+
+    k, v = entry.split('=', 1)
+
+    if not v:
+      raise ValueError('Entry in padding-counts line had a blank value: padding-counts %s' % value)
+
+    entries[k] = int(v) if v.isdigit() else v
+
+  setattr(descriptor, 'padding_counts_end', timestamp)
+  setattr(descriptor, 'padding_counts_interval', interval)
+  setattr(descriptor, 'padding_counts', entries)
+
+
 def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr, descriptor, entries):
   value = _value(keyword, entries)
 
@@ -699,6 +722,12 @@ class ExtraInfoDescriptor(Descriptor):
   :var int hs_dir_onions_seen: rounded count of the identities seen
   :var int hs_dir_onions_seen_attr: **\*** attributes provided for the hs_dir_onions_seen
 
+  **Padding Count Attributes:**
+
+  :var dict padding_counts: **\*** padding parameters
+  :var datetime padding_counts_end: end of the period when padding data is being collected
+  :var int padding_counts_interval: length in seconds of the interval
+
   **Bridge Attributes:**
 
   :var datetime bridge_stats_end: end of the period when stats were gathered
@@ -715,6 +744,10 @@ class ExtraInfoDescriptor(Descriptor):
   .. versionchanged:: 1.4.0
      Added the hs_stats_end, hs_rend_cells, hs_rend_cells_attr,
      hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes.
+
+  .. versionchanged:: 1.6.0
+     Added the padding_counts, padding_counts_end, and padding_counts_interval
+     attributes.
   """
 
   ATTRIBUTES = {
@@ -792,6 +825,10 @@ class ExtraInfoDescriptor(Descriptor):
     'hs_dir_onions_seen': (None, _parse_hidden_service_dir_onions_seen_line),
     'hs_dir_onions_seen_attr': ({}, _parse_hidden_service_dir_onions_seen_line),
 
+    'padding_counts': ({}, _parse_padding_counts_line),
+    'padding_counts_end': (None, _parse_padding_counts_line),
+    'padding_counts_interval': (None, _parse_padding_counts_line),
+
     'bridge_stats_end': (None, _parse_bridge_stats_end_line),
     'bridge_stats_interval': (None, _parse_bridge_stats_end_line),
     'bridge_ips': (None, _parse_bridge_ips_line),
@@ -837,6 +874,7 @@ class ExtraInfoDescriptor(Descriptor):
     'hidserv-stats-end': _parse_hidden_service_stats_end_line,
     'hidserv-rend-relayed-cells': _parse_hidden_service_rend_relayed_cells_line,
     'hidserv-dir-onions-seen': _parse_hidden_service_dir_onions_seen_line,
+    'padding-counts': _parse_padding_counts_line,
     'dirreq-v2-ips': _parse_dirreq_v2_ips_line,
     'dirreq-v3-ips': _parse_dirreq_v3_ips_line,
     'dirreq-v2-reqs': _parse_dirreq_v2_reqs_line,
