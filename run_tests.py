@@ -39,18 +39,6 @@ CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
 })
 
-SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
-  'stem',
-  'test',
-  'run_tests.py',
-  'cache_manual.py',
-  'cache_fallback_directories.py',
-  'setup.py',
-  'tor-prompt',
-  os.path.join('docs', 'republish.py'),
-  os.path.join('docs', 'roles.py'),
-)]
-
 MOCK_UNAVAILABLE_MSG = """\
 To run stem's tests you'll need mock...
 
@@ -73,23 +61,6 @@ If you're running the latest version of stem then please file a ticket on:
 New capabilities are:
 """
 
-PYFLAKES_TASK = test.task.Task(
-  'running pyflakes',
-  stem.util.test_tools.pyflakes_issues,
-  args = (SRC_PATHS,),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
-)
-
-PYCODESTYLE_TASK = test.task.Task(
-  'running pycodestyle',
-  stem.util.test_tools.stylistic_issues,
-  args = (SRC_PATHS, True, True, True),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
-)
 
 if stem.prereq._is_python_26():
   def assertItemsEqual(self, expected, actual):
@@ -148,29 +119,27 @@ def main():
 
   if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
-      pyflakes_task = PYFLAKES_TASK
+      pyflakes_task = test.task.PYFLAKES_TASK
 
     if stem.util.test_tools.is_pycodestyle_available():
-      pycodestyle_task = PYCODESTYLE_TASK
+      pycodestyle_task = test.task.PYCODESTYLE_TASK
 
   if args.run_integ:
-    tor_version_check = test.task.Task('checking tor version', test.task.check_tor_version, (args.tor_path,))
+    tor_version_check = test.task.TOR_VERSION
+    tor_version_check.args = (args.tor_path,)
 
-  test.task.run_tasks(
+  test.task.run(
     'INITIALISING',
-    test.task.Task('checking stem version', test.task.check_stem_version),
+    test.task.STEM_VERSION,
     tor_version_check,
-    test.task.Task('checking python version', test.task.check_python_version),
-    test.task.Task('checking cryptography version', test.task.check_cryptography_version),
-    test.task.Task('checking pynacl version', test.task.check_pynacl_version),
-    test.task.Task('checking mock version', test.task.check_mock_version),
-    test.task.Task('checking pyflakes version', test.task.check_pyflakes_version),
-    test.task.Task('checking pycodestyle version', test.task.check_pycodestyle_version),
-    test.task.Task('checking for orphaned .pyc files', test.task.clean_orphaned_pyc, (SRC_PATHS,)),
-    test.task.Task('checking for unused tests', test.task.check_for_unused_tests, [(
-      os.path.join(STEM_BASE, 'test', 'unit'),
-      os.path.join(STEM_BASE, 'test', 'integ'),
-    )]),
+    test.task.PYTHON_VERSION,
+    test.task.CRYPTO_VERSION,
+    test.task.PYNACL_VERSION,
+    test.task.MOCK_VERSION,
+    test.task.PYFLAKES_VERSION,
+    test.task.PYCODESTYLE_VERSION,
+    test.task.CLEAN_PYC,
+    test.task.UNUSED_TESTS,
     pyflakes_task,
     pycodestyle_task,
   )

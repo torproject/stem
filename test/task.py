@@ -7,15 +7,18 @@
 ::
 
   Initialization Tasks
-  |- check_stem_version - checks our version of stem
-  |- check_tor_version - checks our version of tor
-  |- check_python_version - checks our version of python
-  |- check_cryptography_version - checks our version of cryptography
-  |- check_pynacl_version - checks our version of pynacl
-  |- check_pyflakes_version - checks our version of pyflakes
-  |- check_pycodestyle_version - checks our version of pycodestyle
-  |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
-  +- check_for_unused_tests - checks to see if any tests are missing from our settings
+  |- STEM_VERSION - checks our version of stem
+  |- TOR_VERSION - checks our version of tor
+  |- PYTHON_VERSION - checks our version of python
+  |- CRYPTO_VERSION - checks our version of cryptography
+  |- PYNACL_VERSION - checks our version of pynacl
+  |- MOCK_VERSION - checks our version of mock
+  |- PYFLAKES_VERSION - checks our version of pyflakes
+  |- PYCODESTYLE_VERSION - checks our version of pycodestyle
+  |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
+  |- UNUSED_TESTS - checks to see if any tests are missing from our settings
+  |- PYFLAKES_TASK - static checks
+  +- PYCODESTYLE_TASK - style checks
 """
 
 import os
@@ -41,67 +44,24 @@ CONFIG = stem.util.conf.config_dict('test', {
   'test.integ_tests': '',
 })
 
+SRC_PATHS = [os.path.join(test.util.STEM_BASE, path) for path in (
+  'stem',
+  'test',
+  'run_tests.py',
+  'cache_manual.py',
+  'cache_fallback_directories.py',
+  'setup.py',
+  'tor-prompt',
+  os.path.join('docs', 'republish.py'),
+  os.path.join('docs', 'roles.py'),
+)]
 
-def check_stem_version():
-  return stem.__version__
 
-
-def check_tor_version(tor_path):
+def _check_tor_version(tor_path):
   return str(test.util.tor_version(tor_path)).split()[0]
 
 
-def check_python_version():
-  return '.'.join(map(str, sys.version_info[:3]))
-
-
-def check_cryptography_version():
-  if stem.prereq.is_crypto_available():
-    import cryptography
-    return cryptography.__version__
-  else:
-    return 'missing'
-
-
-def check_pynacl_version():
-  if stem.prereq._is_pynacl_available():
-    import nacl
-    return nacl.__version__
-  else:
-    return 'missing'
-
-
-def check_mock_version():
-  if stem.prereq.is_mock_available():
-    try:
-      import unittest.mock as mock
-    except ImportError:
-      import mock
-
-    return mock.__version__
-  else:
-    return 'missing'
-
-
-def check_pyflakes_version():
-  try:
-    import pyflakes
-    return pyflakes.__version__
-  except ImportError:
-    return 'missing'
-
-
-def check_pycodestyle_version():
-  if stem.util.test_tools._module_exists('pycodestyle'):
-    import pycodestyle
-  elif stem.util.test_tools._module_exists('pep8'):
-    import pep8 as pycodestyle
-  else:
-    return 'missing'
-
-  return pycodestyle.__version__
-
-
-def clean_orphaned_pyc(paths):
+def _clean_orphaned_pyc(paths):
   """
   Deletes any file with a *.pyc extention without a corresponding *.py.
 
@@ -111,7 +71,7 @@ def clean_orphaned_pyc(paths):
   return ['removed %s' % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
 
 
-def check_for_unused_tests(paths):
+def _check_for_unused_tests(paths):
   """
   The 'test.unit_tests' and 'test.integ_tests' in our settings.cfg defines the
   tests that we run. We do it this way so that we can control the order in
@@ -147,7 +107,7 @@ def check_for_unused_tests(paths):
     raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
 
 
-def run_tasks(category, *tasks):
+def run(category, *tasks):
   """
   Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
   or 'failed' for each unless we fail one that is marked as being required. If
@@ -226,3 +186,53 @@ class Task(object):
 
       println(output_msg, ERROR)
       self.error = exc
+
+
+class ModuleVersion(Task):
+  def __init__(self, label, modules, prereq_check = None):
+    if isinstance(modules, str):
+      modules = [modules]  # normalize to a list
+
+    def version_check():
+      if prereq_check is None or prereq_check():
+        for module in modules:
+          if stem.util.test_tools._module_exists(module):
+            return __import__(module).__version__
+
+      return 'missing'
+
+    super(ModuleVersion, self).__init__(label, version_check)
+
+
+STEM_VERSION = Task('checking stem version', lambda: stem.__version__)
+TOR_VERSION = Task('checking tor version', _check_tor_version)
+PYTHON_VERSION = Task('checking python version', lambda: '.'.join(map(str, sys.version_info[:3])))
+CRYPTO_VERSION = ModuleVersion('checking cryptography version', 'cryptography', stem.prereq.is_crypto_available)
+PYNACL_VERSION = ModuleVersion('checking pynacl version', 'nacl', stem.prereq._is_pynacl_available)
+MOCK_VERSION = ModuleVersion('checking mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
+PYFLAKES_VERSION = ModuleVersion('checking pyflakes version', 'pyflakes')
+PYCODESTYLE_VERSION = ModuleVersion('checking pycodestyle version', ['pycodestyle', 'pep8'])
+CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,))
+
+UNUSED_TESTS = Task('checking for unused tests', _check_for_unused_tests, [(
+  os.path.join(test.util.STEM_BASE, 'test', 'unit'),
+  os.path.join(test.util.STEM_BASE, 'test', 'integ'),
+)])
+
+PYFLAKES_TASK = Task(
+  'running pyflakes',
+  stem.util.test_tools.pyflakes_issues,
+  args = (SRC_PATHS,),
+  is_required = False,
+  print_result = False,
+  print_runtime = True,
+)
+
+PYCODESTYLE_TASK = Task(
+  'running pycodestyle',
+  stem.util.test_tools.stylistic_issues,
+  args = (SRC_PATHS, True, True, True),
+  is_required = False,
+  print_result = False,
+  print_runtime = True,
+)
