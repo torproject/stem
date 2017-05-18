@@ -12,24 +12,7 @@ Helper functions for our test framework.
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
 
-Sets of :class:`~test.util.Task` instances can be ran with
-:func:`~test.util.run_tasks`. Functions that are intended for easy use with
-Tasks are...
-
-::
-
-  Initialization
-  |- check_stem_version - checks our version of stem
-  |- check_tor_version - checks our version of tor
-  |- check_python_version - checks our version of python
-  |- check_cryptography_version - checks our version of cryptography
-  |- check_pynacl_version - checks our version of pynacl
-  |- check_pyflakes_version - checks our version of pyflakes
-  |- check_pycodestyle_version - checks our version of pycodestyle
-  |- clean_orphaned_pyc - removes any *.pyc without a corresponding *.py
-  +- check_for_unused_tests - checks to see if any tests are missing from our settings
-
-Lastly, this module provides generally useful test helpers...
+This module also provides generally useful test helpers...
 
 ::
 
@@ -58,8 +41,6 @@ import hashlib
 import itertools
 import re
 import os
-import sys
-import time
 
 import stem
 import stem.prereq
@@ -69,8 +50,6 @@ import stem.util.test_tools
 import stem.version
 
 import test.output
-
-from test.output import STATUS, ERROR, NO_NL, println
 
 CONFIG = stem.util.conf.config_dict('test', {
   'target.prereq': {},
@@ -104,8 +83,8 @@ Target = stem.util.enum.UppercaseEnum(
   'RUN_ALL',
 )
 
-TOR_VERSION = None
 RAN_TESTS = []
+TOR_VERSION = None
 
 # We make some paths relative to stem's base directory (the one above us)
 # rather than the process' cwd. This doesn't end with a slash.
@@ -308,116 +287,6 @@ def require_version(req_version):
   return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
 
 
-def check_stem_version():
-  return stem.__version__
-
-
-def check_tor_version(tor_path):
-  global TOR_VERSION
-
-  if TOR_VERSION is None:
-    TOR_VERSION = stem.version.get_system_tor_version(tor_path)
-
-  return str(TOR_VERSION).split()[0]
-
-
-def check_python_version():
-  return '.'.join(map(str, sys.version_info[:3]))
-
-
-def check_cryptography_version():
-  if stem.prereq.is_crypto_available():
-    import cryptography
-    return cryptography.__version__
-  else:
-    return 'missing'
-
-
-def check_pynacl_version():
-  if stem.prereq._is_pynacl_available():
-    import nacl
-    return nacl.__version__
-  else:
-    return 'missing'
-
-
-def check_mock_version():
-  if stem.prereq.is_mock_available():
-    try:
-      import unittest.mock as mock
-    except ImportError:
-      import mock
-
-    return mock.__version__
-  else:
-    return 'missing'
-
-
-def check_pyflakes_version():
-  try:
-    import pyflakes
-    return pyflakes.__version__
-  except ImportError:
-    return 'missing'
-
-
-def check_pycodestyle_version():
-  if stem.util.test_tools._module_exists('pycodestyle'):
-    import pycodestyle
-  elif stem.util.test_tools._module_exists('pep8'):
-    import pep8 as pycodestyle
-  else:
-    return 'missing'
-
-  return pycodestyle.__version__
-
-
-def clean_orphaned_pyc(paths):
-  """
-  Deletes any file with a *.pyc extention without a corresponding *.py.
-
-  :param list paths: paths to search for orphaned pyc files
-  """
-
-  return ['removed %s' % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
-
-
-def check_for_unused_tests(paths):
-  """
-  The 'test.unit_tests' and 'test.integ_tests' in our settings.cfg defines the
-  tests that we run. We do it this way so that we can control the order in
-  which our tests are run but there's a disadvantage: when we add new test
-  modules we can easily forget to add it there.
-
-  Checking to see if we have any unittest.TestCase subclasses not covered by
-  our settings.
-
-  :param list paths: paths to search for unused tests
-  """
-
-  unused_tests = []
-
-  for path in paths:
-    for py_path in stem.util.system.files_with_suffix(path, '.py'):
-      if _is_test_data(py_path):
-        continue
-
-      with open(py_path) as f:
-        file_contents = f.read()
-
-      test_match = re.search('^class (\S*)\(unittest.TestCase\):$', file_contents, re.MULTILINE)
-
-      if test_match:
-        class_name = test_match.groups()[0]
-        module_name = py_path.replace(os.path.sep, '.')[len(STEM_BASE) + 1:-3] + '.' + class_name
-
-        if not (module_name in CONFIG['test.unit_tests'] or module_name in CONFIG['test.integ_tests']):
-          unused_tests.append(module_name)
-
-  if unused_tests:
-    raise ValueError('Test modules are missing from our test/settings.cfg:\n%s' % '\n'.join(unused_tests))
-
-
 def register_new_capability(capability_type, msg, suppression_token = None):
   """
   Register new capability found during the tests.
@@ -433,35 +302,6 @@ def register_new_capability(capability_type, msg, suppression_token = None):
 
     if suppression_token:
       NEW_CAPABILITIES_SUPPRESSION_TOKENS.add(suppression_token)
-
-
-def _is_test_data(path):
-  return os.path.normpath(CONFIG['integ.test_directory']) in path
-
-
-def run_tasks(category, *tasks):
-  """
-  Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
-  or 'failed' for each unless we fail one that is marked as being required. If
-  that happens then we print its error message and call sys.exit().
-
-  :param str category: label for the series of tasks
-  :param list tasks: **Task** instances to be ran
-  """
-
-  test.output.print_divider(category, True)
-
-  for task in tasks:
-    if task is None:
-      continue
-
-    task.run()
-
-    if task.is_required and task.error:
-      println('\n%s\n' % task.error, ERROR)
-      sys.exit(1)
-
-  println()
 
 
 def get_all_combinations(attr, include_empty = False):
@@ -552,77 +392,22 @@ def get_protocolinfo_response(**attributes):
   return protocolinfo_response
 
 
-def tor_version():
+def tor_version(tor_path = None):
   """
   Provides the version of tor we're testing against.
 
+  :param str tor_path: location of tor executable to cehck the version of
+
   :returns: :class:`~stem.version.Version` of tor invoked by our integration
     tests
-
-  :raise: **ValueError** if :func:`~test.util.check_tor_version` isn't called
-    first
   """
 
-  if TOR_VERSION is None:
-    raise ValueError('BUG: check_tor_version() must be called before tor_version()')
+  global TOR_VERSION
+
+  if TOR_VERSION is None or tor_path:
+    TOR_VERSION = stem.version.get_system_tor_version(tor_path)
 
   return TOR_VERSION
-
-
-class Task(object):
-  """
-  Task we can process while running our tests. The runner can return either a
-  message or list of strings for its results.
-  """
-
-  def __init__(self, label, runner, args = None, is_required = True, print_result = True, print_runtime = False):
-    super(Task, self).__init__()
-
-    self.label = label
-    self.runner = runner
-    self.args = args
-    self.is_required = is_required
-    self.print_result = print_result
-    self.print_runtime = print_runtime
-    self.error = None
-
-    self.is_successful = False
-    self.result = None
-
-  def run(self):
-    start_time = time.time()
-    println('  %s...' % self.label, STATUS, NO_NL)
-
-    padding = 50 - len(self.label)
-    println(' ' * padding, NO_NL)
-
-    try:
-      if self.args:
-        self.result = self.runner(*self.args)
-      else:
-        self.result = self.runner()
-
-      self.is_successful = True
-      output_msg = 'done'
-
-      if self.print_result and isinstance(self.result, str):
-        output_msg = self.result
-      elif self.print_runtime:
-        output_msg += ' (%0.1fs)' % (time.time() - start_time)
-
-      println(output_msg, STATUS)
-
-      if self.print_result and isinstance(self.result, (list, tuple)):
-        for line in self.result:
-          println('    %s' % line, STATUS)
-    except Exception as exc:
-      output_msg = str(exc)
-
-      if not output_msg or self.is_required:
-        output_msg = 'failed'
-
-      println(output_msg, ERROR)
-      self.error = exc
 
 
 import test.runner  # needs to be imported at the end to avoid a circular dependency
