@@ -11,9 +11,8 @@ except ImportError:
   from io import StringIO
 
 import stem.connection
+import test.require
 import test.runner
-
-from test.util import require_controller
 
 
 class TestConnect(unittest.TestCase):
@@ -25,7 +24,7 @@ class TestConnect(unittest.TestCase):
   def tearDown(self):
     sys.stdout = self.original_stdout
 
-  @require_controller
+  @test.require.controller
   def test_connect(self):
     """
     Basic sanity checks for the connect function.
@@ -42,7 +41,7 @@ class TestConnect(unittest.TestCase):
 
     test.runner.exercise_controller(self, control_socket)
 
-  @require_controller
+  @test.require.controller
   def test_connect_port(self):
     """
     Basic sanity checks for the connect_port function.
@@ -62,7 +61,7 @@ class TestConnect(unittest.TestCase):
     else:
       self.assertEqual(control_socket, None)
 
-  @require_controller
+  @test.require.controller
   def test_connect_socket_file(self):
     """
     Basic sanity checks for the connect_socket_file function.

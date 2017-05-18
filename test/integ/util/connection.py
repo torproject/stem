@@ -5,14 +5,14 @@ that we're running.
 
 import unittest
 
+import test.require
 import test.runner
 
 from stem.util.connection import Resolver, get_connections, system_resolvers
-from test.util import require_ptrace
 
 
 class TestConnection(unittest.TestCase):
-  @require_ptrace
+  @test.require.ptrace
   def check_resolver(self, resolver):
     runner = test.runner.get_runner()
 

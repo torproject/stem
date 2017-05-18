@@ -6,17 +6,14 @@ import os
 import unittest
 
 import stem.descriptor
-
+import test.require
 import test.runner
 
-from test.util import (
-  register_new_capability,
-  only_run_once,
-)
+from test.util import register_new_capability
 
 
 class TestServerDescriptor(unittest.TestCase):
-  @only_run_once
+  @test.require.only_run_once
   def test_cached_descriptor(self):
     """
     Parses the cached descriptor file in our data directory, checking that it

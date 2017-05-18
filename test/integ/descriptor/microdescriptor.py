@@ -6,16 +6,14 @@ import os
 import unittest
 
 import stem.descriptor
+import test.require
 import test.runner
 
-from test.util import (
-  register_new_capability,
-  only_run_once,
-)
+from test.util import register_new_capability
 
 
 class TestMicrodescriptor(unittest.TestCase):
-  @only_run_once
+  @test.require.only_run_once
   def test_cached_microdescriptors(self):
     """
     Parses the cached microdescriptor file in our data directory, checking that

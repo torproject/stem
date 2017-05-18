@@ -20,15 +20,8 @@ import stem.util.str_tools
 import stem.util.system
 import stem.util.tor_tools
 import stem.version
+import test.require
 import test.runner
-
-from test.util import (
-  require_command,
-  require_controller,
-  require_version,
-)
-
-from test.util import only_run_once
 
 try:
   # added in python 3.3
@@ -53,7 +46,7 @@ class TestProcess(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.data_directory)
 
-  @require_controller
+  @test.require.controller
   def test_version_argument(self):
     """
     Check that 'tor --version' matches 'GETINFO version'.
@@ -199,7 +192,7 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('UseBridges' in output)
     self.assertTrue('SocksPort' in output)
 
-  @require_command('sleep')
+  @test.require.command('sleep')
   @patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope')))
   def test_no_orphaned_process(self):
     """
@@ -255,7 +248,7 @@ class TestProcess(unittest.TestCase):
 
     self.assertEqual(expected, result)
 
-  @require_version(stem.version.Requirement.TORRC_VIA_STDIN)
+  @test.require.version(stem.version.Requirement.TORRC_VIA_STDIN)
   def test_torrc_arguments_via_stdin(self):
     """
     Pass configuration options via stdin.
@@ -278,7 +271,7 @@ class TestProcess(unittest.TestCase):
     self.assertTrue('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' in output)
     self.assertTrue('Configuration was valid' in output)
 
-  @only_run_once
+  @test.require.only_run_once
   def test_can_run_multithreaded(self):
     """
     Our launch_tor() function uses signal to support its timeout argument.
@@ -321,7 +314,7 @@ class TestProcess(unittest.TestCase):
     self.assertEqual(None, launch_async_with_timeout(None))
     self.assertEqual(None, launch_async_with_timeout(stem.process.DEFAULT_INIT_TIMEOUT))
 
-  @only_run_once
+  @test.require.only_run_once
   @patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1')))
   def test_launch_tor_with_config_via_file(self):
     """
@@ -359,8 +352,8 @@ class TestProcess(unittest.TestCase):
       tor_process.kill()
       tor_process.wait()
 
-  @only_run_once
-  @require_version(stem.version.Requirement.TORRC_VIA_STDIN)
+  @test.require.only_run_once
+  @test.require.version(stem.version.Requirement.TORRC_VIA_STDIN)
   def test_launch_tor_with_config_via_stdin(self):
     """
     Exercises launch_tor_with_config when we provide our torrc via stdin.
@@ -394,7 +387,7 @@ class TestProcess(unittest.TestCase):
       tor_process.kill()
       tor_process.wait()
 
-  @only_run_once
+  @test.require.only_run_once
   def test_with_invalid_config(self):
     """
     Spawn a tor process with a configuration that should make it dead on arrival.
@@ -417,7 +410,7 @@ class TestProcess(unittest.TestCase):
       },
     )
 
-  @only_run_once
+  @test.require.only_run_once
   def test_launch_tor_with_timeout(self):
     """
     Runs launch_tor where it times out before completing.
@@ -432,9 +425,9 @@ class TestProcess(unittest.TestCase):
     if not (runtime > 0.05 and runtime < 1):
       self.fail('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
 
-  @require_command('sleep')
-  @require_version(stem.version.Requirement.TAKEOWNERSHIP)
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.command('sleep')
+  @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)
   @patch('os.getpid')
   def test_take_ownership_via_pid(self, getpid_mock):
     """
@@ -476,8 +469,8 @@ class TestProcess(unittest.TestCase):
 
     self.fail("tor didn't quit after the process that owned it terminated")
 
-  @require_version(stem.version.Requirement.TAKEOWNERSHIP)
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)
   def test_take_ownership_via_controller(self):
     """
     Checks that the tor process quits after the controller that owns it

@@ -7,16 +7,12 @@ import unittest
 
 import stem.prereq
 import stem.version
+import test.require
 import test.runner
-
-from test.util import (
-  require_command,
-  require_controller,
-)
 
 
 class TestVersion(unittest.TestCase):
-  @require_command('tor')
+  @test.require.command('tor')
   def test_get_system_tor_version(self):
     """
     Basic verification checks for the get_system_tor_version() function.
@@ -34,7 +30,7 @@ class TestVersion(unittest.TestCase):
     # try running against a command that doesn't exist
     self.assertRaises(IOError, stem.version.get_system_tor_version, 'blarg')
 
-  @require_controller
+  @test.require.controller
   def test_getinfo_version_parsing(self):
     """
     Issues a 'GETINFO version' query to our test instance and makes sure that

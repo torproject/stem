@@ -8,8 +8,7 @@ import unittest
 
 import stem.descriptor
 import stem.prereq
-
-from test.util import require_cryptography
+import test.require
 
 from stem.descriptor.hidden_service_descriptor import (
   REQUIRED_FIELDS,
@@ -274,7 +273,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual(datetime.datetime(2014, 10, 31, 23, 0, 0), desc.published)
     self.assertEqual([2, 3], desc.protocol_versions)
 
-  @require_cryptography
+  @test.require.cryptography
   def test_with_basic_auth(self):
     """
     Parse a descriptor with introduction-points encrypted with basic auth.
@@ -321,7 +320,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertTrue('MIGJAoGBAM7B/cymp' in point.service_key)
     self.assertEqual([], point.intro_authentication)
 
-  @require_cryptography
+  @test.require.cryptography
   def test_with_stealth_auth(self):
     """
     Parse a descriptor with introduction-points encrypted with stealth auth.

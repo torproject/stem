@@ -12,10 +12,8 @@ import unittest
 
 import stem
 import stem.util.system
-
+import test.require
 import test.util
-
-from test.util import only_run_once
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
@@ -110,7 +108,7 @@ def _assert_has_all_files(path):
 
 
 class TestInstallation(unittest.TestCase):
-  @only_run_once
+  @test.require.only_run_once
   def test_install(self):
     """
     Installs with 'python setup.py install' and checks we can use what we
@@ -126,7 +124,7 @@ class TestInstallation(unittest.TestCase):
     self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % INSTALL_PATH])[0])
     _assert_has_all_files(INSTALL_PATH)
 
-  @only_run_once
+  @test.require.only_run_once
   def test_sdist(self):
     """
     Creates a source distribution tarball with 'python setup.py sdist' and

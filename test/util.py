@@ -12,24 +12,6 @@ Helper functions for our test framework.
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
 
-This module also provides generally useful test helpers...
-
-::
-
-  Test Requirements
-  |- only_run_once - skip test if it has been ran before
-  |- require - skips the test unless a requirement is met
-  |
-  |- require_cryptography - skips test unless the cryptography module is present
-  |- require_pynacl - skips test unless the pynacl module is present
-  |- require_command - requires a command to be on the path
-  |- require_proc - requires the platform to have recognized /proc contents
-  |
-  |- require_controller - skips test unless tor provides a controller endpoint
-  |- require_version - skips test unless we meet a tor version requirement
-  |- require_ptrace - requires 'DisableDebuggerAttachment' to be set
-  +- require_online - skips unless targets allow for online tests
-
   get_message - provides a ControlMessage instance
   get_protocolinfo_response - provides a ProtocolInfoResponse instance
   get_all_combinations - provides all combinations of attributes
@@ -43,13 +25,9 @@ import re
 import os
 
 import stem
-import stem.prereq
 import stem.util.conf
-import stem.util.system
-import stem.util.test_tools
+import stem.util.enum
 import stem.version
-
-import test.output
 
 CONFIG = stem.util.conf.config_dict('test', {
   'target.prereq': {},
@@ -83,7 +61,6 @@ Target = stem.util.enum.UppercaseEnum(
   'RUN_ALL',
 )
 
-RAN_TESTS = []
 TOR_VERSION = None
 
 # We make some paths relative to stem's base directory (the one above us)
@@ -209,82 +186,6 @@ def get_new_capabilities():
   """
 
   return NEW_CAPABILITIES
-
-
-def only_run_once(func):
-  """
-  Skips the test if it has ran before. If it hasn't then flags it as being ran.
-  This is useful to prevent lengthy tests that are independent of integ targets
-  from being run repeatedly with ``RUN_ALL``.
-  """
-
-  def wrapped(self, *args, **kwargs):
-    if self.id() not in RAN_TESTS:
-      RAN_TESTS.append(self.id())
-      return func(self, *args, **kwargs)
-    else:
-      self.skipTest('(already ran)')
-
-  return wrapped
-
-
-def require(condition, message):
-  """
-  Skips teh test unless the conditional evaluates to 'true'.
-  """
-
-  def decorator(func):
-    def wrapped(self, *args, **kwargs):
-      if condition():
-        return func(self, *args, **kwargs)
-      else:
-        self.skipTest('(%s)' % message)
-
-    return wrapped
-
-  return decorator
-
-
-def _can_access_controller():
-  return test.runner.get_runner().is_accessible()
-
-
-def _can_ptrace():
-  # If we're running a tor version where ptrace is disabled and we didn't
-  # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-
-  has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
-  return not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options()
-
-
-def _is_online():
-  return Target.ONLINE in test.runner.get_runner().attribute_targets
-
-
-require_cryptography = require(stem.prereq.is_crypto_available, 'requires cryptography')
-require_pynacl = require(stem.prereq._is_pynacl_available, 'requires pynacl module')
-require_proc = require(stem.util.proc.is_available, 'proc unavailable')
-require_controller = require(_can_access_controller, 'no connection')
-require_ptrace = require(_can_ptrace, 'DisableDebuggerAttachment is set')
-require_online = require(_is_online, 'requires online target')
-
-
-def require_command(cmd):
-  """
-  Skips the test unless a command is available on the path.
-  """
-
-  return require(lambda: stem.util.system.is_available(cmd), '%s unavailable' % cmd)
-
-
-def require_version(req_version):
-  """
-  Skips the test unless we meet the required version.
-
-  :param stem.version.Version req_version: required tor version for the test
-  """
-
-  return require(lambda: tor_version() >= req_version, 'requires %s' % req_version)
 
 
 def register_new_capability(capability_type, msg, suppression_token = None):

@@ -6,19 +6,15 @@ we're running.
 import os
 import unittest
 
+import test.require
 import test.runner
 
 from stem.util import proc
 
-from test.util import (
-  require_proc,
-  require_ptrace,
-)
-
 
 class TestProc(unittest.TestCase):
-  @require_proc
-  @require_ptrace
+  @test.require.proc
+  @test.require.ptrace
   def test_cwd(self):
     """
     Checks that stem.util.proc.cwd matches our tor instance's cwd.
@@ -28,7 +24,7 @@ class TestProc(unittest.TestCase):
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
     self.assertEqual(tor_cwd, proc.cwd(runner_pid))
 
-  @require_proc
+  @test.require.proc
   def test_uid(self):
     """
     Checks that stem.util.proc.uid matches our tor instance's uid.
@@ -37,7 +33,7 @@ class TestProc(unittest.TestCase):
     tor_pid = test.runner.get_runner().get_pid()
     self.assertEqual(os.geteuid(), proc.uid(tor_pid))
 
-  @require_proc
+  @test.require.proc
   def test_memory_usage(self):
     """
     Checks that stem.util.proc.memory_usage looks somewhat reasonable.
@@ -50,7 +46,7 @@ class TestProc(unittest.TestCase):
     self.assertTrue(res_size > 1024)
     self.assertTrue(vir_size > 1024)
 
-  @require_proc
+  @test.require.proc
   def test_stats(self):
     """
     Checks that stem.util.proc.stats looks somewhat reasonable.
@@ -65,8 +61,8 @@ class TestProc(unittest.TestCase):
     self.assertTrue(float(stime) >= 0)
     self.assertTrue(float(start_time) > proc.system_start_time())
 
-  @require_proc
-  @require_ptrace
+  @test.require.proc
+  @test.require.ptrace
   def test_connections(self):
     """
     Checks for our control port in the stem.util.proc.connections output if
