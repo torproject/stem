@@ -6,10 +6,6 @@ Helper functions for our test framework.
 
 ::
 
-  get_unit_tests - provides our unit tests
-  get_integ_tests - provides our integration tests
-
-  get_torrc_entries - provides the torrc entries for a given target
   get_all_combinations - provides all combinations of attributes
   tor_version - provides the version of tor we're testing against
 """
@@ -18,16 +14,8 @@ import itertools
 import os
 
 import stem
-import stem.util.conf
 import stem.util.enum
 import stem.version
-
-CONFIG = stem.util.conf.config_dict('test', {
-  'target.torrc': {},
-  'integ.test_directory': './test/data',
-  'test.unit_tests': '',
-  'test.integ_tests': '',
-})
 
 # Integration targets fall into two categories:
 #
@@ -75,81 +63,6 @@ with open(os.path.join(STEM_BASE, '.gitignore')) as ignore_file:
       IGNORED_FILE_TYPES.append(line[2:].strip())
 
 
-def get_unit_tests(module_prefix = None):
-  """
-  Provides the classes for our unit tests.
-
-  :param str module_prefix: only provide the test if the module starts with
-    this substring
-
-  :returns: an **iterator** for our unit tests
-  """
-
-  if module_prefix and not module_prefix.startswith('test.unit.'):
-    module_prefix = 'test.unit.' + module_prefix
-
-  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
-
-
-def get_integ_tests(module_prefix = None):
-  """
-  Provides the classes for our integration tests.
-
-  :param str module_prefix: only provide the test if the module starts with
-    this substring
-
-  :returns: an **iterator** for our integration tests
-  """
-
-  if module_prefix and not module_prefix.startswith('test.integ.'):
-    module_prefix = 'test.integ.' + module_prefix
-
-  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
-
-
-def _get_tests(modules, module_prefix):
-  for import_name in modules:
-    if import_name:
-      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
-
-      if not module_prefix or module.startswith(module_prefix):
-        yield import_name
-      elif module_prefix.startswith(module):
-        # single test for this module
-
-        test_module = module_prefix.rsplit('.', 1)[1]
-        yield '%s.%s' % (import_name, test_module)
-
-
-def get_torrc_entries(target):
-  """
-  Provides the torrc entries used to run the given target.
-
-  :param Target target: target to provide the custom torrc contents of
-
-  :returns: list of :class:`~test.runner.Torrc` entries for the given target
-
-  :raises: **ValueError** if the target.torrc config has entries that don't map
-    to test.runner.Torrc
-  """
-
-  # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
-
-  config_csv = CONFIG['target.torrc'].get(target)
-  torrc_opts = []
-
-  if config_csv:
-    for opt in config_csv.split(','):
-      opt = opt.strip()
-
-      if opt in test.runner.Torrc.keys():
-        torrc_opts.append(test.runner.Torrc[opt])
-      else:
-        raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
-
-  return torrc_opts
-
-
 def get_new_capabilities():
   """
   Provides a list of capabilities tor supports but stem doesn't, as discovered
@@ -185,7 +98,7 @@ def get_all_combinations(attr, include_empty = False):
 
   ::
 
-    >>> list(test.mocking.get_all_combinations(['a', 'b', 'c']))
+    >>> list(test.util.get_all_combinations(['a', 'b', 'c']))
     [('a',), ('b',), ('c',), ('a', 'b'), ('a', 'c'), ('b', 'c'), ('a', 'b', 'c')]
 
   :param list attr: attributes to provide combinations for
@@ -231,6 +144,3 @@ def tor_version(tor_path = None):
     TOR_VERSION = stem.version.get_system_tor_version(tor_path)
 
   return TOR_VERSION
-
-
-import test.runner  # needs to be imported at the end to avoid a circular dependency

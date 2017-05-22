@@ -37,8 +37,10 @@ from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
 from test.util import STEM_BASE
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'integ.test_directory': './test/data',
+  'test.unit_tests': '',
+  'test.integ_tests': '',
   'target.prereq': {},
+  'target.torrc': {},
 })
 
 MOCK_UNAVAILABLE_MSG = """\
@@ -69,6 +71,81 @@ if stem.prereq._is_python_26():
     self.assertEqual(set(expected), set(actual))
 
   unittest.TestCase.assertItemsEqual = assertItemsEqual
+
+
+def get_unit_tests(module_prefix = None):
+  """
+  Provides the classes for our unit tests.
+
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
+
+  :returns: an **iterator** for our unit tests
+  """
+
+  if module_prefix and not module_prefix.startswith('test.unit.'):
+    module_prefix = 'test.unit.' + module_prefix
+
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
+
+
+def get_integ_tests(module_prefix = None):
+  """
+  Provides the classes for our integration tests.
+
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
+
+  :returns: an **iterator** for our integration tests
+  """
+
+  if module_prefix and not module_prefix.startswith('test.integ.'):
+    module_prefix = 'test.integ.' + module_prefix
+
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
+
+
+def _get_tests(modules, module_prefix):
+  for import_name in modules:
+    if import_name:
+      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
+
+      if not module_prefix or module.startswith(module_prefix):
+        yield import_name
+      elif module_prefix.startswith(module):
+        # single test for this module
+
+        test_module = module_prefix.rsplit('.', 1)[1]
+        yield '%s.%s' % (import_name, test_module)
+
+
+def get_torrc_entries(target):
+  """
+  Provides the torrc entries used to run the given target.
+
+  :param Target target: target to provide the custom torrc contents of
+
+  :returns: list of :class:`~test.runner.Torrc` entries for the given target
+
+  :raises: **ValueError** if the target.torrc config has entries that don't map
+    to test.runner.Torrc
+  """
+
+  # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
+
+  config_csv = CONFIG['target.torrc'].get(target)
+  torrc_opts = []
+
+  if config_csv:
+    for opt in config_csv.split(','):
+      opt = opt.strip()
+
+      if opt in test.runner.Torrc.keys():
+        torrc_opts.append(test.runner.Torrc[opt])
+      else:
+        raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
+
+  return torrc_opts
 
 
 def main():
@@ -173,7 +250,7 @@ def main():
     test.output.print_divider('UNIT TESTS', True)
     error_tracker.set_category('UNIT TEST')
 
-    for test_class in test.util.get_unit_tests(args.specific_test):
+    for test_class in get_unit_tests(args.specific_test):
       run_result = _run_test(args, test_class, output_filters, logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -205,7 +282,7 @@ def main():
       error_tracker.set_category(target)
 
       try:
-        integ_runner.start(args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
+        integ_runner.start(args.attribute_targets, args.tor_path, extra_torrc_opts = get_torrc_entries(target))
 
         println('Running tests...\n', STATUS)
 
@@ -213,7 +290,7 @@ def main():
         if integ_runner.is_accessible():
           owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
 
-        for test_class in test.util.get_integ_tests(args.specific_test):
+        for test_class in get_integ_tests(args.specific_test):
           run_result = _run_test(args, test_class, output_filters, logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
 
