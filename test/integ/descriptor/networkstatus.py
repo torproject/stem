@@ -9,20 +9,15 @@ import stem
 import stem.descriptor
 import stem.descriptor.remote
 import stem.version
+import test
+import test.require
 import test.runner
-
-from test.util import (
-  register_new_capability,
-  only_run_once,
-  require_cryptography,
-  require_online,
-)
 
 
 class TestNetworkStatus(unittest.TestCase):
-  @require_online
-  @require_cryptography
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
+  @test.require.cryptography
   def test_signature_validation(self):
     """
     The full consensus is pretty sizable so rather than storing a copy of it
@@ -31,7 +26,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     stem.descriptor.remote.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT, validate = True).run()
 
-  @only_run_once
+  @test.require.only_run_once
   def test_cached_consensus(self):
     """
     Parses the cached-consensus file in our data directory.
@@ -57,18 +52,18 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag and flag not in reported_flags:
-            register_new_capability('Flag', flag)
+            test.register_new_capability('Flag', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Consensus Line', line, suppression_token = line.split()[0])
+          test.register_new_capability('Consensus Line', line, suppression_token = line.split()[0])
 
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
 
     self.assertTrue(count > 100)
 
-  @only_run_once
+  @test.require.only_run_once
   def test_cached_microdesc_consensus(self):
     """
     Parses the cached-microdesc-consensus file in our data directory.
@@ -91,10 +86,10 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag:
-            register_new_capability('Flag (microdescriptor)', flag)
+            test.register_new_capability('Flag (microdescriptor)', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
+          test.register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
 
     self.assertTrue(count > 100)

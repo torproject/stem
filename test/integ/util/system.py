@@ -10,14 +10,8 @@ import unittest
 
 import stem.util.proc
 import stem.util.system
+import test.require
 import test.runner
-
-from test.util import (
-  require,
-  require_command,
-  require_proc,
-  require_ptrace,
-)
 
 try:
   # added in python 3.3
@@ -68,10 +62,10 @@ def _has_port():
   return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
 
 
-require_single_tor_instance = require(_is_single_tor_running, 'multiple tor instances')
-require_control_port = require(_has_port, 'test instance has no port')
-require_linux = require(_is_linux, 'linux only')
-require_bsd = require(stem.util.system.is_bsd, 'bsd only')
+require_single_tor_instance = test.require.needs(_is_single_tor_running, 'multiple tor instances')
+require_control_port = test.require.needs(_has_port, 'test instance has no port')
+require_linux = test.require.needs(_is_linux, 'linux only')
+require_bsd = test.require.needs(stem.util.system.is_bsd, 'bsd only')
 
 
 class TestSystem(unittest.TestCase):
@@ -91,7 +85,7 @@ class TestSystem(unittest.TestCase):
 
     self.assertFalse(stem.util.system.is_available('blarg_and_stuff'))
 
-  @require_command('ps')
+  @test.require.command('ps')
   def test_is_running(self):
     """
     Checks the stem.util.system.is_running function.
@@ -117,8 +111,8 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
     self.assertEqual(None, stem.util.system.pid_by_name('blarg_and_stuff'))
 
-  @require_command('pgrep')
   @require_single_tor_instance
+  @test.require.command('pgrep')
   def test_pid_by_name_pgrep(self):
     """
     Tests the pid_by_name function with a pgrep response.
@@ -134,8 +128,8 @@ class TestSystem(unittest.TestCase):
       tor_cmd = test.runner.get_runner().get_tor_command(True)
       self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
-  @require_command('pidof')
   @require_single_tor_instance
+  @test.require.command('pidof')
   def test_pid_by_name_pidof(self):
     """
     Tests the pid_by_name function with a pidof response.
@@ -152,8 +146,8 @@ class TestSystem(unittest.TestCase):
       self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   @require_linux
-  @require_command('ps')
   @require_single_tor_instance
+  @test.require.command('ps')
   def test_pid_by_name_ps_linux(self):
     """
     Tests the pid_by_name function with the linux variant of ps.
@@ -170,8 +164,8 @@ class TestSystem(unittest.TestCase):
       self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
   @require_bsd
-  @require_command('ps')
   @require_single_tor_instance
+  @test.require.command('ps')
   def test_pid_by_name_ps_bsd(self):
     """
     Tests the pid_by_name function with the bsd variant of ps.
@@ -187,9 +181,9 @@ class TestSystem(unittest.TestCase):
       tor_cmd = test.runner.get_runner().get_tor_command(True)
       self.assertEqual(tor_pid, stem.util.system.pid_by_name(tor_cmd))
 
-  @require_ptrace
-  @require_command('lsof')
   @require_single_tor_instance
+  @test.require.ptrace
+  @test.require.command('lsof')
   def test_pid_by_name_lsof(self):
     """
     Tests the pid_by_name function with a lsof response.
@@ -208,8 +202,8 @@ class TestSystem(unittest.TestCase):
       if len(all_tor_pids) == 1:
         self.assertEqual(our_tor_pid, all_tor_pids[0])
 
-  @require_command('tasklist')
   @require_single_tor_instance
+  @test.require.command('tasklist')
   def test_pid_by_name_tasklist(self):
     """
     Tests the pid_by_name function with a tasklist response.
@@ -218,8 +212,8 @@ class TestSystem(unittest.TestCase):
     runner = test.runner.get_runner()
     self.assertEqual(runner.get_pid(), stem.util.system.pid_by_name(runner.get_tor_command(True)))
 
-  @require_ptrace
   @require_control_port
+  @test.require.ptrace
   def test_pid_by_port(self):
     """
     Checks general usage of the stem.util.system.pid_by_port function.
@@ -243,9 +237,9 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(None, stem.util.system.pid_by_port(99999))
 
   @require_linux
-  @require_ptrace
   @require_control_port
-  @require_command('netstat')
+  @test.require.ptrace
+  @test.require.command('netstat')
   def test_pid_by_port_netstat(self):
     """
     Tests the pid_by_port function with a netstat response.
@@ -266,9 +260,9 @@ class TestSystem(unittest.TestCase):
       self.assertEqual(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
   @require_bsd
-  @require_ptrace
   @require_control_port
-  @require_command('sockstat')
+  @test.require.ptrace
+  @test.require.command('sockstat')
   def test_pid_by_port_sockstat(self):
     """
     Tests the pid_by_port function with a sockstat response.
@@ -283,9 +277,9 @@ class TestSystem(unittest.TestCase):
       tor_pid = test.runner.get_runner().get_pid()
       self.assertEqual(tor_pid, stem.util.system.pid_by_port(test.runner.CONTROL_PORT))
 
-  @require_ptrace
   @require_control_port
-  @require_command('lsof')
+  @test.require.ptrace
+  @test.require.command('lsof')
   def test_pid_by_port_lsof(self):
     """
     Tests the pid_by_port function with a lsof response.
@@ -328,7 +322,7 @@ class TestSystem(unittest.TestCase):
     pids = stem.util.system.pids_by_user(getpass.getuser())
     self.assertTrue(os.getpid() in pids)
 
-  @require_ptrace
+  @test.require.ptrace
   def test_cwd(self):
     """
     Checks general usage of the stem.util.system.cwd function.
@@ -343,8 +337,8 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(tor_cwd, stem.util.system.cwd(runner_pid))
     self.assertEqual(None, stem.util.system.cwd(99999))
 
-  @require_ptrace
-  @require_command('pwdx')
+  @test.require.ptrace
+  @test.require.command('pwdx')
   def test_cwd_pwdx(self):
     """
     Tests the pid_by_cwd function with a pwdx response.
@@ -363,8 +357,8 @@ class TestSystem(unittest.TestCase):
       runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
       self.assertEqual(tor_cwd, stem.util.system.cwd(runner_pid))
 
-  @require_ptrace
-  @require_command('lsof')
+  @test.require.ptrace
+  @test.require.command('lsof')
   def test_cwd_lsof(self):
     """
     Tests the pid_by_cwd function with a lsof response.
@@ -392,7 +386,7 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(None, stem.util.system.user(-5))
     self.assertEqual(None, stem.util.system.start_time(98765))
 
-  @require_proc
+  @test.require.proc
   def test_user_proc(self):
     """
     Tests the user function with a proc response.
@@ -408,7 +402,7 @@ class TestSystem(unittest.TestCase):
       pid = test.runner.get_runner().get_pid()
       self.assertTrue(getpass.getuser(), stem.util.system.user(pid))
 
-  @require_command('ps')
+  @test.require.command('ps')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   def test_user_ps(self):
     """
@@ -427,7 +421,7 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(None, stem.util.system.start_time(-5))
     self.assertEqual(None, stem.util.system.start_time(98765))
 
-  @require_proc
+  @test.require.proc
   def test_start_time_proc(self):
     """
     Tests the start_time function with a proc response.
@@ -441,7 +435,7 @@ class TestSystem(unittest.TestCase):
       pid = test.runner.get_runner().get_pid()
       self.assertTrue(stem.util.system.start_time(pid) >= 0)
 
-  @require_command('ps')
+  @test.require.command('ps')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   def test_start_time_ps(self):
     """

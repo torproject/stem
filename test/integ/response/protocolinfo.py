@@ -9,10 +9,10 @@ import stem.connection
 import stem.socket
 import stem.util.system
 import stem.version
+import test
+import test.integ.util.system
+import test.require
 import test.runner
-
-from test.integ.util.system import filter_system_call
-from test.util import require_controller, tor_version
 
 try:
   # added in python 3.3
@@ -22,7 +22,7 @@ except ImportError:
 
 
 class TestProtocolInfo(unittest.TestCase):
-  @require_controller
+  @test.require.controller
   def test_parsing(self):
     """
     Makes a PROTOCOLINFO query and processes the response for our control
@@ -44,7 +44,7 @@ class TestProtocolInfo(unittest.TestCase):
 
     self.assert_matches_test_config(protocolinfo_response)
 
-  @require_controller
+  @test.require.controller
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_get_protocolinfo_path_expansion(self):
@@ -75,7 +75,7 @@ class TestProtocolInfo(unittest.TestCase):
 
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
 
-    call_replacement = filter_system_call(lookup_prefixes)
+    call_replacement = test.integ.util.system.filter_system_call(lookup_prefixes)
 
     with patch('stem.util.system.call') as call_mock:
       call_mock.side_effect = call_replacement
@@ -87,7 +87,7 @@ class TestProtocolInfo(unittest.TestCase):
       self.assertTrue(control_socket.is_alive())
       control_socket.close()
 
-  @require_controller
+  @test.require.controller
   def test_multiple_protocolinfo_calls(self):
     """
     Tests making repeated PROTOCOLINFO queries. This use case is interesting
@@ -100,7 +100,7 @@ class TestProtocolInfo(unittest.TestCase):
         protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
         self.assert_matches_test_config(protocolinfo_response)
 
-  @require_controller
+  @test.require.controller
   def test_pre_disconnected_query(self):
     """
     Tests making a PROTOCOLINFO query when previous use of the socket had
@@ -131,7 +131,7 @@ class TestProtocolInfo(unittest.TestCase):
     if test.runner.Torrc.COOKIE in tor_options:
       auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-      if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
+      if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       chroot_path = runner.get_chroot()

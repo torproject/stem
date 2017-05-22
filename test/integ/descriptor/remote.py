@@ -10,16 +10,12 @@ import stem.descriptor.networkstatus
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
-
-from test.util import (
-  only_run_once,
-  require_online,
-)
+import test.require
 
 
 class TestDescriptorDownloader(unittest.TestCase):
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_shorthand_aliases(self):
     """
     Quick sanity test that we can call our shorthand aliases for getting
@@ -35,8 +31,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     consensus = list(stem.descriptor.remote.get_consensus())
     self.assertTrue(len(consensus) > 50)
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_authorities_are_up_to_date(self):
     """
     Check that our hardcoded directory authority data matches the present
@@ -62,8 +58,8 @@ class TestDescriptorDownloader(unittest.TestCase):
         if getattr(auth, attr) != getattr(stem_auth, attr):
           self.fail('%s has %s %s, but we expected %s' % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_using_authorities(self):
     """
     Fetches a descriptor from each of the directory authorities. This is
@@ -94,8 +90,8 @@ class TestDescriptorDownloader(unittest.TestCase):
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_use_directory_mirrors(self):
     """
     Checks that we can fetch and use a list of directory mirrors.
@@ -105,8 +101,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     downloader.use_directory_mirrors()
     self.assertTrue(len(downloader._endpoints) > 50)
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_get_server_descriptors(self):
     """
     Exercises the downloader's get_server_descriptors() method.
@@ -138,8 +134,8 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_get_extrainfo_descriptors(self):
     """
     Exercises the downloader's get_extrainfo_descriptors() method.
@@ -164,8 +160,8 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_get_consensus(self):
     """
     Exercises the downloader's get_consensus() method.
@@ -180,8 +176,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(len(consensus) > 50)
     self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_get_microdescriptor_consensus(self):
     """
     Exercises the downloader's get_consensus() method for fetching a
@@ -197,8 +193,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(len(consensus) > 50)
     self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryMicroV3))
 
-  @require_online
-  @only_run_once
+  @test.require.only_run_once
+  @test.require.online
   def test_get_key_certificates(self):
     """
     Exercises the downloader's get_key_certificates() method.
@@ -223,7 +219,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertEqual(2, len(list(multiple_query)))
 
-  @require_online
+  @test.require.online
   def test_that_cache_is_up_to_date(self):
     """
     Check if the cached fallback directories bundled with Stem are up to date
@@ -236,7 +232,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     if cached_fallback_directories != latest_fallback_directories:
       self.fail("Stem's cached fallback directories are out of date. Please run 'cache_fallback_directories.py'...\n\n%s" % stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
 
-  @require_online
+  @test.require.online
   def test_fallback_directory_reachability(self):
     """
     Fetch information from each fallback directory to confirm that it's

@@ -19,7 +19,6 @@ about the tor test instance they're running against.
     |- stop - stops our tor instance and cleans up any temporary files
     |- is_running - checks if our tor test instance is running
     |- is_accessible - checks if our tor instance can be connected to
-    |- is_ptraceable - checks if DisableDebuggerAttachment is set
     |- get_options - custom torrc options used for our test instance
     |- get_test_dir - testing directory path
     |- get_torrc_path - path to our tor instance's torrc
@@ -48,10 +47,9 @@ import stem.process
 import stem.socket
 import stem.util.conf
 import stem.util.enum
-import stem.version
+import test
 
 from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
-from test.util import Target, STEM_BASE, tor_version
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
@@ -147,7 +145,6 @@ class _MockChrootFile(object):
 
 class Runner(object):
   def __init__(self):
-    self.run_target = None
     self.attribute_targets = []
 
     self._runner_lock = threading.RLock()
@@ -166,12 +163,11 @@ class Runner(object):
 
     self._original_recv_message = None
 
-  def start(self, run_target, attribute_targets, tor_cmd, extra_torrc_opts):
+  def start(self, attribute_targets, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
 
-    :param Target run_target: configuration we're running with
     :param list attribute_targets: **Targets** for our non-configuration attributes
     :param str tor_cmd: command to start tor with
     :param list extra_torrc_opts: additional torrc options for our test instance
@@ -180,7 +176,6 @@ class Runner(object):
     """
 
     with self._runner_lock:
-      self.run_target = run_target
       self.attribute_targets = attribute_targets
 
       # if we're holding on to a tor process (running or not) then clean up after
@@ -197,13 +192,13 @@ class Runner(object):
       config_test_dir = CONFIG['integ.test_directory']
 
       if config_test_dir:
-        self._test_dir = stem.util.system.expand_path(config_test_dir, STEM_BASE)
+        self._test_dir = stem.util.system.expand_path(config_test_dir, test.STEM_BASE)
       else:
         self._test_dir = tempfile.mktemp('-stem-integ')
 
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
 
-      if Target.RELATIVE in self.attribute_targets:
+      if test.Target.RELATIVE in self.attribute_targets:
         tor_cwd = os.path.dirname(self._test_dir)
 
         if not os.path.exists(tor_cwd):
@@ -227,7 +222,7 @@ class Runner(object):
         # strip the testing directory from recv_message responses if we're
         # simulating a chroot setup
 
-        if Target.CHROOT in self.attribute_targets and not self._original_recv_message:
+        if test.Target.CHROOT in self.attribute_targets and not self._original_recv_message:
           # TODO: when we have a function for telling stem the chroot we'll
           # need to set that too
 
@@ -240,7 +235,7 @@ class Runner(object):
           stem.socket.recv_message = _chroot_recv_message
 
         # revert our cwd back to normal
-        if Target.RELATIVE in self.attribute_targets:
+        if test.Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)
       except OSError as exc:
         raise exc
@@ -314,20 +309,6 @@ class Runner(object):
     """
 
     return Torrc.PORT in self._custom_opts or Torrc.SOCKET in self._custom_opts
-
-  def is_ptraceable(self):
-    """
-    Checks if tor's 'DisableDebuggerAttachment' option is set. This feature has
-    a lot of adverse side effects (:trac:`3313`).
-
-    :returns: True if debugger attachment is allowed, False otherwise
-    """
-
-    # If we're running a tor version where ptrace is disabled and we didn't
-    # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-
-    has_option = tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
-    return not has_option or Torrc.PTRACE in self.get_options()
 
   def get_options(self):
     """
@@ -542,7 +523,7 @@ class Runner(object):
     logging_path = CONFIG['integ.log']
 
     if logging_path:
-      logging_path = stem.util.system.expand_path(logging_path, STEM_BASE)
+      logging_path = stem.util.system.expand_path(logging_path, test.STEM_BASE)
       println('  configuring logger (%s)... ' % logging_path, STATUS, NO_NL)
 
       # delete the old log
@@ -597,7 +578,7 @@ class Runner(object):
       self._tor_process = stem.process.launch_tor(
         tor_cmd = tor_cmd,
         torrc_path = os.path.join(self._test_dir, 'torrc'),
-        completion_percent = 100 if Target.ONLINE in self.attribute_targets else 5,
+        completion_percent = 100 if test.Target.ONLINE in self.attribute_targets else 5,
         init_msg_handler = lambda line: println('  %s' % line, SUBSTATUS),
         take_ownership = True,
       )

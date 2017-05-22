@@ -12,9 +12,9 @@ various error conditions, and make sure that the right exception is raised.
 import unittest
 
 import stem.connection
+import test
 
-import test.util
-
+from stem.response import ControlMessage
 from stem.util import log
 
 try:
@@ -34,9 +34,9 @@ class TestAuthenticate(unittest.TestCase):
 
     # tests where get_protocolinfo succeeds
 
-    get_protocolinfo_mock.return_value = test.util.get_protocolinfo_response(
-      auth_methods = (stem.connection.AuthMethod.NONE, ),
-    )
+    protocolinfo_message = ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
+    protocolinfo_message.auth_methods = (stem.connection.AuthMethod.NONE, )
+    get_protocolinfo_mock.return_value = protocolinfo_message
 
     stem.connection.authenticate(None)
 
@@ -86,7 +86,7 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthChallengeFailed(None, None),
       stem.ControllerError(None))
 
-    auth_method_combinations = test.util.get_all_combinations([
+    auth_method_combinations = test.get_all_combinations([
       stem.connection.AuthMethod.NONE,
       stem.connection.AuthMethod.PASSWORD,
       stem.connection.AuthMethod.COOKIE,
@@ -94,7 +94,8 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthMethod.UNKNOWN,
     ], include_empty = True)
 
-    protocolinfo = test.util.get_protocolinfo_response(cookie_path = '/tmp/blah')
+    protocolinfo = ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
+    protocolinfo.cookie_path = '/tmp/blah'
 
     for auth_methods in auth_method_combinations:
       for auth_none_exc in all_auth_none_exc:

@@ -9,9 +9,7 @@ import stem.response.getinfo
 import stem.socket
 import stem.util.str_tools
 
-import test.util
-
-EMPTY_RESPONSE = '250 OK'
+from stem.response import ControlMessage
 
 SINGLE_RESPONSE = """\
 250-version=0.2.3.11-alpha-dev
@@ -57,8 +55,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply without options (just calling "GETINFO").
     """
 
-    control_message = test.util.get_message(EMPTY_RESPONSE)
-    stem.response.convert('GETINFO', control_message)
+    control_message = ControlMessage.from_str('250 OK\r\n', 'GETINFO')
 
     # now this should be a GetInfoResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -71,8 +68,7 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply response for a single parameter.
     """
 
-    control_message = test.util.get_message(SINGLE_RESPONSE)
-    stem.response.convert('GETINFO', control_message)
+    control_message = ControlMessage.from_str(SINGLE_RESPONSE, 'GETINFO', normalize = True)
     self.assertEqual({'version': b'0.2.3.11-alpha-dev'}, control_message.entries)
 
   def test_batch_response(self):
@@ -80,15 +76,13 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETINFO reply for muiltiple parameters.
     """
 
-    control_message = test.util.get_message(BATCH_RESPONSE)
-    stem.response.convert('GETINFO', control_message)
-
     expected = {
       'version': b'0.2.3.11-alpha-dev',
       'address': b'67.137.76.214',
       'fingerprint': b'5FDE0422045DF0E1879A3738D09099EB4A0C5BA0',
     }
 
+    control_message = ControlMessage.from_str(BATCH_RESPONSE, 'GETINFO', normalize = True)
     self.assertEqual(expected, control_message.entries)
 
   def test_multiline_response(self):
@@ -97,14 +91,12 @@ class TestGetInfoResponse(unittest.TestCase):
     value.
     """
 
-    control_message = test.util.get_message(MULTILINE_RESPONSE)
-    stem.response.convert('GETINFO', control_message)
-
     expected = {
       'version': b'0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)',
       'config-text': b'\n'.join(stem.util.str_tools._to_bytes(MULTILINE_RESPONSE).splitlines()[2:8]),
     }
 
+    control_message = ControlMessage.from_str(MULTILINE_RESPONSE, 'GETINFO', normalize = True)
     self.assertEqual(expected, control_message.entries)
 
   def test_invalid_non_mapping_content(self):
@@ -113,7 +105,7 @@ class TestGetInfoResponse(unittest.TestCase):
     entry.
     """
 
-    control_message = test.util.get_message(NON_KEY_VALUE_ENTRY)
+    control_message = ControlMessage.from_str(NON_KEY_VALUE_ENTRY, normalize = True)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)
 
   def test_unrecognized_key_response(self):
@@ -121,11 +113,10 @@ class TestGetInfoResponse(unittest.TestCase):
     Parses a GETCONF reply that contains an error code with an unrecognized key.
     """
 
-    control_message = test.util.get_message(UNRECOGNIZED_KEY_ENTRY)
-    self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETINFO', control_message)
-
     try:
+      control_message = ControlMessage.from_str(UNRECOGNIZED_KEY_ENTRY, normalize = True)
       stem.response.convert('GETINFO', control_message)
+      self.fail('expected a stem.InvalidArguments to be raised')
     except stem.InvalidArguments as exc:
       self.assertEqual(exc.arguments, ['blackhole'])
 
@@ -136,5 +127,5 @@ class TestGetInfoResponse(unittest.TestCase):
     malformed according to the GETINFO's spec.
     """
 
-    control_message = test.util.get_message(MISSING_MULTILINE_NEWLINE)
+    control_message = ControlMessage.from_str(MISSING_MULTILINE_NEWLINE, normalize = True)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETINFO', control_message)

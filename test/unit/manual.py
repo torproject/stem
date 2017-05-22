@@ -11,8 +11,7 @@ import unittest
 import stem.prereq
 import stem.manual
 import stem.util.system
-
-from test.util import require_command
+import test.require
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -138,7 +137,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual('', blank.summary)
     self.assertEqual('', blank.description)
 
-  @require_command('man')
+  @test.require.command('man')
   def test_parsing_with_example(self):
     """
     Read a trimmed copy of tor's man page. This gives a good exercise of our
@@ -160,7 +159,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual(EXPECTED_FILES, manual.files)
     self.assertEqual(EXPECTED_CONFIG_OPTIONS, manual.config_options)
 
-  @require_command('man')
+  @test.require.command('man')
   def test_parsing_with_unknown_options(self):
     """
     Check that we can read a local mock man page that contains unrecognized
@@ -189,7 +188,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual('', option.summary)
     self.assertEqual('Description of this new option.', option.description)
 
-  @require_command('man')
+  @test.require.command('man')
   def test_saving_manual(self):
     """
     Check that we can save and reload manuals.

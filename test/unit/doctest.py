@@ -13,8 +13,9 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.system
 import stem.version
+import test
 
-import test.util
+from stem.response import ControlMessage
 
 try:
   # added in python 3.3
@@ -36,7 +37,7 @@ ADD_ONION_RESPONSE = """\
 
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
-    stem_dir = os.path.join(test.util.STEM_BASE, 'stem')
+    stem_dir = os.path.join(test.STEM_BASE, 'stem')
     is_failed = False
 
     for path in stem.util.system.files_with_suffix(stem_dir, '.py'):
@@ -83,8 +84,7 @@ class TestDocumentation(unittest.TestCase):
           'circuit-status': EXPECTED_CIRCUIT_STATUS,
         }[arg]
 
-        response = test.util.get_message(ADD_ONION_RESPONSE)
-        stem.response.convert('ADD_ONION', response)
+        response = ControlMessage.from_str(ADD_ONION_RESPONSE, 'ADD_ONION', normalize = True)
         controller.create_ephemeral_hidden_service.return_value = response
 
         args['globs'] = {'controller': controller}

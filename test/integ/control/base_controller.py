@@ -10,11 +10,8 @@ import unittest
 import stem.control
 import stem.socket
 import stem.util.system
-
+import test.require
 import test.runner
-import test.util
-
-from test.util import require_controller
 
 
 class StateObserver(object):
@@ -39,7 +36,7 @@ class StateObserver(object):
 
 
 class TestBaseController(unittest.TestCase):
-  @require_controller
+  @test.require.controller
   def test_connect_repeatedly(self):
     """
     Connects and closes the socket repeatedly. This is a simple attempt to
@@ -57,7 +54,7 @@ class TestBaseController(unittest.TestCase):
         controller.connect()
         controller.close()
 
-  @require_controller
+  @test.require.controller
   def test_msg(self):
     """
     Tests a basic query with the msg() method.
@@ -67,7 +64,7 @@ class TestBaseController(unittest.TestCase):
       controller = stem.control.BaseController(control_socket)
       test.runner.exercise_controller(self, controller)
 
-  @require_controller
+  @test.require.controller
   def test_msg_invalid(self):
     """
     Tests the msg() method against an invalid controller command.
@@ -78,7 +75,7 @@ class TestBaseController(unittest.TestCase):
       response = controller.msg('invalid')
       self.assertEqual('Unrecognized command "invalid"', str(response))
 
-  @require_controller
+  @test.require.controller
   def test_msg_invalid_getinfo(self):
     """
     Tests the msg() method against a non-existant GETINFO option.
@@ -89,7 +86,7 @@ class TestBaseController(unittest.TestCase):
       response = controller.msg('GETINFO blarg')
       self.assertEqual('Unrecognized key "blarg"', str(response))
 
-  @require_controller
+  @test.require.controller
   def test_msg_repeatedly(self):
     """
     Connects, sends a burst of messages, and closes the socket repeatedly. This
@@ -127,7 +124,7 @@ class TestBaseController(unittest.TestCase):
       for msg_thread in message_threads:
         msg_thread.join()
 
-  @require_controller
+  @test.require.controller
   def test_asynchronous_event_handling(self):
     """
     Check that we can both receive asynchronous events while hammering our
@@ -154,7 +151,7 @@ class TestBaseController(unittest.TestCase):
       controller.msg('SETEVENTS CONF_CHANGED')
 
       for i in range(10):
-        controller.msg('SETCONF NodeFamily=%s' % test.util.random_fingerprint())
+        controller.msg('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
         test.runner.exercise_controller(self, controller)
 
       controller.msg('SETEVENTS')
@@ -181,7 +178,7 @@ class TestBaseController(unittest.TestCase):
         self.assertTrue(conf_changed_event.raw_content().startswith('650-CONF_CHANGED\r\n650-NodeFamily='))
         self.assertEqual(('650', '-'), conf_changed_event.content()[0][:2])
 
-  @require_controller
+  @test.require.controller
   def test_get_latest_heartbeat(self):
     """
     Basic check for get_latest_heartbeat().
@@ -193,7 +190,7 @@ class TestBaseController(unittest.TestCase):
       controller.msg('GETINFO version')
       self.assertTrue((time.time() - controller.get_latest_heartbeat()) < 5)
 
-  @require_controller
+  @test.require.controller
   def test_status_notifications(self):
     """
     Checks basic functionality of the add_status_listener() and

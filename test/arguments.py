@@ -10,8 +10,7 @@ import getopt
 
 import stem.util.conf
 import stem.util.log
-
-from test.util import Target
+import test
 
 LOG_TYPE_ERROR = """\
 '%s' isn't a logging runlevel, use one of the following instead:
@@ -30,7 +29,7 @@ DEFAULT_ARGS = {
   'specific_test': None,
   'logging_runlevel': None,
   'tor_path': 'tor',
-  'run_targets': [Target.RUN_OPEN],
+  'run_targets': [test.Target.RUN_OPEN],
   'attribute_targets': [],
   'quiet': False,
   'verbose': False,
@@ -75,7 +74,7 @@ def parse(argv):
       run_targets, attribute_targets = [], []
 
       integ_targets = arg.split(',')
-      all_run_targets = [t for t in Target if CONFIG['target.torrc'].get(t) is not None]
+      all_run_targets = [t for t in test.Target if CONFIG['target.torrc'].get(t) is not None]
 
       # validates the targets and split them into run and attribute targets
 
@@ -83,7 +82,7 @@ def parse(argv):
         raise ValueError('No targets provided')
 
       for target in integ_targets:
-        if target not in Target:
+        if target not in test.Target:
           raise ValueError('Invalid integration target: %s' % target)
         elif target in all_run_targets:
           run_targets.append(target)
@@ -92,8 +91,8 @@ def parse(argv):
 
       # check if we were told to use all run targets
 
-      if Target.RUN_ALL in attribute_targets:
-        attribute_targets.remove(Target.RUN_ALL)
+      if test.Target.RUN_ALL in attribute_targets:
+        attribute_targets.remove(test.Target.RUN_ALL)
         run_targets = all_run_targets
 
       # if no RUN_* targets are provided then keep the default (otherwise we
@@ -138,10 +137,10 @@ def get_help():
   help_msg = CONFIG['msg.help']
 
   # gets the longest target length so we can show the entries in columns
-  target_name_length = max(map(len, Target))
+  target_name_length = max(map(len, test.Target))
   description_format = '\n    %%-%is - %%s' % target_name_length
 
-  for target in Target:
+  for target in test.Target:
     help_msg += description_format % (target, CONFIG['target.description'].get(target, ''))
 
   help_msg += '\n'

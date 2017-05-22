@@ -24,31 +24,23 @@ import stem.util.enum
 import stem.util.log
 import stem.util.system
 import stem.util.test_tools
+import stem.version
 
+import test
 import test.arguments
 import test.integ.installation
 import test.output
 import test.runner
-import test.util
+import test.task
 
 from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
-from test.util import STEM_BASE, Task
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'integ.test_directory': './test/data',
+  'test.unit_tests': '',
+  'test.integ_tests': '',
+  'target.prereq': {},
+  'target.torrc': {},
 })
-
-SRC_PATHS = [os.path.join(STEM_BASE, path) for path in (
-  'stem',
-  'test',
-  'run_tests.py',
-  'cache_manual.py',
-  'cache_fallback_directories.py',
-  'setup.py',
-  'tor-prompt',
-  os.path.join('docs', 'republish.py'),
-  os.path.join('docs', 'roles.py'),
-)]
 
 MOCK_UNAVAILABLE_MSG = """\
 To run stem's tests you'll need mock...
@@ -72,29 +64,87 @@ If you're running the latest version of stem then please file a ticket on:
 New capabilities are:
 """
 
-PYFLAKES_TASK = Task(
-  'running pyflakes',
-  stem.util.test_tools.pyflakes_issues,
-  args = (SRC_PATHS,),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
-)
-
-PYCODESTYLE_TASK = Task(
-  'running pycodestyle',
-  stem.util.test_tools.stylistic_issues,
-  args = (SRC_PATHS, True, True, True),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
-)
 
 if stem.prereq._is_python_26():
   def assertItemsEqual(self, expected, actual):
     self.assertEqual(set(expected), set(actual))
 
   unittest.TestCase.assertItemsEqual = assertItemsEqual
+
+
+def get_unit_tests(module_prefix = None):
+  """
+  Provides the classes for our unit tests.
+
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
+
+  :returns: an **iterator** for our unit tests
+  """
+
+  if module_prefix and not module_prefix.startswith('test.unit.'):
+    module_prefix = 'test.unit.' + module_prefix
+
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
+
+
+def get_integ_tests(module_prefix = None):
+  """
+  Provides the classes for our integration tests.
+
+  :param str module_prefix: only provide the test if the module starts with
+    this substring
+
+  :returns: an **iterator** for our integration tests
+  """
+
+  if module_prefix and not module_prefix.startswith('test.integ.'):
+    module_prefix = 'test.integ.' + module_prefix
+
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
+
+
+def _get_tests(modules, module_prefix):
+  for import_name in modules:
+    if import_name:
+      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
+
+      if not module_prefix or module.startswith(module_prefix):
+        yield import_name
+      elif module_prefix.startswith(module):
+        # single test for this module
+
+        test_module = module_prefix.rsplit('.', 1)[1]
+        yield '%s.%s' % (import_name, test_module)
+
+
+def get_torrc_entries(target):
+  """
+  Provides the torrc entries used to run the given target.
+
+  :param Target target: target to provide the custom torrc contents of
+
+  :returns: list of :class:`~test.runner.Torrc` entries for the given target
+
+  :raises: **ValueError** if the target.torrc config has entries that don't map
+    to test.runner.Torrc
+  """
+
+  # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
+
+  config_csv = CONFIG['target.torrc'].get(target)
+  torrc_opts = []
+
+  if config_csv:
+    for opt in config_csv.split(','):
+      opt = opt.strip()
+
+      if opt in test.runner.Torrc.keys():
+        torrc_opts.append(test.runner.Torrc[opt])
+      else:
+        raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
+
+  return torrc_opts
 
 
 def main():
@@ -107,7 +157,7 @@ def main():
     sys.exit(1)
 
   test_config = stem.util.conf.get_config('test')
-  test_config.load(os.path.join(STEM_BASE, 'test', 'settings.cfg'))
+  test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
 
   try:
     args = test.arguments.parse(sys.argv[1:])
@@ -147,29 +197,27 @@ def main():
 
   if not args.specific_test:
     if stem.util.test_tools.is_pyflakes_available():
-      pyflakes_task = PYFLAKES_TASK
+      pyflakes_task = test.task.PYFLAKES_TASK
 
     if stem.util.test_tools.is_pycodestyle_available():
-      pycodestyle_task = PYCODESTYLE_TASK
+      pycodestyle_task = test.task.PYCODESTYLE_TASK
 
   if args.run_integ:
-    tor_version_check = Task('checking tor version', test.util.check_tor_version, (args.tor_path,))
+    tor_version_check = test.task.TOR_VERSION
+    tor_version_check.args = (args.tor_path,)
 
-  test.util.run_tasks(
+  test.task.run(
     'INITIALISING',
-    Task('checking stem version', test.util.check_stem_version),
+    test.task.STEM_VERSION,
     tor_version_check,
-    Task('checking python version', test.util.check_python_version),
-    Task('checking cryptography version', test.util.check_cryptography_version),
-    Task('checking pynacl version', test.util.check_pynacl_version),
-    Task('checking mock version', test.util.check_mock_version),
-    Task('checking pyflakes version', test.util.check_pyflakes_version),
-    Task('checking pycodestyle version', test.util.check_pycodestyle_version),
-    Task('checking for orphaned .pyc files', test.util.clean_orphaned_pyc, (SRC_PATHS,)),
-    Task('checking for unused tests', test.util.check_for_unused_tests, [(
-      os.path.join(STEM_BASE, 'test', 'unit'),
-      os.path.join(STEM_BASE, 'test', 'integ'),
-    )]),
+    test.task.PYTHON_VERSION,
+    test.task.CRYPTO_VERSION,
+    test.task.PYNACL_VERSION,
+    test.task.MOCK_VERSION,
+    test.task.PYFLAKES_VERSION,
+    test.task.PYCODESTYLE_VERSION,
+    test.task.CLEAN_PYC,
+    test.task.UNUSED_TESTS,
     pyflakes_task,
     pycodestyle_task,
   )
@@ -201,7 +249,7 @@ def main():
     test.output.print_divider('UNIT TESTS', True)
     error_tracker.set_category('UNIT TEST')
 
-    for test_class in test.util.get_unit_tests(args.specific_test):
+    for test_class in get_unit_tests(args.specific_test):
       run_result = _run_test(args, test_class, output_filters, logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -215,7 +263,7 @@ def main():
     # these at the end of the test run so they're more noticeable.
 
     our_version = stem.version.get_system_tor_version(args.tor_path)
-    skipped_targets = []
+    skipped_targets = {}
     integ_setup_thread = None
 
     if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
@@ -224,16 +272,16 @@ def main():
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
 
-      target_prereq = test.util.get_prereq(target)
+      target_prereq = CONFIG['target.prereq'].get(target)
 
-      if target_prereq and our_version < target_prereq:
-        skipped_targets.append(target)
+      if target_prereq and our_version < stem.version.Requirement(target_prereq):
+        skipped_targets[target] = target_prereq
         continue
 
       error_tracker.set_category(target)
 
       try:
-        integ_runner.start(target, args.attribute_targets, args.tor_path, extra_torrc_opts = test.util.get_torrc_entries(target))
+        integ_runner.start(args.attribute_targets, args.tor_path, extra_torrc_opts = get_torrc_entries(target))
 
         println('Running tests...\n', STATUS)
 
@@ -241,7 +289,7 @@ def main():
         if integ_runner.is_accessible():
           owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
 
-        for test_class in test.util.get_integ_tests(args.specific_test):
+        for test_class in get_integ_tests(args.specific_test):
           run_result = _run_test(args, test_class, output_filters, logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -284,8 +332,7 @@ def main():
     if skipped_targets:
       println()
 
-      for target in skipped_targets:
-        req_version = test.util.get_prereq(target)
+      for target, req_version in skipped_targets.items():
         println('Unable to run target %s, this requires tor version %s' % (target, req_version), ERROR)
 
       println()
@@ -329,7 +376,7 @@ def main():
 
     println('TESTING PASSED %s\n' % runtime_label, SUCCESS)
 
-  new_capabilities = test.util.get_new_capabilities()
+  new_capabilities = test.get_new_capabilities()
 
   if new_capabilities:
     println(NEW_CAPABILITIES_FOUND, ERROR)

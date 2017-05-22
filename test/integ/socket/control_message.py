@@ -7,17 +7,12 @@ import unittest
 
 import stem.socket
 import stem.version
+import test.require
 import test.runner
-
-from test.util import (
-  require_controller,
-  require_version,
-  random_fingerprint,
-)
 
 
 class TestControlMessage(unittest.TestCase):
-  @require_controller
+  @test.require.controller
   def test_unestablished_socket(self):
     """
     Checks message parsing when we have a valid but unauthenticated socket.
@@ -58,7 +53,7 @@ class TestControlMessage(unittest.TestCase):
     self.assertRaises(stem.SocketClosed, control_socket.send, 'GETINFO version')
     self.assertRaises(stem.SocketClosed, control_socket.recv)
 
-  @require_controller
+  @test.require.controller
   def test_invalid_command(self):
     """
     Parses the response for a command which doesn't exist.
@@ -72,7 +67,7 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('510 Unrecognized command "blarg"\r\n', unrecognized_command_response.raw_content())
       self.assertEqual([('510', ' ', 'Unrecognized command "blarg"')], unrecognized_command_response.content())
 
-  @require_controller
+  @test.require.controller
   def test_invalid_getinfo(self):
     """
     Parses the response for a GETINFO query which doesn't exist.
@@ -86,7 +81,7 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('552 Unrecognized key "blarg"\r\n', unrecognized_key_response.raw_content())
       self.assertEqual([('552', ' ', 'Unrecognized key "blarg"')], unrecognized_key_response.content())
 
-  @require_controller
+  @test.require.controller
   def test_getinfo_config_file(self):
     """
     Parses the 'GETINFO config-file' response.
@@ -103,8 +98,8 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual('250-config-file=%s\r\n250 OK\r\n' % torrc_dst, config_file_response.raw_content())
       self.assertEqual([('250', '-', 'config-file=%s' % torrc_dst), ('250', ' ', 'OK')], config_file_response.content())
 
-  @require_controller
-  @require_version(stem.version.Requirement.GETINFO_CONFIG_TEXT)
+  @test.require.controller
+  @test.require.version(stem.version.Requirement.GETINFO_CONFIG_TEXT)
   def test_getinfo_config_text(self):
     """
     Parses the 'GETINFO config-text' response.
@@ -145,7 +140,7 @@ class TestControlMessage(unittest.TestCase):
         self.assertTrue('%s\r\n' % torrc_entry in config_text_response.raw_content())
         self.assertTrue('%s' % torrc_entry in config_text_response.content()[0][2])
 
-  @require_controller
+  @test.require.controller
   def test_setconf_event(self):
     """
     Issues 'SETEVENTS CONF_CHANGED' and parses an events.
@@ -162,7 +157,7 @@ class TestControlMessage(unittest.TestCase):
       # We'll receive both a CONF_CHANGED event and 'OK' response for the
       # SETCONF, but not necessarily in any specific order.
 
-      control_socket.send('SETCONF NodeFamily=%s' % random_fingerprint())
+      control_socket.send('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
       msg1 = control_socket.recv()
       msg2 = control_socket.recv()
 

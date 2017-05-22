@@ -15,14 +15,13 @@ import stem.response
 import stem.descriptor.remote
 import stem.prereq
 
-import test.util
-
 from stem.control import Controller
-from stem.util import str_type
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 from stem.descriptor.router_status_entry import ROUTER_STATUS_ENTRY_V3_HEADER, RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.response import ControlMessage
+from stem.util import str_type
 
 from test.unit import exec_documentation_example
 
@@ -100,9 +99,7 @@ A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 
 
 def _get_event(content):
-  controller_event = test.util.get_message(content)
-  stem.response.convert('EVENT', controller_event)
-  return controller_event
+  return ControlMessage.from_str(content, 'EVENT', normalize = True)
 
 
 def _get_circ_event(id, status, hop1, hop2, hop3, purpose):

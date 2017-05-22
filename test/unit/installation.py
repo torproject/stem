@@ -3,7 +3,7 @@ import os
 import re
 import unittest
 
-import test.util
+import test
 
 
 class TestInstallation(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestInstallation(unittest.TestCase):
 
   @classmethod
   def setUpClass(self):
-    setup_path = os.path.join(test.util.STEM_BASE, 'setup.py')
+    setup_path = os.path.join(test.STEM_BASE, 'setup.py')
     self.skip_reason = None
     self.setup_contents = False
 
@@ -32,13 +32,13 @@ class TestInstallation(unittest.TestCase):
     #   packages = ['stem', 'stem.descriptor', 'stem.util'],
 
     modules = json.loads(re.search('packages = (\[.*\])', self.setup_contents).group(1).replace("'", '"'))
-    module_paths = dict([(m, os.path.join(test.util.STEM_BASE, m.replace('.', os.path.sep))) for m in modules])
+    module_paths = dict([(m, os.path.join(test.STEM_BASE, m.replace('.', os.path.sep))) for m in modules])
 
     for module, path in module_paths.items():
       if not os.path.exists(path):
         self.fail("setup.py's module %s doesn't exist at %s" % (module, path))
 
-    for entry in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
+    for entry in os.walk(os.path.join(test.STEM_BASE, 'stem')):
       directory = entry[0]
 
       if directory.endswith('__pycache__'):
@@ -72,13 +72,13 @@ class TestInstallation(unittest.TestCase):
 
     for module, files in package_data.items():
       for module_file in files:
-        data_files.append(os.path.join(test.util.STEM_BASE, module.replace('.', os.path.sep), module_file))
+        data_files.append(os.path.join(test.STEM_BASE, module.replace('.', os.path.sep), module_file))
 
     for path in data_files:
       if not os.path.exists(path):
         self.fail("setup.py installs a data file that doesn't exist: %s" % path)
 
-    for entry in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
+    for entry in os.walk(os.path.join(test.STEM_BASE, 'stem')):
       directory = entry[0]
 
       if directory.endswith('__pycache__'):
@@ -88,7 +88,7 @@ class TestInstallation(unittest.TestCase):
         path = os.path.join(directory, filename)
         file_type = path.split('.')[-1]
 
-        if file_type in (['py'] + test.util.IGNORED_FILE_TYPES):
+        if file_type in (['py'] + test.IGNORED_FILE_TYPES):
           continue
         elif path not in data_files:
           self.fail("setup.py doesn't install %s" % path)

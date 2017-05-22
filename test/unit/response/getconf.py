@@ -8,9 +8,7 @@ import stem.response
 import stem.response.getconf
 import stem.socket
 
-import test.util
-
-EMPTY_RESPONSE = '250 OK'
+from stem.response import ControlMessage
 
 SINGLE_RESPONSE = """\
 250 DataDirectory=/home/neena/.tor"""
@@ -42,8 +40,7 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply without options (just calling "GETCONF").
     """
 
-    control_message = test.util.get_message(EMPTY_RESPONSE)
-    stem.response.convert('GETCONF', control_message)
+    control_message = ControlMessage.from_str('250 OK\r\n', 'GETCONF')
 
     # now this should be a GetConfResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -56,17 +53,13 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply response for a single parameter.
     """
 
-    control_message = test.util.get_message(SINGLE_RESPONSE)
-    stem.response.convert('GETCONF', control_message)
+    control_message = ControlMessage.from_str(SINGLE_RESPONSE, 'GETCONF', normalize = True)
     self.assertEqual({'DataDirectory': ['/home/neena/.tor']}, control_message.entries)
 
   def test_batch_response(self):
     """
     Parses a GETCONF reply for muiltiple parameters.
     """
-
-    control_message = test.util.get_message(BATCH_RESPONSE)
-    stem.response.convert('GETCONF', control_message)
 
     expected = {
       'CookieAuthentication': ['0'],
@@ -75,6 +68,7 @@ class TestGetConfResponse(unittest.TestCase):
       'DirPort': [],
     }
 
+    control_message = ControlMessage.from_str(BATCH_RESPONSE, 'GETCONF', normalize = True)
     self.assertEqual(expected, control_message.entries)
 
   def test_multivalue_response(self):
@@ -82,14 +76,12 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply containing a single key with multiple parameters.
     """
 
-    control_message = test.util.get_message(MULTIVALUE_RESPONSE)
-    stem.response.convert('GETCONF', control_message)
-
     expected = {
       'ControlPort': ['9100'],
       'ExitPolicy': ['accept 34.3.4.5', 'accept 3.4.53.3', 'accept 3.4.53.3', 'reject 23.245.54.3']
     }
 
+    control_message = ControlMessage.from_str(MULTIVALUE_RESPONSE, 'GETCONF', normalize = True)
     self.assertEqual(expected, control_message.entries)
 
   def test_unrecognized_key_response(self):
@@ -97,11 +89,10 @@ class TestGetConfResponse(unittest.TestCase):
     Parses a GETCONF reply that contains an error code with an unrecognized key.
     """
 
-    control_message = test.util.get_message(UNRECOGNIZED_KEY_RESPONSE)
-    self.assertRaises(stem.InvalidArguments, stem.response.convert, 'GETCONF', control_message)
-
     try:
+      control_message = ControlMessage.from_str(UNRECOGNIZED_KEY_RESPONSE, normalize = True)
       stem.response.convert('GETCONF', control_message)
+      self.fail('expected a stem.InvalidArguments to be raised')
     except stem.InvalidArguments as exc:
       self.assertEqual(exc.arguments, ['brickroad', 'submarine'])
 
@@ -112,5 +103,5 @@ class TestGetConfResponse(unittest.TestCase):
     GETCONF's spec.
     """
 
-    control_message = test.util.get_message(INVALID_RESPONSE)
+    control_message = ControlMessage.from_str(INVALID_RESPONSE, normalize = True)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'GETCONF', control_message)

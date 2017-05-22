@@ -8,9 +8,7 @@ import stem.response
 import stem.response.mapaddress
 import stem.socket
 
-import test.util
-
-SINGLE_RESPONSE = """250 foo=bar"""
+from stem.response import ControlMessage
 
 BATCH_RESPONSE = """\
 250-foo=bar
@@ -36,17 +34,13 @@ class TestMapAddressResponse(unittest.TestCase):
     Parses a MAPADDRESS reply response with a single address mapping.
     """
 
-    control_message = test.util.get_message(SINGLE_RESPONSE)
-    stem.response.convert('MAPADDRESS', control_message)
+    control_message = ControlMessage.from_str('250 foo=bar\r\n', 'MAPADDRESS')
     self.assertEqual({'foo': 'bar'}, control_message.entries)
 
   def test_batch_response(self):
     """
     Parses a MAPADDRESS reply with multiple address mappings
     """
-
-    control_message = test.util.get_message(BATCH_RESPONSE)
-    stem.response.convert('MAPADDRESS', control_message)
 
     expected = {
       'foo': 'bar',
@@ -55,6 +49,7 @@ class TestMapAddressResponse(unittest.TestCase):
       '120.23.23.2': 'torproject.org'
     }
 
+    control_message = ControlMessage.from_str(BATCH_RESPONSE, 'MAPADDRESS', normalize = True)
     self.assertEqual(expected, control_message.entries)
 
   def test_invalid_requests(self):
@@ -62,13 +57,11 @@ class TestMapAddressResponse(unittest.TestCase):
     Parses a MAPADDRESS replies that contain an error code due to hostname syntax errors.
     """
 
-    control_message = test.util.get_message(UNRECOGNIZED_KEYS_RESPONSE)
+    control_message = ControlMessage.from_str(UNRECOGNIZED_KEYS_RESPONSE, normalize = True)
     self.assertRaises(stem.InvalidRequest, stem.response.convert, 'MAPADDRESS', control_message)
-    expected = {'23': '324'}
 
-    control_message = test.util.get_message(PARTIAL_FAILURE_RESPONSE)
-    stem.response.convert('MAPADDRESS', control_message)
-    self.assertEqual(expected, control_message.entries)
+    control_message = ControlMessage.from_str(PARTIAL_FAILURE_RESPONSE, 'MAPADDRESS', normalize = True)
+    self.assertEqual({'23': '324'}, control_message.entries)
 
   def test_invalid_response(self):
     """
@@ -77,8 +70,8 @@ class TestMapAddressResponse(unittest.TestCase):
     MAPADDRESS's spec.
     """
 
-    control_message = test.util.get_message(INVALID_EMPTY_RESPONSE)
+    control_message = ControlMessage.from_str(INVALID_EMPTY_RESPONSE, normalize = True)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'MAPADDRESS', control_message)
 
-    control_message = test.util.get_message(INVALID_RESPONSE)
+    control_message = ControlMessage.from_str(INVALID_RESPONSE, normalize = True)
     self.assertRaises(stem.ProtocolError, stem.response.convert, 'MAPADDRESS', control_message)

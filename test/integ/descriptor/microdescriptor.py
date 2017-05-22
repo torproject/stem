@@ -6,16 +6,13 @@ import os
 import unittest
 
 import stem.descriptor
+import test
+import test.require
 import test.runner
-
-from test.util import (
-  register_new_capability,
-  only_run_once,
-)
 
 
 class TestMicrodescriptor(unittest.TestCase):
-  @only_run_once
+  @test.require.only_run_once
   def test_cached_microdescriptors(self):
     """
     Parses the cached microdescriptor file in our data directory, checking that
@@ -32,4 +29,4 @@ class TestMicrodescriptor(unittest.TestCase):
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0', validate = True):
         for line in desc.get_unrecognized_lines():
-          register_new_capability('Microdescriptor Line', line)
+          test.register_new_capability('Microdescriptor Line', line)

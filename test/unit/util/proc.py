@@ -6,7 +6,7 @@ import io
 import re
 import unittest
 
-import test.util
+import test
 
 from stem.util import proc
 from stem.util.connection import Connection
@@ -106,7 +106,7 @@ class TestProc(unittest.TestCase):
     """
 
     # list of all combinations of args with respective return values
-    stat_combinations = test.util.get_all_combinations([
+    stat_combinations = test.get_all_combinations([
       ('command', 'test_program'),
       ('utime', '0.13'),
       ('stime', '0.14'),
