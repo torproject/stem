@@ -12,7 +12,6 @@ import stem.socket
 import stem.util.system
 import test.require
 import test.runner
-import test.util
 
 
 class StateObserver(object):
@@ -152,7 +151,7 @@ class TestBaseController(unittest.TestCase):
       controller.msg('SETEVENTS CONF_CHANGED')
 
       for i in range(10):
-        controller.msg('SETCONF NodeFamily=%s' % test.util.random_fingerprint())
+        controller.msg('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
         test.runner.exercise_controller(self, controller)
 
       controller.msg('SETEVENTS')

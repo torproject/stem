@@ -13,11 +13,9 @@ Helper functions for our test framework.
   get_torrc_entries - provides the torrc entries for a given target
 
   get_all_combinations - provides all combinations of attributes
-  random_fingerprint - provides a random relay fingerprint
   tor_version - provides the version of tor we're testing against
 """
 
-import hashlib
 import itertools
 import os
 
@@ -237,14 +235,6 @@ def get_all_combinations(attr, include_empty = False):
       if item not in seen:
         seen.add(item)
         yield item
-
-
-def random_fingerprint():
-  """
-  Provides a random relay fingerprint.
-  """
-
-  return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
 def tor_version(tor_path = None):

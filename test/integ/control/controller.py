@@ -27,7 +27,7 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
-from test.util import register_new_capability, random_fingerprint, tor_version
+from test.util import register_new_capability, tor_version
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
@@ -143,7 +143,7 @@ class TestController(unittest.TestCase):
       controller.add_event_listener(listener2, EventType.CONF_CHANGED, EventType.DEBUG)
 
       # The NodeFamily is a harmless option we can toggle
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
 
       # Wait for the event. Assert that we get it within 10 seconds
       event_notice1.wait(10)
@@ -160,7 +160,7 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
       event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
@@ -197,7 +197,7 @@ class TestController(unittest.TestCase):
 
       # trigger an event
 
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)
 
@@ -210,7 +210,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       self.assertTrue(len(event_buffer) == 0)
-      controller.set_conf('NodeFamily', random_fingerprint())
+      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
 
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)

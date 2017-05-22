@@ -10,8 +10,6 @@ import stem.version
 import test.require
 import test.runner
 
-from test.util import random_fingerprint
-
 
 class TestControlMessage(unittest.TestCase):
   @test.require.controller
@@ -159,7 +157,7 @@ class TestControlMessage(unittest.TestCase):
       # We'll receive both a CONF_CHANGED event and 'OK' response for the
       # SETCONF, but not necessarily in any specific order.
 
-      control_socket.send('SETCONF NodeFamily=%s' % random_fingerprint())
+      control_socket.send('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
       msg1 = control_socket.recv()
       msg2 = control_socket.recv()
 
