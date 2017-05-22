@@ -12,7 +12,6 @@ Helper functions for our test framework.
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
 
-  get_message - provides a ControlMessage instance
   get_protocolinfo_response - provides a ProtocolInfoResponse instance
   get_all_combinations - provides all combinations of attributes
   random_fingerprint - provides a random relay fingerprint
@@ -21,7 +20,6 @@ Helper functions for our test framework.
 
 import hashlib
 import itertools
-import re
 import os
 
 import stem
@@ -250,29 +248,6 @@ def random_fingerprint():
   return hashlib.sha1(os.urandom(20)).hexdigest().upper()
 
 
-def get_message(content, reformat = True):
-  """
-  Provides a ControlMessage with content modified to be parsable. This makes
-  the following changes unless 'reformat' is false...
-
-  * ensures the content ends with a newline
-  * newlines are replaced with a carriage return and newline pair
-
-  :param str content: base content for the controller message
-  :param str reformat: modifies content to be more accommodating to being parsed
-
-  :returns: stem.response.ControlMessage instance
-  """
-
-  if reformat:
-    if not content.endswith('\n'):
-      content += '\n'
-
-    content = re.sub('([\r]?)\n', '\r\n', content)
-
-  return stem.response.ControlMessage.from_str(content)
-
-
 def get_protocolinfo_response(**attributes):
   """
   Provides a ProtocolInfoResponse, customized with the given attributes. The
@@ -284,7 +259,7 @@ def get_protocolinfo_response(**attributes):
   :returns: stem.response.protocolinfo.ProtocolInfoResponse instance
   """
 
-  protocolinfo_response = get_message('250-PROTOCOLINFO 1\n250 OK')
+  protocolinfo_response = stem.response.ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
   stem.response.convert('PROTOCOLINFO', protocolinfo_response)
 
   for attr in attributes:

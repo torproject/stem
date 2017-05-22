@@ -132,18 +132,29 @@ class ControlMessage(object):
   """
 
   @staticmethod
-  def from_str(content, msg_type = None, **kwargs):
+  def from_str(content, msg_type = None, normalize = False, **kwargs):
     """
     Provides a ControlMessage for the given content.
 
     .. versionadded:: 1.1.0
 
+    .. versionchanged:: 1.6.0
+       Added the normalize argument.
+
     :param str content: message to construct the message from
     :param str msg_type: type of tor reply to parse the content as
+    :param bool normalize: ensures expected carriage return and ending newline
+      are present
     :param kwargs: optional keyword arguments to be passed to the parser method
 
     :returns: stem.response.ControlMessage instance
     """
+
+    if normalize:
+      if not content.endswith('\n'):
+        content += '\n'
+
+      content = re.sub('([\r]?)\n', '\r\n', content)
 
     msg = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode(content)))
 

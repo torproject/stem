@@ -5,10 +5,8 @@ import stem
 import stem.response
 import stem.version
 
-import test.util
-
 from stem.interpreter.commands import ControlInterpreter, _get_fingerprint
-
+from stem.response import ControlMessage
 from test.unit.interpreter import CONTROLLER
 
 try:
@@ -126,8 +124,7 @@ class TestInterpreterCommands(unittest.TestCase):
     )
 
     for content in event_contents:
-      event = test.util.get_message(content)
-      stem.response.convert('EVENT', event)
+      event = ControlMessage.from_str(content, 'EVENT', normalize = True)
       interpreter._received_events.append(event)
 
     self.assertEqual(EXPECTED_EVENTS_RESPONSE, interpreter.run_command('/events'))
@@ -168,10 +165,8 @@ class TestInterpreterCommands(unittest.TestCase):
     self.assertEqual(expected, interpreter.run_command('/unrecognized'))
 
   def test_getinfo(self):
-    response = '250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\n250 OK'
-
     controller = Mock()
-    controller.msg.return_value = test.util.get_message(response)
+    controller.msg.return_value = ControlMessage.from_str('250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)\r\n250 OK\r\n')
 
     interpreter = ControlInterpreter(controller)
 
@@ -183,10 +178,8 @@ class TestInterpreterCommands(unittest.TestCase):
     self.assertEqual('\x1b[1;31mkaboom!\x1b[0m\n', interpreter.run_command('getinfo process/user'))
 
   def test_getconf(self):
-    response = '250-Log=notice stdout\r\n250 Address'
-
     controller = Mock()
-    controller.msg.return_value = test.util.get_message(response)
+    controller.msg.return_value = ControlMessage.from_str('250-Log=notice stdout\r\n250 Address\r\n')
 
     interpreter = ControlInterpreter(controller)
 
@@ -195,7 +188,7 @@ class TestInterpreterCommands(unittest.TestCase):
 
   def test_setevents(self):
     controller = Mock()
-    controller.msg.return_value = test.util.get_message('250 OK')
+    controller.msg.return_value = ControlMessage.from_str('250 OK\r\n')
 
     interpreter = ControlInterpreter(controller)
 

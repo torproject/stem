@@ -13,8 +13,9 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.system
 import stem.version
-
 import test.util
+
+from stem.response import ControlMessage
 
 try:
   # added in python 3.3
@@ -83,8 +84,7 @@ class TestDocumentation(unittest.TestCase):
           'circuit-status': EXPECTED_CIRCUIT_STATUS,
         }[arg]
 
-        response = test.util.get_message(ADD_ONION_RESPONSE)
-        stem.response.convert('ADD_ONION', response)
+        response = ControlMessage.from_str(ADD_ONION_RESPONSE, 'ADD_ONION', normalize = True)
         controller.create_ephemeral_hidden_service.return_value = response
 
         args['globs'] = {'controller': controller}

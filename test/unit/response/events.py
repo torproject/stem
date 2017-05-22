@@ -10,9 +10,8 @@ import stem.response
 import stem.response.events
 import stem.util.log
 
-import test.util
-
 from stem import *  # enums and exceptions
+from stem.response import ControlMessage
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 
 try:
@@ -457,9 +456,7 @@ TB_EMPTY_BAD_2 = '650 TB_EMPTY GLOBAL READ=93 WRITTEN=93 LAST=-100'
 
 
 def _get_event(content):
-  controller_event = test.util.get_message(content)
-  stem.response.convert('EVENT', controller_event)
-  return controller_event
+  return ControlMessage.from_str(content, 'EVENT', normalize = True)
 
 
 class TestEvents(unittest.TestCase):

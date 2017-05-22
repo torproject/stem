@@ -4,33 +4,24 @@ Unit tests for the stem.response.SingleLineResponse class.
 
 import unittest
 
-import stem.response
-import stem.socket
+import stem
 
-import test.util
-
-MULTILINE_RESPONSE = """250-MULTI
-250 LINE"""
+from stem.response import ControlMessage
 
 
 class TestSingleLineResponse(unittest.TestCase):
   def test_single_line_response(self):
-    message = test.util.get_message('552 NOTOK')
-    stem.response.convert('SINGLELINE', message)
+    message = ControlMessage.from_str('552 NOTOK\r\n', 'SINGLELINE')
     self.assertEqual(False, message.is_ok())
 
-    message = test.util.get_message('250 KK')
-    stem.response.convert('SINGLELINE', message)
+    message = ControlMessage.from_str('250 KK\r\n', 'SINGLELINE')
     self.assertEqual(True, message.is_ok())
 
-    message = test.util.get_message('250 OK')
-    stem.response.convert('SINGLELINE', message)
+    message = ControlMessage.from_str('250 OK\r\n', 'SINGLELINE')
     self.assertEqual(True, message.is_ok(True))
 
-    message = test.util.get_message('250 HMM')
-    stem.response.convert('SINGLELINE', message)
+    message = ControlMessage.from_str('250 HMM\r\n', 'SINGLELINE')
     self.assertEqual(False, message.is_ok(True))
 
   def test_multi_line_response(self):
-    message = test.util.get_message(MULTILINE_RESPONSE)
-    self.assertRaises(stem.ProtocolError, stem.response.convert, 'SINGLELINE', message)
+    self.assertRaises(stem.ProtocolError, ControlMessage.from_str, '250-MULTI\r\n250 LINE\r\n', 'SINGLELINE')

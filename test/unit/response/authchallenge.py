@@ -8,7 +8,7 @@ import stem.response
 import stem.response.authchallenge
 import stem.socket
 
-import test.util
+from stem.response import ControlMessage
 
 VALID_RESPONSE = '250 AUTHCHALLENGE \
 SERVERHASH=B16F72DACD4B5ED1531F3FCC04B593D46A1E30267E636EA7C7F8DD7A2B7BAA05 \
@@ -27,8 +27,7 @@ class TestAuthChallengeResponse(unittest.TestCase):
     Parses valid AUTHCHALLENGE responses.
     """
 
-    control_message = test.util.get_message(VALID_RESPONSE)
-    stem.response.convert('AUTHCHALLENGE', control_message)
+    control_message = ControlMessage.from_str(VALID_RESPONSE, 'AUTHCHALLENGE', normalize = True)
 
     # now this should be a AuthChallengeResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -51,5 +50,5 @@ class TestAuthChallengeResponse(unittest.TestCase):
       # constructed.
 
       remaining_comp = auth_challenge_comp[:index] + auth_challenge_comp[index + 1:]
-      control_message = test.util.get_message(' '.join(remaining_comp))
+      control_message = ControlMessage.from_str(' '.join(remaining_comp), normalize = True)
       self.assertRaises(stem.ProtocolError, stem.response.convert, 'AUTHCHALLENGE', control_message)

@@ -12,8 +12,7 @@ import stem.util.proc
 import stem.util.system
 import stem.version
 
-import test.util
-
+from stem.response import ControlMessage
 from stem.response.protocolinfo import AuthMethod
 
 try:
@@ -71,8 +70,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     """
 
     # working case
-    control_message = test.util.get_message(NO_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(NO_AUTH, 'PROTOCOLINFO', normalize = True)
 
     # now this should be a ProtocolInfoResponse (ControlMessage subclass)
     self.assertTrue(isinstance(control_message, stem.response.ControlMessage))
@@ -87,17 +85,14 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertRaises(TypeError, stem.response.convert, 'PROTOCOLINFO', 'hello world')
 
     # attempt to convert a different message type
-    bw_event_control_message = test.util.get_message('650 BW 32326 2856')
-    self.assertRaises(stem.ProtocolError, stem.response.convert, 'PROTOCOLINFO', bw_event_control_message)
+    self.assertRaises(stem.ProtocolError, ControlMessage.from_str, '650 BW 32326 2856\r\n', 'PROTOCOLINFO')
 
   def test_no_auth(self):
     """
     Checks a response when there's no authentication.
     """
 
-    control_message = test.util.get_message(NO_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
-
+    control_message = ControlMessage.from_str(NO_AUTH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(1, control_message.protocol_version)
     self.assertEqual(stem.version.Version('0.2.1.30'), control_message.tor_version)
     self.assertEqual((AuthMethod.NONE, ), control_message.auth_methods)
@@ -109,8 +104,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with password authentication.
     """
 
-    control_message = test.util.get_message(PASSWORD_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(PASSWORD_AUTH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual((AuthMethod.PASSWORD, ), control_message.auth_methods)
 
   def test_cookie_auth(self):
@@ -119,8 +113,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     characters.
     """
 
-    control_message = test.util.get_message(COOKIE_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(COOKIE_AUTH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual((AuthMethod.COOKIE, ), control_message.auth_methods)
     self.assertEqual('/tmp/my data\\"dir//control_auth_cookie', control_message.cookie_path)
 
@@ -129,8 +122,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with multiple authentication methods.
     """
 
-    control_message = test.util.get_message(MULTIPLE_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(MULTIPLE_AUTH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual((AuthMethod.COOKIE, AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEqual('/home/atagar/.tor/control_auth_cookie', control_message.cookie_path)
 
@@ -139,8 +131,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks a response with an unrecognized authtentication method.
     """
 
-    control_message = test.util.get_message(UNKNOWN_AUTH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(UNKNOWN_AUTH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual((AuthMethod.UNKNOWN, AuthMethod.PASSWORD), control_message.auth_methods)
     self.assertEqual(('MAGIC', 'PIXIE_DUST'), control_message.unknown_auth_methods)
 
@@ -150,9 +141,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     information to be a valid response.
     """
 
-    control_message = test.util.get_message(MINIMUM_RESPONSE)
-    stem.response.convert('PROTOCOLINFO', control_message)
-
+    control_message = ControlMessage.from_str(MINIMUM_RESPONSE, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(5, control_message.protocol_version)
     self.assertEqual(None, control_message.tor_version)
     self.assertEqual((), control_message.auth_methods)
@@ -165,8 +154,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     Checks an authentication cookie with a unicode path.
     """
 
-    control_message = test.util.get_message(UNICODE_COOKIE_PATH)
-    stem.response.convert('PROTOCOLINFO', control_message)
+    control_message = ControlMessage.from_str(UNICODE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(EXPECTED_UNICODE_PATH, control_message.cookie_path)
 
   @patch('stem.util.proc.is_available', Mock(return_value = False))
@@ -191,9 +179,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     with patch('stem.util.system.call') as call_mock:
       call_mock.side_effect = call_function
 
-      control_message = test.util.get_message(RELATIVE_COOKIE_PATH)
-      stem.response.convert('PROTOCOLINFO', control_message)
-
+      control_message = ControlMessage.from_str(RELATIVE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
       stem.connection._expand_cookie_path(control_message, stem.util.system.pid_by_name, 'tor')
 
       self.assertEqual(os.path.join('/tmp/foo', 'tor-browser_en-US', 'Data', 'control_auth_cookie'), control_message.cookie_path)
@@ -202,6 +188,5 @@ class TestProtocolInfoResponse(unittest.TestCase):
     # leaving the path unexpanded)
 
     with patch('stem.util.system.call', Mock(return_value = None)):
-      control_message = test.util.get_message(RELATIVE_COOKIE_PATH)
-      stem.response.convert('PROTOCOLINFO', control_message)
+      control_message = ControlMessage.from_str(RELATIVE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
       self.assertEqual('./tor-browser_en-US/Data/control_auth_cookie', control_message.cookie_path)
