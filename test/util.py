@@ -12,7 +12,6 @@ Helper functions for our test framework.
   get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
 
-  get_protocolinfo_response - provides a ProtocolInfoResponse instance
   get_all_combinations - provides all combinations of attributes
   random_fingerprint - provides a random relay fingerprint
   tor_version - provides the version of tor we're testing against
@@ -246,26 +245,6 @@ def random_fingerprint():
   """
 
   return hashlib.sha1(os.urandom(20)).hexdigest().upper()
-
-
-def get_protocolinfo_response(**attributes):
-  """
-  Provides a ProtocolInfoResponse, customized with the given attributes. The
-  base instance is minimal, with its version set to one and everything else
-  left with the default.
-
-  :param dict attributes: attributes to customize the response with
-
-  :returns: stem.response.protocolinfo.ProtocolInfoResponse instance
-  """
-
-  protocolinfo_response = stem.response.ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
-  stem.response.convert('PROTOCOLINFO', protocolinfo_response)
-
-  for attr in attributes:
-    setattr(protocolinfo_response, attr, attributes[attr])
-
-  return protocolinfo_response
 
 
 def tor_version(tor_path = None):

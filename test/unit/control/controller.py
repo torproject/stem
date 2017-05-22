@@ -13,10 +13,9 @@ import stem.socket
 import stem.util.system
 import stem.version
 
-import test.util
-
 from stem import ControllerError, DescriptorUnavailable, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import _parse_circ_path, Listener, Controller, EventType
+from stem.response import ControlMessage
 from stem.exit_policy import ExitPolicy
 
 try:
@@ -339,13 +338,14 @@ class TestControl(unittest.TestCase):
 
     # use the handy mocked protocolinfo response
 
-    get_protocolinfo_mock.return_value = test.util.get_protocolinfo_response()
+    protocolinfo_msg = ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
+    get_protocolinfo_mock.return_value = protocolinfo_msg
 
     # compare the str representation of these object, because the class
     # does not have, nor need, a direct comparison operator
 
     self.assertEqual(
-      str(test.util.get_protocolinfo_response()),
+      str(protocolinfo_msg),
       str(self.controller.get_protocolinfo())
     )
 
