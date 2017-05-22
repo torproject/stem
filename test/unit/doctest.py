@@ -13,7 +13,7 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.system
 import stem.version
-import test.util
+import test
 
 from stem.response import ControlMessage
 
@@ -37,7 +37,7 @@ ADD_ONION_RESPONSE = """\
 
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
-    stem_dir = os.path.join(test.util.STEM_BASE, 'stem')
+    stem_dir = os.path.join(test.STEM_BASE, 'stem')
     is_failed = False
 
     for path in stem.util.system.files_with_suffix(stem_dir, '.py'):

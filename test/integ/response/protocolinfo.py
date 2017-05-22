@@ -9,11 +9,10 @@ import stem.connection
 import stem.socket
 import stem.util.system
 import stem.version
+import test
+import test.integ.util.system
 import test.require
 import test.runner
-
-from test.integ.util.system import filter_system_call
-from test.util import tor_version
 
 try:
   # added in python 3.3
@@ -76,7 +75,7 @@ class TestProtocolInfo(unittest.TestCase):
 
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
 
-    call_replacement = filter_system_call(lookup_prefixes)
+    call_replacement = test.integ.util.system.filter_system_call(lookup_prefixes)
 
     with patch('stem.util.system.call') as call_mock:
       call_mock.side_effect = call_replacement
@@ -132,7 +131,7 @@ class TestProtocolInfo(unittest.TestCase):
     if test.runner.Torrc.COOKIE in tor_options:
       auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-      if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
+      if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       chroot_path = runner.get_chroot()

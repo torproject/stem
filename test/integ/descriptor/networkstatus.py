@@ -9,10 +9,9 @@ import stem
 import stem.descriptor
 import stem.descriptor.remote
 import stem.version
+import test
 import test.require
 import test.runner
-
-from test.util import register_new_capability
 
 
 class TestNetworkStatus(unittest.TestCase):
@@ -53,11 +52,11 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag and flag not in reported_flags:
-            register_new_capability('Flag', flag)
+            test.register_new_capability('Flag', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Consensus Line', line, suppression_token = line.split()[0])
+          test.register_new_capability('Consensus Line', line, suppression_token = line.split()[0])
 
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
@@ -87,10 +86,10 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag:
-            register_new_capability('Flag (microdescriptor)', flag)
+            test.register_new_capability('Flag (microdescriptor)', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
-          register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
+          test.register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
 
     self.assertTrue(count > 100)

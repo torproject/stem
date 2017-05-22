@@ -9,10 +9,9 @@ import unittest
 import stem.connection
 import stem.socket
 import stem.version
+import test
 import test.require
 import test.runner
-
-from test.util import tor_version
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
@@ -44,7 +43,7 @@ def _can_authenticate(auth_type):
   tor_options = runner.get_options()
   password_auth = test.runner.Torrc.PASSWORD in tor_options
   cookie_auth = test.runner.Torrc.COOKIE in tor_options
-  safecookie_auth = cookie_auth and tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE
+  safecookie_auth = cookie_auth and test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE
 
   if not password_auth and not cookie_auth:
     # open socket, anything but safecookie will work
@@ -104,7 +103,7 @@ class TestAuthenticate(unittest.TestCase):
   def setUp(self):
     self.cookie_auth_methods = [stem.connection.AuthMethod.COOKIE]
 
-    if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
+    if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
       self.cookie_auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
 
   @test.require.controller

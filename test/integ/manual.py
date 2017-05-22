@@ -10,6 +10,7 @@ import unittest
 
 import stem.manual
 import stem.util.system
+import test
 import test.runner
 
 from stem.manual import Category
@@ -96,7 +97,7 @@ class TestManual(unittest.TestCase):
 
     if stem.util.system.is_windows():
       self.skip_reason = '(unavailable on windows)'
-    elif test.runner.Target.ONLINE not in test.runner.get_runner().attribute_targets:
+    elif test.Target.ONLINE not in test.runner.get_runner().attribute_targets:
       self.skip_reason = '(requires online target)'
     elif not stem.util.system.is_available('a2x'):
       self.skip_reason = '(requires asciidoc)'

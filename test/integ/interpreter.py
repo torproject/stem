@@ -7,11 +7,11 @@ import tempfile
 import unittest
 
 import stem.util.system
+import test
 import test.require
 import test.runner
-import test.util
 
-PROMPT_CMD = os.path.join(test.util.STEM_BASE, 'tor-prompt')
+PROMPT_CMD = os.path.join(test.STEM_BASE, 'tor-prompt')
 
 
 def _run_prompt(*args):
@@ -44,7 +44,7 @@ class TestInterpreter(unittest.TestCase):
       '250-config-file=%s' % test.runner.get_runner().get_torrc_path(),
       '250 OK',
       '',
-      '250-version=%s' % test.util.tor_version(),
+      '250-version=%s' % test.tor_version(),
       '250 OK',
     ]
 

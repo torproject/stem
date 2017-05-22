@@ -18,6 +18,7 @@ import stem.response.protocolinfo
 import stem.socket
 import stem.util.str_tools
 import stem.version
+import test
 import test.network
 import test.require
 import test.runner
@@ -26,8 +27,6 @@ from stem import Flag, Signal
 from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
-
-from test.util import register_new_capability, tor_version
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
@@ -47,17 +46,17 @@ class TestController(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       for event in controller.get_info('events/names').split():
         if event not in EventType:
-          register_new_capability('Event', event)
+          test.register_new_capability('Event', event)
 
       for signal in controller.get_info('signal/names').split():
         if signal not in Signal:
-          register_new_capability('Signal', signal)
+          test.register_new_capability('Signal', signal)
 
       # new features should simply be added to enable_feature()'s docs
 
       for feature in controller.get_info('features/names').split():
         if feature not in ('EXTENDED_EVENTS', 'VERBOSE_NAMES'):
-          register_new_capability('Feature', feature)
+          test.register_new_capability('Feature', feature)
 
   def test_from_port(self):
     """
@@ -266,7 +265,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
-      self.assertEqual(version, tor_version())
+      self.assertEqual(version, test.tor_version())
 
   @test.require.controller
   def test_get_exit_policy(self):
@@ -342,7 +341,7 @@ class TestController(unittest.TestCase):
       if test.runner.Torrc.COOKIE in tor_options:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
 
-        if tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
+        if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
           auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       if test.runner.Torrc.PASSWORD in tor_options:
@@ -1139,7 +1138,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       self.skipTest('(requires server descriptors)')
       return
 
@@ -1169,7 +1168,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
+    if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       self.skipTest('(requires server descriptors)')
       return
 
@@ -1229,7 +1228,7 @@ class TestController(unittest.TestCase):
         self.assertTrue(desc.nickname is not None)
 
         for line in desc.get_unrecognized_lines():
-          register_new_capability('Consensus Line', line)
+          test.register_new_capability('Consensus Line', line)
 
         count += 1
         if count > 10:

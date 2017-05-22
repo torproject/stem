@@ -12,7 +12,7 @@ various error conditions, and make sure that the right exception is raised.
 import unittest
 
 import stem.connection
-import test.util
+import test
 
 from stem.response import ControlMessage
 from stem.util import log
@@ -86,7 +86,7 @@ class TestAuthenticate(unittest.TestCase):
       stem.connection.AuthChallengeFailed(None, None),
       stem.ControllerError(None))
 
-    auth_method_combinations = test.util.get_all_combinations([
+    auth_method_combinations = test.get_all_combinations([
       stem.connection.AuthMethod.NONE,
       stem.connection.AuthMethod.PASSWORD,
       stem.connection.AuthMethod.COOKIE,

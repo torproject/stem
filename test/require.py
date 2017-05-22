@@ -24,8 +24,8 @@ run.
 
 import stem.util.system
 import stem.version
+import test
 import test.runner
-import test.util
 
 RAN_TESTS = []
 
@@ -72,12 +72,12 @@ def _can_ptrace():
   # If we're running a tor version where ptrace is disabled and we didn't
   # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
 
-  has_option = test.util.tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
+  has_option = test.tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
   return not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options()
 
 
 def _is_online():
-  return test.util.Target.ONLINE in test.runner.get_runner().attribute_targets
+  return test.Target.ONLINE in test.runner.get_runner().attribute_targets
 
 
 def command(cmd):
@@ -95,7 +95,7 @@ def version(req_version):
   :param stem.version.Version req_version: required tor version for the test
   """
 
-  return needs(lambda: test.util.tor_version() >= req_version, 'requires %s' % req_version)
+  return needs(lambda: test.tor_version() >= req_version, 'requires %s' % req_version)
 
 
 cryptography = needs(stem.prereq.is_crypto_available, 'requires cryptography')

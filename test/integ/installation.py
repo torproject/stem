@@ -12,13 +12,13 @@ import unittest
 
 import stem
 import stem.util.system
+import test
 import test.require
-import test.util
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
 BASE_INSTALL_PATH = '/tmp/stem_test'
-DIST_PATH = os.path.join(test.util.STEM_BASE, 'dist')
+DIST_PATH = os.path.join(test.STEM_BASE, 'dist')
 SETUP_THREAD, INSTALL_FAILURE, INSTALL_PATH, SDIST_FAILURE = None, None, None, None
 
 
@@ -35,10 +35,10 @@ def setup():
     original_cwd = os.getcwd()
 
     try:
-      os.chdir(test.util.STEM_BASE)
+      os.chdir(test.STEM_BASE)
 
       try:
-        os.chdir(test.util.STEM_BASE)
+        os.chdir(test.STEM_BASE)
         stem.util.system.call('%s setup.py install --prefix %s' % (sys.executable, BASE_INSTALL_PATH), timeout = 60)
         stem.util.system.call('%s setup.py clean --all' % sys.executable, timeout = 60)  # tidy up the build directory
         site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
@@ -86,12 +86,12 @@ def _assert_has_all_files(path):
 
   expected, installed = set(), set()
 
-  for root, dirnames, filenames in os.walk(os.path.join(test.util.STEM_BASE, 'stem')):
+  for root, dirnames, filenames in os.walk(os.path.join(test.STEM_BASE, 'stem')):
     for filename in filenames:
       file_format = filename.split('.')[-1]
 
-      if file_format not in test.util.IGNORED_FILE_TYPES:
-        expected.add(os.path.join(root, filename)[len(test.util.STEM_BASE) + 1:])
+      if file_format not in test.IGNORED_FILE_TYPES:
+        expected.add(os.path.join(root, filename)[len(test.STEM_BASE) + 1:])
 
   for root, dirnames, filenames in os.walk(path):
     for filename in filenames:

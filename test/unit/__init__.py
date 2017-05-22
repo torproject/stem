@@ -3,7 +3,7 @@ Unit tests for the stem library.
 """
 
 import os
-import test.util
+import test
 
 __all__ = [
   'connection',
@@ -17,7 +17,7 @@ __all__ = [
 
 
 def exec_documentation_example(filename):
-  path = os.path.join(test.util.STEM_BASE, 'docs', '_static', 'example', filename)
+  path = os.path.join(test.STEM_BASE, 'docs', '_static', 'example', filename)
 
   with open(path) as f:
     code = compile(f.read(), path, 'exec')

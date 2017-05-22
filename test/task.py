@@ -32,9 +32,8 @@ import stem.util.conf
 import stem.util.system
 import stem.util.test_tools
 import stem.version
-
+import test
 import test.output
-import test.util
 
 from test.output import STATUS, ERROR, NO_NL, println
 
@@ -44,7 +43,7 @@ CONFIG = stem.util.conf.config_dict('test', {
   'test.integ_tests': '',
 })
 
-SRC_PATHS = [os.path.join(test.util.STEM_BASE, path) for path in (
+SRC_PATHS = [os.path.join(test.STEM_BASE, path) for path in (
   'stem',
   'test',
   'run_tests.py',
@@ -58,7 +57,7 @@ SRC_PATHS = [os.path.join(test.util.STEM_BASE, path) for path in (
 
 
 def _check_tor_version(tor_path):
-  return str(test.util.tor_version(tor_path)).split()[0]
+  return str(test.tor_version(tor_path)).split()[0]
 
 
 def _clean_orphaned_pyc(paths):
@@ -98,7 +97,7 @@ def _check_for_unused_tests(paths):
 
       if test_match:
         class_name = test_match.groups()[0]
-        module_name = py_path.replace(os.path.sep, '.')[len(test.util.STEM_BASE) + 1:-3] + '.' + class_name
+        module_name = py_path.replace(os.path.sep, '.')[len(test.STEM_BASE) + 1:-3] + '.' + class_name
 
         if not (module_name in CONFIG['test.unit_tests'] or module_name in CONFIG['test.integ_tests']):
           unused_tests.append(module_name)
@@ -109,7 +108,7 @@ def _check_for_unused_tests(paths):
 
 def run(category, *tasks):
   """
-  Runs a series of :class:`test.util.Task` instances. This simply prints 'done'
+  Runs a series of :class:`test.Task` instances. This simply prints 'done'
   or 'failed' for each unless we fail one that is marked as being required. If
   that happens then we print its error message and call sys.exit().
 
@@ -215,8 +214,8 @@ PYCODESTYLE_VERSION = ModuleVersion('checking pycodestyle version', ['pycodestyl
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,))
 
 UNUSED_TESTS = Task('checking for unused tests', _check_for_unused_tests, [(
-  os.path.join(test.util.STEM_BASE, 'test', 'unit'),
-  os.path.join(test.util.STEM_BASE, 'test', 'integ'),
+  os.path.join(test.STEM_BASE, 'test', 'unit'),
+  os.path.join(test.STEM_BASE, 'test', 'integ'),
 )])
 
 PYFLAKES_TASK = Task(

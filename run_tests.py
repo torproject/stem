@@ -26,15 +26,14 @@ import stem.util.system
 import stem.util.test_tools
 import stem.version
 
+import test
 import test.arguments
 import test.integ.installation
 import test.output
 import test.runner
 import test.task
-import test.util
 
 from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
-from test.util import STEM_BASE
 
 CONFIG = stem.util.conf.config_dict('test', {
   'test.unit_tests': '',
@@ -158,7 +157,7 @@ def main():
     sys.exit(1)
 
   test_config = stem.util.conf.get_config('test')
-  test_config.load(os.path.join(STEM_BASE, 'test', 'settings.cfg'))
+  test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
 
   try:
     args = test.arguments.parse(sys.argv[1:])
@@ -377,7 +376,7 @@ def main():
 
     println('TESTING PASSED %s\n' % runtime_label, SUCCESS)
 
-  new_capabilities = test.util.get_new_capabilities()
+  new_capabilities = test.get_new_capabilities()
 
   if new_capabilities:
     println(NEW_CAPABILITIES_FOUND, ERROR)
