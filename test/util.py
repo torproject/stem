@@ -9,9 +9,7 @@ Helper functions for our test framework.
   get_unit_tests - provides our unit tests
   get_integ_tests - provides our integration tests
 
-  get_prereq - provides the tor version required to run the given target
   get_torrc_entries - provides the torrc entries for a given target
-
   get_all_combinations - provides all combinations of attributes
   tor_version - provides the version of tor we're testing against
 """
@@ -25,7 +23,6 @@ import stem.util.enum
 import stem.version
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'target.prereq': {},
   'target.torrc': {},
   'integ.test_directory': './test/data',
   'test.unit_tests': '',
@@ -122,25 +119,6 @@ def _get_tests(modules, module_prefix):
 
         test_module = module_prefix.rsplit('.', 1)[1]
         yield '%s.%s' % (import_name, test_module)
-
-
-def get_prereq(target):
-  """
-  Provides the tor version required to run the given target. If the target
-  doesn't have any prerequisite then this provides **None**.
-
-  :param Target target: target to provide the prerequisite for
-
-  :returns: :class:`~stem.version.Version` required to run the given target, or
-    **None** if there is no prerequisite
-  """
-
-  target_prereq = CONFIG['target.prereq'].get(target)
-
-  if target_prereq:
-    return stem.version.Requirement[target_prereq]
-  else:
-    return None
 
 
 def get_torrc_entries(target):

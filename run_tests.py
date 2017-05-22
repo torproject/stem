@@ -24,6 +24,7 @@ import stem.util.enum
 import stem.util.log
 import stem.util.system
 import stem.util.test_tools
+import stem.version
 
 import test.arguments
 import test.integ.installation
@@ -37,6 +38,7 @@ from test.util import STEM_BASE
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
+  'target.prereq': {},
 })
 
 MOCK_UNAVAILABLE_MSG = """\
@@ -185,7 +187,7 @@ def main():
     # these at the end of the test run so they're more noticeable.
 
     our_version = stem.version.get_system_tor_version(args.tor_path)
-    skipped_targets = []
+    skipped_targets = {}
     integ_setup_thread = None
 
     if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
@@ -194,10 +196,10 @@ def main():
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
 
-      target_prereq = test.util.get_prereq(target)
+      target_prereq = CONFIG['target.prereq'].get(target)
 
-      if target_prereq and our_version < target_prereq:
-        skipped_targets.append(target)
+      if target_prereq and our_version < stem.version.Requirement(target_prereq):
+        skipped_targets[target] = target_prereq
         continue
 
       error_tracker.set_category(target)
@@ -254,8 +256,7 @@ def main():
     if skipped_targets:
       println()
 
-      for target in skipped_targets:
-        req_version = test.util.get_prereq(target)
+      for target, req_version in skipped_targets.items():
         println('Unable to run target %s, this requires tor version %s' % (target, req_version), ERROR)
 
       println()
