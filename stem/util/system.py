@@ -247,6 +247,8 @@ def is_available(command, cached=True):
     return True
   elif cached and command in CMD_AVAILABLE_CACHE:
     return CMD_AVAILABLE_CACHE[command]
+  elif 'PATH' not in os.environ:
+    return False  # lacking a path will cause find_executable() to internally fail
   else:
     cmd_exists = distutils.spawn.find_executable(command) is not None
     CMD_AVAILABLE_CACHE[command] = cmd_exists

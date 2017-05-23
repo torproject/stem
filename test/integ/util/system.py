@@ -66,9 +66,11 @@ require_single_tor_instance = test.require.needs(_is_single_tor_running, 'multip
 require_control_port = test.require.needs(_has_port, 'test instance has no port')
 require_linux = test.require.needs(_is_linux, 'linux only')
 require_bsd = test.require.needs(stem.util.system.is_bsd, 'bsd only')
+require_path = test.require.needs(lambda: 'PATH' in os.environ, 'requires PATH')
 
 
 class TestSystem(unittest.TestCase):
+  @require_path
   def test_is_available(self):
     """
     Checks the stem.util.system.is_available function.
@@ -99,6 +101,7 @@ class TestSystem(unittest.TestCase):
     self.assertTrue(stem.util.system.is_running(tor_cmd) or stem.util.system.is_running('tor.real'))
     self.assertFalse(stem.util.system.is_running('blarg_and_stuff'))
 
+  @require_path
   @require_single_tor_instance
   def test_pid_by_name(self):
     """
@@ -312,6 +315,7 @@ class TestSystem(unittest.TestCase):
     os.rmdir(tmpdir)
     self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
+  @require_path
   def test_pids_by_user(self):
     """
     Checks the stem.util.system.pids_by_user function.
