@@ -159,7 +159,7 @@ class TestController(unittest.TestCase):
 
       buffer2_size = len(event_buffer2)
 
-      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
+      controller.set_conf('NodeFamily', 'A82F7EFDB570F6BC801805D0328D30A99403C401')
       event_notice1.wait(10)
       self.assertEqual(len(event_buffer1), 2)
       event_notice1.clear()
@@ -209,7 +209,7 @@ class TestController(unittest.TestCase):
       controller.connect()
       controller.authenticate(password = test.runner.CONTROL_PASSWORD)
       self.assertTrue(len(event_buffer) == 0)
-      controller.set_conf('NodeFamily', 'FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
+      controller.set_conf('NodeFamily', 'A82F7EFDB570F6BC801805D0328D30A99403C401')
 
       event_notice.wait(4)
       self.assertTrue(len(event_buffer) >= 1)

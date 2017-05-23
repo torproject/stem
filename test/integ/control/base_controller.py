@@ -2,6 +2,8 @@
 Integration tests for the stem.control.BaseController class.
 """
 
+import os
+import hashlib
 import re
 import threading
 import time
@@ -151,7 +153,8 @@ class TestBaseController(unittest.TestCase):
       controller.msg('SETEVENTS CONF_CHANGED')
 
       for i in range(10):
-        controller.msg('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
+        fingerprint = hashlib.sha1(os.urandom(20)).hexdigest().upper()
+        controller.msg('SETCONF NodeFamily=%s' % fingerprint)
         test.runner.exercise_controller(self, controller)
 
       controller.msg('SETEVENTS')
