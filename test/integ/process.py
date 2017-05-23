@@ -96,8 +96,8 @@ class TestProcess(unittest.TestCase):
     hush to cut it down.
     """
 
-    output = self.run_tor('--hush', '--hash-password', 'my_password')
-    self.assertTrue(re.match('^16:[0-9A-F]{58}\n$', output))
+    output = self.run_tor('--hush', '--hash-password', 'my_password').splitlines()[-1]
+    self.assertTrue(re.match('^16:[0-9A-F]{58}$', output))
 
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
