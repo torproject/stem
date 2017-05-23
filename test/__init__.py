@@ -13,18 +13,18 @@ Unit and integration tests for the stem library. Helpers include...
   tor_version - provides the version of tor we're testing against
 """
 
+import itertools
+import os
+
+import stem.util.enum
+import stem.version
+
 __all__ = [
   'network',
   'output',
   'prompt',
   'runner',
 ]
-
-import itertools
-import os
-
-import stem.util.enum
-import stem.version
 
 # Integration targets fall into two categories:
 #
