@@ -20,6 +20,7 @@ INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git co
 BASE_INSTALL_PATH = '/tmp/stem_test'
 DIST_PATH = os.path.join(test.STEM_BASE, 'dist')
 SETUP_THREAD, INSTALL_FAILURE, INSTALL_PATH, SDIST_FAILURE = None, None, None, None
+PYTHON_EXE = sys.executable if sys.executable else 'python'
 
 
 def setup():
@@ -35,12 +36,10 @@ def setup():
     original_cwd = os.getcwd()
 
     try:
-      os.chdir(test.STEM_BASE)
-
       try:
         os.chdir(test.STEM_BASE)
-        stem.util.system.call('%s setup.py install --prefix %s' % (sys.executable, BASE_INSTALL_PATH), timeout = 60)
-        stem.util.system.call('%s setup.py clean --all' % sys.executable, timeout = 60)  # tidy up the build directory
+        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60)
+        stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60)  # tidy up the build directory
         site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
 
         if len(site_packages_paths) != 1:
@@ -52,7 +51,7 @@ def setup():
 
       if not os.path.exists(DIST_PATH):
         try:
-          stem.util.system.call('%s setup.py sdist' % sys.executable, timeout = 60)
+          stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60)
         except Exception as exc:
           SDIST_FAILURE = exc
       else:
@@ -121,7 +120,7 @@ class TestInstallation(unittest.TestCase):
     if INSTALL_FAILURE:
       raise INSTALL_FAILURE
 
-    self.assertEqual(stem.__version__, stem.util.system.call([sys.executable, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % INSTALL_PATH])[0])
+    self.assertEqual(stem.__version__, stem.util.system.call([PYTHON_EXE, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % INSTALL_PATH])[0])
     _assert_has_all_files(INSTALL_PATH)
 
   @test.require.only_run_once
