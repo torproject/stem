@@ -207,7 +207,7 @@ class TestProcess(unittest.TestCase):
 
     with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
       try:
-        stem.process.launch_tor()
+        stem.process.launch_tor(tor_cmd = test.runner.get_runner().get_tor_command())
         self.fail("tor shoudn't have started")
       except KeyboardInterrupt as exc:
         if os.path.exists('/proc/%s' % mock_tor_process.pid):
