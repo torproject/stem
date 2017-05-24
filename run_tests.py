@@ -274,7 +274,7 @@ def main():
 
       target_prereq = CONFIG['target.prereq'].get(target)
 
-      if target_prereq and our_version < stem.version.Requirement(target_prereq):
+      if target_prereq and our_version < stem.version.Requirement[target_prereq]:
         skipped_targets[target] = target_prereq
         continue
 
