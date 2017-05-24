@@ -131,8 +131,13 @@ class TestInstallation(unittest.TestCase):
     meant to test that our MANIFEST.in is up to date.
     """
 
+    git_dir = os.path.join(test.STEM_BASE, '.git')
+
     if not stem.util.system.is_available('git'):
       self.skipTest('(git unavailable)')
+      return
+    elif not os.path.exists(git_dir):
+      self.skipTest('(not a git checkout)')
       return
 
     setup().join()
@@ -140,7 +145,7 @@ class TestInstallation(unittest.TestCase):
     if SDIST_FAILURE:
       raise SDIST_FAILURE
 
-    git_contents = [line.split()[-1] for line in stem.util.system.call('git ls-tree --full-tree -r HEAD')]
+    git_contents = [line.split()[-1] for line in stem.util.system.call('git --git-dir=%s ls-tree --full-tree -r HEAD' % git_dir)]
 
     # tarball has a prefix 'stem-[verion]' directory so stipping that out
 
