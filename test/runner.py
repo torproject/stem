@@ -197,6 +197,7 @@ class Runner(object):
         self._test_dir = tempfile.mktemp('-stem-integ')
 
       original_cwd, data_dir_path = os.getcwd(), self._test_dir
+      self._tor_cmd = os.path.abspath(tor_cmd)
 
       if test.Target.RELATIVE in self.attribute_targets:
         tor_cwd = os.path.dirname(self._test_dir)
@@ -207,7 +208,6 @@ class Runner(object):
         os.chdir(tor_cwd)
         data_dir_path = './%s' % os.path.basename(self._test_dir)
 
-      self._tor_cmd = tor_cmd
       self._custom_opts = extra_torrc_opts
       self._torrc_contents = BASE_TORRC % (data_dir_path, data_dir_path)
 
@@ -217,7 +217,7 @@ class Runner(object):
       try:
         self._tor_cwd = os.getcwd()
         self._run_setup()
-        self._start_tor(tor_cmd)
+        self._start_tor(self._tor_cmd)
 
         # strip the testing directory from recv_message responses if we're
         # simulating a chroot setup
