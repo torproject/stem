@@ -1036,7 +1036,7 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, env = None):
+def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, cwd = None, env = None):
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -1052,7 +1052,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
      Added env argument.
 
   .. versionchanged:: 1.6.0
-     Added timeout argument.
+     Added timeout and cwd arguments.
 
   :param str,list command: command to be issued
   :param object default: response if the query fails
@@ -1082,7 +1082,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
   try:
     is_shell_command = command_list[0] in SHELL_COMMANDS
 
-    process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command, env = env)
+    process = subprocess.Popen(command_list, stdout = subprocess.PIPE, stderr = subprocess.PIPE, shell = is_shell_command, cwd = cwd, env = env)
 
     if timeout:
       while process.poll() is None:

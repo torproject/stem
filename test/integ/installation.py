@@ -33,31 +33,26 @@ def setup():
 
   def _setup():
     global INSTALL_FAILURE, INSTALL_PATH, SDIST_FAILURE
-    original_cwd = os.getcwd()
 
     try:
+      stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE)
+      stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
+      site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
+
+      if len(site_packages_paths) != 1:
+        raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
+
+      INSTALL_PATH = site_packages_paths[0]
+    except Exception as exc:
+      INSTALL_FAILURE = AssertionError("Unable to install with 'python setup.py install': %s" % exc)
+
+    if not os.path.exists(DIST_PATH):
       try:
-        os.chdir(test.STEM_BASE)
-        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60)
-        stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60)  # tidy up the build directory
-        site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
-
-        if len(site_packages_paths) != 1:
-          raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
-
-        INSTALL_PATH = site_packages_paths[0]
+        stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
       except Exception as exc:
-        INSTALL_FAILURE = AssertionError("Unable to install with 'python setup.py install': %s" % exc)
-
-      if not os.path.exists(DIST_PATH):
-        try:
-          stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60)
-        except Exception as exc:
-          SDIST_FAILURE = exc
-      else:
-        SDIST_FAILURE = AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)
-    finally:
-      os.chdir(original_cwd)
+        SDIST_FAILURE = exc
+    else:
+      SDIST_FAILURE = AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)
 
   if SETUP_THREAD is None:
     SETUP_THREAD = threading.Thread(target = _setup)
