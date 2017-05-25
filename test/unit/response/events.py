@@ -47,6 +47,67 @@ CACHED="NO"'
 ADDRMAP_CACHED_MALFORMED = '650 ADDRMAP example.com 192.0.43.10 "2013-04-03 22:29:11" \
 CACHED="KINDA"'
 
+AUTHDIR_NEWDESC = """\
+650+AUTHDIR_NEWDESCS
+DROPPED
+Not replacing router descriptor; no information has changed since the last one with this identity.
+@uploaded-at 2017-05-25 04:46:21
+@source "127.0.0.1"
+router test002r 127.0.0.1 5002 0 7002
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQABlm9AXVOPVG4KHqFmShWRFPU2oXO15yaS+J8c6SrLBMpnB1vAQAgBABBic8D
++GIdBzNCezf1Lfw8NSpbDL7S4ExBuMXvi6WvEoN1gIGwEwddLvUF91l6BXL5yoXf
+xg7fDhYZ7CDwtVBHSfvmsIKR/QnQyylbDpVllsV9Wz6JLz52JgFGQaNjAgA=
+-----END ED25519 CERT-----
+master-key-ed25519 QYnPA/hiHQczQns39S38PDUqWwy+0uBMQbjF74ulrxI
+platform Tor 0.3.0.7 on Darwin
+proto Cons=1-2 Desc=1-2 DirCache=1 HSDir=1-2 HSIntro=3-4 HSRend=1-2 Link=1-4 LinkAuth=1,3 Microdesc=1-2 Relay=1-2
+published 2017-05-25 04:46:20
+fingerprint 3482 25F8 3C85 4796 B2DD 6364 E65C B189 B33B D696
+uptime 9
+bandwidth 1073741824 1073741824 0
+extra-info-digest 114E4F433D6E08D9E73621BB418EBF02336EB578 i6+wKCBaNqUbNZIM9DFacEM74R5m0lkh8//h6R/nbGc
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMMpf3fLSUEme0aQfN2RUfAPhZJMXVSqMpFRdBoKA4AYlz78VA9zxfj3
+Nyir2G2HFaTzeS82p74obc8RufJQcGoDUwDnPlHtjb2ezmr018j8i3fTEvPwj5xC
+5001FRwUVcOaLnxZKSDzpTyKRWGnSQBSbGcyXwMRtySKf0P5yjHDAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAM7Rn1kQffaJE8rbtgTiMxNY67i27hCBzzr0gE558jARizOJo8lf7get
+rxz92mzYPYskM1V/j16QhoRlrruMn319/l6o97+/ta6qIwlSPXZ1jd/BGs3yqS4X
+2N+N9qW8zC6km88K/YZuIsqYyXL7oHoIGqbERYLmp/JqLlAR52JJAgMBAAE=
+-----END RSA PUBLIC KEY-----
+onion-key-crosscert
+-----BEGIN CROSSCERT-----
+t4BE0PcPra9o5HBJHr9+h1MgP76XY3UGLQX8FGfEPHfNBMtVxRKkhOZ7Ki01+dkK
+IpfkdQn3bOXTIa+FYGvzpyADYx4RDpbHG9/Tna/xR+6LhAQfvcLrlBxsjyntXjkX
+FwE+AemijIU4DM4F1FHIkFz6OgT9B1/G0mr5QggzXS8=
+-----END CROSSCERT-----
+ntor-onion-key-crosscert 0
+-----BEGIN ED25519 CERT-----
+AQoABleVAUGJzwP4Yh0HM0J7N/Ut/Dw1KlsMvtLgTEG4xe+Lpa8SAKgaOVGouOKa
+N64AOq7FdJJM/qgI1r2+jqTj1Mk/a19kfTIQ8hhWxoaJhg1xo8BasnjNQ+4Cm7ds
+vMW0fhwJjQ4=
+-----END ED25519 CERT-----
+hidden-service-dir
+ntor-onion-key tic6dEvMWt3kaUtDhwULgb3qBnc2wd5GkJ5cv0TelhA=
+accept *:*
+ipv6-policy accept 1-65535
+tunnelled-dir-server
+router-sig-ed25519 t7XJfoMOKbk1167f4p5+z5nlXxr+8us3qaLdNeQ1nGpUyQtM4G8Ie9P/oeqwhV4lCx5pQN1vIy3lUaN811WqAA
+router-signature
+-----BEGIN SIGNATURE-----
+j/mMC1JuChvJH/ZP/Ayy0ZAV2P6VoxpRhHJfZMC07rr2ctmxfDTwLQhbYrqJ2adW
+FYy5QTzxYzSFoTA7FvsadJuyvsGlaRfgFs+AxYjBUUoK7Dcd2ri+Y11NmwCBLFqF
+4cYG3pqPHb38gXLj89QXfMJUDbOwrxvkVxIFbdwDCsE=
+-----END SIGNATURE-----
+.
+650 OK
+"""
+
 # BUILDTIMEOUT_SET event from tor 0.2.3.16.
 
 BUILD_TIMEOUT_EVENT = '650 BUILDTIMEOUT_SET COMPUTED \
@@ -570,13 +631,19 @@ class TestEvents(unittest.TestCase):
     self.assertRaises(ProtocolError, _get_event, ADDRMAP_CACHED_MALFORMED)
 
   def test_authdir_newdesc_event(self):
-    # TODO: awaiting test data - https://trac.torproject.org/7534
+    minimal_event = _get_event('650+AUTHDIR_NEWDESCS\nAction\nMessage\nDescriptor\n.\n650 OK\n')
 
-    event = _get_event('650+AUTHDIR_NEWDESCS\nAction\nMessage\nDescriptor\n.\n650 OK\n')
+    self.assertTrue(isinstance(minimal_event, stem.response.events.AuthDirNewDescEvent))
+    self.assertEqual('Action', minimal_event.action)
+    self.assertEqual('Message', minimal_event.message)
+    self.assertEqual('Descriptor', minimal_event.descriptor)
+
+    event = _get_event(AUTHDIR_NEWDESC)
 
     self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual([], event.positional_args)
-    self.assertEqual({}, event.keyword_args)
+    self.assertEqual('DROPPED', event.action)
+    self.assertEqual('Not replacing router descriptor; no information has changed since the last one with this identity.', event.message)
+    self.assertTrue('Descripto', event.descriptor.startswith('@uploaded-at 2017-05-25 04:46:21'))
 
   def test_build_timeout_set_event(self):
     event = _get_event(BUILD_TIMEOUT_EVENT)
