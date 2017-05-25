@@ -71,43 +71,31 @@ class TestNetworkStatusDocument(unittest.TestCase):
         self.assertEqual(80, router.or_port)
         self.assertEqual(None, router.dir_port)
 
-  def test_consensus_v3(self):
+  def test_real_consensus(self):
     """
-    Checks that version 3 consensus documents are properly parsed.
+    Checks that version 3 consensus documents from chutney can be properly
+    parsed.
     """
-
-    # the document's expected client and server versions are the same
-    expected_versions = [stem.version.Version(v) for v in (
-      '0.2.2.35',
-      '0.2.2.36',
-      '0.2.2.37',
-      '0.2.3.10-alpha',
-      '0.2.3.11-alpha',
-      '0.2.3.12-alpha',
-      '0.2.3.13-alpha',
-      '0.2.3.14-alpha',
-      '0.2.3.15-alpha',
-      '0.2.3.16-alpha',
-      '0.2.3.17-beta',
-      '0.2.3.18-rc',
-      '0.2.3.19-rc',
-    )]
 
     expected_flags = set(
-      ['Authority', 'BadExit', 'Exit', 'Fast', 'Guard', 'HSDir',
-       'Named', 'Running', 'Stable', 'Unnamed', 'V2Dir', 'Valid'])
+      ['Authority', 'Exit', 'Fast', 'Guard', 'HSDir',
+       'Running', 'Stable', 'V2Dir', 'Valid', 'NoEdConsensus'])
 
     expected_bandwidth_weights = {
-      'Wbd': 3335, 'Wbe': 0, 'Wbg': 3536, 'Wbm': 10000, 'Wdb': 10000,
-      'Web': 10000, 'Wed': 3329, 'Wee': 10000, 'Weg': 3329, 'Wem': 10000,
-      'Wgb': 10000, 'Wgd': 3335, 'Wgg': 6464, 'Wgm': 6464, 'Wmb': 10000,
-      'Wmd': 3335, 'Wme': 0, 'Wmg': 3536, 'Wmm': 10000
+      'Web': 10000, 'Wdb': 10000, 'Weg': 3333, 'Wee': 10000, 'Wed': 3333,
+      'Wgd': 3333, 'Wgb': 10000, 'Wgg': 10000, 'Wem': 10000, 'Wbg': 0,
+      'Wbd': 3333, 'Wbe': 0, 'Wmm': 10000, 'Wmb': 10000, 'Wgm': 10000,
+      'Wbm': 10000, 'Wmg': 0, 'Wme': 0, 'Wmd': 3333
     }
 
-    expected_signature = """-----BEGIN SIGNATURE-----
-HFXB4497LzESysYJ/4jJY83E5vLjhv+igIxD9LU6lf6ftkGeF+lNmIAIEKaMts8H
-mfWcW0b+jsrXcJoCxV5IrwCDF3u1aC3diwZY6yiG186pwWbOwE41188XI2DeYPwE
-I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
+    expected_signature = """\
+-----BEGIN SIGNATURE-----
+Ho0rLojfLHs9cSPFxe6znuGuFU8BvRr6gnH1gULTjUZO0NSQvo5N628KFeAsq+pT
+ElieQeV6UfwnYN1U2tomhBYv3+/p1xBxYS5oTDAITxLUYvH4pLYz09VutwFlFFtU
+r/satajuOMST0M3wCCBC4Ru5o5FSklwJTPJ/tWRXDCEHv/N5ZUUkpnNdn+7tFSZ9
+eFrPxPcQvB05BESo7C4/+ZnZVO/wduObSYu04eWwTEog2gkSWmsztKoXpx1QGrtG
+sNL22Ws9ySGDO/ykFFyxkcuyB5A8oPyedR7DrJUfCUYyB8o+XLNwODkCFxlmtFOj
+ci356fosgLiM1sVqCUkNdA==
 -----END SIGNATURE-----"""
 
     with open(get_resource('cached-consensus'), 'rb') as descriptor_file:
@@ -118,51 +106,51 @@ I/TJmV928na7RLZe2mGHCAW3VQOvV+QkCfj05VZ8CsY=
       self.assertEqual(True, document.is_consensus)
       self.assertEqual(False, document.is_vote)
       self.assertEqual(False, document.is_microdescriptor)
-      self.assertEqual(datetime.datetime(2012, 7, 12, 10, 0, 0), document.valid_after)
-      self.assertEqual(datetime.datetime(2012, 7, 12, 11, 0, 0), document.fresh_until)
-      self.assertEqual(datetime.datetime(2012, 7, 12, 13, 0, 0), document.valid_until)
-      self.assertEqual(300, document.vote_delay)
-      self.assertEqual(300, document.dist_delay)
-      self.assertEqual(expected_versions, document.client_versions)
-      self.assertEqual(expected_versions, document.server_versions)
+      self.assertEqual(datetime.datetime(2017, 5, 25, 4, 46, 30), document.valid_after)
+      self.assertEqual(datetime.datetime(2017, 5, 25, 4, 46, 40), document.fresh_until)
+      self.assertEqual(datetime.datetime(2017, 5, 25, 4, 46, 50), document.valid_until)
+      self.assertEqual(2, document.vote_delay)
+      self.assertEqual(2, document.dist_delay)
+      self.assertEqual([], document.client_versions)
+      self.assertEqual([], document.server_versions)
       self.assertEqual(expected_flags, set(document.known_flags))
       self.assertEqual([], document.packages)
-      self.assertEqual({'CircuitPriorityHalflifeMsec': 30000, 'bwauthpid': 1}, document.params)
+      self.assertEqual({}, document.params)
 
-      self.assertEqual(12, document.consensus_method)
+      self.assertEqual(26, document.consensus_method)
       self.assertEqual(expected_bandwidth_weights, document.bandwidth_weights)
       self.assertEqual([], document.consensus_methods)
       self.assertEqual(None, document.published)
       self.assertEqual([], document.get_unrecognized_lines())
 
-      router = document.routers['0013D22389CD50D0B784A3E4061CB31E8CE8CEB5']
-      self.assertEqual('sumkledi', router.nickname)
-      self.assertEqual('0013D22389CD50D0B784A3E4061CB31E8CE8CEB5', router.fingerprint)
-      self.assertEqual('F260ABF1297B445E04354E236F4159140FF7768F', router.digest)
-      self.assertEqual(datetime.datetime(2012, 7, 12, 4, 1, 55), router.published)
-      self.assertEqual('178.218.213.229', router.address)
-      self.assertEqual(80, router.or_port)
-      self.assertEqual(None, router.dir_port)
-      self.assertEqual(set(['Exit', 'Fast', 'Named', 'Running', 'Valid']), set(router.flags))
+      router = document.routers['348225F83C854796B2DD6364E65CB189B33BD696']
+      self.assertEqual('test002r', router.nickname)
+      self.assertEqual('348225F83C854796B2DD6364E65CB189B33BD696', router.fingerprint)
+      self.assertEqual('533429F8413C1B46022AD365655CBEDE1E6DBF44', router.digest)
+      self.assertEqual(datetime.datetime(2017, 5, 25, 4, 46, 11), router.published)
+      self.assertEqual('127.0.0.1', router.address)
+      self.assertEqual(5002, router.or_port)
+      self.assertEqual(7002, router.dir_port)
+      self.assertEqual(set(['Exit', 'Fast', 'Running', 'Valid', 'V2Dir', 'Guard', 'HSDir', 'Stable']), set(router.flags))
 
       authority = document.directory_authorities[0]
-      self.assertEqual(8, len(document.directory_authorities))
-      self.assertEqual('tor26', authority.nickname)
-      self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', authority.fingerprint)
-      self.assertEqual('86.59.21.38', authority.hostname)
-      self.assertEqual('86.59.21.38', authority.address)
-      self.assertEqual(80, authority.dir_port)
-      self.assertEqual(443, authority.or_port)
-      self.assertEqual('Peter Palfrader', authority.contact)
-      self.assertEqual('0B6D1E9A300B895AA2D0B427F92917B6995C3C1C', authority.vote_digest)
+      self.assertEqual(2, len(document.directory_authorities))
+      self.assertEqual('test001a', authority.nickname)
+      self.assertEqual('596CD48D61FDA4E868F4AA10FF559917BE3B1A35', authority.fingerprint)
+      self.assertEqual('127.0.0.1', authority.hostname)
+      self.assertEqual('127.0.0.1', authority.address)
+      self.assertEqual(7001, authority.dir_port)
+      self.assertEqual(5001, authority.or_port)
+      self.assertEqual('auth1@test.test', authority.contact)
+      self.assertEqual('2E7177224BBA39B505F7608FF376C07884CF926F', authority.vote_digest)
       self.assertEqual(None, authority.legacy_dir_key)
       self.assertEqual(None, authority.key_certificate)
 
       signature = document.signatures[0]
-      self.assertEqual(8, len(document.signatures))
+      self.assertEqual(2, len(document.signatures))
       self.assertEqual('sha1', signature.method)
-      self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', signature.identity)
-      self.assertEqual('BF112F1C6D5543CFD0A32215ACABD4197B5279AD', signature.key_digest)
+      self.assertEqual('596CD48D61FDA4E868F4AA10FF559917BE3B1A35', signature.identity)
+      self.assertEqual('9FBF54D6A62364320308A615BF4CF6B27B254FAD', signature.key_digest)
       self.assertEqual(expected_signature, signature.signature)
 
   def test_metrics_vote(self):
