@@ -9,6 +9,7 @@ import unittest
 
 import stem.descriptor
 import stem.version
+import test.require
 
 from stem import Flag
 from stem.util import str_type
@@ -399,6 +400,26 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     with io.BytesIO(content) as consensus_file:
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
         self.assertEqual('caerSidi', router.nickname)
+
+  @test.require.cryptography
+  def test_signature_validation(self):
+    """
+    Check that we can validate the consensus with its certificates.
+    """
+
+    with open(get_resource('cached-consensus'), 'rb') as descriptor_file:
+      consensus_content = descriptor_file.read()
+
+    with open(get_resource('cached-certs'), 'rb') as cert_file:
+      certs = list(stem.descriptor.parse_file(cert_file, 'dir-key-certificate-3 1.0'))
+
+    consensus = stem.descriptor.networkstatus.NetworkStatusDocumentV3(consensus_content)
+    consensus.validate_signatures(certs)
+
+    # change a relay's nickname in the consensus so it's no longer validly signed
+
+    consensus = stem.descriptor.networkstatus.NetworkStatusDocumentV3(consensus_content.replace('test002r', 'different_nickname'))
+    self.assertRaisesRegexp(ValueError, 'Network Status Document has 0 valid signatures out of 2 total, needed 1', consensus.validate_signatures, certs)
 
   def test_handlers(self):
     """
