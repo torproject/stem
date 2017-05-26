@@ -72,6 +72,7 @@ The following are only available within Stem's `git repository
  * **Interpreter**
 
   * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands (:trac:`21541`)
+  * Allowing interpreter to continue after tor shutsdown (:trac:`22374`)
 
 .. _version_1.5:
 

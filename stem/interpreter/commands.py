@@ -309,9 +309,6 @@ class ControlInterpreter(code.InteractiveConsole):
     :raises: **stem.SocketClosed** if the control connection has been severed
     """
 
-    if not self._controller.is_alive():
-      raise stem.SocketClosed()
-
     # Commands fall into three categories:
     #
     # * Interpreter commands. These start with a '/'.

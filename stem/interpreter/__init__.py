@@ -124,6 +124,7 @@ def main():
     readline.set_completer_delims('\n')
 
     interpreter = stem.interpreter.commands.ControlInterpreter(controller)
+    showed_close_confirmation = False
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
@@ -168,6 +169,18 @@ def main():
           prompt = '... ' if interpreter.is_multiline_context else PROMPT
           user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
           interpreter.run_command(user_input, print_response = True)
+        except stem.SocketClosed as exc:
+          if showed_close_confirmation:
+            print(format("Unable to run tor commands. The control connection has been closed.", *ERROR_OUTPUT))
+          else:
+            prompt = format("Tor's control port has closed. Do you want to continue this interpreter? (y/n) ", *HEADER_BOLD_OUTPUT)
+            user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+            print('')  # blank line
+
+            if user_input.lower() in ('y', 'yes'):
+              showed_close_confirmation = True
+            else:
+              break
         except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
           print('')  # move cursor to the following line
           break
