@@ -2,6 +2,7 @@
 Unit tests for the stem.exit_policy.ExitPolicyRule class.
 """
 
+import re
 import unittest
 
 from stem.exit_policy import AddressType, ExitPolicyRule, MicroExitPolicy
@@ -380,6 +381,13 @@ class TestExitPolicyRule(unittest.TestCase):
 
       for match_args, expected_result in matches.items():
         self.assertEqual(expected_result, rule.is_match(*match_args))
+
+  def test_missing_port(self):
+    exc_msg = "An exitpattern must be of the form 'addrspec:portspec': accept6 192.168.0.1/0"
+    self.assertRaisesRegexp(ValueError, re.escape(exc_msg), ExitPolicyRule, 'accept6 192.168.0.1/0')
+
+    exc_msg = "An exitpattern must be of the form 'addrspec:portspec': reject6 [2a00:1450:4001:081e:0000:0000:0000:200e]"
+    self.assertRaisesRegexp(ValueError, re.escape(exc_msg), ExitPolicyRule, 'reject6 [2a00:1450:4001:081e:0000:0000:0000:200e]')
 
   def test_ipv6_only_entries(self):
     # accept6/reject6 shouldn't match anything when given an ipv4 addresses

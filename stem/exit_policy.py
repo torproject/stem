@@ -662,7 +662,7 @@ class ExitPolicyRule(object):
 
     exitpattern = exitpattern.lstrip()
 
-    if ':' not in exitpattern:
+    if ':' not in exitpattern or ']' in exitpattern.rsplit(':', 1)[1]:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)
 
     self.address = None
@@ -983,7 +983,7 @@ class ExitPolicyRule(object):
       else:
         raise ValueError("The '%s' isn't a number of bits: %s" % (addr_extra, rule))
     else:
-      raise ValueError("Address isn't a wildcard, IPv4, or IPv6 address: %s" % rule)
+      raise ValueError("'%s' isn't a wildcard, IPv4, or IPv6 address: %s" % (addrspec, rule))
 
   def _apply_portspec(self, rule, portspec):
     # Parses the portspec...
