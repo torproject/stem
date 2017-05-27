@@ -91,10 +91,15 @@ class TestInterpreterCommands(unittest.TestCase):
 
   def test_when_disconnected(self):
     controller = Mock()
-    controller.is_alive.return_value = False
+    controller.msg.side_effect = stem.SocketClosed('kaboom!')
 
     interpreter = ControlInterpreter(controller)
-    self.assertRaises(stem.SocketClosed, interpreter.run_command, '/help')
+
+    # we should be able to run non-tor commands
+    self.assertTrue('Interpreter commands include:' in interpreter.run_command('/help'))
+
+    # ... but tor commands should provide exceptions
+    self.assertRaises(stem.SocketClosed, interpreter.run_command, 'GETINFO version')
 
   def test_quit(self):
     interpreter = ControlInterpreter(CONTROLLER)
