@@ -118,7 +118,7 @@ class TestInterpreterCommands(unittest.TestCase):
 
     # no received events
 
-    self.assertEqual('\n', interpreter.run_command('/events'))
+    self.assertEqual('', interpreter.run_command('/events'))
 
     # with enqueued events
 

@@ -359,8 +359,7 @@ class ControlInterpreter(code.InteractiveConsole):
           with redirect(console_output, console_output):
             self.is_multiline_context = code.InteractiveConsole.push(self, command)
 
-          output = console_output.getvalue()
-          return output if output else None
+          output = console_output.getvalue().strip()
         else:
           try:
             output = format(self._controller.msg(command).raw_content().strip(), *STANDARD_OUTPUT)
@@ -370,9 +369,10 @@ class ControlInterpreter(code.InteractiveConsole):
             else:
               output = format(str(exc), *ERROR_OUTPUT)
 
-    output += '\n'  # give ourselves an extra line before the next prompt
+    if output:
+      output += '\n'  # give ourselves an extra line before the next prompt
 
-    if print_response and output is not None:
-      print(output)
+      if print_response:
+        print(output)
 
     return output
