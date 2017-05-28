@@ -396,6 +396,13 @@ class TestDescriptorReader(unittest.TestCase):
     Checks that we can read descriptors from an bzipped archive.
     """
 
+    # when python's compiled it only optionally has bz2 support
+
+    try:
+      import bz2
+    except ImportError:
+      self.skipTest('(bz2 unsupported}')
+
     expected_results = _get_raw_tar_descriptors()
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar.bz2')
 
