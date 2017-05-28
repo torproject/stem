@@ -61,13 +61,6 @@ EXPECTED_FILES = {
 
 EXPECTED_CONFIG_OPTIONS = OrderedDict()
 
-EXPECTED_CONFIG_OPTIONS['Bridge'] = stem.manual.ConfigOption(
-  name = 'Bridge',
-  category = 'Client',
-  usage = '[transport] IP:ORPort [fingerprint]',
-  summary = 'Available bridges',
-  description = 'When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it\'s provided and if UpdateBridgesFromAuthority is set too.\n\nIf "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge.')
-
 EXPECTED_CONFIG_OPTIONS['BandwidthRate'] = stem.manual.ConfigOption(
   name = 'BandwidthRate',
   category = 'General',
@@ -88,6 +81,13 @@ EXPECTED_CONFIG_OPTIONS['MaxAdvertisedBandwidth'] = stem.manual.ConfigOption(
   usage = 'N bytes|KBytes|MBytes|GBytes|KBits|MBits|GBits',
   summary = 'Limit for the bandwidth we advertise as being available for relaying',
   description = 'If set, we will not advertise more than this amount of bandwidth for our BandwidthRate. Server operators who want to reduce the number of clients who ask to build circuits through them (since this is proportional to advertised bandwidth rate) can thus reduce the CPU demands on their server without impacting network performance.')
+
+EXPECTED_CONFIG_OPTIONS['Bridge'] = stem.manual.ConfigOption(
+  name = 'Bridge',
+  category = 'Client',
+  usage = '[transport] IP:ORPort [fingerprint]',
+  summary = 'Available bridges',
+  description = 'When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it\'s provided and if UpdateBridgesFromAuthority is set too.\n\nIf "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge.')
 
 CACHED_MANUAL = None
 
