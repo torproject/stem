@@ -55,6 +55,9 @@ SRC_PATHS = [os.path.join(test.STEM_BASE, path) for path in (
   os.path.join('docs', 'roles.py'),
 )]
 
+PYFLAKES_UNAVAILABLE = 'Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n'
+PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pycodestyle\n'
+
 
 def _check_tor_version(tor_path):
   return str(test.tor_version(tor_path)).split()[0]
@@ -203,6 +206,21 @@ class ModuleVersion(Task):
     super(ModuleVersion, self).__init__(label, version_check)
 
 
+class StaticCheckTask(Task):
+  def __init__(self, label, runner, args = None, is_available = None, unavailable_msg = None):
+    super(StaticCheckTask, self).__init__(label, runner, args, is_required = False, print_result = False, print_runtime = True)
+    self.is_available = is_available
+    self.unavailable_msg = unavailable_msg
+
+  def run(self):
+    if self.is_available:
+      return super(StaticCheckTask, self).run()
+    else:
+      println('  %s...' % self.label, STATUS, NO_NL)
+      println(' ' * (50 - len(self.label)), NO_NL)
+      println('unavailable', STATUS)
+
+
 STEM_VERSION = Task('checking stem version', lambda: stem.__version__)
 TOR_VERSION = Task('checking tor version', _check_tor_version)
 PYTHON_VERSION = Task('checking python version', lambda: '.'.join(map(str, sys.version_info[:3])))
@@ -218,20 +236,18 @@ UNUSED_TESTS = Task('checking for unused tests', _check_for_unused_tests, [(
   os.path.join(test.STEM_BASE, 'test', 'integ'),
 )])
 
-PYFLAKES_TASK = Task(
+PYFLAKES_TASK = StaticCheckTask(
   'running pyflakes',
   stem.util.test_tools.pyflakes_issues,
   args = (SRC_PATHS,),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
+  is_available = stem.util.test_tools.is_pyflakes_available(),
+  unavailable_msg = PYFLAKES_UNAVAILABLE,
 )
 
-PYCODESTYLE_TASK = Task(
+PYCODESTYLE_TASK = StaticCheckTask(
   'running pycodestyle',
   stem.util.test_tools.stylistic_issues,
   args = (SRC_PATHS, True, True, True),
-  is_required = False,
-  print_result = False,
-  print_runtime = True,
+  is_available = stem.util.test_tools.is_pycodestyle_available(),
+  unavailable_msg = PYCODESTYLE_UNAVAILABLE,
 )

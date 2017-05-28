@@ -4,20 +4,28 @@
 """
 Helper functions for testing.
 
+Our **stylistic_issues**, **pyflakes_issues**, and **type_check_issues**
+respect a 'exclude_paths' in our test config, excluding any absolute paths
+matching those regexes. Issue strings can start or end with an asterisk
+to match just against the prefix or suffix. For instance...
+
+::
+
+  exclude_paths .*/stem/test/data/.*
+
 .. versionadded:: 1.2.0
 
 ::
 
   TimedTestRunner - test runner that tracks test runtimes
   test_runtimes - provides runtime of tests excuted through TimedTestRunners
-
   clean_orphaned_pyc - delete *.pyc files without corresponding *.py
 
   is_pyflakes_available - checks if pyflakes is available
   is_pycodestyle_available - checks if pycodestyle is available
 
-  stylistic_issues - checks for PEP8 and other stylistic issues
   pyflakes_issues - static checks for problems via pyflakes
+  stylistic_issues - checks for PEP8 and other stylistic issues
 """
 
 import collections
@@ -218,9 +226,6 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
     issues = stylistic_issues('my_project')
 
-  If a 'exclude_paths' was set in our test config then we exclude any absolute
-  paths matching those regexes.
-
   .. versionchanged:: 1.3.0
      Renamed from get_stylistic_issues() to stylistic_issues(). The old name
      still works as an alias, but will be dropped in Stem version 2.0.0.
@@ -344,10 +349,6 @@ def pyflakes_issues(paths):
 
     pyflakes.ignore stem/util/test_tools.py => 'pyflakes' imported but unused
     pyflakes.ignore stem/util/test_tools.py => 'pycodestyle' imported but unused
-
-  If a 'exclude_paths' was set in our test config then we exclude any absolute
-  paths matching those regexes. Issue strings can start or end with an asterisk
-  to match just against the prefix or suffix.
 
   .. versionchanged:: 1.3.0
      Renamed from get_pyflakes_issues() to pyflakes_issues(). The old name

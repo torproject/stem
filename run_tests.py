@@ -149,7 +149,6 @@ def get_torrc_entries(target):
 
 def main():
   start_time = time.time()
-
   try:
     stem.prereq.check_requirements()
   except ImportError as exc:
@@ -161,6 +160,7 @@ def main():
 
   try:
     args = test.arguments.parse(sys.argv[1:])
+    test.task.TOR_VERSION.args = (args.tor_path,)
   except ValueError as exc:
     println(str(exc))
     sys.exit(1)
@@ -193,23 +193,10 @@ def main():
 
     sys.exit(1)
 
-  tor_version_check, pyflakes_task, pycodestyle_task = None, None, None
-
-  if not args.specific_test:
-    if stem.util.test_tools.is_pyflakes_available():
-      pyflakes_task = test.task.PYFLAKES_TASK
-
-    if stem.util.test_tools.is_pycodestyle_available():
-      pycodestyle_task = test.task.PYCODESTYLE_TASK
-
-  if args.run_integ:
-    tor_version_check = test.task.TOR_VERSION
-    tor_version_check.args = (args.tor_path,)
-
   test.task.run(
     'INITIALISING',
     test.task.STEM_VERSION,
-    tor_version_check,
+    test.task.TOR_VERSION if args.run_integ else None,
     test.task.PYTHON_VERSION,
     test.task.CRYPTO_VERSION,
     test.task.PYNACL_VERSION,
@@ -218,8 +205,8 @@ def main():
     test.task.PYCODESTYLE_VERSION,
     test.task.CLEAN_PYC,
     test.task.UNUSED_TESTS,
-    pyflakes_task,
-    pycodestyle_task,
+    test.task.PYFLAKES_TASK if not args.specific_test else None,
+    test.task.PYCODESTYLE_TASK if not args.specific_test else None,
   )
 
   # buffer that we log messages into so they can be printed after a test has finished
@@ -339,19 +326,13 @@ def main():
 
   static_check_issues = {}
 
-  if pyflakes_task and pyflakes_task.is_successful:
-    for path, issues in pyflakes_task.result.items():
-      for issue in issues:
-        static_check_issues.setdefault(path, []).append(issue)
-  elif not stem.util.test_tools.is_pyflakes_available():
-    println('Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n', ERROR)
-
-  if pycodestyle_task and pycodestyle_task.is_successful:
-    for path, issues in pycodestyle_task.result.items():
-      for issue in issues:
-        static_check_issues.setdefault(path, []).append(issue)
-  elif not stem.util.test_tools.is_pycodestyle_available():
-    println('Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pycodestyle\n', ERROR)
+  for task in (test.task.PYFLAKES_TASK, test.task.PYCODESTYLE_TASK):
+    if task and task.is_successful:
+      for path, issues in task.result.items():
+        for issue in issues:
+          static_check_issues.setdefault(path, []).append(issue)
+    elif not task.is_available and task.unavailable_msg:
+      println(task.unavailable_msg, ERROR)
 
   _print_static_issues(static_check_issues)
 
