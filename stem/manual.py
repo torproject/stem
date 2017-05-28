@@ -82,15 +82,15 @@ Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHO
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.cfg')
 
-CATEGORY_SECTIONS = {
-  'GENERAL OPTIONS': Category.GENERAL,
-  'CLIENT OPTIONS': Category.CLIENT,
-  'SERVER OPTIONS': Category.RELAY,
-  'DIRECTORY SERVER OPTIONS': Category.DIRECTORY,
-  'DIRECTORY AUTHORITY SERVER OPTIONS': Category.AUTHORITY,
-  'HIDDEN SERVICE OPTIONS': Category.HIDDEN_SERVICE,
-  'TESTING NETWORK OPTIONS': Category.TESTING,
-}
+CATEGORY_SECTIONS = OrderedDict((
+  ('GENERAL OPTIONS', Category.GENERAL),
+  ('CLIENT OPTIONS', Category.CLIENT),
+  ('SERVER OPTIONS', Category.RELAY),
+  ('DIRECTORY SERVER OPTIONS', Category.DIRECTORY),
+  ('DIRECTORY AUTHORITY SERVER OPTIONS', Category.AUTHORITY),
+  ('HIDDEN SERVICE OPTIONS', Category.HIDDEN_SERVICE),
+  ('TESTING NETWORK OPTIONS', Category.TESTING),
+))
 
 
 class ConfigOption(object):
@@ -492,7 +492,7 @@ def _get_categories(content):
   if content and content[-1].startswith('Tor'):
     content = content[:-1]
 
-  categories = {}
+  categories = OrderedDict()
   category, lines = None, []
 
   for line in content:

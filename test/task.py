@@ -21,6 +21,7 @@
   +- PYCODESTYLE_TASK - style checks
 """
 
+import importlib
 import os
 import re
 import sys
@@ -199,7 +200,7 @@ class ModuleVersion(Task):
       if prereq_check is None or prereq_check():
         for module in modules:
           if stem.util.test_tools._module_exists(module):
-            return __import__(module).__version__
+            return importlib.import_module(module).__version__
 
       return 'missing'
 

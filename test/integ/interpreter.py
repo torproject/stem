@@ -49,7 +49,7 @@ class TestInterpreter(unittest.TestCase):
     ]
 
     with tempfile.NamedTemporaryFile(prefix = 'test_commands.') as tmp:
-      tmp.write('GETINFO config-file\nGETINFO version')
+      tmp.write(b'GETINFO config-file\nGETINFO version')
       tmp.flush()
 
       self.assertEqual(expected, _run_prompt('--run', tmp.name))
