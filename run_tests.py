@@ -327,7 +327,9 @@ def main():
   static_check_issues = {}
 
   for task in (test.task.PYFLAKES_TASK, test.task.PYCODESTYLE_TASK):
-    if task and task.is_successful:
+    if task:
+      task.join()
+
       for path, issues in task.result.items():
         for issue in issues:
           static_check_issues.setdefault(path, []).append(issue)

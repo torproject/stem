@@ -22,6 +22,7 @@
 """
 
 import importlib
+import multiprocessing
 import os
 import re
 import sys
@@ -141,7 +142,7 @@ class Task(object):
   message or list of strings for its results.
   """
 
-  def __init__(self, label, runner, args = None, is_required = True, print_result = True, print_runtime = False):
+  def __init__(self, label, runner, args = None, is_required = True, print_result = True, print_runtime = False, background = False):
     super(Task, self).__init__()
 
     self.label = label
@@ -155,6 +156,10 @@ class Task(object):
     self.is_successful = False
     self.result = None
 
+    self._is_background_task = background
+    self._background_process = None
+    self._background_pipe = None
+
   def run(self):
     start_time = time.time()
     println('  %s...' % self.label, STATUS, NO_NL)
@@ -163,13 +168,19 @@ class Task(object):
     println(' ' * padding, NO_NL)
 
     try:
-      if self.args:
-        self.result = self.runner(*self.args)
+      if self._is_background_task:
+        def _run_wrapper(conn, runner, args):
+          conn.send(runner(*args) if args else runner())
+          conn.close()
+
+        self._background_pipe, child_pipe = multiprocessing.Pipe()
+        self._background_process = multiprocessing.Process(target = _run_wrapper, args = (child_pipe, self.runner, self.args))
+        self._background_process.start()
       else:
-        self.result = self.runner()
+        self.result = self.runner(*self.args) if self.args else self.runner()
 
       self.is_successful = True
-      output_msg = 'done'
+      output_msg = 'running' if self._is_background_task else 'done'
 
       if self.print_result and isinstance(self.result, str):
         output_msg = self.result
@@ -190,6 +201,11 @@ class Task(object):
       println(output_msg, ERROR)
       self.error = exc
 
+  def join(self):
+    if self._is_background_task:
+      self.result = self._background_pipe.recv()
+      self._background_process.join()
+
 
 class ModuleVersion(Task):
   def __init__(self, label, modules, prereq_check = None):
@@ -208,8 +224,8 @@ class ModuleVersion(Task):
 
 
 class StaticCheckTask(Task):
-  def __init__(self, label, runner, args = None, is_available = None, unavailable_msg = None):
-    super(StaticCheckTask, self).__init__(label, runner, args, is_required = False, print_result = False, print_runtime = True)
+  def __init__(self, label, runner, args = None, is_available = None, unavailable_msg = None, background = True):
+    super(StaticCheckTask, self).__init__(label, runner, args, is_required = False, print_result = False, print_runtime = not background, background = background)
     self.is_available = is_available
     self.unavailable_msg = unavailable_msg
 
