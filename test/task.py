@@ -202,7 +202,7 @@ class Task(object):
       self.error = exc
 
   def join(self):
-    if self._is_background_task:
+    if self._background_process:
       self.result = self._background_pipe.recv()
       self._background_process.join()
 
