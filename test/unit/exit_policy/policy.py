@@ -114,6 +114,13 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
     self.assertEqual('accept 1-79', policy.summary())
 
+  def test_without_port(self):
+    policy = get_config_policy('accept 216.58.193.78, reject *')
+    self.assertEqual([ExitPolicyRule('accept 216.58.193.78:*'), ExitPolicyRule('reject *:*')], list(policy))
+
+    policy = get_config_policy('reject6 [2a00:1450:4001:081e:0000:0000:0000:200e]')
+    self.assertEqual([ExitPolicyRule('reject [2a00:1450:4001:081e:0000:0000:0000:200e]:*')], list(policy))
+
   def test_non_private_non_default_policy(self):
     policy = get_config_policy('reject *:80-65535, accept *:1-65533, reject *:*')
 

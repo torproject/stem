@@ -67,6 +67,7 @@ exiting to a destination is permissible or not. For instance...
 
 from __future__ import absolute_import
 
+import re
 import socket
 import zlib
 
@@ -134,7 +135,7 @@ def get_config_policy(rules, ip_address = None):
     if not rule:
       continue
 
-    if ':' not in rule:
+    if not re.search(':[\d\-\*]+$', rule):
       rule = '%s:*' % rule
 
     if 'private' in rule:
