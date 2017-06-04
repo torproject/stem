@@ -18,6 +18,7 @@ import stem.process
 import stem.socket
 import stem.util.str_tools
 import stem.util.system
+import stem.util.test_tools
 import stem.util.tor_tools
 import stem.version
 import test.require
@@ -37,6 +38,64 @@ ExitPolicy reject *:*
 PublishServerDescriptor 0
 DataDirectory %s
 """
+
+TEST_TAKE_OWNERSHIP_BY_PID = None
+
+
+def setup(tor_cmd):
+  global TEST_TAKE_OWNERSHIP_BY_PID
+
+  TEST_TAKE_OWNERSHIP_BY_PID = stem.util.test_tools.AsyncTestResult(_test_take_ownership_via_pid, tor_cmd)
+
+
+def _test_take_ownership_via_pid(tor_cmd):
+  """
+  Checks that the tor process quits after we do if we set take_ownership. To
+  test this we spawn a process and trick tor into thinking that it is us.
+  """
+
+  if not stem.util.system.is_available('sleep'):
+    raise stem.util.test_tools.SkipTest('(sleep unavailable)')
+  elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
+    raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
+
+  data_directory = tempfile.mkdtemp()
+
+  try:
+    sleep_process = subprocess.Popen(['sleep', '60'])
+
+    tor_process = stem.process.launch_tor_with_config(
+      tor_cmd = tor_cmd,
+      config = {
+        'SocksPort': '2779',
+        'ControlPort': '2780',
+        'DataDirectory': data_directory,
+        '__OwningControllerProcess': str(sleep_process.pid),
+      },
+      completion_percent = 5,
+    )
+
+    # Kill the sleep command. Tor should quit shortly after.
+
+    sleep_process.kill()
+    sleep_process.communicate()
+
+    # tor polls for the process every fifteen seconds so this may take a
+    # while...
+    #
+    #   https://trac.torproject.org/projects/tor/ticket/21281
+
+    start_time = time.time()
+
+    while time.time() - start_time < 30:
+      if tor_process.poll() == 0:
+        return  # tor exited
+
+      time.sleep(0.01)
+
+    raise AssertionError("tor didn't quit after the process that owned it terminated")
+  finally:
+    shutil.rmtree(data_directory)
 
 
 class TestProcess(unittest.TestCase):
@@ -425,49 +484,13 @@ class TestProcess(unittest.TestCase):
     if not (runtime > 0.05 and runtime < 1):
       self.fail('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
 
-  @test.require.only_run_once
-  @test.require.command('sleep')
-  @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)
-  @patch('os.getpid')
-  def test_take_ownership_via_pid(self, getpid_mock):
+  def test_take_ownership_via_pid(self):
     """
     Checks that the tor process quits after we do if we set take_ownership. To
     test this we spawn a process and trick tor into thinking that it is us.
     """
 
-    sleep_process = subprocess.Popen(['sleep', '60'])
-    getpid_mock.return_value = str(sleep_process.pid)
-
-    tor_process = stem.process.launch_tor_with_config(
-      tor_cmd = test.runner.get_runner().get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2778',
-        'DataDirectory': self.data_directory,
-      },
-      completion_percent = 5,
-      take_ownership = True,
-    )
-
-    # Kill the sleep command. Tor should quit shortly after.
-
-    sleep_process.kill()
-    sleep_process.communicate()
-
-    # tor polls for the process every fifteen seconds so this may take a
-    # while...
-    #
-    #   https://trac.torproject.org/projects/tor/ticket/21281
-
-    start_time = time.time()
-
-    while time.time() - start_time < 30:
-      if tor_process.poll() == 0:
-        return  # tor exited
-
-      time.sleep(0.01)
-
-    self.fail("tor didn't quit after the process that owned it terminated")
+    TEST_TAKE_OWNERSHIP_BY_PID.result(self)
 
   @test.require.only_run_once
   @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)

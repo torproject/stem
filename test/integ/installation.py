@@ -12,6 +12,7 @@ import unittest
 
 import stem
 import stem.util.system
+import stem.util.test_tools
 import test
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
