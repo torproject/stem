@@ -7,6 +7,7 @@ import os
 import shutil
 import sys
 import tarfile
+import time
 import unittest
 
 import stem
@@ -29,7 +30,7 @@ def setup():
   global TEST_INSTALL, TEST_SDIST
 
   TEST_INSTALL = stem.util.test_tools.AsyncTestResult(_test_install)
-  TEST_SDIST = stem.util.test_tools.AsyncTestResult(_test_sdist)
+  TEST_SDIST = stem.util.test_tools.AsyncTestResult(_test_sdist, TEST_INSTALL.pid())
 
 
 def _test_install():
@@ -56,8 +57,10 @@ def _test_install():
       shutil.rmtree(BASE_INSTALL_PATH)
 
 
-def _test_sdist():
-  TEST_INSTALL.join()  # we need to run these tests serially
+def _test_sdist(dependency_pid):
+  while stem.util.system.is_running(dependency_pid):
+    time.sleep(0.1)  # we need to run these tests serially
+
   git_dir = os.path.join(test.STEM_BASE, '.git')
 
   if not stem.util.system.is_available('git'):

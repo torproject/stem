@@ -30,6 +30,7 @@ to match just against the prefix or suffix. For instance...
 
 import collections
 import linecache
+import multiprocessing
 import os
 import re
 import time
@@ -59,31 +60,44 @@ class AsyncTestResult(object):
   Test results that can be applied later.
   """
 
-  def __init__(self, runner):
-    self._failure = None
-    self._skip_reason = None
-
-    def _wrapper():
+  def __init__(self, test_runner, *test_runner_args):
+    def _wrapper(conn, runner, args):
       try:
-        runner()
+        runner(*args) if args else runner()
+        conn.send(('success', None))
       except AssertionError as exc:
-        self._failure = str(exc)
+        conn.send(('failure', str(exc)))
       except SkipTest as exc:
-        self._skip_reason = str(exc)
+        conn.send(('skipped', str(exc)))
+      finally:
+        conn.close()
 
-    self._thread = threading.Thread(target = _wrapper)
-    self._thread.start()
+    self._result_type, self._result_msg = None, None
+    self._result_lock = threading.RLock()
+    self._results_pipe, child_pipe = multiprocessing.Pipe()
+    self._test_process = multiprocessing.Process(target = _wrapper, args = (child_pipe, test_runner, test_runner_args))
+    self._test_process.start()
+
+  def pid(self):
+    with self._result_lock:
+      return self._test_process.pid if self._test_process else None
 
   def join(self):
-    self._thread.join()
+    self.result(None)
 
   def result(self, test):
-    self.join()
+    with self._result_lock:
+      if self._test_process:
+        self._result_type, self._result_msg = self._results_pipe.recv()
+        self._test_process.join()
+        self._test_process = None
 
-    if self._failure:
-      test.fail(self._failure)
-    elif self._skip_reason:
-      test.skipTest(self._skip_reason)
+      if not test:
+        return
+      elif self._result_type == 'failure':
+        test.fail(self._result_msg)
+      elif self._result_type == 'skipped':
+        test.skipTest(self._result_msg)
 
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):

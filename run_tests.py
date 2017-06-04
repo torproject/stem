@@ -232,6 +232,9 @@ def main():
 
   skipped_tests = 0
 
+  if args.run_integ and (not args.specific_test or 'test.integ.installation'.startswith(args.specific_test)):
+    test.integ.installation.setup()
+
   if args.run_unit:
     test.output.print_divider('UNIT TESTS', True)
     error_tracker.set_category('UNIT TEST')
@@ -251,10 +254,6 @@ def main():
 
     our_version = stem.version.get_system_tor_version(args.tor_path)
     skipped_targets = {}
-    integ_setup_thread = None
-
-    if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
-      integ_setup_thread = test.integ.installation.setup()
 
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
@@ -285,9 +284,6 @@ def main():
 
         # We should have joined on all threads. If not then that indicates a
         # leak that could both likely be a bug and disrupt further targets.
-
-        if integ_setup_thread:
-          integ_setup_thread.join()
 
         active_threads = threading.enumerate()
 
