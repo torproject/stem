@@ -309,9 +309,6 @@ def main():
       except OSError:
         error_tracker.register_error()
       finally:
-        if integ_setup_thread:
-          test.integ.installation.clean()
-
         println()
         integ_runner.stop()
         println()

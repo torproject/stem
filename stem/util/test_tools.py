@@ -33,6 +33,7 @@ import linecache
 import os
 import re
 import time
+import threading
 import unittest
 
 import stem.prereq
@@ -47,6 +48,42 @@ CONFIG = stem.util.conf.config_dict('test', {
 })
 
 TEST_RUNTIMES = {}
+
+
+class SkipTest(Exception):
+  'Notes that the test was skipped.'
+
+
+class AsyncTestResult(object):
+  """
+  Test results that can be applied later.
+  """
+
+  def __init__(self, runner):
+    self._failure = None
+    self._skip_reason = None
+
+    def _wrapper():
+      try:
+        runner()
+      except AssertionError as exc:
+        self._failure = str(exc)
+      except SkipTest as exc:
+        self._skip_reason = str(exc)
+
+    self._thread = threading.Thread(target = _wrapper)
+    self._thread.start()
+
+  def join(self):
+    self._thread.join()
+
+  def result(self, test):
+    self.join()
+
+    if self._failure:
+      test.fail(self._failure)
+    elif self._skip_reason:
+      test.skipTest(self._skip_reason)
 
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):

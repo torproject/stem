@@ -7,66 +7,95 @@ import os
 import shutil
 import sys
 import tarfile
-import threading
 import unittest
 
 import stem
 import stem.util.system
 import test
-import test.require
 
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
 
 BASE_INSTALL_PATH = '/tmp/stem_test'
 DIST_PATH = os.path.join(test.STEM_BASE, 'dist')
-SETUP_THREAD, INSTALL_FAILURE, INSTALL_PATH, SDIST_FAILURE = None, None, None, None
 PYTHON_EXE = sys.executable if sys.executable else 'python'
+TEST_INSTALL, TEST_SDIST = None, None
 
 
 def setup():
   """
-  Performs setup our tests will need. This mostly just needs disk iops so it
-  can happen asynchronously with other tests.
+  Performs our tests asynchronously. They take a while due to iops.
   """
 
-  global SETUP_THREAD
+  global TEST_INSTALL, TEST_SDIST
 
-  def _setup():
-    global INSTALL_FAILURE, INSTALL_PATH, SDIST_FAILURE
+  TEST_INSTALL = stem.util.test_tools.AsyncTestResult(_test_install)
+  TEST_SDIST = stem.util.test_tools.AsyncTestResult(_test_sdist)
 
+
+def _test_install():
+  try:
     try:
       stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE)
       stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
       site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
-
-      if len(site_packages_paths) != 1:
-        raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
-
-      INSTALL_PATH = site_packages_paths[0]
     except Exception as exc:
-      INSTALL_FAILURE = AssertionError("Unable to install with 'python setup.py install': %s" % exc)
+      raise AssertionError("Unable to install with 'python setup.py install': %s" % exc)
 
-    if not os.path.exists(DIST_PATH):
-      try:
-        stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
-      except Exception as exc:
-        SDIST_FAILURE = exc
-    else:
-      SDIST_FAILURE = AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)
+    if len(site_packages_paths) != 1:
+      raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
 
-  if SETUP_THREAD is None:
-    SETUP_THREAD = threading.Thread(target = _setup)
-    SETUP_THREAD.start()
+    install_path = site_packages_paths[0]
+    version_output = stem.util.system.call([PYTHON_EXE, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % install_path])[0]
 
-  return SETUP_THREAD
+    if stem.__version__ != version_output:
+      raise AssertionError('We expected the installed version to be %s but was %s' % (stem.__version__, version_output))
+
+    _assert_has_all_files(install_path)
+  finally:
+    if os.path.exists(BASE_INSTALL_PATH):
+      shutil.rmtree(BASE_INSTALL_PATH)
 
 
-def clean():
-  if os.path.exists(BASE_INSTALL_PATH):
-    shutil.rmtree(BASE_INSTALL_PATH)
+def _test_sdist():
+  TEST_INSTALL.join()  # we need to run these tests serially
+  git_dir = os.path.join(test.STEM_BASE, '.git')
+
+  if not stem.util.system.is_available('git'):
+    raise stem.util.test_tools.SkipTest('(git unavailable)')
+  elif not os.path.exists(git_dir):
+    raise stem.util.test_tools.SkipTest('(not a git checkout)')
 
   if os.path.exists(DIST_PATH):
-    shutil.rmtree(DIST_PATH)
+    raise AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)
+
+  try:
+    try:
+      stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
+    except Exception as exc:
+      raise AssertionError("Unable to run 'python setup.py sdist': %s" % exc)
+
+    git_contents = [line.split()[-1] for line in stem.util.system.call('git --git-dir=%s ls-tree --full-tree -r HEAD' % git_dir)]
+
+    # tarball has a prefix 'stem-[verion]' directory so stipping that out
+
+    dist_tar = tarfile.open(os.path.join(DIST_PATH, 'stem-dry-run-%s.tar.gz' % stem.__version__))
+    tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
+
+    issues = []
+
+    for path in git_contents:
+      if path not in tar_contents and path not in ['.gitignore']:
+        issues.append('  * %s is missing from our release tarball' % path)
+
+    for path in tar_contents:
+      if path not in git_contents and path not in ['MANIFEST.in', 'PKG-INFO']:
+        issues.append("  * %s isn't expected in our release tarball" % path)
+
+    if issues:
+      raise AssertionError(INSTALL_MISMATCH_MSG + '\n'.join(issues))
+  finally:
+    if os.path.exists(DIST_PATH):
+      shutil.rmtree(DIST_PATH)
 
 
 def _assert_has_all_files(path):
@@ -102,23 +131,14 @@ def _assert_has_all_files(path):
 
 
 class TestInstallation(unittest.TestCase):
-  @test.require.only_run_once
   def test_install(self):
     """
     Installs with 'python setup.py install' and checks we can use what we
     install.
     """
 
-    if not INSTALL_PATH:
-      setup().join()
+    TEST_INSTALL.result(self)
 
-    if INSTALL_FAILURE:
-      raise INSTALL_FAILURE
-
-    self.assertEqual(stem.__version__, stem.util.system.call([PYTHON_EXE, '-c', "import sys;sys.path.insert(0, '%s');import stem;print(stem.__version__)" % INSTALL_PATH])[0])
-    _assert_has_all_files(INSTALL_PATH)
-
-  @test.require.only_run_once
   def test_sdist(self):
     """
     Creates a source distribution tarball with 'python setup.py sdist' and
@@ -126,36 +146,4 @@ class TestInstallation(unittest.TestCase):
     meant to test that our MANIFEST.in is up to date.
     """
 
-    git_dir = os.path.join(test.STEM_BASE, '.git')
-
-    if not stem.util.system.is_available('git'):
-      self.skipTest('(git unavailable)')
-      return
-    elif not os.path.exists(git_dir):
-      self.skipTest('(not a git checkout)')
-      return
-
-    setup().join()
-
-    if SDIST_FAILURE:
-      raise SDIST_FAILURE
-
-    git_contents = [line.split()[-1] for line in stem.util.system.call('git --git-dir=%s ls-tree --full-tree -r HEAD' % git_dir)]
-
-    # tarball has a prefix 'stem-[verion]' directory so stipping that out
-
-    dist_tar = tarfile.open(os.path.join(DIST_PATH, 'stem-dry-run-%s.tar.gz' % stem.__version__))
-    tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
-
-    issues = []
-
-    for path in git_contents:
-      if path not in tar_contents and path not in ['.gitignore']:
-        issues.append('  * %s is missing from our release tarball' % path)
-
-    for path in tar_contents:
-      if path not in git_contents and path not in ['MANIFEST.in', 'PKG-INFO']:
-        issues.append("  * %s isn't expected in our release tarball" % path)
-
-    if issues:
-      self.fail(INSTALL_MISMATCH_MSG + '\n'.join(issues))
+    TEST_SDIST.result(self)
