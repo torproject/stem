@@ -8,6 +8,7 @@ import unittest
 import stem
 import stem.descriptor
 import stem.descriptor.remote
+import stem.util.test_tools
 import stem.version
 import test
 import test.require
@@ -15,6 +16,11 @@ import test.runner
 
 
 class TestNetworkStatus(unittest.TestCase):
+  @staticmethod
+  def run_tests(test_dir):
+    TestNetworkStatus.test_cached_consensus = stem.util.test_tools.AsyncTest(TestNetworkStatus.test_cached_consensus, args = (test_dir,), threaded = True).method
+    TestNetworkStatus.test_cached_microdesc_consensus = stem.util.test_tools.AsyncTest(TestNetworkStatus.test_cached_microdesc_consensus, args = (test_dir,), threaded = True).method
+
   @test.require.only_run_once
   @test.require.online
   @test.require.cryptography
@@ -26,23 +32,21 @@ class TestNetworkStatus(unittest.TestCase):
 
     stem.descriptor.remote.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT, validate = True).run()
 
-  @test.require.only_run_once
-  def test_cached_consensus(self):
+  @staticmethod
+  def test_cached_consensus(test_dir):
     """
     Parses the cached-consensus file in our data directory.
     """
 
-    consensus_path = test.runner.get_runner().get_test_dir('cached-consensus')
+    consensus_path = os.path.join(test_dir, 'cached-consensus')
 
     if not os.path.exists(consensus_path):
-      self.skipTest('(no cached-consensus)')
-      return
+      raise stem.util.test_tools.SkipTest('(no cached-consensus)')
     elif stem.util.system.is_windows():
       # Unable to check memory usage on windows, so can't prevent hanging the
       # system if things go bad.
 
-      self.skipTest('(unavailable on windows)')
-      return
+      raise stem.util.test_tools.SkipTest('(unavailable on windows)')
 
     count, reported_flags = 0, []
 
@@ -61,22 +65,21 @@ class TestNetworkStatus(unittest.TestCase):
     # Sanity test that there's at least a hundred relays. If that's not the
     # case then this probably isn't a real, complete tor consensus.
 
-    self.assertTrue(count > 100)
+    if count < 100:
+      raise AssertionError('%s only included %s relays' % (consensus_path, count))
 
-  @test.require.only_run_once
-  def test_cached_microdesc_consensus(self):
+  @staticmethod
+  def test_cached_microdesc_consensus(test_dir):
     """
     Parses the cached-microdesc-consensus file in our data directory.
     """
 
-    consensus_path = test.runner.get_runner().get_test_dir('cached-microdesc-consensus')
+    consensus_path = os.path.join(test_dir, 'cached-microdesc-consensus')
 
     if not os.path.exists(consensus_path):
-      self.skipTest('(no cached-microdesc-consensus)')
-      return
+      raise stem.util.test_tools.SkipTest('(no cached-microdesc-consensus)')
     elif stem.util.system.is_windows():
-      self.skipTest('(unavailable on windows)')
-      return
+      raise stem.util.test_tools.SkipTest('(unavailable on windows)')
 
     count, reported_flags = 0, []
 
@@ -92,4 +95,5 @@ class TestNetworkStatus(unittest.TestCase):
         for line in router.get_unrecognized_lines():
           test.register_new_capability('Microdescriptor Consensus Line', line, suppression_token = line.split()[0])
 
-    self.assertTrue(count > 100)
+    if count < 100:
+      raise AssertionError('%s only included %s relays' % (consensus_path, count))

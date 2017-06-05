@@ -58,7 +58,7 @@ class TestInstallation(unittest.TestCase):
   def run_tests():
     test_install = stem.util.test_tools.AsyncTest(TestInstallation.test_install)
     TestInstallation.test_install = test_install.method
-    TestInstallation.test_sdist = stem.util.test_tools.AsyncTest(TestInstallation.test_sdist, test_install.pid()).method
+    TestInstallation.test_sdist = stem.util.test_tools.AsyncTest(TestInstallation.test_sdist, args = (test_install.pid(),)).method
 
   @staticmethod
   def test_install():

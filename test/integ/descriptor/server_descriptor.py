@@ -6,33 +6,34 @@ import os
 import unittest
 
 import stem.descriptor
+import stem.util.test_tools
 import test
-import test.require
-import test.runner
 
 
 class TestServerDescriptor(unittest.TestCase):
-  @test.require.only_run_once
-  def test_cached_descriptor(self):
+  @staticmethod
+  def run_tests(test_dir):
+    TestServerDescriptor.test_cached_descriptor = stem.util.test_tools.AsyncTest(TestServerDescriptor.test_cached_descriptor, args = (test_dir,), threaded = True).method
+
+  @staticmethod
+  def test_cached_descriptor(test_dir):
     """
     Parses the cached descriptor file in our data directory, checking that it
     doesn't raise any validation issues and looking for unrecognized descriptor
     additions.
     """
 
-    descriptor_path = test.runner.get_runner().get_test_dir('cached-descriptors')
+    descriptor_path = os.path.join(test_dir, 'cached-descriptors')
 
     if not os.path.exists(descriptor_path):
-      self.skipTest('(no cached descriptors)')
-      return
+      raise stem.util.test_tools.SkipTest('(no cached descriptors)')
 
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True):
         # the following attributes should be deprecated, and not appear in the wild
-        self.assertEqual(None, desc.read_history_end)
-        self.assertEqual(None, desc.write_history_end)
-        self.assertEqual(None, desc.eventdns)
-        self.assertEqual(None, desc.socks_port)
+
+        if desc.read_history_end or desc.write_history_end or desc.eventdns or desc.socks_port:
+          raise AssertionError('deprecated attribute appeared on: %s' % desc)
 
         for line in desc.get_unrecognized_lines():
           test.register_new_capability('Server Descriptor Line', line)

@@ -80,10 +80,10 @@ class AsyncTest(object):
   .. versionadded:: 1.6.0
   """
 
-  def __init__(self, test_runner, *test_runner_args):
-    def _wrapper(conn, runner, args):
+  def __init__(self, test_runner, args = None, threaded = False):
+    def _wrapper(conn, runner, test_args):
       try:
-        runner(*args) if args else runner()
+        runner(*test_args) if test_args else runner()
         conn.send(('success', None))
       except AssertionError as exc:
         conn.send(('failure', str(exc)))
@@ -92,14 +92,17 @@ class AsyncTest(object):
       finally:
         conn.close()
 
-    # method that can be mixed into TestCases
-
-    self.method = lambda test: self.result(test)
+    self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
 
     self._result_type, self._result_msg = None, None
     self._result_lock = threading.RLock()
     self._results_pipe, child_pipe = multiprocessing.Pipe()
-    self._test_process = multiprocessing.Process(target = _wrapper, args = (child_pipe, test_runner, test_runner_args))
+
+    if threaded:
+      self._test_process = threading.Thread(target = _wrapper, args = (child_pipe, test_runner, args))
+    else:
+      self._test_process = multiprocessing.Process(target = _wrapper, args = (child_pipe, test_runner, args))
+
     self._test_process.start()
 
   def pid(self):

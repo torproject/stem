@@ -48,10 +48,10 @@ def random_port():
 class TestProcess(unittest.TestCase):
   @staticmethod
   def run_tests(tor_cmd):
-    TestProcess.test_launch_tor_with_config_via_file = stem.util.test_tools.AsyncTest(TestProcess.test_launch_tor_with_config_via_file, tor_cmd).method
-    TestProcess.test_launch_tor_with_config_via_stdin = stem.util.test_tools.AsyncTest(TestProcess.test_launch_tor_with_config_via_stdin, tor_cmd).method
-    TestProcess.test_take_ownership_via_pid = stem.util.test_tools.AsyncTest(TestProcess.test_take_ownership_via_pid, tor_cmd).method
-    TestProcess.test_take_ownership_via_controller = stem.util.test_tools.AsyncTest(TestProcess.test_take_ownership_via_controller, tor_cmd).method
+    TestProcess.test_launch_tor_with_config_via_file = stem.util.test_tools.AsyncTest(TestProcess.test_launch_tor_with_config_via_file, args = (tor_cmd,)).method
+    TestProcess.test_launch_tor_with_config_via_stdin = stem.util.test_tools.AsyncTest(TestProcess.test_launch_tor_with_config_via_stdin, args = (tor_cmd,)).method
+    TestProcess.test_take_ownership_via_pid = stem.util.test_tools.AsyncTest(TestProcess.test_take_ownership_via_pid, args = (tor_cmd,)).method
+    TestProcess.test_take_ownership_via_controller = stem.util.test_tools.AsyncTest(TestProcess.test_take_ownership_via_controller, args = (tor_cmd,)).method
 
   def setUp(self):
     self.data_directory = tempfile.mkdtemp()

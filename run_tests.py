@@ -28,6 +28,10 @@ import stem.version
 
 import test
 import test.arguments
+import test.integ.descriptor.extrainfo_descriptor
+import test.integ.descriptor.microdescriptor
+import test.integ.descriptor.networkstatus
+import test.integ.descriptor.server_descriptor
 import test.integ.installation
 import test.integ.process
 import test.output
@@ -37,6 +41,7 @@ import test.task
 from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
 
 CONFIG = stem.util.conf.config_dict('test', {
+  'integ.test_directory': './test/data',
   'test.unit_tests': '',
   'test.integ_tests': '',
   'target.prereq': {},
@@ -234,6 +239,20 @@ def main():
   skipped_tests = 0
 
   if args.run_integ:
+    default_test_dir = stem.util.system.expand_path(CONFIG['integ.test_directory'], test.STEM_BASE)
+
+    if not args.specific_test or 'test.integ.descriptor.extrainfo_descriptor'.startswith(args.specific_test):
+      test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.microdescriptor'.startswith(args.specific_test):
+      test.integ.descriptor.microdescriptor.TestMicrodescriptor.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.networkstatus'.startswith(args.specific_test):
+      test.integ.descriptor.networkstatus.TestNetworkStatus.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.server_descriptor'.startswith(args.specific_test):
+      test.integ.descriptor.server_descriptor.TestServerDescriptor.run_tests(default_test_dir)
+
     if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
       test.integ.installation.TestInstallation.run_tests()
 
