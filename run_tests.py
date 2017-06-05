@@ -235,10 +235,10 @@ def main():
 
   if args.run_integ:
     if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
-      test.integ.installation.setup()
+      test.integ.installation.TestInstallation.run_tests()
 
     if not args.specific_test or 'test.integ.process'.startswith(args.specific_test):
-      test.integ.process.setup(args.tor_path)
+      test.integ.process.TestProcess.run_tests(args.tor_path)
 
   if args.run_unit:
     test.output.print_divider('UNIT TESTS', True)

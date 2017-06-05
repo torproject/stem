@@ -55,9 +55,26 @@ class SkipTest(Exception):
   'Notes that the test was skipped.'
 
 
-class AsyncTestResult(object):
+class AsyncTest(object):
   """
-  Test results that can be applied later.
+  Test that's run asychronously. These are functions (no self reference)
+  performed like the following...
+
+  ::
+
+    class MyTest(unittest.TestCase):
+      @staticmethod
+      def run_tests():
+        MyTest.test_addition = stem.util.test_tools.AsyncTest(MyTest.test_addition).method
+
+      @staticmethod
+      def test_addition():
+        if 1 + 1 != 2:
+          raise AssertionError('tisk, tisk')
+
+    MyTest.run()
+
+  .. versionadded:: 1.6.0
   """
 
   def __init__(self, test_runner, *test_runner_args):
@@ -71,6 +88,10 @@ class AsyncTestResult(object):
         conn.send(('skipped', str(exc)))
       finally:
         conn.close()
+
+    # method that can be mixed into TestCases
+
+    self.method = lambda test: self.result(test)
 
     self._result_type, self._result_msg = None, None
     self._result_lock = threading.RLock()
