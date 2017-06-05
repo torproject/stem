@@ -51,8 +51,11 @@ CONFIG = stem.util.conf.config_dict('test', {
 TEST_RUNTIMES = {}
 
 
-class SkipTest(Exception):
-  'Notes that the test was skipped.'
+if stem.prereq._is_python_26():
+  class SkipTest(Exception):
+    'Notes that the test was skipped.'
+else:
+  SkipTest = unittest.case.SkipTest
 
 
 class AsyncTest(object):
