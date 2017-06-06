@@ -9,13 +9,15 @@ import stem.descriptor
 import stem.util.test_tools
 import test
 
+from stem.util.test_tools import asynchronous
+
 
 class TestServerDescriptor(unittest.TestCase):
   @staticmethod
   def run_tests(test_dir):
-    TestServerDescriptor.test_cached_descriptor = stem.util.test_tools.AsyncTest(TestServerDescriptor.test_cached_descriptor, args = (test_dir,), threaded = True).method
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.server_descriptor.test_cached_descriptor'].run(test_dir, threaded = True)
 
-  @staticmethod
+  @asynchronous
   def test_cached_descriptor(test_dir):
     """
     Parses the cached descriptor file in our data directory, checking that it

@@ -9,13 +9,15 @@ import stem.descriptor
 import stem.util.test_tools
 import test
 
+from stem.util.test_tools import asynchronous
+
 
 class TestMicrodescriptor(unittest.TestCase):
   @staticmethod
   def run_tests(test_dir):
-    TestMicrodescriptor.test_cached_microdescriptors = stem.util.test_tools.AsyncTest(TestMicrodescriptor.test_cached_microdescriptors, args = (test_dir,), threaded = True).method
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.microdescriptor.test_cached_microdescriptors'].run(test_dir, threaded = True)
 
-  @staticmethod
+  @asynchronous
   def test_cached_microdescriptors(test_dir):
     """
     Parses the cached microdescriptor file in our data directory, checking that

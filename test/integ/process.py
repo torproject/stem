@@ -26,6 +26,8 @@ import test
 import test.require
 import test.runner
 
+from stem.util.test_tools import asynchronous
+
 try:
   # added in python 3.3
   from unittest.mock import patch, Mock
@@ -80,28 +82,9 @@ def run_tor(tor_cmd, *args, **kwargs):
 class TestProcess(unittest.TestCase):
   @staticmethod
   def run_tests(tor_cmd):
-    async_tests = (
-      'test_version_argument',
-      'test_help_argument',
-      'test_quiet_argument',
-      'test_hush_argument',
-      'test_hash_password',
-      'test_hash_password_requires_argument',
-      'test_list_torrc_options_argument',
-      'test_torrc_arguments',
-      'test_torrc_arguments_via_stdin',
-      'test_with_missing_torrc',
-      'test_can_run_multithreaded',
-      'test_launch_tor_with_config_via_file',
-      'test_launch_tor_with_config_via_stdin',
-      'test_with_invalid_config',
-      'test_launch_tor_with_timeout',
-      'test_take_ownership_via_pid',
-      'test_take_ownership_via_controller',
-    )
-
-    for func in async_tests:
-      setattr(TestProcess, func, stem.util.test_tools.AsyncTest(getattr(TestProcess, func), args = (tor_cmd,)).method)
+    for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
+      if func.startswith('test.integ.process.'):
+        async_test.run(tor_cmd)
 
   def setUp(self):
     self.data_directory = tempfile.mkdtemp()
@@ -111,7 +94,7 @@ class TestProcess(unittest.TestCase):
   def tearDown(self):
     shutil.rmtree(self.data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_version_argument(tor_cmd):
     """
     Check that 'tor --version' matches 'GETINFO version'.
@@ -122,7 +105,7 @@ class TestProcess(unittest.TestCase):
     if 'Tor version %s.\n' % test.tor_version() != version_output:
       raise AssertionError('Unexpected response: %s' % version_output)
 
-  @staticmethod
+  @asynchronous
   def test_help_argument(tor_cmd):
     """
     Check that 'tor --help' provides the expected output.
@@ -136,7 +119,7 @@ class TestProcess(unittest.TestCase):
     if help_output != run_tor(tor_cmd, '-h'):
       raise AssertionError("'tor -h' should simply be an alias for 'tor --help'")
 
-  @staticmethod
+  @asynchronous
   def test_quiet_argument(tor_cmd):
     """
     Check that we don't provide anything on stdout when running 'tor --quiet'.
@@ -145,7 +128,7 @@ class TestProcess(unittest.TestCase):
     if '' != run_tor(tor_cmd, '--quiet', '--invalid_argument', 'true', expect_failure = True):
       raise AssertionError('No output should be provided with the --quiet argument')
 
-  @staticmethod
+  @asynchronous
   def test_hush_argument(tor_cmd):
     """
     Check that we only get warnings and errors when running 'tor --hush'.
@@ -161,7 +144,7 @@ class TestProcess(unittest.TestCase):
     if "[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." not in output:
       raise AssertionError('Unexpected response: %s' % output)
 
-  @staticmethod
+  @asynchronous
   def test_hash_password(tor_cmd):
     """
     Hash a controller password. It's salted so can't assert that we get a
@@ -192,7 +175,7 @@ class TestProcess(unittest.TestCase):
     if hashlib.sha1(inp).digest() != hashed:
       raise AssertionError('Password hash not what we expected (%s rather than %s)' % (hashlib.sha1(inp).digest(), hashed))
 
-  @staticmethod
+  @asynchronous
   def test_hash_password_requires_argument(tor_cmd):
     """
     Check that 'tor --hash-password' balks if not provided with something to
@@ -259,7 +242,7 @@ class TestProcess(unittest.TestCase):
       expected = 'stemIntegTest %s\n' % fingerprint
       self.assertEqual(expected, fingerprint_file.read())
 
-  @staticmethod
+  @asynchronous
   def test_list_torrc_options_argument(tor_cmd):
     """
     Exercise our 'tor --list-torrc-options' argument.
@@ -295,7 +278,7 @@ class TestProcess(unittest.TestCase):
 
         self.assertEqual('nope', str(exc))
 
-  @staticmethod
+  @asynchronous
   def test_torrc_arguments(tor_cmd):
     """
     Pass configuration options on the commandline.
@@ -334,7 +317,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_torrc_arguments_via_stdin(tor_cmd):
     """
     Pass configuration options via stdin.
@@ -354,7 +337,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_with_missing_torrc(tor_cmd):
     """
     Provide a torrc path that doesn't exist.
@@ -370,7 +353,7 @@ class TestProcess(unittest.TestCase):
     if '[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' not in output:
       raise AssertionError('Missing torrc should be allowed with --ignore-missing-torrc')
 
-  @staticmethod
+  @asynchronous
   def test_can_run_multithreaded(tor_cmd):
     """
     Our launch_tor() function uses signal to support its timeout argument.
@@ -422,7 +405,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_launch_tor_with_config_via_file(tor_cmd):
     """
     Exercises launch_tor_with_config when we write a torrc to disk.
@@ -466,7 +449,7 @@ class TestProcess(unittest.TestCase):
 
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_launch_tor_with_config_via_stdin(tor_cmd):
     """
     Exercises launch_tor_with_config when we provide our torrc via stdin.
@@ -509,7 +492,7 @@ class TestProcess(unittest.TestCase):
 
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_with_invalid_config(tor_cmd):
     """
     Spawn a tor process with a configuration that should make it dead on arrival.
@@ -540,7 +523,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_launch_tor_with_timeout(tor_cmd):
     """
     Runs launch_tor where it times out before completing.
@@ -568,7 +551,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_take_ownership_via_pid(tor_cmd):
     """
     Checks that the tor process quits after we do if we set take_ownership. To
@@ -618,7 +601,7 @@ class TestProcess(unittest.TestCase):
     finally:
       shutil.rmtree(data_directory)
 
-  @staticmethod
+  @asynchronous
   def test_take_ownership_via_controller(tor_cmd):
     """
     Checks that the tor process quits after the controller that owns it

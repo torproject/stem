@@ -39,6 +39,7 @@ import unittest
 
 import stem.prereq
 import stem.util.conf
+import stem.util.enum
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict('test', {
@@ -49,13 +50,25 @@ CONFIG = stem.util.conf.config_dict('test', {
 })
 
 TEST_RUNTIMES = {}
+ASYNC_TESTS = {}
 
+AsyncStatus = stem.util.enum.UppercaseEnum('PENDING', 'RUNNING', 'FINISHED')
+AsyncResult = collections.namedtuple('AsyncResult', 'type msg')
+
+# TODO: Providing a copy of SkipTest that works with python 2.6. This will be
+# dropped when we remove python 2.6 support.
 
 if stem.prereq._is_python_26():
   class SkipTest(Exception):
     'Notes that the test was skipped.'
 else:
   SkipTest = unittest.case.SkipTest
+
+
+def asynchronous(func):
+  test = stem.util.test_tools.AsyncTest(func)
+  ASYNC_TESTS['%s.%s' % (func.__module__, func.__name__)] = test
+  return test.method
 
 
 class AsyncTest(object):
@@ -80,51 +93,72 @@ class AsyncTest(object):
   .. versionadded:: 1.6.0
   """
 
-  def __init__(self, test_runner, args = None, threaded = False):
-    def _wrapper(conn, runner, test_args):
+  def __init__(self, runner, args = None, threaded = False):
+    self._runner = runner
+    self._runner_args = args
+    self._threaded = threaded
+
+    self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
+    self.method.async = self
+
+    self._process = None
+    self._process_pipe = None
+    self._process_lock = threading.RLock()
+
+    self._result = None
+    self._status = AsyncStatus.PENDING
+
+  def run(self, *runner_args, **kwargs):
+    def _wrapper(conn, runner, args):
       try:
-        runner(*test_args) if test_args else runner()
-        conn.send(('success', None))
+        runner(*args) if args else runner()
+        conn.send(AsyncResult('success', None))
       except AssertionError as exc:
-        conn.send(('failure', str(exc)))
+        conn.send(AsyncResult('failure', str(exc)))
       except SkipTest as exc:
-        conn.send(('skipped', str(exc)))
+        conn.send(AsyncResult('skipped', str(exc)))
       finally:
         conn.close()
 
-    self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
+    with self._process_lock:
+      if self._status == AsyncStatus.PENDING:
+        if runner_args:
+          self._runner_args = runner_args
 
-    self._result_type, self._result_msg = None, None
-    self._result_lock = threading.RLock()
-    self._results_pipe, child_pipe = multiprocessing.Pipe()
+        if 'threaded' in kwargs:
+          self._threaded = kwargs['threaded']
 
-    if threaded:
-      self._test_process = threading.Thread(target = _wrapper, args = (child_pipe, test_runner, args))
-    else:
-      self._test_process = multiprocessing.Process(target = _wrapper, args = (child_pipe, test_runner, args))
+        self._process_pipe, child_pipe = multiprocessing.Pipe()
 
-    self._test_process.start()
+        if self._threaded:
+          self._process = threading.Thread(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
+        else:
+          self._process = multiprocessing.Process(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
+
+        self._process.start()
+        self._status = AsyncStatus.RUNNING
 
   def pid(self):
-    with self._result_lock:
-      return self._test_process.pid if self._test_process else None
+    with self._process_lock:
+      return self._process.pid if (self._process and not self._threaded) else None
 
   def join(self):
     self.result(None)
 
   def result(self, test):
-    with self._result_lock:
-      if self._test_process:
-        self._result_type, self._result_msg = self._results_pipe.recv()
-        self._test_process.join()
-        self._test_process = None
+    with self._process_lock:
+      if self._status == AsyncStatus.PENDING:
+        self.run()
 
-      if not test:
-        return
-      elif self._result_type == 'failure':
-        test.fail(self._result_msg)
-      elif self._result_type == 'skipped':
-        test.skipTest(self._result_msg)
+      if self._status == AsyncStatus.RUNNING:
+        self._result = self._process_pipe.recv()
+        self._process.join()
+        self._status = AsyncStatus.FINISHED
+
+      if test and self._result.type == 'failure':
+        test.fail(self._result.msg)
+      elif test and self._result.type == 'skipped':
+        test.skipTest(self._result.msg)
 
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):

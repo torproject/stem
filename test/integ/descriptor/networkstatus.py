@@ -14,12 +14,14 @@ import test
 import test.require
 import test.runner
 
+from stem.util.test_tools import asynchronous
+
 
 class TestNetworkStatus(unittest.TestCase):
   @staticmethod
   def run_tests(test_dir):
-    TestNetworkStatus.test_cached_consensus = stem.util.test_tools.AsyncTest(TestNetworkStatus.test_cached_consensus, args = (test_dir,), threaded = True).method
-    TestNetworkStatus.test_cached_microdesc_consensus = stem.util.test_tools.AsyncTest(TestNetworkStatus.test_cached_microdesc_consensus, args = (test_dir,), threaded = True).method
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_consensus'].run(test_dir, threaded = True)
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_microdesc_consensus'].run(test_dir, threaded = True)
 
   @test.require.only_run_once
   @test.require.online
@@ -32,7 +34,7 @@ class TestNetworkStatus(unittest.TestCase):
 
     stem.descriptor.remote.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT, validate = True).run()
 
-  @staticmethod
+  @asynchronous
   def test_cached_consensus(test_dir):
     """
     Parses the cached-consensus file in our data directory.
@@ -68,7 +70,7 @@ class TestNetworkStatus(unittest.TestCase):
     if count < 100:
       raise AssertionError('%s only included %s relays' % (consensus_path, count))
 
-  @staticmethod
+  @asynchronous
   def test_cached_microdesc_consensus(test_dir):
     """
     Parses the cached-microdesc-consensus file in our data directory.

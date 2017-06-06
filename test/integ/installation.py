@@ -15,6 +15,8 @@ import stem.util.system
 import stem.util.test_tools
 import test
 
+from stem.util.test_tools import asynchronous
+
 BASE_INSTALL_PATH = '/tmp/stem_test'
 DIST_PATH = os.path.join(test.STEM_BASE, 'dist')
 PYTHON_EXE = sys.executable if sys.executable else 'python'
@@ -56,11 +58,11 @@ def _assert_has_all_files(path):
 class TestInstallation(unittest.TestCase):
   @staticmethod
   def run_tests():
-    test_install = stem.util.test_tools.AsyncTest(TestInstallation.test_install)
-    TestInstallation.test_install = test_install.method
-    TestInstallation.test_sdist = stem.util.test_tools.AsyncTest(TestInstallation.test_sdist, args = (test_install.pid(),)).method
+    test_install = stem.util.test_tools.ASYNC_TESTS['test.integ.installation.test_install']
+    test_install.run()
+    stem.util.test_tools.ASYNC_TESTS['test.integ.installation.test_sdist'].run(test_install.pid())
 
-  @staticmethod
+  @asynchronous
   def test_install():
     """
     Installs with 'python setup.py install' and checks we can use what we
@@ -89,7 +91,7 @@ class TestInstallation(unittest.TestCase):
       if os.path.exists(BASE_INSTALL_PATH):
         shutil.rmtree(BASE_INSTALL_PATH)
 
-  @staticmethod
+  @asynchronous
   def test_sdist(dependency_pid):
     """
     Creates a source distribution tarball with 'python setup.py sdist' and
