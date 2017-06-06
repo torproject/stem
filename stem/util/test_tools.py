@@ -110,6 +110,8 @@ class AsyncTest(object):
 
   def run(self, *runner_args, **kwargs):
     def _wrapper(conn, runner, args):
+      os.nice(12)
+
       try:
         runner(*args) if args else runner()
         conn.send(AsyncResult('success', None))
