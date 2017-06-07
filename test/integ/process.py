@@ -35,7 +35,7 @@ except ImportError:
   from mock import patch, Mock
 
 BASIC_RELAY_TORRC = """\
-ORPort 6000
+SocksPort 9089
 ExtORPort 6001
 Nickname stemIntegTest
 ExitPolicy reject *:*
@@ -55,28 +55,39 @@ def run_tor(tor_cmd, *args, **kwargs):
   expect_failure = kwargs.pop('expect_failure', False)
   with_torrc = kwargs.pop('with_torrc', False)
   stdin = kwargs.pop('stdin', None)
+  data_directory = None
 
   if kwargs:
     raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
 
   if with_torrc:
-    args = ['-f', with_torrc] + list(args)
+    data_directory = tempfile.mkdtemp()
+    torrc_path = os.path.join(data_directory, 'torrc')
 
-  args = [tor_cmd] + list(args)
-  tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+    with open(torrc_path, 'w') as torrc_file:
+      torrc_file.write(BASIC_RELAY_TORRC % data_directory)
 
-  if stdin:
-    tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
+    args = ['-f', torrc_path] + list(args)
 
-  stdout = tor_process.communicate()[0]
-  exit_status = tor_process.poll()
+  try:
+    args = [tor_cmd] + list(args)
+    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
-  if exit_status and not expect_failure:
-    raise AssertionError("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
-  elif not exit_status and expect_failure:
-    raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
+    if stdin:
+      tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
 
-  return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+    stdout = tor_process.communicate()[0]
+    exit_status = tor_process.poll()
+
+    if exit_status and not expect_failure:
+      raise AssertionError("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
+    elif not exit_status and expect_failure:
+      raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
+
+    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+  finally:
+    if data_directory:
+      shutil.rmtree(data_directory)
 
 
 class TestProcess(unittest.TestCase):
@@ -89,7 +100,6 @@ class TestProcess(unittest.TestCase):
   def setUp(self):
     self.data_directory = tempfile.mkdtemp()
     self.tor_cmd = test.runner.get_runner().get_tor_command()
-    self.torrc_path = test.runner.get_runner().get_torrc_path()
 
   def tearDown(self):
     shutil.rmtree(self.data_directory)
@@ -192,25 +202,21 @@ class TestProcess(unittest.TestCase):
     Exercises our 'tor --dump-config' arugments.
     """
 
-    short_output = run_tor(self.tor_cmd, '--dump-config', 'short', with_torrc = self.torrc_path)
-    non_builtin_output = run_tor(self.tor_cmd, '--dump-config', 'non-builtin', with_torrc = self.torrc_path)
-    full_output = run_tor(self.tor_cmd, '--dump-config', 'full', with_torrc = self.torrc_path)
-    run_tor(self.tor_cmd, '--dump-config', 'invalid_option', with_torrc = self.torrc_path, expect_failure = True)
+    short_output = run_tor(self.tor_cmd, '--dump-config', 'short', with_torrc = True)
+    non_builtin_output = run_tor(self.tor_cmd, '--dump-config', 'non-builtin', with_torrc = True)
+    full_output = run_tor(self.tor_cmd, '--dump-config', 'full', with_torrc = True)
+    run_tor(self.tor_cmd, '--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
 
-    torrc_contents = [line for line in test.runner.get_runner().get_torrc_contents().splitlines() if not line.startswith('#')]
-
-    self.assertEqual(sorted(torrc_contents), sorted(short_output.strip().splitlines()))
-    self.assertEqual(sorted(torrc_contents), sorted(non_builtin_output.strip().splitlines()))
-
-    for line in torrc_contents:
-      self.assertTrue(line in full_output)
+    self.assertTrue('Nickname stemIntegTest' in short_output)
+    self.assertTrue('Nickname stemIntegTest' in non_builtin_output)
+    self.assertTrue('Nickname stemIntegTest' in full_output)
 
   def test_validate_config_argument(self):
     """
     Exercises our 'tor --validate-config' argument.
     """
 
-    valid_output = run_tor(self.tor_cmd, '--verify-config', with_torrc = self.torrc_path)
+    valid_output = run_tor(self.tor_cmd, '--verify-config', with_torrc = True)
     self.assertTrue('Configuration was valid\n' in valid_output)
 
     run_tor(self.tor_cmd, '--verify-config', '-f', __file__, expect_failure = True)
@@ -222,13 +228,13 @@ class TestProcess(unittest.TestCase):
 
     # This command should only work with a relay (which our test instance isn't).
 
-    output = run_tor(self.tor_cmd, '--list-fingerprint', with_torrc = self.torrc_path, expect_failure = True)
+    output = run_tor(self.tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
     self.assertTrue("Clients don't have long-term identity keys. Exiting." in output)
 
     torrc_path = os.path.join(self.data_directory, 'torrc')
 
     with open(torrc_path, 'w') as torrc_file:
-      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory)
+      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory + '\nORPort 6954')
 
     output = run_tor(self.tor_cmd, '--list-fingerprint', '-f', torrc_path)
     nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
@@ -292,8 +298,7 @@ class TestProcess(unittest.TestCase):
         torrc_file.write(BASIC_RELAY_TORRC % data_directory)
 
       config_args = [
-        '+ORPort', '9003',  # appends an extra ORPort
-        'SocksPort', '9090',
+        '+SocksPort', '9090',  # append an extra SocksPort
         '/ExtORPort',  # drops our ExtORPort
         '/TransPort',  # drops a port we didn't originally have
         '+ControlPort', '9005',  # appends a ControlPort where we didn't have any before
@@ -306,9 +311,8 @@ class TestProcess(unittest.TestCase):
         'ControlPort 9005',
         'ExitPolicy reject *:*',
         'Nickname stemIntegTest',
-        'ORPort 6000',
-        'ORPort 9003',
         'PublishServerDescriptor 0',
+        'SocksPort 9089',
         'SocksPort 9090',
       ]
 
