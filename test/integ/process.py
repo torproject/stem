@@ -25,6 +25,7 @@ import stem.version
 import test
 import test.require
 
+from contextlib import contextmanager
 from stem.util.test_tools import asynchronous
 
 try:
@@ -47,6 +48,16 @@ def random_port():
   return str(random.randint(1024, 65536))
 
 
+@contextmanager
+def tmp_directory():
+  tmp_dir = tempfile.mkdtemp()
+
+  try:
+    yield tmp_dir
+  finally:
+    shutil.rmtree(tmp_dir)
+
+
 def run_tor(tor_cmd, *args, **kwargs):
   # python doesn't allow us to have individual keyword arguments when there's
   # an arbitrary number of positional arguments, so explicitly checking
@@ -54,21 +65,19 @@ def run_tor(tor_cmd, *args, **kwargs):
   expect_failure = kwargs.pop('expect_failure', False)
   with_torrc = kwargs.pop('with_torrc', False)
   stdin = kwargs.pop('stdin', None)
-  data_directory = None
 
   if kwargs:
     raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
 
-  if with_torrc:
-    data_directory = tempfile.mkdtemp()
-    torrc_path = os.path.join(data_directory, 'torrc')
+  with tmp_directory() as data_directory:
+    if with_torrc:
+      torrc_path = os.path.join(data_directory, 'torrc')
 
-    with open(torrc_path, 'w') as torrc_file:
-      torrc_file.write(BASIC_RELAY_TORRC % data_directory)
+      with open(torrc_path, 'w') as torrc_file:
+        torrc_file.write(BASIC_RELAY_TORRC % data_directory)
 
-    args = ['-f', torrc_path] + list(args)
+      args = ['-f', torrc_path] + list(args)
 
-  try:
     args = [tor_cmd] + list(args)
     tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
@@ -84,9 +93,6 @@ def run_tor(tor_cmd, *args, **kwargs):
       raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
 
     return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
-  finally:
-    if data_directory:
-      shutil.rmtree(data_directory)
 
 
 class TestProcess(unittest.TestCase):
@@ -235,10 +241,9 @@ class TestProcess(unittest.TestCase):
     if "Clients don't have long-term identity keys. Exiting." not in output:
       raise AssertionError('Should fail to start due to lacking an ORPort')
 
-    data_directory = tempfile.mkdtemp()
-    torrc_path = os.path.join(data_directory, 'torrc')
+    with tmp_directory() as data_directory:
+      torrc_path = os.path.join(data_directory, 'torrc')
 
-    try:
       with open(torrc_path, 'w') as torrc_file:
         torrc_file.write(BASIC_RELAY_TORRC % data_directory + '\nORPort 6954')
 
@@ -259,8 +264,6 @@ class TestProcess(unittest.TestCase):
 
         if expected != fingerprint_file_content:
           raise AssertionError('Unexpected fingerprint file: %s' % fingerprint_file_content)
-    finally:
-      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_list_torrc_options_argument(tor_cmd):
@@ -304,10 +307,9 @@ class TestProcess(unittest.TestCase):
     Pass configuration options on the commandline.
     """
 
-    data_directory = tempfile.mkdtemp()
-    torrc_path = os.path.join(data_directory, 'torrc')
+    with tmp_directory() as data_directory:
+      torrc_path = os.path.join(data_directory, 'torrc')
 
-    try:
       with open(torrc_path, 'w') as torrc_file:
         torrc_file.write(BASIC_RELAY_TORRC % data_directory)
 
@@ -332,8 +334,6 @@ class TestProcess(unittest.TestCase):
 
       if expected != result:
         raise AssertionError("Unexpected output from 'tor -f torrc --dump-config short': %s" % result)
-    finally:
-      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_torrc_arguments_via_stdin(tor_cmd):
@@ -344,16 +344,12 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    data_directory = tempfile.mkdtemp()
-
-    try:
+    with tmp_directory() as data_directory:
       torrc = BASIC_RELAY_TORRC % data_directory
       output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
 
       if sorted(torrc.splitlines()) != sorted(output.splitlines()):
         raise AssertionError("Unexpected output from 'tor -f - --dump-config short': %s" % output)
-    finally:
-      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_with_missing_torrc(tor_cmd):
@@ -379,9 +375,7 @@ class TestProcess(unittest.TestCase):
     it isn't.
     """
 
-    data_directory = tempfile.mkdtemp()
-
-    try:
+    with tmp_directory() as data_directory:
       # Tries running tor in another thread with the given timeout argument. This
       # issues an invalid torrc so we terminate right away if we get to the point
       # of actually invoking tor.
@@ -420,8 +414,6 @@ class TestProcess(unittest.TestCase):
 
       if launch_async_with_timeout(stem.process.DEFAULT_INIT_TIMEOUT) is not None:
         raise AssertionError('Launching tor with the default timeout should be successful')
-    finally:
-      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_launch_tor_with_config_via_file(tor_cmd):
@@ -429,43 +421,41 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config when we write a torrc to disk.
     """
 
-    data_directory = tempfile.mkdtemp()
-    control_port = random_port()
-    control_socket, tor_process = None, None
+    with tmp_directory() as data_directory:
+      control_port = random_port()
+      control_socket, tor_process = None, None
 
-    try:
-      # Launch tor without a torrc, but with a control port. Confirms that this
-      # works by checking that we're still able to access the new instance.
+      try:
+        # Launch tor without a torrc, but with a control port. Confirms that this
+        # works by checking that we're still able to access the new instance.
 
-      with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1'))):
-        tor_process = stem.process.launch_tor_with_config(
-          tor_cmd = tor_cmd,
-          config = {
-            'SocksPort': random_port(),
-            'ControlPort': control_port,
-            'DataDirectory': data_directory,
-          },
-          completion_percent = 5
-        )
+        with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1'))):
+          tor_process = stem.process.launch_tor_with_config(
+            tor_cmd = tor_cmd,
+            config = {
+              'SocksPort': random_port(),
+              'ControlPort': control_port,
+              'DataDirectory': data_directory,
+            },
+            completion_percent = 5
+          )
 
-      control_socket = stem.socket.ControlPort(port = int(control_port))
-      stem.connection.authenticate(control_socket)
+        control_socket = stem.socket.ControlPort(port = int(control_port))
+        stem.connection.authenticate(control_socket)
 
-      # exercises the socket
-      control_socket.send('GETCONF ControlPort')
-      getconf_response = control_socket.recv()
+        # exercises the socket
+        control_socket.send('GETCONF ControlPort')
+        getconf_response = control_socket.recv()
 
-      if 'ControlPort=%s' % control_port != str(getconf_response):
-        raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
-    finally:
-      if control_socket:
-        control_socket.close()
+        if 'ControlPort=%s' % control_port != str(getconf_response):
+          raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
+      finally:
+        if control_socket:
+          control_socket.close()
 
-      if tor_process:
-        tor_process.kill()
-        tor_process.wait()
-
-      shutil.rmtree(data_directory)
+        if tor_process:
+          tor_process.kill()
+          tor_process.wait()
 
   @asynchronous
   def test_launch_tor_with_config_via_stdin(tor_cmd):
@@ -476,39 +466,37 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    data_directory = tempfile.mkdtemp()
-    control_port = random_port()
-    control_socket, tor_process = None, None
+    with tmp_directory() as data_directory:
+      control_port = random_port()
+      control_socket, tor_process = None, None
 
-    try:
-      tor_process = stem.process.launch_tor_with_config(
-        tor_cmd = tor_cmd,
-        config = {
-          'SocksPort': random_port(),
-          'ControlPort': control_port,
-          'DataDirectory': data_directory,
-        },
-        completion_percent = 5
-      )
+      try:
+        tor_process = stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          config = {
+            'SocksPort': random_port(),
+            'ControlPort': control_port,
+            'DataDirectory': data_directory,
+          },
+          completion_percent = 5
+        )
 
-      control_socket = stem.socket.ControlPort(port = int(control_port))
-      stem.connection.authenticate(control_socket)
+        control_socket = stem.socket.ControlPort(port = int(control_port))
+        stem.connection.authenticate(control_socket)
 
-      # exercises the socket
-      control_socket.send('GETCONF ControlPort')
-      getconf_response = control_socket.recv()
+        # exercises the socket
+        control_socket.send('GETCONF ControlPort')
+        getconf_response = control_socket.recv()
 
-      if 'ControlPort=%s' % control_port != str(getconf_response):
-        raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
-    finally:
-      if control_socket:
-        control_socket.close()
+        if 'ControlPort=%s' % control_port != str(getconf_response):
+          raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
+      finally:
+        if control_socket:
+          control_socket.close()
 
-      if tor_process:
-        tor_process.kill()
-        tor_process.wait()
-
-      shutil.rmtree(data_directory)
+        if tor_process:
+          tor_process.kill()
+          tor_process.wait()
 
   @asynchronous
   def test_with_invalid_config(tor_cmd):
@@ -521,25 +509,23 @@ class TestProcess(unittest.TestCase):
     #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
     #   [err] Reading config failed--see warnings above.
 
-    data_directory = tempfile.mkdtemp()
-    both_ports = random_port()
+    with tmp_directory() as data_directory:
+      both_ports = random_port()
 
-    try:
-      stem.process.launch_tor_with_config(
-        tor_cmd = tor_cmd,
-        config = {
-          'SocksPort': both_ports,
-          'ControlPort': both_ports,
-          'DataDirectory': data_directory,
-        },
-      )
+      try:
+        stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          config = {
+            'SocksPort': both_ports,
+            'ControlPort': both_ports,
+            'DataDirectory': data_directory,
+          },
+        )
 
-      raise AssertionError('Tor should fail to launch')
-    except OSError as exc:
-      if str(exc) != 'Process terminated: Failed to bind one of the listener ports.':
-        raise AssertionError('Unexpected error response from tor: %s' % exc)
-    finally:
-      shutil.rmtree(data_directory)
+        raise AssertionError('Tor should fail to launch')
+      except OSError as exc:
+        if str(exc) != 'Process terminated: Failed to bind one of the listener ports.':
+          raise AssertionError('Unexpected error response from tor: %s' % exc)
 
   @asynchronous
   def test_launch_tor_with_timeout(tor_cmd):
@@ -547,27 +533,25 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    data_directory = tempfile.mkdtemp()
-    start_time = time.time()
+    with tmp_directory() as data_directory:
+      start_time = time.time()
 
-    try:
-      stem.process.launch_tor_with_config(
-        tor_cmd = tor_cmd,
-        timeout = 0.05,
-        config = {
-          'SocksPort': random_port(),
-          'DataDirectory': data_directory,
-        },
-      )
+      try:
+        stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          timeout = 0.05,
+          config = {
+            'SocksPort': random_port(),
+            'DataDirectory': data_directory,
+          },
+        )
 
-      raise AssertionError('Tor should fail to launch')
-    except OSError:
-      runtime = time.time() - start_time
+        raise AssertionError('Tor should fail to launch')
+      except OSError:
+        runtime = time.time() - start_time
 
-      if not (runtime > 0.05 and runtime < 1):
-        raise AssertionError('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
-    finally:
-      shutil.rmtree(data_directory)
+        if not (runtime > 0.05 and runtime < 1):
+          raise AssertionError('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
 
   @asynchronous
   def test_take_ownership_via_pid(tor_cmd):
@@ -581,9 +565,7 @@ class TestProcess(unittest.TestCase):
     elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    data_directory = tempfile.mkdtemp()
-
-    try:
+    with tmp_directory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
 
       tor_process = stem.process.launch_tor_with_config(
@@ -616,8 +598,6 @@ class TestProcess(unittest.TestCase):
         time.sleep(0.01)
 
       raise AssertionError("tor didn't quit after the process that owned it terminated")
-    finally:
-      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_take_ownership_via_controller(tor_cmd):
@@ -629,10 +609,9 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    data_directory = tempfile.mkdtemp()
-    control_port = random_port()
+    with tmp_directory() as data_directory:
+      control_port = random_port()
 
-    try:
       tor_process = stem.process.launch_tor_with_config(
         tor_cmd = tor_cmd,
         config = {
@@ -660,5 +639,3 @@ class TestProcess(unittest.TestCase):
         time.sleep(0.01)
 
       raise AssertionError("tor didn't quit after the controller that owned it disconnected")
-    finally:
-      shutil.rmtree(data_directory)
