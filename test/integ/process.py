@@ -24,7 +24,6 @@ import stem.util.tor_tools
 import stem.version
 import test
 import test.require
-import test.runner
 
 from stem.util.test_tools import asynchronous
 
@@ -96,13 +95,6 @@ class TestProcess(unittest.TestCase):
     for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
       if func.startswith('test.integ.process.'):
         async_test.run(tor_cmd)
-
-  def setUp(self):
-    self.data_directory = tempfile.mkdtemp()
-    self.tor_cmd = test.runner.get_runner().get_tor_command()
-
-  def tearDown(self):
-    shutil.rmtree(self.data_directory)
 
   @asynchronous
   def test_version_argument(tor_cmd):
@@ -197,56 +189,78 @@ class TestProcess(unittest.TestCase):
     if "[warn] Command-line option '--hash-password' with no value. Failing." not in output:
       raise AssertionError("'tor --hash-password' should require an argument")
 
-  def test_dump_config_argument(self):
+  @asynchronous
+  def test_dump_config_argument(tor_cmd):
     """
     Exercises our 'tor --dump-config' arugments.
     """
 
-    short_output = run_tor(self.tor_cmd, '--dump-config', 'short', with_torrc = True)
-    non_builtin_output = run_tor(self.tor_cmd, '--dump-config', 'non-builtin', with_torrc = True)
-    full_output = run_tor(self.tor_cmd, '--dump-config', 'full', with_torrc = True)
-    run_tor(self.tor_cmd, '--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
+    short_output = run_tor(tor_cmd, '--dump-config', 'short', with_torrc = True)
+    non_builtin_output = run_tor(tor_cmd, '--dump-config', 'non-builtin', with_torrc = True)
+    full_output = run_tor(tor_cmd, '--dump-config', 'full', with_torrc = True)
+    run_tor(tor_cmd, '--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
 
-    self.assertTrue('Nickname stemIntegTest' in short_output)
-    self.assertTrue('Nickname stemIntegTest' in non_builtin_output)
-    self.assertTrue('Nickname stemIntegTest' in full_output)
+    if 'Nickname stemIntegTest' not in short_output:
+      raise AssertionError("Dumping short config options didn't include our nickname: %s" % short_output)
 
-  def test_validate_config_argument(self):
+    if 'Nickname stemIntegTest' not in non_builtin_output:
+      raise AssertionError("Dumping non-builtin config options didn't include our nickname: %s" % non_builtin_output)
+
+    if 'Nickname stemIntegTest' not in full_output:
+      raise AssertionError("Dumping full config options didn't include our nickname: %s" % full_output)
+
+  @asynchronous
+  def test_validate_config_argument(tor_cmd):
     """
     Exercises our 'tor --validate-config' argument.
     """
 
-    valid_output = run_tor(self.tor_cmd, '--verify-config', with_torrc = True)
-    self.assertTrue('Configuration was valid\n' in valid_output)
+    valid_output = run_tor(tor_cmd, '--verify-config', with_torrc = True)
 
-    run_tor(self.tor_cmd, '--verify-config', '-f', __file__, expect_failure = True)
+    if 'Configuration was valid\n' not in valid_output:
+      raise AssertionError('Expected configuration to be valid')
 
-  def test_list_fingerprint_argument(self):
+    run_tor(tor_cmd, '--verify-config', '-f', __file__, expect_failure = True)
+
+  @asynchronous
+  def test_list_fingerprint_argument(tor_cmd):
     """
     Exercise our 'tor --list-fingerprint' argument.
     """
 
     # This command should only work with a relay (which our test instance isn't).
 
-    output = run_tor(self.tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
-    self.assertTrue("Clients don't have long-term identity keys. Exiting." in output)
+    output = run_tor(tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
 
-    torrc_path = os.path.join(self.data_directory, 'torrc')
+    if "Clients don't have long-term identity keys. Exiting." not in output:
+      raise AssertionError('Should fail to start due to lacking an ORPort')
 
-    with open(torrc_path, 'w') as torrc_file:
-      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory + '\nORPort 6954')
+    data_directory = tempfile.mkdtemp()
+    torrc_path = os.path.join(data_directory, 'torrc')
 
-    output = run_tor(self.tor_cmd, '--list-fingerprint', '-f', torrc_path)
-    nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
-    fingerprint = fingerprint_with_spaces.replace(' ', '')
+    try:
+      with open(torrc_path, 'w') as torrc_file:
+        torrc_file.write(BASIC_RELAY_TORRC % data_directory + '\nORPort 6954')
 
-    self.assertEqual('stemIntegTest', nickname)
-    self.assertEqual(49, len(fingerprint_with_spaces))
-    self.assertTrue(stem.util.tor_tools.is_valid_fingerprint(fingerprint))
+      output = run_tor(tor_cmd, '--list-fingerprint', '-f', torrc_path)
+      nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
+      fingerprint = fingerprint_with_spaces.replace(' ', '')
 
-    with open(os.path.join(self.data_directory, 'fingerprint')) as fingerprint_file:
-      expected = 'stemIntegTest %s\n' % fingerprint
-      self.assertEqual(expected, fingerprint_file.read())
+      if 'stemIntegTest' != nickname:
+        raise AssertionError("Nickname should be 'stemIntegTest': %s" % nickname)
+      elif 49 != len(fingerprint_with_spaces):
+        raise AssertionError('There should be 49 components in our fingerprint: %i' % len(fingerprint_with_spaces))
+      elif not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+        raise AssertionError('We should have a valid fingerprint: %s' % fingerprint)
+
+      with open(os.path.join(data_directory, 'fingerprint')) as fingerprint_file:
+        expected = 'stemIntegTest %s\n' % fingerprint
+        fingerprint_file_content = fingerprint_file.read()
+
+        if expected != fingerprint_file_content:
+          raise AssertionError('Unexpected fingerprint file: %s' % fingerprint_file_content)
+    finally:
+      shutil.rmtree(data_directory)
 
   @asynchronous
   def test_list_torrc_options_argument(tor_cmd):
@@ -276,7 +290,7 @@ class TestProcess(unittest.TestCase):
 
     with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
       try:
-        stem.process.launch_tor(tor_cmd = test.runner.get_runner().get_tor_command())
+        stem.process.launch_tor()
         self.fail("tor shoudn't have started")
       except KeyboardInterrupt as exc:
         if os.path.exists('/proc/%s' % mock_tor_process.pid):
