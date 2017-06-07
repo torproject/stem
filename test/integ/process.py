@@ -58,6 +58,17 @@ def tmp_directory():
     shutil.rmtree(tmp_dir)
 
 
+@contextmanager
+def torrc():
+  with tmp_directory() as data_directory:
+    torrc_path = os.path.join(data_directory, 'torrc')
+
+    with open(torrc_path, 'w') as torrc_file:
+      torrc_file.write(BASIC_RELAY_TORRC % data_directory)
+
+    yield torrc_path
+
+
 def run_tor(tor_cmd, *args, **kwargs):
   # python doesn't allow us to have individual keyword arguments when there's
   # an arbitrary number of positional arguments, so explicitly checking
@@ -69,13 +80,8 @@ def run_tor(tor_cmd, *args, **kwargs):
   if kwargs:
     raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
 
-  with tmp_directory() as data_directory:
+  with torrc() as torrc_path:
     if with_torrc:
-      torrc_path = os.path.join(data_directory, 'torrc')
-
-      with open(torrc_path, 'w') as torrc_file:
-        torrc_file.write(BASIC_RELAY_TORRC % data_directory)
-
       args = ['-f', torrc_path] + list(args)
 
     args = [tor_cmd] + list(args)
@@ -307,12 +313,7 @@ class TestProcess(unittest.TestCase):
     Pass configuration options on the commandline.
     """
 
-    with tmp_directory() as data_directory:
-      torrc_path = os.path.join(data_directory, 'torrc')
-
-      with open(torrc_path, 'w') as torrc_file:
-        torrc_file.write(BASIC_RELAY_TORRC % data_directory)
-
+    with torrc() as torrc_path:
       config_args = [
         '+SocksPort', '9090',  # append an extra SocksPort
         '/ExtORPort',  # drops our ExtORPort
@@ -388,7 +389,15 @@ class TestProcess(unittest.TestCase):
 
         def short_launch():
           try:
-            stem.process.launch_tor_with_config({'SocksPort': 'invalid', 'DataDirectory': data_directory}, tor_cmd, 100, None, timeout_arg)
+            stem.process.launch_tor_with_config(
+              tor_cmd = tor_cmd,
+              config = {
+                'SocksPort': 'invalid',
+                'DataDirectory': data_directory,
+              },
+              completion_percent = 100,
+              timeout = timeout_arg,
+            )
           except Exception as exc:
             raised_exc[0] = exc
 
