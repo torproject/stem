@@ -5,6 +5,7 @@ Tests the stem.process functions with various use cases.
 import binascii
 import hashlib
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -18,10 +19,14 @@ import stem.process
 import stem.socket
 import stem.util.str_tools
 import stem.util.system
+import stem.util.test_tools
 import stem.util.tor_tools
 import stem.version
+import test
 import test.require
-import test.runner
+
+from contextlib import contextmanager
+from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
 
 try:
   # added in python 3.3
@@ -30,7 +35,7 @@ except ImportError:
   from mock import patch, Mock
 
 BASIC_RELAY_TORRC = """\
-ORPort 6000
+SocksPort 9089
 ExtORPort 6001
 Nickname stemIntegTest
 ExitPolicy reject *:*
@@ -39,65 +44,124 @@ DataDirectory %s
 """
 
 
+def random_port():
+  return str(random.randint(1024, 65536))
+
+
+@contextmanager
+def tmp_directory():
+  tmp_dir = tempfile.mkdtemp()
+
+  try:
+    yield tmp_dir
+  finally:
+    shutil.rmtree(tmp_dir)
+
+
+@contextmanager
+def torrc():
+  with tmp_directory() as data_directory:
+    torrc_path = os.path.join(data_directory, 'torrc')
+
+    with open(torrc_path, 'w') as torrc_file:
+      torrc_file.write(BASIC_RELAY_TORRC % data_directory)
+
+    yield torrc_path
+
+
+def run_tor(tor_cmd, *args, **kwargs):
+  # python doesn't allow us to have individual keyword arguments when there's
+  # an arbitrary number of positional arguments, so explicitly checking
+
+  expect_failure = kwargs.pop('expect_failure', False)
+  with_torrc = kwargs.pop('with_torrc', False)
+  stdin = kwargs.pop('stdin', None)
+
+  if kwargs:
+    raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
+
+  with torrc() as torrc_path:
+    if with_torrc:
+      args = ['-f', torrc_path] + list(args)
+
+    args = [tor_cmd] + list(args)
+    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+
+    if stdin:
+      tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
+
+    stdout = tor_process.communicate()[0]
+    exit_status = tor_process.poll()
+
+    if exit_status and not expect_failure:
+      raise AssertionError("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
+    elif not exit_status and expect_failure:
+      raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
+
+    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+
+
 class TestProcess(unittest.TestCase):
-  def setUp(self):
-    self.data_directory = tempfile.mkdtemp()
+  @staticmethod
+  def run_tests(tor_cmd):
+    for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
+      if func.startswith('test.integ.process.'):
+        async_test.run(tor_cmd)
 
-  def tearDown(self):
-    shutil.rmtree(self.data_directory)
-
-  @test.require.controller
-  def test_version_argument(self):
+  @asynchronous
+  def test_version_argument(tor_cmd):
     """
     Check that 'tor --version' matches 'GETINFO version'.
     """
 
-    with test.runner.get_runner().get_tor_controller() as controller:
-      self.assertEqual('Tor version %s.\n' % controller.get_version(), self.run_tor('--version'))
+    assert_equal('Tor version %s.\n' % test.tor_version(), run_tor(tor_cmd, '--version'))
 
-  def test_help_argument(self):
+  @asynchronous
+  def test_help_argument(tor_cmd):
     """
     Check that 'tor --help' provides the expected output.
     """
 
-    help_output = self.run_tor('--help')
+    help_output = run_tor(tor_cmd, '--help')
 
-    self.assertTrue(help_output.startswith('Copyright (c) 2001'))
-    self.assertTrue(help_output.endswith('tor -f <torrc> [args]\nSee man page for options, or https://www.torproject.org/ for documentation.\n'))
+    if not help_output.startswith('Copyright (c) 2001') or not help_output.endswith('tor -f <torrc> [args]\nSee man page for options, or https://www.torproject.org/ for documentation.\n'):
+      raise AssertionError("Help output didn't have the expected strings: %s" % help_output)
 
-    # should be an alias for 'tor -h'
+    assert_equal(help_output, run_tor(tor_cmd, '-h'), "'tor -h' should simply be an alias for 'tor --help'")
 
-    self.assertEqual(help_output, self.run_tor('-h'))
-
-  def test_quiet_argument(self):
+  @asynchronous
+  def test_quiet_argument(tor_cmd):
     """
     Check that we don't provide anything on stdout when running 'tor --quiet'.
     """
 
-    self.assertEqual('', self.run_tor('--quiet', '--invalid_argument', 'true', expect_failure = True))
+    quiet_output = run_tor(tor_cmd, '--quiet', '--invalid_argument', 'true', expect_failure = True)
+    assert_equal('', quiet_output, 'No output should be provided with the --quiet argument')
 
-  def test_hush_argument(self):
+  @asynchronous
+  def test_hush_argument(tor_cmd):
     """
     Check that we only get warnings and errors when running 'tor --hush'.
     """
 
-    output = self.run_tor('--hush', '--invalid_argument', expect_failure = True)
-    self.assertTrue("[warn] Command-line option '--invalid_argument' with no value. Failing." in output)
-    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
+    output = run_tor(tor_cmd, '--hush', '--invalid_argument', expect_failure = True)
+    assert_in("[warn] Command-line option '--invalid_argument' with no value. Failing.", output)
 
-    output = self.run_tor('--hush', '--invalid_argument', 'true', expect_failure = True)
-    self.assertTrue("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." in output)
-    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
+    output = run_tor(tor_cmd, '--hush', '--invalid_argument', 'true', expect_failure = True)
+    assert_in("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing.", output)
 
-  def test_hash_password(self):
+  @asynchronous
+  def test_hash_password(tor_cmd):
     """
     Hash a controller password. It's salted so can't assert that we get a
     particular value. Also, tor's output is unnecessarily verbose so including
     hush to cut it down.
     """
 
-    output = self.run_tor('--hush', '--hash-password', 'my_password').splitlines()[-1]
-    self.assertTrue(re.match('^16:[0-9A-F]{58}$', output))
+    output = run_tor(tor_cmd, '--hush', '--hash-password', 'my_password').splitlines()[-1]
+
+    if not re.match('^16:[0-9A-F]{58}$', output):
+      raise AssertionError("Unexpected response from 'tor --hash-password my_password': %s" % output)
 
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
@@ -113,84 +177,86 @@ class TestProcess(unittest.TestCase):
     stuff = salt + b'my_password'
     repetitions = count // len(stuff) + 1
     inp = (stuff * repetitions)[:count]
+    assert_equal(hashlib.sha1(inp).digest(), hashed)
 
-    self.assertEqual(hashlib.sha1(inp).digest(), hashed)
-
-  def test_hash_password_requires_argument(self):
+  @asynchronous
+  def test_hash_password_requires_argument(tor_cmd):
     """
     Check that 'tor --hash-password' balks if not provided with something to
     hash.
     """
 
-    output = self.run_tor('--hash-password', expect_failure = True)
-    self.assertTrue("[warn] Command-line option '--hash-password' with no value. Failing." in output)
-    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
+    output = run_tor(tor_cmd, '--hash-password', expect_failure = True)
+    assert_in("[warn] Command-line option '--hash-password' with no value. Failing.", output)
 
-  def test_dump_config_argument(self):
+  @asynchronous
+  def test_dump_config_argument(tor_cmd):
     """
     Exercises our 'tor --dump-config' arugments.
     """
 
-    short_output = self.run_tor('--dump-config', 'short', with_torrc = True)
-    non_builtin_output = self.run_tor('--dump-config', 'non-builtin', with_torrc = True)
-    full_output = self.run_tor('--dump-config', 'full', with_torrc = True)
-    self.run_tor('--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
+    short_output = run_tor(tor_cmd, '--dump-config', 'short', with_torrc = True)
+    non_builtin_output = run_tor(tor_cmd, '--dump-config', 'non-builtin', with_torrc = True)
+    full_output = run_tor(tor_cmd, '--dump-config', 'full', with_torrc = True)
+    run_tor(tor_cmd, '--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
 
-    torrc_contents = [line for line in test.runner.get_runner().get_torrc_contents().splitlines() if not line.startswith('#')]
+    assert_in('Nickname stemIntegTest', short_output)
+    assert_in('Nickname stemIntegTest', non_builtin_output)
+    assert_in('Nickname stemIntegTest', full_output)
 
-    self.assertEqual(sorted(torrc_contents), sorted(short_output.strip().splitlines()))
-    self.assertEqual(sorted(torrc_contents), sorted(non_builtin_output.strip().splitlines()))
-
-    for line in torrc_contents:
-      self.assertTrue(line in full_output)
-
-  def test_validate_config_argument(self):
+  @asynchronous
+  def test_validate_config_argument(tor_cmd):
     """
     Exercises our 'tor --validate-config' argument.
     """
 
-    valid_output = self.run_tor('--verify-config', with_torrc = True)
-    self.assertTrue('Configuration was valid\n' in valid_output)
+    valid_output = run_tor(tor_cmd, '--verify-config', with_torrc = True)
+    assert_in('Configuration was valid\n', valid_output, 'Expected configuration to be valid')
+    run_tor(tor_cmd, '--verify-config', '-f', __file__, expect_failure = True)
 
-    self.run_tor('--verify-config', '-f', __file__, expect_failure = True)
-
-  def test_list_fingerprint_argument(self):
+  @asynchronous
+  def test_list_fingerprint_argument(tor_cmd):
     """
     Exercise our 'tor --list-fingerprint' argument.
     """
 
     # This command should only work with a relay (which our test instance isn't).
 
-    output = self.run_tor('--list-fingerprint', with_torrc = True, expect_failure = True)
-    self.assertTrue("Clients don't have long-term identity keys. Exiting." in output)
+    output = run_tor(tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
+    assert_in("Clients don't have long-term identity keys. Exiting.", output, 'Should fail to start due to lacking an ORPort')
 
-    torrc_path = os.path.join(self.data_directory, 'torrc')
+    with tmp_directory() as data_directory:
+      torrc_path = os.path.join(data_directory, 'torrc')
 
-    with open(torrc_path, 'w') as torrc_file:
-      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory)
+      with open(torrc_path, 'w') as torrc_file:
+        torrc_file.write(BASIC_RELAY_TORRC % data_directory + '\nORPort 6954')
 
-    output = self.run_tor('--list-fingerprint', '-f', torrc_path)
-    nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
-    fingerprint = fingerprint_with_spaces.replace(' ', '')
+      output = run_tor(tor_cmd, '--list-fingerprint', '-f', torrc_path)
+      nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
+      fingerprint = fingerprint_with_spaces.replace(' ', '')
 
-    self.assertEqual('stemIntegTest', nickname)
-    self.assertEqual(49, len(fingerprint_with_spaces))
-    self.assertTrue(stem.util.tor_tools.is_valid_fingerprint(fingerprint))
+      assert_equal('stemIntegTest', nickname)
+      assert_equal(49, len(fingerprint_with_spaces))
 
-    with open(os.path.join(self.data_directory, 'fingerprint')) as fingerprint_file:
-      expected = 'stemIntegTest %s\n' % fingerprint
-      self.assertEqual(expected, fingerprint_file.read())
+      if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+        raise AssertionError('We should have a valid fingerprint: %s' % fingerprint)
 
-  def test_list_torrc_options_argument(self):
+      with open(os.path.join(data_directory, 'fingerprint')) as fingerprint_file:
+        expected = 'stemIntegTest %s\n' % fingerprint
+        assert_equal(expected, fingerprint_file.read())
+
+  @asynchronous
+  def test_list_torrc_options_argument(tor_cmd):
     """
     Exercise our 'tor --list-torrc-options' argument.
     """
 
-    output = self.run_tor('--list-torrc-options')
-    self.assertTrue(len(output.splitlines()) > 50)
-    self.assertTrue(output.splitlines()[0] <= 'AccountingMax')
-    self.assertTrue('UseBridges' in output)
-    self.assertTrue('SocksPort' in output)
+    output = run_tor(tor_cmd, '--list-torrc-options')
+
+    if len(output.splitlines()) < 50:
+      raise AssertionError("'tor --list-torrc-options' should have numerous entries, but only had %i" % len(output.splitlines()))
+    elif 'UseBridges' not in output or 'SocksPort' not in output:
+      raise AssertionError("'tor --list-torrc-options' didn't have options we expect")
 
   @test.require.command('sleep')
   @patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope')))
@@ -207,7 +273,7 @@ class TestProcess(unittest.TestCase):
 
     with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
       try:
-        stem.process.launch_tor(tor_cmd = test.runner.get_runner().get_tor_command())
+        stem.process.launch_tor()
         self.fail("tor shoudn't have started")
       except KeyboardInterrupt as exc:
         if os.path.exists('/proc/%s' % mock_tor_process.pid):
@@ -215,180 +281,198 @@ class TestProcess(unittest.TestCase):
 
         self.assertEqual('nope', str(exc))
 
-  def test_torrc_arguments(self):
+  @asynchronous
+  def test_torrc_arguments(tor_cmd):
     """
     Pass configuration options on the commandline.
     """
 
-    torrc_path = os.path.join(self.data_directory, 'torrc')
+    with torrc() as torrc_path:
+      config_args = [
+        '+SocksPort', '9090',  # append an extra SocksPort
+        '/ExtORPort',  # drops our ExtORPort
+        '/TransPort',  # drops a port we didn't originally have
+        '+ControlPort', '9005',  # appends a ControlPort where we didn't have any before
+      ]
 
-    with open(torrc_path, 'w') as torrc_file:
-      torrc_file.write(BASIC_RELAY_TORRC % self.data_directory)
+      output = run_tor(tor_cmd, '-f', torrc_path, '--dump-config', 'short', *config_args)
+      result = [line for line in output.splitlines() if not line.startswith('DataDirectory')]
 
-    config_args = [
-      '+ORPort', '9003',  # appends an extra ORPort
-      'SocksPort', '9090',
-      '/ExtORPort',  # drops our ExtORPort
-      '/TransPort',  # drops a port we didn't originally have
-      '+ControlPort', '9005',  # appends a ControlPort where we didn't have any before
-    ]
+      expected = [
+        'ControlPort 9005',
+        'ExitPolicy reject *:*',
+        'Nickname stemIntegTest',
+        'PublishServerDescriptor 0',
+        'SocksPort 9089',
+        'SocksPort 9090',
+      ]
 
-    output = self.run_tor('-f', torrc_path, '--dump-config', 'short', *config_args)
-    result = [line for line in output.splitlines() if not line.startswith('DataDirectory')]
+      assert_equal(expected, result)
 
-    expected = [
-      'ControlPort 9005',
-      'ExitPolicy reject *:*',
-      'Nickname stemIntegTest',
-      'ORPort 6000',
-      'ORPort 9003',
-      'PublishServerDescriptor 0',
-      'SocksPort 9090',
-    ]
-
-    self.assertEqual(expected, result)
-
-  @test.require.version(stem.version.Requirement.TORRC_VIA_STDIN)
-  def test_torrc_arguments_via_stdin(self):
+  @asynchronous
+  def test_torrc_arguments_via_stdin(tor_cmd):
     """
     Pass configuration options via stdin.
     """
 
-    torrc = BASIC_RELAY_TORRC % self.data_directory
-    output = self.run_tor('-f', '-', '--dump-config', 'short', stdin = torrc)
-    self.assertEqual(sorted(torrc.splitlines()), sorted(output.splitlines()))
+    if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
+      skip('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-  def test_with_missing_torrc(self):
+    with tmp_directory() as data_directory:
+      torrc = BASIC_RELAY_TORRC % data_directory
+      output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
+      assert_equal(sorted(torrc.splitlines()), sorted(output.splitlines()))
+
+  @asynchronous
+  def test_with_missing_torrc(tor_cmd):
     """
     Provide a torrc path that doesn't exist.
     """
 
-    output = self.run_tor('-f', '/path/that/really/shouldnt/exist', '--verify-config', expect_failure = True)
-    self.assertTrue('[warn] Unable to open configuration file "/path/that/really/shouldnt/exist".' in output)
-    self.assertTrue('[err] Reading config failed--see warnings above.' in output)
+    output = run_tor(tor_cmd, '-f', '/path/that/really/shouldnt/exist', '--verify-config', expect_failure = True)
+    assert_in('[warn] Unable to open configuration file "/path/that/really/shouldnt/exist".', output, 'Tor should refuse to read a non-existant torrc file')
 
-    output = self.run_tor('-f', '/path/that/really/shouldnt/exist', '--verify-config', '--ignore-missing-torrc')
-    self.assertTrue('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' in output)
-    self.assertTrue('Configuration was valid' in output)
+    output = run_tor(tor_cmd, '-f', '/path/that/really/shouldnt/exist', '--verify-config', '--ignore-missing-torrc')
+    assert_in('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.', output, 'Missing torrc should be allowed with --ignore-missing-torrc')
 
-  @test.require.only_run_once
-  def test_can_run_multithreaded(self):
+  @asynchronous
+  def test_can_run_multithreaded(tor_cmd):
     """
     Our launch_tor() function uses signal to support its timeout argument.
     This only works in the main thread so ensure we give a useful message when
     it isn't.
     """
 
-    # Tries running tor in another thread with the given timeout argument. This
-    # issues an invalid torrc so we terminate right away if we get to the point
-    # of actually invoking tor.
-    #
-    # Returns None if launching tor is successful, and otherwise returns the
-    # exception we raised.
+    with tmp_directory() as data_directory:
+      # Tries running tor in another thread with the given timeout argument. This
+      # issues an invalid torrc so we terminate right away if we get to the point
+      # of actually invoking tor.
+      #
+      # Returns None if launching tor is successful, and otherwise returns the
+      # exception we raised.
 
-    def launch_async_with_timeout(timeout_arg):
-      raised_exc, tor_cmd = [None], test.runner.get_runner().get_tor_command()
+      def launch_async_with_timeout(timeout_arg):
+        raised_exc = [None]
 
-      def short_launch():
-        try:
-          stem.process.launch_tor_with_config({'SocksPort': 'invalid', 'DataDirectory': self.data_directory}, tor_cmd, 100, None, timeout_arg)
-        except Exception as exc:
-          raised_exc[0] = exc
+        def short_launch():
+          try:
+            stem.process.launch_tor_with_config(
+              tor_cmd = tor_cmd,
+              config = {
+                'SocksPort': 'invalid',
+                'DataDirectory': data_directory,
+              },
+              completion_percent = 100,
+              timeout = timeout_arg,
+            )
+          except Exception as exc:
+            raised_exc[0] = exc
 
-      t = threading.Thread(target = short_launch)
-      t.start()
-      t.join()
+        t = threading.Thread(target = short_launch)
+        t.start()
+        t.join()
 
-      if 'Invalid SocksPort' in str(raised_exc[0]):
-        return None  # got to the point of invoking tor
-      else:
-        return raised_exc[0]
+        if 'Invalid SocksPort' in str(raised_exc[0]):
+          return None  # got to the point of invoking tor
+        else:
+          return raised_exc[0]
 
-    exc = launch_async_with_timeout(0.5)
-    self.assertEqual(OSError, type(exc))
-    self.assertEqual('Launching tor with a timeout can only be done in the main thread', str(exc))
+      exc = launch_async_with_timeout(0.5)
+      assert_equal(OSError, type(exc))
+      assert_equal('Launching tor with a timeout can only be done in the main thread', str(exc))
 
-    # We should launch successfully if no timeout is specified or we specify it
-    # to be 'None'.
+      # We should launch successfully if no timeout is specified or we specify it
+      # to be 'None'.
 
-    self.assertEqual(None, launch_async_with_timeout(None))
-    self.assertEqual(None, launch_async_with_timeout(stem.process.DEFAULT_INIT_TIMEOUT))
+      if launch_async_with_timeout(None) is not None:
+        raise AssertionError('Launching tor without a timeout should be successful')
 
-  @test.require.only_run_once
-  @patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1')))
-  def test_launch_tor_with_config_via_file(self):
+      if launch_async_with_timeout(stem.process.DEFAULT_INIT_TIMEOUT) is not None:
+        raise AssertionError('Launching tor with the default timeout should be successful')
+
+  @asynchronous
+  def test_launch_tor_with_config_via_file(tor_cmd):
     """
     Exercises launch_tor_with_config when we write a torrc to disk.
     """
 
-    # Launch tor without a torrc, but with a control port. Confirms that this
-    # works by checking that we're still able to access the new instance.
+    with tmp_directory() as data_directory:
+      control_port = random_port()
+      control_socket, tor_process = None, None
 
-    runner = test.runner.get_runner()
-    tor_process = stem.process.launch_tor_with_config(
-      tor_cmd = runner.get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2778',
-        'DataDirectory': self.data_directory,
-      },
-      completion_percent = 5
-    )
+      try:
+        # Launch tor without a torrc, but with a control port. Confirms that this
+        # works by checking that we're still able to access the new instance.
 
-    control_socket = None
+        with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.0.0.1'))):
+          tor_process = stem.process.launch_tor_with_config(
+            tor_cmd = tor_cmd,
+            config = {
+              'SocksPort': random_port(),
+              'ControlPort': control_port,
+              'DataDirectory': data_directory,
+            },
+            completion_percent = 5
+          )
 
-    try:
-      control_socket = stem.socket.ControlPort(port = 2778)
-      stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
+        control_socket = stem.socket.ControlPort(port = int(control_port))
+        stem.connection.authenticate(control_socket)
 
-      # exercises the socket
-      control_socket.send('GETCONF ControlPort')
-      getconf_response = control_socket.recv()
-      self.assertEqual('ControlPort=2778', str(getconf_response))
-    finally:
-      if control_socket:
-        control_socket.close()
+        # exercises the socket
+        control_socket.send('GETCONF ControlPort')
+        getconf_response = control_socket.recv()
 
-      tor_process.kill()
-      tor_process.wait()
+        assert_equal('ControlPort=%s' % control_port, str(getconf_response))
+      finally:
+        if control_socket:
+          control_socket.close()
 
-  @test.require.only_run_once
-  @test.require.version(stem.version.Requirement.TORRC_VIA_STDIN)
-  def test_launch_tor_with_config_via_stdin(self):
+        if tor_process:
+          tor_process.kill()
+          tor_process.wait()
+
+  @asynchronous
+  def test_launch_tor_with_config_via_stdin(tor_cmd):
     """
     Exercises launch_tor_with_config when we provide our torrc via stdin.
     """
 
-    runner = test.runner.get_runner()
-    tor_process = stem.process.launch_tor_with_config(
-      tor_cmd = runner.get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2778',
-        'DataDirectory': self.data_directory,
-      },
-      completion_percent = 5
-    )
+    if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
+      skip('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    control_socket = None
+    with tmp_directory() as data_directory:
+      control_port = random_port()
+      control_socket, tor_process = None, None
 
-    try:
-      control_socket = stem.socket.ControlPort(port = 2778)
-      stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
+      try:
+        tor_process = stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          config = {
+            'SocksPort': random_port(),
+            'ControlPort': control_port,
+            'DataDirectory': data_directory,
+          },
+          completion_percent = 5
+        )
 
-      # exercises the socket
-      control_socket.send('GETCONF ControlPort')
-      getconf_response = control_socket.recv()
-      self.assertEqual('ControlPort=2778', str(getconf_response))
-    finally:
-      if control_socket:
-        control_socket.close()
+        control_socket = stem.socket.ControlPort(port = int(control_port))
+        stem.connection.authenticate(control_socket)
 
-      tor_process.kill()
-      tor_process.wait()
+        # exercises the socket
+        control_socket.send('GETCONF ControlPort')
+        getconf_response = control_socket.recv()
 
-  @test.require.only_run_once
-  def test_with_invalid_config(self):
+        assert_equal('ControlPort=%s' % control_port, str(getconf_response))
+      finally:
+        if control_socket:
+          control_socket.close()
+
+        if tor_process:
+          tor_process.kill()
+          tor_process.wait()
+
+  @asynchronous
+  def test_with_invalid_config(tor_cmd):
     """
     Spawn a tor process with a configuration that should make it dead on arrival.
     """
@@ -398,139 +482,132 @@ class TestProcess(unittest.TestCase):
     #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
     #   [err] Reading config failed--see warnings above.
 
-    self.assertRaisesRegexp(
-      OSError,
-      'Process terminated: Failed to bind one of the listener ports.',
-      stem.process.launch_tor_with_config,
-      tor_cmd = test.runner.get_runner().get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2777',
-        'DataDirectory': self.data_directory,
-      },
-    )
+    with tmp_directory() as data_directory:
+      both_ports = random_port()
 
-  @test.require.only_run_once
-  def test_launch_tor_with_timeout(self):
+      try:
+        stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          config = {
+            'SocksPort': both_ports,
+            'ControlPort': both_ports,
+            'DataDirectory': data_directory,
+          },
+        )
+
+        raise AssertionError('Tor should fail to launch')
+      except OSError as exc:
+        assert_equal('Process terminated: Failed to bind one of the listener ports.', str(exc))
+
+  @asynchronous
+  def test_launch_tor_with_timeout(tor_cmd):
     """
     Runs launch_tor where it times out before completing.
     """
 
-    runner = test.runner.get_runner()
-    start_time = time.time()
-    config = {'SocksPort': '2777', 'DataDirectory': self.data_directory}
-    self.assertRaises(OSError, stem.process.launch_tor_with_config, config, runner.get_tor_command(), 100, None, 0.05)
-    runtime = time.time() - start_time
+    with tmp_directory() as data_directory:
+      start_time = time.time()
 
-    if not (runtime > 0.05 and runtime < 1):
-      self.fail('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
+      try:
+        stem.process.launch_tor_with_config(
+          tor_cmd = tor_cmd,
+          timeout = 0.05,
+          config = {
+            'SocksPort': random_port(),
+            'DataDirectory': data_directory,
+          },
+        )
 
-  @test.require.only_run_once
-  @test.require.command('sleep')
-  @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)
-  @patch('os.getpid')
-  def test_take_ownership_via_pid(self, getpid_mock):
+        raise AssertionError('Tor should fail to launch')
+      except OSError:
+        runtime = time.time() - start_time
+
+        if not (runtime > 0.05 and runtime < 1):
+          raise AssertionError('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
+
+  @asynchronous
+  def test_take_ownership_via_pid(tor_cmd):
     """
     Checks that the tor process quits after we do if we set take_ownership. To
     test this we spawn a process and trick tor into thinking that it is us.
     """
 
-    sleep_process = subprocess.Popen(['sleep', '60'])
-    getpid_mock.return_value = str(sleep_process.pid)
+    if not stem.util.system.is_available('sleep'):
+      skip('(sleep unavailable)')
+    elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
+      skip('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    tor_process = stem.process.launch_tor_with_config(
-      tor_cmd = test.runner.get_runner().get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2778',
-        'DataDirectory': self.data_directory,
-      },
-      completion_percent = 5,
-      take_ownership = True,
-    )
+    with tmp_directory() as data_directory:
+      sleep_process = subprocess.Popen(['sleep', '60'])
 
-    # Kill the sleep command. Tor should quit shortly after.
+      tor_process = stem.process.launch_tor_with_config(
+        tor_cmd = tor_cmd,
+        config = {
+          'SocksPort': random_port(),
+          'ControlPort': random_port(),
+          'DataDirectory': data_directory,
+          '__OwningControllerProcess': str(sleep_process.pid),
+        },
+        completion_percent = 5,
+      )
 
-    sleep_process.kill()
-    sleep_process.communicate()
+      # Kill the sleep command. Tor should quit shortly after.
 
-    # tor polls for the process every fifteen seconds so this may take a
-    # while...
-    #
-    #   https://trac.torproject.org/projects/tor/ticket/21281
+      sleep_process.kill()
+      sleep_process.communicate()
 
-    start_time = time.time()
+      # tor polls for the process every fifteen seconds so this may take a
+      # while...
+      #
+      #   https://trac.torproject.org/projects/tor/ticket/21281
 
-    while time.time() - start_time < 30:
-      if tor_process.poll() == 0:
-        return  # tor exited
+      start_time = time.time()
 
-      time.sleep(0.01)
+      while time.time() - start_time < 30:
+        if tor_process.poll() == 0:
+          return  # tor exited
 
-    self.fail("tor didn't quit after the process that owned it terminated")
+        time.sleep(0.01)
 
-  @test.require.only_run_once
-  @test.require.version(stem.version.Requirement.TAKEOWNERSHIP)
-  def test_take_ownership_via_controller(self):
+      raise AssertionError("tor didn't quit after the process that owned it terminated")
+
+  @asynchronous
+  def test_take_ownership_via_controller(tor_cmd):
     """
     Checks that the tor process quits after the controller that owns it
     connects, then disconnects..
     """
 
-    tor_process = stem.process.launch_tor_with_config(
-      tor_cmd = test.runner.get_runner().get_tor_command(),
-      config = {
-        'SocksPort': '2777',
-        'ControlPort': '2778',
-        'DataDirectory': self.data_directory,
-      },
-      completion_percent = 5,
-      take_ownership = True,
-    )
+    if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
+      skip('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    # We're the controlling process. Just need to connect then disconnect.
+    with tmp_directory() as data_directory:
+      control_port = random_port()
 
-    controller = stem.control.Controller.from_port(port = 2778)
-    controller.authenticate()
-    controller.close()
+      tor_process = stem.process.launch_tor_with_config(
+        tor_cmd = tor_cmd,
+        config = {
+          'SocksPort': random_port(),
+          'ControlPort': control_port,
+          'DataDirectory': data_directory,
+        },
+        completion_percent = 5,
+        take_ownership = True,
+      )
 
-    # give tor a few seconds to quit
-    start_time = time.time()
+      # We're the controlling process. Just need to connect then disconnect.
 
-    while time.time() - start_time < 5:
-      if tor_process.poll() == 0:
-        return  # tor exited
+      controller = stem.control.Controller.from_port(port = int(control_port))
+      controller.authenticate()
+      controller.close()
 
-      time.sleep(0.01)
+      # give tor a few seconds to quit
+      start_time = time.time()
 
-    self.fail("tor didn't quit after the controller that owned it disconnected")
+      while time.time() - start_time < 5:
+        if tor_process.poll() == 0:
+          return  # tor exited
 
-  def run_tor(self, *args, **kwargs):
-    # python doesn't allow us to have individual keyword arguments when there's
-    # an arbitrary number of positional arguments, so explicitly checking
+        time.sleep(0.01)
 
-    expect_failure = kwargs.pop('expect_failure', False)
-    with_torrc = kwargs.pop('with_torrc', False)
-    stdin = kwargs.pop('stdin', None)
-
-    if kwargs:
-      raise ValueError('Got unexpected keyword arguments: %s' % kwargs)
-
-    if with_torrc:
-      args = ['-f', test.runner.get_runner().get_torrc_path()] + list(args)
-
-    args = [test.runner.get_runner().get_tor_command()] + list(args)
-    tor_process = subprocess.Popen(args, stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-
-    if stdin:
-      tor_process.stdin.write(stem.util.str_tools._to_bytes(stdin))
-
-    stdout = tor_process.communicate()[0]
-    exit_status = tor_process.poll()
-
-    if exit_status and not expect_failure:
-      self.fail("Tor failed to start when we ran: %s\n%s" % (' '.join(args), stdout))
-    elif not exit_status and expect_failure:
-      self.fail("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
-
-    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+      raise AssertionError("tor didn't quit after the controller that owned it disconnected")

@@ -30,13 +30,16 @@ to match just against the prefix or suffix. For instance...
 
 import collections
 import linecache
+import multiprocessing
 import os
 import re
 import time
+import threading
 import unittest
 
 import stem.prereq
 import stem.util.conf
+import stem.util.enum
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict('test', {
@@ -47,6 +50,165 @@ CONFIG = stem.util.conf.config_dict('test', {
 })
 
 TEST_RUNTIMES = {}
+ASYNC_TESTS = {}
+
+AsyncStatus = stem.util.enum.UppercaseEnum('PENDING', 'RUNNING', 'FINISHED')
+AsyncResult = collections.namedtuple('AsyncResult', 'type msg')
+
+# TODO: Providing a copy of SkipTest that works with python 2.6. This will be
+# dropped when we remove python 2.6 support.
+
+if stem.prereq._is_python_26():
+  class SkipTest(Exception):
+    'Notes that the test was skipped.'
+else:
+  SkipTest = unittest.case.SkipTest
+
+
+def assert_equal(expected, actual, msg = None):
+  """
+  Function form of a TestCase's assertEqual.
+
+  .. versionadded:: 1.6.0
+
+  :param object expected: expected value
+  :param object actual: actual value
+  :param str msg: message if assertion fails
+
+  :raises: **AssertionError** if values aren't equal
+  """
+
+  if expected != actual:
+    raise AssertionError("Expected '%s' but was '%s'" % (expected, actual) if msg is None else msg)
+
+
+def assert_in(expected, actual, msg = None):
+  """
+  Asserts that a given value is within this content.
+
+  .. versionadded:: 1.6.0
+
+  :param object expected: expected value
+  :param object actual: actual value
+  :param str msg: message if assertion fails
+
+  :raises: **AssertionError** if the expected value isn't in the actual
+  """
+
+  if expected not in actual:
+    raise AssertionError("Expected '%s' to be within '%s'" % (expected, actual) if msg is None else msg)
+
+
+def skip(msg):
+  """
+  Function form of a TestCase's skipTest.
+
+  .. versionadded:: 1.6.0
+
+  :param str msg: reason test is being skipped
+
+  :raises: **unittest.case.SkipTest** for this reason
+  """
+
+  raise SkipTest(msg)
+
+
+def asynchronous(func):
+  test = stem.util.test_tools.AsyncTest(func)
+  ASYNC_TESTS['%s.%s' % (func.__module__, func.__name__)] = test
+  return test.method
+
+
+class AsyncTest(object):
+  """
+  Test that's run asychronously. These are functions (no self reference)
+  performed like the following...
+
+  ::
+
+    class MyTest(unittest.TestCase):
+      @staticmethod
+      def run_tests():
+        MyTest.test_addition = stem.util.test_tools.AsyncTest(MyTest.test_addition).method
+
+      @staticmethod
+      def test_addition():
+        if 1 + 1 != 2:
+          raise AssertionError('tisk, tisk')
+
+    MyTest.run()
+
+  .. versionadded:: 1.6.0
+  """
+
+  def __init__(self, runner, args = None, threaded = False):
+    self._runner = runner
+    self._runner_args = args
+    self._threaded = threaded
+
+    self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
+    self.method.async = self
+
+    self._process = None
+    self._process_pipe = None
+    self._process_lock = threading.RLock()
+
+    self._result = None
+    self._status = AsyncStatus.PENDING
+
+  def run(self, *runner_args, **kwargs):
+    def _wrapper(conn, runner, args):
+      os.nice(12)
+
+      try:
+        runner(*args) if args else runner()
+        conn.send(AsyncResult('success', None))
+      except AssertionError as exc:
+        conn.send(AsyncResult('failure', str(exc)))
+      except SkipTest as exc:
+        conn.send(AsyncResult('skipped', str(exc)))
+      finally:
+        conn.close()
+
+    with self._process_lock:
+      if self._status == AsyncStatus.PENDING:
+        if runner_args:
+          self._runner_args = runner_args
+
+        if 'threaded' in kwargs:
+          self._threaded = kwargs['threaded']
+
+        self._process_pipe, child_pipe = multiprocessing.Pipe()
+
+        if self._threaded:
+          self._process = threading.Thread(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
+        else:
+          self._process = multiprocessing.Process(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
+
+        self._process.start()
+        self._status = AsyncStatus.RUNNING
+
+  def pid(self):
+    with self._process_lock:
+      return self._process.pid if (self._process and not self._threaded) else None
+
+  def join(self):
+    self.result(None)
+
+  def result(self, test):
+    with self._process_lock:
+      if self._status == AsyncStatus.PENDING:
+        self.run()
+
+      if self._status == AsyncStatus.RUNNING:
+        self._result = self._process_pipe.recv()
+        self._process.join()
+        self._status = AsyncStatus.FINISHED
+
+      if test and self._result.type == 'failure':
+        test.fail(self._result.msg)
+      elif test and self._result.type == 'skipped':
+        test.skipTest(self._result.msg)
 
 
 class Issue(collections.namedtuple('Issue', ['line_number', 'message', 'line'])):

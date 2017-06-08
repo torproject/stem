@@ -6,25 +6,29 @@ import os
 import unittest
 
 import stem.descriptor
+import stem.util.test_tools
 import test
-import test.require
-import test.runner
+
+from stem.util.test_tools import asynchronous
 
 
 class TestMicrodescriptor(unittest.TestCase):
-  @test.require.only_run_once
-  def test_cached_microdescriptors(self):
+  @staticmethod
+  def run_tests(test_dir):
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.microdescriptor.test_cached_microdescriptors'].run(test_dir, threaded = True)
+
+  @asynchronous
+  def test_cached_microdescriptors(test_dir):
     """
     Parses the cached microdescriptor file in our data directory, checking that
     it doesn't raise any validation issues and looking for unrecognized
     descriptor additions.
     """
 
-    descriptor_path = test.runner.get_runner().get_test_dir('cached-microdescs')
+    descriptor_path = os.path.join(test_dir, 'cached-microdescs')
 
     if not os.path.exists(descriptor_path):
-      self.skipTest('(no cached microdescriptors)')
-      return
+      raise stem.util.test_tools.SkipTest('(no cached descriptors)')
 
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'microdescriptor 1.0', validate = True):

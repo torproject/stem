@@ -69,6 +69,7 @@ The following are only available within Stem's `git repository
   * Added timeout argument to :func:`~stem.util.system.call`
   * Added cwd argument to :func:`~stem.util.system.call`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
+  * Supporing pid arguments in :func:`~stem.util.system.is_running`
 
  * **Interpreter**
 

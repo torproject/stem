@@ -257,13 +257,23 @@ def is_available(command, cached=True):
 
 def is_running(command):
   """
-  Checks for if a process with a given name is running or not.
+  Checks for if a process with a given name or pid is running.
 
-  :param str command: process name to be checked
+  .. versionchanged:: 1.6.0
+     Added support for pid arguments.
+
+  :param str,int command: process name if a str or pid if an int to be checked
 
   :returns: **True** if the process is running, **False** if it's not among ps
     results, and **None** if ps can't be queried
   """
+
+  if isinstance(command, int):
+    try:
+      os.kill(command, 0)
+      return True
+    except OSError:
+      return False
 
   # Linux and the BSD families have different variants of ps. Guess based on
   # the is_bsd() check which to try first, then fall back to the other.

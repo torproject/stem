@@ -170,6 +170,7 @@ class Task(object):
     try:
       if self._is_background_task:
         def _run_wrapper(conn, runner, args):
+          os.nice(15)
           conn.send(runner(*args) if args else runner())
           conn.close()
 

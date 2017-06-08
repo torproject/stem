@@ -6,25 +6,29 @@ import os
 import unittest
 
 import stem.descriptor
+import stem.util.test_tools
 import test
-import test.require
-import test.runner
+
+from stem.util.test_tools import asynchronous
 
 
 class TestExtraInfoDescriptor(unittest.TestCase):
-  @test.require.only_run_once
-  def test_cached_descriptor(self):
+  @staticmethod
+  def run_tests(test_dir):
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.extrainfo_descriptor.test_cached_descriptor'].run(test_dir, threaded = True)
+
+  @asynchronous
+  def test_cached_descriptor(test_dir):
     """
     Parses the cached descriptor file in our data directory, checking that it
     doesn't raise any validation issues and looking for unrecognized descriptor
     additions.
     """
 
-    descriptor_path = test.runner.get_runner().get_test_dir('cached-extrainfo')
+    descriptor_path = os.path.join(test_dir, 'cached-extrainfo')
 
     if not os.path.exists(descriptor_path):
-      self.skipTest('(no cached descriptors)')
-      return
+      raise stem.util.test_tools.SkipTest('(no cached descriptors)')
 
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True):
@@ -32,12 +36,12 @@ class TestExtraInfoDescriptor(unittest.TestCase):
           test.register_new_capability('Extra-info Line', line)
 
         if desc.dir_v2_responses_unknown:
-          self.fail('Unrecognized statuses on dirreq-v2-resp lines: %s' % desc.dir_v2_responses_unknown)
+          raise AssertionError('Unrecognized statuses on dirreq-v2-resp lines: %s' % desc.dir_v2_responses_unknown)
         elif desc.dir_v3_responses_unknown:
-          self.fail('Unrecognized statuses on dirreq-v3-resp lines: %s' % desc.dir_v3_responses_unknown)
+          raise AssertionError('Unrecognized statuses on dirreq-v3-resp lines: %s' % desc.dir_v3_responses_unknown)
         elif desc.dir_v2_direct_dl_unknown:
-          self.fail('Unrecognized stats on dirreq-v2-direct-dl lines: %s' % desc.dir_v2_direct_dl_unknown)
+          raise AssertionError('Unrecognized stats on dirreq-v2-direct-dl lines: %s' % desc.dir_v2_direct_dl_unknown)
         elif desc.dir_v3_direct_dl_unknown:
-          self.fail('Unrecognized stats on dirreq-v3-direct-dl lines: %s' % desc.dir_v2_direct_dl_unknown)
+          raise AssertionError('Unrecognized stats on dirreq-v3-direct-dl lines: %s' % desc.dir_v2_direct_dl_unknown)
         elif desc.dir_v2_tunneled_dl_unknown:
-          self.fail('Unrecognized stats on dirreq-v2-tunneled-dl lines: %s' % desc.dir_v2_tunneled_dl_unknown)
+          raise AssertionError('Unrecognized stats on dirreq-v2-tunneled-dl lines: %s' % desc.dir_v2_tunneled_dl_unknown)

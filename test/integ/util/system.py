@@ -87,10 +87,18 @@ class TestSystem(unittest.TestCase):
 
     self.assertFalse(stem.util.system.is_available('blarg_and_stuff'))
 
-  @test.require.command('ps')
-  def test_is_running(self):
+  def test_is_running_by_pid(self):
     """
-    Checks the stem.util.system.is_running function.
+    Checks the stem.util.system.is_running function with a pid.
+    """
+
+    self.assertTrue(stem.util.system.is_running(test.runner.get_runner().get_pid()))
+    self.assertFalse(stem.util.system.is_running(528955))
+
+  @test.require.command('ps')
+  def test_is_running_by_name(self):
+    """
+    Checks the stem.util.system.is_running function with a process name.
     """
 
     # Check to see if the command we started tor with is running. The process

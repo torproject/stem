@@ -28,7 +28,12 @@ import stem.version
 
 import test
 import test.arguments
+import test.integ.descriptor.extrainfo_descriptor
+import test.integ.descriptor.microdescriptor
+import test.integ.descriptor.networkstatus
+import test.integ.descriptor.server_descriptor
 import test.integ.installation
+import test.integ.process
 import test.output
 import test.runner
 import test.task
@@ -36,6 +41,7 @@ import test.task
 from test.output import STATUS, SUCCESS, ERROR, NO_NL, STDERR, println
 
 CONFIG = stem.util.conf.config_dict('test', {
+  'integ.test_directory': './test/data',
   'test.unit_tests': '',
   'test.integ_tests': '',
   'target.prereq': {},
@@ -232,6 +238,27 @@ def main():
 
   skipped_tests = 0
 
+  if args.run_integ:
+    default_test_dir = stem.util.system.expand_path(CONFIG['integ.test_directory'], test.STEM_BASE)
+
+    if not args.specific_test or 'test.integ.descriptor.extrainfo_descriptor'.startswith(args.specific_test):
+      test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.microdescriptor'.startswith(args.specific_test):
+      test.integ.descriptor.microdescriptor.TestMicrodescriptor.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.networkstatus'.startswith(args.specific_test):
+      test.integ.descriptor.networkstatus.TestNetworkStatus.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.descriptor.server_descriptor'.startswith(args.specific_test):
+      test.integ.descriptor.server_descriptor.TestServerDescriptor.run_tests(default_test_dir)
+
+    if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
+      test.integ.installation.TestInstallation.run_tests()
+
+    if not args.specific_test or 'test.integ.process'.startswith(args.specific_test):
+      test.integ.process.TestProcess.run_tests(args.tor_path)
+
   if args.run_unit:
     test.output.print_divider('UNIT TESTS', True)
     error_tracker.set_category('UNIT TEST')
@@ -251,10 +278,6 @@ def main():
 
     our_version = stem.version.get_system_tor_version(args.tor_path)
     skipped_targets = {}
-    integ_setup_thread = None
-
-    if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
-      integ_setup_thread = test.integ.installation.setup()
 
     for target in args.run_targets:
       # check if we meet this target's tor version prerequisites
@@ -286,9 +309,6 @@ def main():
         # We should have joined on all threads. If not then that indicates a
         # leak that could both likely be a bug and disrupt further targets.
 
-        if integ_setup_thread:
-          integ_setup_thread.join()
-
         active_threads = threading.enumerate()
 
         if len(active_threads) > 1:
@@ -309,9 +329,6 @@ def main():
       except OSError:
         error_tracker.register_error()
       finally:
-        if integ_setup_thread:
-          test.integ.installation.clean()
-
         println()
         integ_runner.stop()
         println()
@@ -330,9 +347,10 @@ def main():
     if task:
       task.join()
 
-      for path, issues in task.result.items():
-        for issue in issues:
-          static_check_issues.setdefault(path, []).append(issue)
+      if task.result:
+        for path, issues in task.result.items():
+          for issue in issues:
+            static_check_issues.setdefault(path, []).append(issue)
     elif not task.is_available and task.unavailable_msg:
       println(task.unavailable_msg, ERROR)
 
