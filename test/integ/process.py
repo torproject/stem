@@ -26,7 +26,7 @@ import test
 import test.require
 
 from contextlib import contextmanager
-from stem.util.test_tools import asynchronous
+from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
 
 try:
   # added in python 3.3
@@ -114,10 +114,7 @@ class TestProcess(unittest.TestCase):
     Check that 'tor --version' matches 'GETINFO version'.
     """
 
-    version_output = run_tor(tor_cmd, '--version')
-
-    if 'Tor version %s.\n' % test.tor_version() != version_output:
-      raise AssertionError('Unexpected response: %s' % version_output)
+    assert_equal('Tor version %s.\n' % test.tor_version(), run_tor(tor_cmd, '--version'))
 
   @asynchronous
   def test_help_argument(tor_cmd):
@@ -130,8 +127,7 @@ class TestProcess(unittest.TestCase):
     if not help_output.startswith('Copyright (c) 2001') or not help_output.endswith('tor -f <torrc> [args]\nSee man page for options, or https://www.torproject.org/ for documentation.\n'):
       raise AssertionError("Help output didn't have the expected strings: %s" % help_output)
 
-    if help_output != run_tor(tor_cmd, '-h'):
-      raise AssertionError("'tor -h' should simply be an alias for 'tor --help'")
+    assert_equal(help_output, run_tor(tor_cmd, '-h'), "'tor -h' should simply be an alias for 'tor --help'")
 
   @asynchronous
   def test_quiet_argument(tor_cmd):
@@ -139,8 +135,8 @@ class TestProcess(unittest.TestCase):
     Check that we don't provide anything on stdout when running 'tor --quiet'.
     """
 
-    if '' != run_tor(tor_cmd, '--quiet', '--invalid_argument', 'true', expect_failure = True):
-      raise AssertionError('No output should be provided with the --quiet argument')
+    quiet_output = run_tor(tor_cmd, '--quiet', '--invalid_argument', 'true', expect_failure = True)
+    assert_equal('', quiet_output, 'No output should be provided with the --quiet argument')
 
   @asynchronous
   def test_hush_argument(tor_cmd):
@@ -149,14 +145,10 @@ class TestProcess(unittest.TestCase):
     """
 
     output = run_tor(tor_cmd, '--hush', '--invalid_argument', expect_failure = True)
-
-    if "[warn] Command-line option '--invalid_argument' with no value. Failing." not in output:
-      raise AssertionError('Unexpected response: %s' % output)
+    assert_in("[warn] Command-line option '--invalid_argument' with no value. Failing.", output)
 
     output = run_tor(tor_cmd, '--hush', '--invalid_argument', 'true', expect_failure = True)
-
-    if "[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing." not in output:
-      raise AssertionError('Unexpected response: %s' % output)
+    assert_in("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing.", output)
 
   @asynchronous
   def test_hash_password(tor_cmd):
@@ -185,9 +177,7 @@ class TestProcess(unittest.TestCase):
     stuff = salt + b'my_password'
     repetitions = count // len(stuff) + 1
     inp = (stuff * repetitions)[:count]
-
-    if hashlib.sha1(inp).digest() != hashed:
-      raise AssertionError('Password hash not what we expected (%s rather than %s)' % (hashlib.sha1(inp).digest(), hashed))
+    assert_equal(hashlib.sha1(inp).digest(), hashed)
 
   @asynchronous
   def test_hash_password_requires_argument(tor_cmd):
@@ -197,9 +187,7 @@ class TestProcess(unittest.TestCase):
     """
 
     output = run_tor(tor_cmd, '--hash-password', expect_failure = True)
-
-    if "[warn] Command-line option '--hash-password' with no value. Failing." not in output:
-      raise AssertionError("'tor --hash-password' should require an argument")
+    assert_in("[warn] Command-line option '--hash-password' with no value. Failing.", output)
 
   @asynchronous
   def test_dump_config_argument(tor_cmd):
@@ -212,14 +200,9 @@ class TestProcess(unittest.TestCase):
     full_output = run_tor(tor_cmd, '--dump-config', 'full', with_torrc = True)
     run_tor(tor_cmd, '--dump-config', 'invalid_option', with_torrc = True, expect_failure = True)
 
-    if 'Nickname stemIntegTest' not in short_output:
-      raise AssertionError("Dumping short config options didn't include our nickname: %s" % short_output)
-
-    if 'Nickname stemIntegTest' not in non_builtin_output:
-      raise AssertionError("Dumping non-builtin config options didn't include our nickname: %s" % non_builtin_output)
-
-    if 'Nickname stemIntegTest' not in full_output:
-      raise AssertionError("Dumping full config options didn't include our nickname: %s" % full_output)
+    assert_in('Nickname stemIntegTest', short_output)
+    assert_in('Nickname stemIntegTest', non_builtin_output)
+    assert_in('Nickname stemIntegTest', full_output)
 
   @asynchronous
   def test_validate_config_argument(tor_cmd):
@@ -228,10 +211,7 @@ class TestProcess(unittest.TestCase):
     """
 
     valid_output = run_tor(tor_cmd, '--verify-config', with_torrc = True)
-
-    if 'Configuration was valid\n' not in valid_output:
-      raise AssertionError('Expected configuration to be valid')
-
+    assert_in('Configuration was valid\n', valid_output, 'Expected configuration to be valid')
     run_tor(tor_cmd, '--verify-config', '-f', __file__, expect_failure = True)
 
   @asynchronous
@@ -243,9 +223,7 @@ class TestProcess(unittest.TestCase):
     # This command should only work with a relay (which our test instance isn't).
 
     output = run_tor(tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
-
-    if "Clients don't have long-term identity keys. Exiting." not in output:
-      raise AssertionError('Should fail to start due to lacking an ORPort')
+    assert_in("Clients don't have long-term identity keys. Exiting.", output, 'Should fail to start due to lacking an ORPort')
 
     with tmp_directory() as data_directory:
       torrc_path = os.path.join(data_directory, 'torrc')
@@ -257,19 +235,15 @@ class TestProcess(unittest.TestCase):
       nickname, fingerprint_with_spaces = output.splitlines()[-1].split(' ', 1)
       fingerprint = fingerprint_with_spaces.replace(' ', '')
 
-      if 'stemIntegTest' != nickname:
-        raise AssertionError("Nickname should be 'stemIntegTest': %s" % nickname)
-      elif 49 != len(fingerprint_with_spaces):
-        raise AssertionError('There should be 49 components in our fingerprint: %i' % len(fingerprint_with_spaces))
-      elif not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
+      assert_equal('stemIntegTest', nickname)
+      assert_equal(49, len(fingerprint_with_spaces))
+
+      if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
         raise AssertionError('We should have a valid fingerprint: %s' % fingerprint)
 
       with open(os.path.join(data_directory, 'fingerprint')) as fingerprint_file:
         expected = 'stemIntegTest %s\n' % fingerprint
-        fingerprint_file_content = fingerprint_file.read()
-
-        if expected != fingerprint_file_content:
-          raise AssertionError('Unexpected fingerprint file: %s' % fingerprint_file_content)
+        assert_equal(expected, fingerprint_file.read())
 
   @asynchronous
   def test_list_torrc_options_argument(tor_cmd):
@@ -333,8 +307,7 @@ class TestProcess(unittest.TestCase):
         'SocksPort 9090',
       ]
 
-      if expected != result:
-        raise AssertionError("Unexpected output from 'tor -f torrc --dump-config short': %s" % result)
+      assert_equal(expected, result)
 
   @asynchronous
   def test_torrc_arguments_via_stdin(tor_cmd):
@@ -343,14 +316,12 @@ class TestProcess(unittest.TestCase):
     """
 
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
-      raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
+      skip('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
     with tmp_directory() as data_directory:
       torrc = BASIC_RELAY_TORRC % data_directory
       output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
-
-      if sorted(torrc.splitlines()) != sorted(output.splitlines()):
-        raise AssertionError("Unexpected output from 'tor -f - --dump-config short': %s" % output)
+      assert_equal(sorted(torrc.splitlines()), sorted(output.splitlines()))
 
   @asynchronous
   def test_with_missing_torrc(tor_cmd):
@@ -359,14 +330,10 @@ class TestProcess(unittest.TestCase):
     """
 
     output = run_tor(tor_cmd, '-f', '/path/that/really/shouldnt/exist', '--verify-config', expect_failure = True)
-
-    if '[warn] Unable to open configuration file "/path/that/really/shouldnt/exist".' not in output:
-      raise AssertionError('Tor refuse to read a non-existant torrc file')
+    assert_in('[warn] Unable to open configuration file "/path/that/really/shouldnt/exist".', output, 'Tor should refuse to read a non-existant torrc file')
 
     output = run_tor(tor_cmd, '-f', '/path/that/really/shouldnt/exist', '--verify-config', '--ignore-missing-torrc')
-
-    if '[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.' not in output:
-      raise AssertionError('Missing torrc should be allowed with --ignore-missing-torrc')
+    assert_in('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.', output, 'Missing torrc should be allowed with --ignore-missing-torrc')
 
   @asynchronous
   def test_can_run_multithreaded(tor_cmd):
@@ -411,9 +378,8 @@ class TestProcess(unittest.TestCase):
           return raised_exc[0]
 
       exc = launch_async_with_timeout(0.5)
-
-      if type(exc) != OSError or str(exc) != 'Launching tor with a timeout can only be done in the main thread':
-        raise AssertionError("Exception isn't what we expected: %s" % exc)
+      assert_equal(OSError, type(exc))
+      assert_equal('Launching tor with a timeout can only be done in the main thread', str(exc))
 
       # We should launch successfully if no timeout is specified or we specify it
       # to be 'None'.
@@ -456,8 +422,7 @@ class TestProcess(unittest.TestCase):
         control_socket.send('GETCONF ControlPort')
         getconf_response = control_socket.recv()
 
-        if 'ControlPort=%s' % control_port != str(getconf_response):
-          raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
+        assert_equal('ControlPort=%s' % control_port, str(getconf_response))
       finally:
         if control_socket:
           control_socket.close()
@@ -473,7 +438,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
-      raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
+      skip('(requires )' % stem.version.Requirement.TORRC_VIA_STDIN)
 
     with tmp_directory() as data_directory:
       control_port = random_port()
@@ -497,8 +462,7 @@ class TestProcess(unittest.TestCase):
         control_socket.send('GETCONF ControlPort')
         getconf_response = control_socket.recv()
 
-        if 'ControlPort=%s' % control_port != str(getconf_response):
-          raise AssertionError('Expected tor to report its ControlPort as %s but was: %s' % (control_port, getconf_response))
+        assert_equal('ControlPort=%s' % control_port, str(getconf_response))
       finally:
         if control_socket:
           control_socket.close()
@@ -533,8 +497,7 @@ class TestProcess(unittest.TestCase):
 
         raise AssertionError('Tor should fail to launch')
       except OSError as exc:
-        if str(exc) != 'Process terminated: Failed to bind one of the listener ports.':
-          raise AssertionError('Unexpected error response from tor: %s' % exc)
+        assert_equal('Process terminated: Failed to bind one of the listener ports.', str(exc))
 
   @asynchronous
   def test_launch_tor_with_timeout(tor_cmd):
@@ -570,9 +533,9 @@ class TestProcess(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('sleep'):
-      raise stem.util.test_tools.SkipTest('(sleep unavailable)')
+      skip('(sleep unavailable)')
     elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
-      raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
+      skip('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
     with tmp_directory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
@@ -616,7 +579,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
-      raise stem.util.test_tools.SkipTest('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
+      skip('(requires )' % stem.version.Requirement.TAKEOWNERSHIP)
 
     with tmp_directory() as data_directory:
       control_port = random_port()

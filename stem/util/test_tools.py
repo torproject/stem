@@ -65,6 +65,54 @@ else:
   SkipTest = unittest.case.SkipTest
 
 
+def assert_equal(expected, actual, msg = None):
+  """
+  Function form of a TestCase's assertEqual.
+
+  .. versionadded:: 1.6.0
+
+  :param object expected: expected value
+  :param object actual: actual value
+  :param str msg: message if assertion fails
+
+  :raises: **AssertionError** if values aren't equal
+  """
+
+  if expected != actual:
+    raise AssertionError("Expected '%s' but was '%s'" % (expected, actual) if msg is None else msg)
+
+
+def assert_in(expected, actual, msg = None):
+  """
+  Asserts that a given value is within this content.
+
+  .. versionadded:: 1.6.0
+
+  :param object expected: expected value
+  :param object actual: actual value
+  :param str msg: message if assertion fails
+
+  :raises: **AssertionError** if the expected value isn't in the actual
+  """
+
+  if expected not in actual:
+    raise AssertionError("Expected '%s' to be within '%s'" % (expected, actual) if msg is None else msg)
+
+
+def skip(msg):
+  """
+  Function form of a TestCase's skipTest.
+
+  .. versionadded:: 1.6.0
+
+  :param str msg: reason test is being skipped
+
+  :raises: **unittest.case.SkipTest** for this reason
+  """
+
+  raise SkipTest(msg)
+
+
 def asynchronous(func):
   test = stem.util.test_tools.AsyncTest(func)
   ASYNC_TESTS['%s.%s' % (func.__module__, func.__name__)] = test
