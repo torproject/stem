@@ -20,7 +20,6 @@ except ImportError:
 
 import stem.prereq
 import stem.util.conf
-import stem.util.enum
 import stem.util.log
 import stem.util.system
 import stem.util.test_tools
@@ -155,6 +154,7 @@ def get_torrc_entries(target):
 
 def main():
   start_time = time.time()
+
   try:
     stem.prereq.check_requirements()
   except ImportError as exc:
@@ -167,12 +167,10 @@ def main():
   try:
     args = test.arguments.parse(sys.argv[1:])
     test.task.TOR_VERSION.args = (args.tor_path,)
+    test.output.SUPPRESS_STDOUT = args.quiet
   except ValueError as exc:
     println(str(exc))
     sys.exit(1)
-
-  if args.quiet:
-    test.output.SUPPRESS_STDOUT = True
 
   if args.print_help:
     println(test.arguments.get_help())
@@ -183,11 +181,7 @@ def main():
 
   if not stem.prereq.is_mock_available():
     try:
-      try:
-        import unittest.mock as mock
-      except ImportError:
-        import mock
-
+      import mock
       println(MOCK_OUT_OF_DATE_MSG % mock.__version__)
     except ImportError:
       println(MOCK_UNAVAILABLE_MSG)
@@ -276,7 +270,6 @@ def main():
     # Determine targets we don't meet the prereqs for. Warnings are given about
     # these at the end of the test run so they're more noticeable.
 
-    our_version = stem.version.get_system_tor_version(args.tor_path)
     skipped_targets = {}
 
     for target in args.run_targets:
@@ -284,7 +277,7 @@ def main():
 
       target_prereq = CONFIG['target.prereq'].get(target)
 
-      if target_prereq and our_version < stem.version.Requirement[target_prereq]:
+      if target_prereq and test.tor_version() < stem.version.Requirement[target_prereq]:
         skipped_targets[target] = target_prereq
         continue
 
@@ -296,6 +289,7 @@ def main():
         println('Running tests...\n', STATUS)
 
         owner = None
+
         if integ_runner.is_accessible():
           owner = integ_runner.get_tor_controller(True)  # controller to own our main Tor process
 
@@ -438,20 +432,20 @@ def _run_test(args, test_class, output_filters, logging_buffer):
 
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
-  except AttributeError as exc:
+  except AttributeError:
     if args.specific_test:
       # should only come up if user provided '--test' for something that doesn't exist
       println(' no such test', ERROR)
       return None
     else:
-      raise exc
+      raise
   except Exception as exc:
     println(' failed', ERROR)
     traceback.print_exc(exc)
     return None
 
   test_results = StringIO()
-  run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity=2).run(suite)
+  run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity = 2).run(suite)
 
   if args.verbose:
     println(test.output.apply_filters(test_results.getvalue(), *output_filters))
