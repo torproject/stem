@@ -19,9 +19,9 @@ from stem.util.test_tools import asynchronous
 
 class TestNetworkStatus(unittest.TestCase):
   @staticmethod
-  def run_tests(test_dir):
-    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_consensus'].run(test_dir, threaded = True)
-    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_microdesc_consensus'].run(test_dir, threaded = True)
+  def run_tests(args):
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_consensus'].run(args.test_dir, threaded = True)
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.networkstatus.test_cached_microdesc_consensus'].run(args.test_dir, threaded = True)
 
   @test.require.only_run_once
   @test.require.online

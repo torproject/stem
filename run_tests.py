@@ -6,6 +6,7 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
+import importlib
 import os
 import sys
 import threading
@@ -27,12 +28,6 @@ import stem.version
 
 import test
 import test.arguments
-import test.integ.descriptor.extrainfo_descriptor
-import test.integ.descriptor.microdescriptor
-import test.integ.descriptor.networkstatus
-import test.integ.descriptor.server_descriptor
-import test.integ.installation
-import test.integ.process
 import test.output
 import test.runner
 import test.task
@@ -234,24 +229,18 @@ def main():
 
   if args.run_integ:
     default_test_dir = stem.util.system.expand_path(CONFIG['integ.test_directory'], test.STEM_BASE)
+    async_args = test.AsyncTestArgs(default_test_dir, args.tor_path)
 
-    if not args.specific_test or 'test.integ.descriptor.extrainfo_descriptor'.startswith(args.specific_test):
-      test.integ.descriptor.extrainfo_descriptor.TestExtraInfoDescriptor.run_tests(default_test_dir)
+    for module_str in stem.util.test_tools.ASYNC_TESTS:
+      if not args.specific_test or module_str.startswith(args.specific_test):
+        module = importlib.import_module(module_str.rsplit('.', 1)[0])
+        test_classes = [v for k, v in module.__dict__.items() if k.startswith('Test')]
 
-    if not args.specific_test or 'test.integ.descriptor.microdescriptor'.startswith(args.specific_test):
-      test.integ.descriptor.microdescriptor.TestMicrodescriptor.run_tests(default_test_dir)
+        if len(test_classes) != 1:
+          print('BUG: Detected multiple tests for %s: %s' % (module_str, ', '.join(test_classes)))
+          sys.exit(1)
 
-    if not args.specific_test or 'test.integ.descriptor.networkstatus'.startswith(args.specific_test):
-      test.integ.descriptor.networkstatus.TestNetworkStatus.run_tests(default_test_dir)
-
-    if not args.specific_test or 'test.integ.descriptor.server_descriptor'.startswith(args.specific_test):
-      test.integ.descriptor.server_descriptor.TestServerDescriptor.run_tests(default_test_dir)
-
-    if not args.specific_test or 'test.integ.installation'.startswith(args.specific_test):
-      test.integ.installation.TestInstallation.run_tests()
-
-    if not args.specific_test or 'test.integ.process'.startswith(args.specific_test):
-      test.integ.process.TestProcess.run_tests(args.tor_path)
+        test_classes[0].run_tests(async_args)
 
   if args.run_unit:
     test.output.print_divider('UNIT TESTS', True)

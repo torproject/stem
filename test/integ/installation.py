@@ -57,7 +57,7 @@ def _assert_has_all_files(path):
 
 class TestInstallation(unittest.TestCase):
   @staticmethod
-  def run_tests():
+  def run_tests(args):
     test_install = stem.util.test_tools.ASYNC_TESTS['test.integ.installation.test_install']
     test_install.run()
     stem.util.test_tools.ASYNC_TESTS['test.integ.installation.test_sdist'].run(test_install.pid())

@@ -13,6 +13,7 @@ Unit and integration tests for the stem library. Helpers include...
   tor_version - provides the version of tor we're testing against
 """
 
+import collections
 import itertools
 import os
 
@@ -50,6 +51,7 @@ Target = stem.util.enum.UppercaseEnum(
   'RUN_ALL',
 )
 
+AsyncTestArgs = collections.namedtuple('AsyncTestArgs', ['test_dir', 'tor_cmd'])
 TOR_VERSION = None
 
 # We make some paths relative to stem's base directory (the one above us)

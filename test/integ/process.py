@@ -103,10 +103,10 @@ def run_tor(tor_cmd, *args, **kwargs):
 
 class TestProcess(unittest.TestCase):
   @staticmethod
-  def run_tests(tor_cmd):
+  def run_tests(args):
     for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
       if func.startswith('test.integ.process.'):
-        async_test.run(tor_cmd)
+        async_test.run(args.tor_cmd)
 
   @asynchronous
   def test_version_argument(tor_cmd):

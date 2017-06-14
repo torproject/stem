@@ -14,8 +14,8 @@ from stem.util.test_tools import asynchronous
 
 class TestServerDescriptor(unittest.TestCase):
   @staticmethod
-  def run_tests(test_dir):
-    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.server_descriptor.test_cached_descriptor'].run(test_dir, threaded = True)
+  def run_tests(args):
+    stem.util.test_tools.ASYNC_TESTS['test.integ.descriptor.server_descriptor.test_cached_descriptor'].run(args.test_dir, threaded = True)
 
   @asynchronous
   def test_cached_descriptor(test_dir):
