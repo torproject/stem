@@ -115,14 +115,20 @@ def format(msg, *attr):
   * `termcolor <https://pypi.python.org/pypi/termcolor>`_
   * `colorama <https://pypi.python.org/pypi/colorama>`_
 
+  .. versionchanged:: 1.6.0
+     Normalized return value to be unicode to better support python 2/3
+     compatibility.
+
   :param str msg: string to be formatted
   :param str attr: text attributes, this can be :data:`~stem.util.term.Color`,
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like 'red' are fine)
 
-  :returns: **str** wrapped with ANSI escape encodings, starting with the given
+  :returns: **unicode** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
   """
+
+  msg = stem.util.str_tools._to_unicode(msg)
 
   if DISABLE_COLOR_SUPPORT:
     return msg
