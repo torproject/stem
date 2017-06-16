@@ -250,10 +250,7 @@ Stem are `Txtorcon <https://txtorcon.readthedocs.org/>`_ and `TorCtl
 
 `Txtorcon <https://txtorcon.readthedocs.org/>`_ is an actively maintained
 controller library written by Meejah for `Twisted
-<https://twistedmatrix.com/trac/>`_. In the future we plan to `integrate Stem
-and Txtorcon
-<https://www.torproject.org/getinvolved/volunteer.html.en#txtorcon-stemIntegration>`_
-to some degree, but that is still a ways off.
+<https://twistedmatrix.com/trac/>`_.
 
 `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_ was Stem's predecessor
 and `deprecated in December 2012
