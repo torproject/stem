@@ -16,6 +16,7 @@
   |- PYFLAKES_VERSION - checks our version of pyflakes
   |- PYCODESTYLE_VERSION - checks our version of pycodestyle
   |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
+  |- IMPORT_TESTS - ensure all test modules have been imported
   |- UNUSED_TESTS - checks to see if any tests are missing from our settings
   |- PYFLAKES_TASK - static checks
   +- PYCODESTYLE_TASK - style checks
@@ -73,6 +74,16 @@ def _clean_orphaned_pyc(paths):
   """
 
   return ['removed %s' % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
+
+
+def _import_tests():
+  """
+  Ensure all tests have been imported. This is important so tests can
+  register if they're asynchronous.
+  """
+
+  for module in (CONFIG['test.unit_tests'].splitlines() + CONFIG['test.integ_tests'].splitlines()):
+    importlib.import_module(module.rsplit('.', 1)[0])
 
 
 def _check_for_unused_tests(paths):
@@ -183,7 +194,7 @@ class Task(object):
       self.is_successful = True
       output_msg = 'running' if self._is_background_task else 'done'
 
-      if self.print_result and isinstance(self.result, str):
+      if self.result and self.print_result and isinstance(self.result, str):
         output_msg = self.result
       elif self.print_runtime:
         output_msg += ' (%0.1fs)' % (time.time() - start_time)
@@ -247,12 +258,13 @@ PYNACL_VERSION = ModuleVersion('checking pynacl version', 'nacl', stem.prereq._i
 MOCK_VERSION = ModuleVersion('checking mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
 PYFLAKES_VERSION = ModuleVersion('checking pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('checking pycodestyle version', ['pycodestyle', 'pep8'])
-CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,))
+CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)
+IMPORT_TESTS = Task('importing test modules', _import_tests, print_runtime = True)
 
 UNUSED_TESTS = Task('checking for unused tests', _check_for_unused_tests, [(
   os.path.join(test.STEM_BASE, 'test', 'unit'),
   os.path.join(test.STEM_BASE, 'test', 'integ'),
-)])
+)], print_runtime = True)
 
 PYFLAKES_TASK = StaticCheckTask(
   'running pyflakes',
