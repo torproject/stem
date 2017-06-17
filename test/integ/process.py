@@ -45,7 +45,7 @@ DataDirectory %s
 
 
 def random_port():
-  return str(random.randint(1024, 65536))
+  return str(random.randint(1024, 65535))
 
 
 @contextmanager
