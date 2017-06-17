@@ -42,6 +42,7 @@ Connection and networking based utility functions.
   **SOCKSTAT**          sockstat command under \*nix
   **BSD_SOCKSTAT**      sockstat command under FreeBSD
   **BSD_PROCSTAT**      procstat command under FreeBSD
+  **BSD_FSTAT**         fstat command under OpenBSD
   ====================  ===========
 """
 
@@ -72,7 +73,8 @@ Resolver = enum.Enum(
   ('LSOF', 'lsof'),
   ('SOCKSTAT', 'sockstat'),
   ('BSD_SOCKSTAT', 'sockstat (bsd)'),
-  ('BSD_PROCSTAT', 'procstat (bsd)')
+  ('BSD_PROCSTAT', 'procstat (bsd)'),
+  ('BSD_FSTAT', 'fstat (bsd)')
 )
 
 FULL_IPv4_MASK = '255.255.255.255'
@@ -105,6 +107,9 @@ RESOLVER_COMMAND = {
 
   # -f <pid> = process pid
   Resolver.BSD_PROCSTAT: 'procstat -f {pid}',
+
+  # -p <pid> = process pid
+  Resolver.BSD_FSTAT: 'fstat -p {pid}',
 }
 
 RESOLVER_FILTER = {
@@ -130,6 +135,9 @@ RESOLVER_FILTER = {
 
   # 3561 tor                 4 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:22370
   Resolver.BSD_PROCSTAT: '^\s*{pid}\s+{name}\s+.*\s+{protocol}\s+{local}\s+{remote}$',
+
+  # _tor     tor        15843   20* internet stream tcp 0x0 192.168.1.100:36174 --> 4.3.2.1:443
+  Resolver.BSD_FSTAT: '^\S+\s+{name}\s+{pid}\s+.*\s+{protocol}\s+\S+\s+{local}\s+[-<]-[->]\s+{remote}$',
 }
 
 
@@ -309,8 +317,10 @@ def system_resolvers(system = None):
 
   if system == 'Windows':
     resolvers = [Resolver.NETSTAT_WINDOWS]
-  elif system in ('Darwin', 'OpenBSD'):
+  elif system == 'Darwin':
     resolvers = [Resolver.LSOF]
+  elif system == 'OpenBSD':
+    resolvers = [Resolver.BSD_FSTAT]
   elif system == 'FreeBSD':
     # Netstat is available, but lacks a '-p' equivalent so we can't associate
     # the results to processes. The platform also has a ss command, but it
