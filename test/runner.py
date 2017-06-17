@@ -163,6 +163,12 @@ class Runner(object):
 
     self._original_recv_message = None
 
+    # The first controller to attach takes ownership so tor will promptly
+    # terminate if the tests do. As such we need to ensure that first
+    # connection is our runner's.
+
+    self._owner_controller = None
+
   def start(self, attribute_targets, tor_cmd, extra_torrc_opts):
     """
     Makes temporary testing resources and starts tor, blocking until it
@@ -234,9 +240,11 @@ class Runner(object):
 
           stem.socket.recv_message = _chroot_recv_message
 
-        # revert our cwd back to normal
+        if self.is_accessible():
+          self._owner_controller = self.get_tor_controller(True)
+
         if test.Target.RELATIVE in self.attribute_targets:
-          os.chdir(original_cwd)
+          os.chdir(original_cwd)  # revert our cwd back to normal
       except OSError as exc:
         raise exc
 
@@ -247,6 +255,10 @@ class Runner(object):
 
     with self._runner_lock:
       println('Shutting down tor... ', STATUS, NO_NL)
+
+      if self._owner_controller:
+        self._owner_controller.close()
+        self._owner_controller = None
 
       if self._tor_process:
         # if the tor process has stopped on its own then the following raises
