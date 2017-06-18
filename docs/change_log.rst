@@ -66,6 +66,7 @@ The following are only available within Stem's `git repository
 
  * **Utilities**
 
+  * Support connection resolution on OpenBSD using fstat (:trac:`13807`)
   * Added timeout argument to :func:`~stem.util.system.call`
   * Added cwd argument to :func:`~stem.util.system.call`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
