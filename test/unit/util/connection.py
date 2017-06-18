@@ -144,6 +144,26 @@ BSD_PROCSTAT_OUTPUT = """\
  3561 tor                16 s - rw---n--   2       0 TCP 10.0.0.2:47704 68.169.35.102:9001
 """
 
+BSD_FSTAT_OUTPUT = """\
+USER     CMD          PID   FD MOUNT        INUM MODE         R/W    SZ|DV
+_tor     tor        15843 text /usr/local   207875  -rwxr-xr-x     r  2421008
+_tor     tor        15843   wd /var       623616  drwx------     r      512
+_tor     tor        15843    0 /            1160  crw-rw-rw-    rw     null
+_tor     tor        15843    1 /            1160  crw-rw-rw-    rw     null
+_tor     tor        15843    2 /            1160  crw-rw-rw-    rw     null
+_tor     tor        15843    3 kqueue 0x0 0 state: W
+_tor     tor        15843    4* internet dgram udp *:6063
+_tor     tor        15843    5* internet stream tcp 0x0 127.0.0.1:8443
+_tor     tor        15843    6* internet stream tcp 0x0 127.0.0.1:8080
+_tor     tor        15843    7 /var       623617  -rw-------   rwe        0
+_tor     tor        15843    8* internet dgram udp *:19515
+_tor     tor        15843    9* internet dgram udp *:43052
+_tor     tor        15843   10 pipe 0x0 state: 
+_tor     tor        15843   11 pipe 0x0 state: 
+_tor     tor        15843   12* internet stream tcp 0x0 127.0.0.1:8443 <-- 1.2.3.4:54581
+_tor     tor        15843   20* internet stream tcp 0x0 192.168.1.100:36174 --> 4.3.2.1:443
+"""
+
 
 class TestConnection(unittest.TestCase):
   @patch('os.access')
@@ -160,7 +180,7 @@ class TestConnection(unittest.TestCase):
 
     self.assertEqual([Resolver.NETSTAT_WINDOWS], stem.util.connection.system_resolvers('Windows'))
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
-    self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('OpenBSD'))
+    self.assertEqual([Resolver.BSD_FSTAT], stem.util.connection.system_resolvers('OpenBSD'))
     self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.system_resolvers('FreeBSD'))
     self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
@@ -396,6 +416,25 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call procstat')
     self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111)
+
+  @patch('stem.util.system.call')
+  def test_get_connections_by_fstat(self, call_mock):
+    """
+    Checks the get_connections function with the fstat resolver.
+    """
+
+    call_mock.return_value = BSD_FSTAT_OUTPUT.split('\n')
+    expected = [
+      Connection('127.0.0.1', 8443, '1.2.3.4', 54581, 'tcp', False),
+      Connection('192.168.1.100', 36174, '4.3.2.1', 443, 'tcp', False),
+    ]
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_FSTAT, process_pid = 15843, process_name = 'tor'))
+
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111, process_name = 'tor')
+
+    call_mock.side_effect = OSError('Unable to call fstat')
+    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111)
 
   def test_is_valid_ipv4_address(self):
     """

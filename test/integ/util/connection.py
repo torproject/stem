@@ -56,6 +56,9 @@ class TestConnection(unittest.TestCase):
   def test_connections_by_bsd_procstat(self):
     self.check_resolver(Resolver.BSD_PROCSTAT)
 
+  def test_connections_by_bsd_fstat(self):
+    self.check_resolver(Resolver.BSD_FSTAT)
+
   def test_that_we_are_checking_all_resolvers(self):
     # Quick check to confirm that if we add a new Resolver, we include a test
     # for it here.
@@ -69,6 +72,7 @@ class TestConnection(unittest.TestCase):
       Resolver.SOCKSTAT,
       Resolver.BSD_SOCKSTAT,
       Resolver.BSD_PROCSTAT,
+      Resolver.BSD_FSTAT,
     )
 
     for resolver in Resolver:
