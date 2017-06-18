@@ -281,19 +281,6 @@ def main():
         for test_class in get_integ_tests(args.specific_test):
           run_result = _run_test(args, test_class, output_filters, logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
-
-        # We should have joined on all threads. If not then that indicates a
-        # leak that could both likely be a bug and disrupt further targets.
-
-        active_threads = threading.enumerate()
-
-        if len(active_threads) > 1:
-          println('Threads lingering after test run:', ERROR)
-
-          for lingering_thread in active_threads:
-            println('  %s' % lingering_thread, ERROR)
-
-          break
       except KeyboardInterrupt:
         println('  aborted starting tor: keyboard interrupt\n', ERROR)
         break
@@ -308,6 +295,19 @@ def main():
         println()
         integ_runner.stop()
         println()
+
+        # We should have joined on all threads. If not then that indicates a
+        # leak that could both likely be a bug and disrupt further targets.
+
+        active_threads = threading.enumerate()
+
+        if len(active_threads) > 1:
+          println('Threads lingering after test run:', ERROR)
+
+          for lingering_thread in active_threads:
+            println('  %s' % lingering_thread, ERROR)
+
+          break
 
     if skipped_targets:
       println()
