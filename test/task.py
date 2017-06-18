@@ -215,8 +215,11 @@ class Task(object):
 
   def join(self):
     if self._background_process:
-      self.result = self._background_pipe.recv()
-      self._background_process.join()
+      try:
+        self.result = self._background_pipe.recv()
+        self._background_process.join()
+      except IOError:
+        pass
 
 
 class ModuleVersion(Task):
