@@ -81,6 +81,10 @@ PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END = '-----END %s-----'
 EMPTY_COLLECTION = ([], {}, set())
 
+DIGEST_TYPE_INFO = b'\x00\x01'
+DIGEST_PADDING = b'\xFF'
+DIGEST_SEPARATOR = b'\x00'
+
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
@@ -720,7 +724,7 @@ class Descriptor(object):
     ############################################################################
 
     try:
-      if decrypted_bytes.index(b'\x00\x01') != 0:
+      if decrypted_bytes.index(DIGEST_TYPE_INFO) != 0:
         raise ValueError('Verification failed, identifier missing')
     except ValueError:
       raise ValueError('Verification failed, malformed data')
@@ -729,7 +733,7 @@ class Descriptor(object):
       identifier_offset = 2
 
       # find the separator
-      seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
+      seperator_index = decrypted_bytes.index(DIGEST_SEPARATOR, identifier_offset)
     except ValueError:
       raise ValueError('Verification failed, seperator not found')
 

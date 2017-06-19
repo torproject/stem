@@ -52,6 +52,9 @@ from stem.util import str_type
 from stem.descriptor import (
   CRYPTO_BLOB,
   PGP_BLOCK_END,
+  DIGEST_TYPE_INFO,
+  DIGEST_PADDING,
+  DIGEST_SEPARATOR,
   Descriptor,
   _descriptor_content,
   _descriptor_components,
@@ -75,10 +78,6 @@ except ImportError:
   from stem.util.lru_cache import lru_cache
 
 SigningKey = collections.namedtuple('SigningKey', ['public', 'private', 'descriptor_signing_key'])
-
-DIGEST_TYPE_INFO = b'\x00\x01'
-DIGEST_PADDING = b'\xFF'
-DIGEST_SEPARATOR = b'\x00'
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
