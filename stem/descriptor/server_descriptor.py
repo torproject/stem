@@ -76,6 +76,10 @@ except ImportError:
 
 SigningKey = collections.namedtuple('SigningKey', ['public', 'private', 'descriptor_signing_key'])
 
+DIGEST_TYPE_INFO = b'\x00\x01'
+DIGEST_PADDING = b'\xFF'
+DIGEST_SEPARATOR = b'\x00'
+
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
   'router',
@@ -249,8 +253,8 @@ def _generate_signature(content, signing_key):
 
   # generate the digest with required PKCS1 padding so it's 128 bytes
 
-  digest = hashlib.sha1(content).hexdigest().lower().decode('hex_codec')
-  digest = b'\x00\x01' + (b'\xFF' * (125 - len(digest))) + b'\x00' + digest
+  digest = hashlib.sha1(content).hexdigest().decode('hex_codec')
+  digest = DIGEST_TYPE_INFO + (DIGEST_PADDING * (125 - len(digest))) + DIGEST_SEPARATOR + digest
 
   padding = padding.PSS(mgf = padding.MGF1(hashes.SHA256()), salt_length = padding.PSS.MAX_LENGTH)
   return base64.b64encode(signing_key.private.sign(digest, padding, hashes.SHA256()))
