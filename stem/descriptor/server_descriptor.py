@@ -52,9 +52,6 @@ from stem.util import str_type
 from stem.descriptor import (
   CRYPTO_BLOB,
   PGP_BLOCK_END,
-  DIGEST_TYPE_INFO,
-  DIGEST_PADDING,
-  DIGEST_SEPARATOR,
   Descriptor,
   _descriptor_content,
   _descriptor_components,
@@ -234,7 +231,7 @@ def _generate_signing_key():
 
   public_key = private_key.public_key()
 
-  pem = '\n' + public_key.public_bytes(
+  pem = public_key.public_bytes(
     encoding = serialization.Encoding.PEM,
     format = serialization.PublicFormat.PKCS1,
   ).strip()
@@ -252,13 +249,8 @@ def _generate_signature(content, signing_key):
   from cryptography.hazmat.primitives import hashes
   from cryptography.hazmat.primitives.asymmetric import padding
 
-  # generate the digest with required PKCS1 padding so it's 128 bytes
-
   digest = hashlib.sha1(content).hexdigest().decode('hex_codec')
-  digest = DIGEST_TYPE_INFO + (DIGEST_PADDING * (125 - len(digest))) + DIGEST_SEPARATOR + digest
-
-  padding = padding.PSS(mgf = padding.MGF1(hashes.SHA256()), salt_length = padding.PSS.MAX_LENGTH)
-  signature = base64.b64encode(signing_key.private.sign(digest, padding, hashes.SHA256()))
+  signature = base64.b64encode(signing_key.private.sign(digest, padding.PKCS1v15(), hashes.SHA1()))
   return  '-----BEGIN SIGNATURE-----\n' + '\n'.join(stem.util.str_tools._split_by_length(signature, 64)) + '\n-----END SIGNATURE-----\n'
 
 
@@ -884,7 +876,7 @@ class RelayDescriptor(ServerDescriptor):
       # appending the content signature
 
       signing_key = _generate_signing_key()
-      attr['signing-key'] = signing_key.descriptor_signing_key
+      attr['signing-key'] = '\n' + signing_key.descriptor_signing_key
       content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
 
       return content + _generate_signature(content, signing_key)
