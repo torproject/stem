@@ -239,6 +239,23 @@ def _generate_signing_key():
   return SigningKey(public_key, private_key, pem)
 
 
+def _generate_signature(content, signing_key):
+  """
+  Creates the 'router-signature' for the given descriptor content.
+  """
+
+  from cryptography.hazmat.primitives import hashes
+  from cryptography.hazmat.primitives.asymmetric import padding
+
+  # generate the digest with required PKCS1 padding so it's 128 bytes
+
+  digest = hashlib.sha1(content).hexdigest().lower().decode('hex_codec')
+  digest = b'\x00\x01' + (b'\xFF' * (125 - len(digest))) + b'\x00' + digest
+
+  padding = padding.PSS(mgf = padding.MGF1(hashes.SHA256()), salt_length = padding.PSS.MAX_LENGTH)
+  return base64.b64encode(signing_key.private.sign(digest, padding, hashes.SHA256()))
+
+
 def _parse_router_line(descriptor, entries):
   # "router" nickname address ORPort SocksPort DirPort
 
@@ -846,14 +863,30 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
-    if sign and (not attr or 'signing-key' not in attr):
+    if sign:
+      if not stem.prereq.is_crypto_available():
+        raise ImportError('Signing requires the cryptography module')
+      elif attr and 'signing-key' in attr:
+        raise ValueError('Cannot sign the descriptor if a signing-key has been provided')
+      elif attr and 'router-signature' in attr:
+        raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
+
       if attr is None:
         attr = {}
 
+      # create descriptor content without the router-signature line, then
+      # appending the signature
+
       signing_key = _generate_signing_key()
       attr['signing-key'] = signing_key.descriptor_signing_key
+      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER)
 
-    return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+      signature = _generate_signature(content, signing_key)
+      content = '\n'.join([content, 'router-signature', '-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----'])
+
+      return content
+    else:
+      return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
