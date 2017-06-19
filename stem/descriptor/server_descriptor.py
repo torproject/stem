@@ -245,7 +245,9 @@ def _generate_signing_key():
 
 def _generate_signature(content, signing_key):
   """
-  Creates the 'router-signature' for the given descriptor content.
+  Creates the 'router-signature' signature block (excluding the
+  'router-signature\n' prefix since that should be part of the
+  signed content).
   """
 
   from cryptography.hazmat.primitives import hashes
@@ -257,7 +259,8 @@ def _generate_signature(content, signing_key):
   digest = DIGEST_TYPE_INFO + (DIGEST_PADDING * (125 - len(digest))) + DIGEST_SEPARATOR + digest
 
   padding = padding.PSS(mgf = padding.MGF1(hashes.SHA256()), salt_length = padding.PSS.MAX_LENGTH)
-  return base64.b64encode(signing_key.private.sign(digest, padding, hashes.SHA256()))
+  signature = base64.b64encode(signing_key.private.sign(digest, padding, hashes.SHA256()))
+  return  '-----BEGIN SIGNATURE-----\n' + '\n'.join(stem.util.str_tools._split_by_length(signature, 64)) + '\n-----END SIGNATURE-----\n'
 
 
 def _parse_router_line(descriptor, entries):
@@ -878,17 +881,14 @@ class RelayDescriptor(ServerDescriptor):
       if attr is None:
         attr = {}
 
-      # create descriptor content without the router-signature line, then
-      # appending the signature
+      # create descriptor content without the router-signature, then
+      # appending the content signature
 
       signing_key = _generate_signing_key()
       attr['signing-key'] = signing_key.descriptor_signing_key
       content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
 
-      signature = _generate_signature(content, signing_key)
-      content = '\n'.join([content + '-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----']) + '\n'
-
-      return content
+      return content + _generate_signature(content, signing_key)
     else:
       return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
