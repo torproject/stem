@@ -33,6 +33,7 @@ etc). This information is provided from a few sources...
 
 import base64
 import binascii
+import collections
 import functools
 import hashlib
 import re
@@ -72,6 +73,8 @@ try:
   from functools import lru_cache
 except ImportError:
   from stem.util.lru_cache import lru_cache
+
+SigningKey = collections.namedtuple('SigningKey', ['public', 'private', 'descriptor_signing_key'])
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -209,6 +212,31 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
         raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
 
       break  # done parsing descriptors
+
+
+def _generate_signing_key():
+  """
+  Creates a key that can be used to sign server descriptors.
+  """
+
+  from cryptography.hazmat.backends import default_backend
+  from cryptography.hazmat.primitives import serialization
+  from cryptography.hazmat.primitives.asymmetric import rsa
+
+  private_key = rsa.generate_private_key(
+    public_exponent = 65537,
+    key_size = 1024,
+    backend = default_backend(),
+  )
+
+  public_key = private_key.public_key()
+
+  pem = '\n' + public_key.public_bytes(
+    encoding = serialization.Encoding.PEM,
+    format = serialization.PublicFormat.PKCS1,
+  ).strip()
+
+  return SigningKey(public_key, private_key, pem)
 
 
 def _parse_router_line(descriptor, entries):
@@ -818,11 +846,18 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign and (not attr or 'signing-key' not in attr):
+      if attr is None:
+        attr = {}
+
+      signing_key = _generate_signing_key()
+      attr['signing-key'] = signing_key.descriptor_signing_key
+
     return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = True)
+    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
   def digest(self):

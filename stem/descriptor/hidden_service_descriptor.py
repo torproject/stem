@@ -255,7 +255,7 @@ class HiddenServiceDescriptor(Descriptor):
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = True)
+    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
     super(HiddenServiceDescriptor, self).__init__(raw_contents, lazy_load = not validate)
