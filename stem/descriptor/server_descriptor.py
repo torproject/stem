@@ -879,10 +879,10 @@ class RelayDescriptor(ServerDescriptor):
 
       signing_key = _generate_signing_key()
       attr['signing-key'] = signing_key.descriptor_signing_key
-      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER)
+      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
 
       signature = _generate_signature(content, signing_key)
-      content = '\n'.join([content, 'router-signature', '-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----'])
+      content = '\n'.join([content + '-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----']) + '\n'
 
       return content
     else:
