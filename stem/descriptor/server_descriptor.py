@@ -33,7 +33,6 @@ etc). This information is provided from a few sources...
 
 import base64
 import binascii
-import collections
 import functools
 import hashlib
 import re
@@ -73,8 +72,6 @@ try:
   from functools import lru_cache
 except ImportError:
   from stem.util.lru_cache import lru_cache
-
-SigningKey = collections.namedtuple('SigningKey', ['public', 'private', 'descriptor_signing_key'])
 
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
@@ -212,45 +209,6 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
         raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
 
       break  # done parsing descriptors
-
-
-def _generate_signing_key():
-  """
-  Creates a key that can be used to sign server descriptors.
-  """
-
-  from cryptography.hazmat.backends import default_backend
-  from cryptography.hazmat.primitives import serialization
-  from cryptography.hazmat.primitives.asymmetric import rsa
-
-  private_key = rsa.generate_private_key(
-    public_exponent = 65537,
-    key_size = 1024,
-    backend = default_backend(),
-  )
-
-  public_key = private_key.public_key()
-
-  pem = public_key.public_bytes(
-    encoding = serialization.Encoding.PEM,
-    format = serialization.PublicFormat.PKCS1,
-  ).strip()
-
-  return SigningKey(public_key, private_key, pem)
-
-
-def _generate_signature(content, signing_key):
-  """
-  Creates the 'router-signature' signature block (excluding the
-  'router-signature\n' prefix since that should be part of the
-  signed content).
-  """
-
-  from cryptography.hazmat.primitives import hashes
-  from cryptography.hazmat.primitives.asymmetric import padding
-
-  signature = base64.b64encode(signing_key.private.sign(content, padding.PKCS1v15(), hashes.SHA1()))
-  return  '-----BEGIN SIGNATURE-----\n' + '\n'.join(stem.util.str_tools._split_by_length(signature, 64)) + '\n-----END SIGNATURE-----\n'
 
 
 def _parse_router_line(descriptor, entries):
@@ -859,7 +817,7 @@ class RelayDescriptor(ServerDescriptor):
         self.certificate.validate(self)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = (), sign = False, private_signing_key = None):
     if sign:
       if not stem.prereq.is_crypto_available():
         raise ImportError('Signing requires the cryptography module')
@@ -868,23 +826,38 @@ class RelayDescriptor(ServerDescriptor):
       elif attr and 'router-signature' in attr:
         raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
 
+      from cryptography.hazmat.backends import default_backend
+      from cryptography.hazmat.primitives import hashes, serialization
+      from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
       if attr is None:
         attr = {}
+
+      if private_signing_key is None:
+        private_signing_key = rsa.generate_private_key(
+          public_exponent = 65537,
+          key_size = 1024,
+          backend = default_backend(),
+        )
 
       # create descriptor content without the router-signature, then
       # appending the content signature
 
-      signing_key = _generate_signing_key()
-      attr['signing-key'] = '\n' + signing_key.descriptor_signing_key
-      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
+      attr['signing-key'] = '\n' + private_signing_key.public_key().public_bytes(
+        encoding = serialization.Encoding.PEM,
+        format = serialization.PublicFormat.PKCS1,
+      ).strip()
 
-      return content + _generate_signature(content, signing_key)
+      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
+      signature = base64.b64encode(private_signing_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
+
+      return content + '\n'.join(['-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----\n'])
     else:
       return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, private_signing_key = None):
+    return cls(cls.content(attr, exclude, sign, private_signing_key), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
   def digest(self):
