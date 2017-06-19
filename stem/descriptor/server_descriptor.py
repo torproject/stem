@@ -249,8 +249,7 @@ def _generate_signature(content, signing_key):
   from cryptography.hazmat.primitives import hashes
   from cryptography.hazmat.primitives.asymmetric import padding
 
-  digest = hashlib.sha1(content).hexdigest().decode('hex_codec')
-  signature = base64.b64encode(signing_key.private.sign(digest, padding.PKCS1v15(), hashes.SHA1()))
+  signature = base64.b64encode(signing_key.private.sign(content, padding.PKCS1v15(), hashes.SHA1()))
   return  '-----BEGIN SIGNATURE-----\n' + '\n'.join(stem.util.str_tools._split_by_length(signature, 64)) + '\n-----END SIGNATURE-----\n'
 
 

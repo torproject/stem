@@ -374,7 +374,7 @@ def _descriptor_content(attr = None, exclude = (), sign = False, header_template
   :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
   :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
 
-  :returns: str with the requested descriptor content
+  :returns: bytes with the requested descriptor content
 
   :raises: **ImportError** if cryptography is unavailable and sign is True
   """
