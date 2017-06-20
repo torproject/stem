@@ -840,6 +840,17 @@ class RelayDescriptor(ServerDescriptor):
           backend = default_backend(),
         )
 
+        # When signing the cryptography module includes a constant indicating
+        # the hash algorithm used. Tor doesn't. This causes signature
+        # validation failures and unfortunately cryptography have no nice way
+        # of excluding these so we need to mock out part of their internals...
+        # ewww.
+
+        no_op = lambda *args, **kwargs: None
+
+        private_signing_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
+        private_signing_key._backend.openssl_assert = no_op
+
       # create descriptor content without the router-signature, then
       # appending the content signature
 
