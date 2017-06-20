@@ -614,6 +614,7 @@ def _python_files(paths):
       if not skip:
         yield file_path
 
+
 # TODO: drop with stem 2.x
 # We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
 # names for backward compatability, and account for pep8 being renamed to

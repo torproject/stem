@@ -91,6 +91,7 @@ class _NullHandler(logging.Handler):
   def emit(self, record):
     pass
 
+
 if not LOGGER.handlers:
   LOGGER.addHandler(_NullHandler())
 

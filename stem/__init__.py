@@ -612,6 +612,7 @@ class SocketError(ControllerError):
 class SocketClosed(SocketError):
   'Control socket was closed before completing the message.'
 
+
 Runlevel = stem.util.enum.UppercaseEnum(
   'DEBUG',
   'INFO',

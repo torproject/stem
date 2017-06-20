@@ -750,6 +750,7 @@ def _cryptovariables_equal(x, y):
     _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
     _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
+
 # TODO: drop with stem 2.x
 # We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
 # names for backward compatability.

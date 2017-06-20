@@ -1050,6 +1050,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
   else:
     return entries
 
+
 # importing at the end to avoid circular dependencies on our Descriptor class
 
 import stem.descriptor.server_descriptor
