@@ -42,6 +42,14 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual('Hello\tworld', str_tools._to_camel_case('hello\tWORLD'))
     self.assertEqual('Hello\t\tWorld', str_tools._to_camel_case('hello__world', '_', '\t'))
 
+  def test_split_by_length(self):
+    self.assertEqual(['h', 'e', 'l', 'l', 'o'], str_tools._split_by_length('hello', 1))
+    self.assertEqual(['he', 'll', 'o'], str_tools._split_by_length('hello', 2))
+    self.assertEqual(['hel', 'lo'], str_tools._split_by_length('hello', 3))
+    self.assertEqual(['hell', 'o'], str_tools._split_by_length('hello', 4))
+    self.assertEqual(['hello'], str_tools._split_by_length('hello', 5))
+    self.assertEqual(['hello'], str_tools._split_by_length('hello', 6))
+
   def test_crop(self):
     # test the pydoc examples
     self.assertEqual('This is a looo...', str_tools.crop('This is a looooong message', 17))

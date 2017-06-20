@@ -16,6 +16,7 @@ import stem.exit_policy
 import stem.prereq
 import stem.version
 import stem.util.str_tools
+import test.require
 
 from stem.util import str_type
 from stem.descriptor.certificate import CertType, ExtensionType
@@ -253,6 +254,10 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     # https://trac.torproject.org/8265
 
     self.assertTrue(isinstance(str(desc), str))
+
+  @test.require.cryptography
+  def test_descriptor_signing(self):
+    RelayDescriptor.create(sign = True)
 
   @patch('time.time', Mock(return_value = time.mktime(datetime.date(2010, 1, 1).timetuple())))
   def test_with_ed25519(self):

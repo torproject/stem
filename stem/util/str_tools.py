@@ -161,6 +161,24 @@ def _to_camel_case(label, divider = '_', joiner = ' '):
   return joiner.join(words)
 
 
+def _split_by_length(msg, size):
+  """
+  Splits a string into a list of strings up to the given size.
+
+  ::
+
+    >>> _split_by_length('hello', 2)
+    ['he', 'll', 'o']
+
+  :param str msg: string to split
+  :param int size: number of characters to chunk into
+
+  :returns: **list** with chunked string components
+  """
+
+  return [msg[i:i + size] for i in range(0, len(msg), size)]
+
+
 # This needs to be defined after _to_camel_case() to avoid a circular
 # dependency with the enum module.
 

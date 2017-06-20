@@ -817,12 +817,58 @@ class RelayDescriptor(ServerDescriptor):
         self.certificate.validate(self)
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+  def content(cls, attr = None, exclude = (), sign = False, private_signing_key = None):
+    if sign:
+      if not stem.prereq.is_crypto_available():
+        raise ImportError('Signing requires the cryptography module')
+      elif attr and 'signing-key' in attr:
+        raise ValueError('Cannot sign the descriptor if a signing-key has been provided')
+      elif attr and 'router-signature' in attr:
+        raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
+
+      from cryptography.hazmat.backends import default_backend
+      from cryptography.hazmat.primitives import hashes, serialization
+      from cryptography.hazmat.primitives.asymmetric import padding, rsa
+
+      if attr is None:
+        attr = {}
+
+      if private_signing_key is None:
+        private_signing_key = rsa.generate_private_key(
+          public_exponent = 65537,
+          key_size = 1024,
+          backend = default_backend(),
+        )
+
+        # When signing the cryptography module includes a constant indicating
+        # the hash algorithm used. Tor doesn't. This causes signature
+        # validation failures and unfortunately cryptography have no nice way
+        # of excluding these so we need to mock out part of their internals...
+        # ewww.
+
+        no_op = lambda *args, **kwargs: None
+
+        private_signing_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
+        private_signing_key._backend.openssl_assert = no_op
+
+      # create descriptor content without the router-signature, then
+      # appending the content signature
+
+      attr['signing-key'] = '\n' + private_signing_key.public_key().public_bytes(
+        encoding = serialization.Encoding.PEM,
+        format = serialization.PublicFormat.PKCS1,
+      ).strip()
+
+      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
+      signature = base64.b64encode(private_signing_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
+
+      return content + '\n'.join(['-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----\n'])
+    else:
+      return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True):
-    return cls(cls.content(attr, exclude), validate = validate, skip_crypto_validation = True)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, private_signing_key = None):
+    return cls(cls.content(attr, exclude, sign, private_signing_key), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
   def digest(self):
@@ -909,8 +955,8 @@ class BridgeDescriptor(ServerDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, BRIDGE_SERVER_HEADER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, BRIDGE_SERVER_HEADER)
 
   def digest(self):
     return self._digest

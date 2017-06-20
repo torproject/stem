@@ -81,6 +81,10 @@ PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHIT
 PGP_BLOCK_END = '-----END %s-----'
 EMPTY_COLLECTION = ([], {}, set())
 
+DIGEST_TYPE_INFO = b'\x00\x01'
+DIGEST_PADDING = b'\xFF'
+DIGEST_SEPARATOR = b'\x00'
+
 CRYPTO_BLOB = """
 MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
@@ -335,7 +339,7 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
-def _descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
+def _descriptor_content(attr = None, exclude = (), sign = False, header_template = (), footer_template = ()):
   """
   Constructs a minimal descriptor with the given attributes. The content we
   provide back is of the form...
@@ -366,11 +370,17 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
 
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
+  :param bool sign: includes cryptographic signatures and digests if True
   :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
   :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
 
-  :returns: str with the requested descriptor content
+  :returns: bytes with the requested descriptor content
+
+  :raises: **ImportError** if cryptography is unavailable and sign is True
   """
+
+  if sign and not stem.prereq.is_crypto_available():
+    raise ImportError('Signing descriptors requries the cryptography module')
 
   header_content, footer_content = [], []
   attr = {} if attr is None else dict(attr)  # shallow copy since we're destructive
@@ -532,7 +542,7 @@ class Descriptor(object):
     self._unrecognized_lines = []
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls, attr = None, exclude = (), sign = False):
     """
     Creates descriptor content with the given attributes. Mandatory fields are
     filled with dummy information unless data is supplied. This doesn't yet
@@ -543,16 +553,19 @@ class Descriptor(object):
     :param dict attr: keyword/value mappings to be included in the descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
+    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: **str** with the content of a descriptor
 
-    :raises: **NotImplementedError** if not implemented for this descriptor type
+    :raises:
+      * **ImportError** if cryptography is unavailable and sign is True
+      * **NotImplementedError** if not implemented for this descriptor type
     """
 
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True):
+  def create(cls, attr = None, exclude = (), validate = True, sign = False):
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
     with dummy information unless data is supplied. This doesn't yet create a
@@ -565,15 +578,17 @@ class Descriptor(object):
       results in an invalid descriptor
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
+    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: :class:`~stem.descriptor.Descriptor` subclass
 
     :raises:
       * **ValueError** if the contents is malformed and validate is True
+      * **ImportError** if cryptography is unavailable and sign is True
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    return cls(cls.content(attr, exclude), validate = validate)
+    return cls(cls.content(attr, exclude, sign), validate = validate)
 
   def get_path(self):
     """
@@ -707,8 +722,9 @@ class Descriptor(object):
     # More info here http://www.ietf.org/rfc/rfc2313.txt
     #                esp the Notes in section 8.1
     ############################################################################
+
     try:
-      if decrypted_bytes.index(b'\x00\x01') != 0:
+      if decrypted_bytes.index(DIGEST_TYPE_INFO) != 0:
         raise ValueError('Verification failed, identifier missing')
     except ValueError:
       raise ValueError('Verification failed, malformed data')
@@ -717,7 +733,7 @@ class Descriptor(object):
       identifier_offset = 2
 
       # find the separator
-      seperator_index = decrypted_bytes.index(b'\x00', identifier_offset)
+      seperator_index = decrypted_bytes.index(DIGEST_SEPARATOR, identifier_offset)
     except ValueError:
       raise ValueError('Verification failed, seperator not found')
 

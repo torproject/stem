@@ -263,8 +263,8 @@ class Microdescriptor(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, MICRODESCRIPTOR)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, MICRODESCRIPTOR)
 
   def __init__(self, raw_contents, validate = False, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)

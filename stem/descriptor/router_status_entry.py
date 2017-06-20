@@ -528,8 +528,8 @@ class RouterStatusEntryV2(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V2_HEADER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_V2_HEADER)
 
   def _name(self, is_plural = False):
     return 'Router status entries (v2)' if is_plural else 'Router status entry (v2)'
@@ -625,8 +625,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_V3_HEADER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_V3_HEADER)
 
   def _name(self, is_plural = False):
     return 'Router status entries (v3)' if is_plural else 'Router status entry (v3)'
@@ -698,8 +698,8 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
 
   def _name(self, is_plural = False):
     return 'Router status entries (micro v3)' if is_plural else 'Router status entry (micro v3)'

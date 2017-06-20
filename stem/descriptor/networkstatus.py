@@ -511,8 +511,8 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
 
   def __init__(self, raw_content, validate = False):
     super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
@@ -959,7 +959,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), authorities = None, routers = None):
+  def content(cls, attr = None, exclude = (), sign = False, authorities = None, routers = None):
     attr = {} if attr is None else dict(attr)
 
     is_vote = attr.get('vote-status') == 'vote'
@@ -974,7 +974,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       elif k not in attr:
         attr[k] = v
 
-    desc_content = _descriptor_content(attr, exclude, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
+    desc_content = _descriptor_content(attr, exclude, sign, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
 
     # inject the authorities and/or routers between the header and footer
 
@@ -1009,8 +1009,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, authorities = None, routers = None):
-    return cls(cls.content(attr, exclude, authorities, routers), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, authorities = None, routers = None):
+    return cls(cls.content(attr, exclude, sign, authorities, routers), validate = validate)
 
   def __init__(self, raw_content, validate = False, default_params = True):
     """
@@ -1423,7 +1423,7 @@ class DirectoryAuthority(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), is_vote = False):
+  def content(cls, attr = None, exclude = (), sign = False, is_vote = False):
     attr = {} if attr is None else dict(attr)
 
     # include mandatory 'vote-digest' if a consensus
@@ -1431,7 +1431,7 @@ class DirectoryAuthority(Descriptor):
     if not is_vote and not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
       attr['vote-digest'] = '0B6D1E9A300B895AA2D0B427F92917B6995C3C1C'
 
-    content = _descriptor_content(attr, exclude, AUTHORITY_HEADER)
+    content = _descriptor_content(attr, exclude, sign, AUTHORITY_HEADER)
 
     if is_vote:
       content += b'\n' + KeyCertificate.content()
@@ -1439,8 +1439,8 @@ class DirectoryAuthority(Descriptor):
     return content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, is_vote = False):
-    return cls(cls.content(attr, exclude, is_vote), validate = validate, is_vote = is_vote)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, is_vote = False):
+    return cls(cls.content(attr, exclude, sign, is_vote), validate = validate, is_vote = is_vote)
 
   def __init__(self, raw_content, validate = False, is_vote = False):
     """
@@ -1617,8 +1617,8 @@ class KeyCertificate(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
-    return _descriptor_content(attr, exclude, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
+  def content(cls, attr = None, exclude = (), sign = False):
+    return _descriptor_content(attr, exclude, sign, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
 
   def __init__(self, raw_content, validate = False):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
