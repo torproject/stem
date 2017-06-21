@@ -584,6 +584,9 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
         else:
           authenticate_cookie(controller, cookie_path, False)
 
+      if isinstance(controller, stem.control.BaseController):
+        controller._post_authentication()
+
       return  # success!
     except OpenAuthRejected as exc:
       auth_exceptions.append(exc)

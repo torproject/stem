@@ -633,13 +633,6 @@ class BaseController(object):
         if isinstance(response, stem.ControllerError):
           raise response
         else:
-          # I really, really don't like putting hooks into this method, but
-          # this is the most reliable method I can think of for taking actions
-          # immediately after successfully authenticating to a connection.
-
-          if message.upper().startswith('AUTHENTICATE'):
-            self._post_authentication()
-
           return response
       except stem.SocketClosed:
         # If the recv() thread caused the SocketClosed then we could still be
@@ -693,10 +686,7 @@ class BaseController(object):
       and **False** otherwise
     """
 
-    if self.is_alive():
-      return self._is_authenticated
-
-    return False
+    return self._is_authenticated if self.is_alive() else False
 
   def connect(self):
     """
@@ -1051,7 +1041,7 @@ class Controller(BaseController):
 
   def close(self):
     # making a best-effort attempt to quit before detaching the socket
-    if self.is_alive():
+    if self.is_authenticated():
       try:
         self.msg('QUIT')
       except:
