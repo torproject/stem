@@ -26,6 +26,11 @@ easily parsed and compared, for instance...
 
   Enumerations for the version requirements of features.
 
+  .. deprecated:: 1.6.0
+     Requirement entries belonging to tor versions which have been obsolete for
+     at least six months will be removed when we break backward compatibility
+     in the 2.x stem release.
+
   ===================================== ===========
   Requirement                           Description
   ===================================== ===========

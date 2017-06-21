@@ -38,7 +38,6 @@ CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
   'test.unit_tests': '',
   'test.integ_tests': '',
-  'target.prereq': {},
   'target.torrc': {},
 })
 
@@ -257,20 +256,7 @@ def main():
     test.output.print_divider('INTEGRATION TESTS', True)
     integ_runner = test.runner.get_runner()
 
-    # Determine targets we don't meet the prereqs for. Warnings are given about
-    # these at the end of the test run so they're more noticeable.
-
-    skipped_targets = {}
-
     for target in args.run_targets:
-      # check if we meet this target's tor version prerequisites
-
-      target_prereq = CONFIG['target.prereq'].get(target)
-
-      if target_prereq and test.tor_version() < stem.version.Requirement[target_prereq]:
-        skipped_targets[target] = target_prereq
-        continue
-
       error_tracker.set_category(target)
 
       try:
@@ -308,14 +294,6 @@ def main():
             println('  %s' % lingering_thread, ERROR)
 
           break
-
-    if skipped_targets:
-      println()
-
-      for target, req_version in skipped_targets.items():
-        println('Unable to run target %s, this requires tor version %s' % (target, req_version), ERROR)
-
-      println()
 
   static_check_issues = {}
 
