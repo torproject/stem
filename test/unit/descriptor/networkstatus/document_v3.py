@@ -418,7 +418,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     # change a relay's nickname in the consensus so it's no longer validly signed
 
-    consensus = stem.descriptor.networkstatus.NetworkStatusDocumentV3(consensus_content.replace('test002r', 'different_nickname'))
+    consensus = stem.descriptor.networkstatus.NetworkStatusDocumentV3(consensus_content.replace(b'test002r', b'different_nickname'))
     self.assertRaisesRegexp(ValueError, 'Network Status Document has 0 valid signatures out of 2 total, needed 1', consensus.validate_signatures, certs)
 
   def test_handlers(self):
