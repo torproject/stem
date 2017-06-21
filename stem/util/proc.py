@@ -570,6 +570,7 @@ def _log_failure(parameter, exc):
 
   log.debug('proc call failed (%s): %s' % (parameter, exc))
 
+
 # TODO: drop with stem 2.x
 # We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
 # names for backward compatability.

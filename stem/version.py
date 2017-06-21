@@ -332,6 +332,7 @@ class _VersionRequirements(object):
 
     self.rules.append(new_rule)
 
+
 safecookie_req = _VersionRequirements()
 safecookie_req.in_range(Version('0.2.2.36'), Version('0.2.3.0'))
 safecookie_req.greater_than(Version('0.2.3.13'))

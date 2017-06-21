@@ -846,7 +846,8 @@ class RelayDescriptor(ServerDescriptor):
         # of excluding these so we need to mock out part of their internals...
         # ewww.
 
-        no_op = lambda *args, **kwargs: None
+        def no_op(*args, **kwargs):
+          pass
 
         private_signing_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
         private_signing_key._backend.openssl_assert = no_op

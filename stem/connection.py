@@ -1297,7 +1297,9 @@ class NoAuthCookie(MissingAuthInfo):
     super(NoAuthCookie, self).__init__(message)
     self.is_safecookie = is_safecookie
 
+
 # authentication exceptions ordered as per the authenticate function's pydocs
+
 AUTHENTICATE_EXCEPTIONS = (
   IncorrectSocketType,
   UnrecognizedAuthMethods,

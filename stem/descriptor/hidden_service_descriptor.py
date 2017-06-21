@@ -186,6 +186,7 @@ def _parse_introduction_points_line(descriptor, entries):
   except TypeError:
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
+
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
 _parse_secret_id_part_line = _parse_simple_line('secret-id-part', 'secret_id_part')
