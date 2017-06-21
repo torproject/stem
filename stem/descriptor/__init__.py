@@ -391,7 +391,7 @@ def _descriptor_content(attr = None, exclude = (), sign = False, header_template
       if keyword in exclude:
         continue
 
-      value = attr.pop(keyword, value)
+      value = stem.util.str_tools._to_unicode(attr.pop(keyword, value))
 
       if value is None:
         continue

@@ -847,7 +847,7 @@ class RelayDescriptor(ServerDescriptor):
         # ewww.
 
         def no_op(*args, **kwargs):
-          pass
+          return 1
 
         private_signing_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
         private_signing_key._backend.openssl_assert = no_op
@@ -855,15 +855,15 @@ class RelayDescriptor(ServerDescriptor):
       # create descriptor content without the router-signature, then
       # appending the content signature
 
-      attr['signing-key'] = '\n' + private_signing_key.public_key().public_bytes(
+      attr['signing-key'] = b'\n' + private_signing_key.public_key().public_bytes(
         encoding = serialization.Encoding.PEM,
         format = serialization.PublicFormat.PKCS1,
       ).strip()
 
-      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + '\nrouter-signature\n'
+      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + b'\nrouter-signature\n'
       signature = base64.b64encode(private_signing_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
 
-      return content + '\n'.join(['-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + ['-----END SIGNATURE-----\n'])
+      return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])
     else:
       return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
 
