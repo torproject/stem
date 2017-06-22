@@ -298,15 +298,15 @@ def main():
   static_check_issues = {}
 
   for task in (test.task.PYFLAKES_TASK, test.task.PYCODESTYLE_TASK):
-    if task:
-      task.join()
+    if not task.is_available and task.unavailable_msg:
+      println(task.unavailable_msg, ERROR)
+    else:
+      task.join()  # no-op if these haven't been run
 
       if task.result:
         for path, issues in task.result.items():
           for issue in issues:
             static_check_issues.setdefault(path, []).append(issue)
-    elif not task.is_available and task.unavailable_msg:
-      println(task.unavailable_msg, ERROR)
 
   _print_static_issues(static_check_issues)
 
