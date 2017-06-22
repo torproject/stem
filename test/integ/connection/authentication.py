@@ -278,8 +278,8 @@ class TestAuthenticate(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if test.runner.Torrc.PASSWORD not in runner.get_options():
-      self.skipTest('(requires password auth)')
+    if test.runner.Torrc.PASSWORD not in runner.get_options() or test.runner.Torrc.COOKIE in runner.get_options():
+      self.skipTest('(requires only password auth)')
       return
 
     for i in range(10):
