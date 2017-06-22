@@ -844,7 +844,8 @@ class RelayDescriptor(ServerDescriptor):
         # the hash algorithm used. Tor doesn't. This causes signature
         # validation failures and unfortunately cryptography have no nice way
         # of excluding these so we need to mock out part of their internals...
-        # ewww.
+        #
+        #   https://github.com/pyca/cryptography/issues/3713
 
         def no_op(*args, **kwargs):
           return 1
