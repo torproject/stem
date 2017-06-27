@@ -40,8 +40,8 @@ TARFILE_FINGERPRINTS = set([
   str_type('1F43EE37A0670301AD9CB555D94AFEC2C89FDE86'),
 ])
 
-expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayDescriptor, 'nickname', 'caerSidi')
-expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayDescriptor, 'nickname', 'caerSidi')
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayDescriptor, 'nickname', 'Unnamed')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayDescriptor, 'nickname', 'Unnamed')
 
 
 class TestServerDescriptor(unittest.TestCase):
@@ -440,11 +440,10 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     attributes.
     """
 
-    desc = RelayDescriptor.create()
+    desc = RelayDescriptor.create({'router': 'caerSidi 71.35.133.197 9001 0 0'})
     self.assertEqual('caerSidi', desc.nickname)
     self.assertEqual('71.35.133.197', desc.address)
     self.assertEqual(None, desc.fingerprint)
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.onion_key)
 
   def test_with_opt(self):
     """
@@ -625,7 +624,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertRaises(ValueError, list, desc_iter)
 
     desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += RelayDescriptor.content()
+    desc_text += RelayDescriptor.content({'router': 'caerSidi 71.35.133.197 9001 0 0'})
     desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
 
     desc_entries = list(desc_iter)

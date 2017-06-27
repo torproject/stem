@@ -35,7 +35,9 @@ import base64
 import binascii
 import functools
 import hashlib
+import random
 import re
+import sys
 
 import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
@@ -49,7 +51,6 @@ import stem.version
 from stem.util import str_type
 
 from stem.descriptor import (
-  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
   _descriptor_content,
@@ -65,6 +66,9 @@ from stem.descriptor import (
   _parse_forty_character_hex,
   _parse_protocol_line,
   _parse_key_block,
+  _random_ipv4_address,
+  _random_date,
+  _random_crypto_blob,
 )
 
 try:
@@ -111,19 +115,6 @@ SINGLE_FIELDS = (
 
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
 REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
-
-RELAY_SERVER_HEADER = (
-  ('router', 'caerSidi 71.35.133.197 9001 0 0'),
-  ('published', '2012-03-01 17:15:27'),
-  ('bandwidth', '153600 256000 104590'),
-  ('reject', '*:*'),
-  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-  ('signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-)
-
-RELAY_SERVER_FOOTER = (
-  ('router-signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
-)
 
 BRIDGE_SERVER_HEADER = (
   ('router', 'Unnamed 10.45.227.253 9001 0 0'),
@@ -818,6 +809,19 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, private_signing_key = None):
+    base_header = (
+      ('router', 'Unnamed%i %s 9001 0 0' % (random.randint(0, sys.maxint), _random_ipv4_address())),
+      ('published', _random_date()),
+      ('bandwidth', '153600 256000 104590'),
+      ('reject', '*:*'),
+      ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
+      ('signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
+    )
+
+    base_footer = (
+      ('router-signature', _random_crypto_blob('SIGNATURE')),
+    )
+
     if sign:
       if not stem.prereq.is_crypto_available():
         raise ImportError('Signing requires the cryptography module')
@@ -861,12 +865,12 @@ class RelayDescriptor(ServerDescriptor):
         format = serialization.PublicFormat.PKCS1,
       ).strip()
 
-      content = _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER) + b'\nrouter-signature\n'
+      content = _descriptor_content(attr, exclude, sign, base_header) + b'\nrouter-signature\n'
       signature = base64.b64encode(private_signing_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
 
       return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])
     else:
-      return _descriptor_content(attr, exclude, sign, RELAY_SERVER_HEADER, RELAY_SERVER_FOOTER)
+      return _descriptor_content(attr, exclude, sign, base_header, base_footer)
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False, private_signing_key = None):

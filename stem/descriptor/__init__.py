@@ -42,6 +42,7 @@ import codecs
 import copy
 import hashlib
 import os
+import random
 import re
 import string
 import tarfile
@@ -950,6 +951,27 @@ def _get_pseudo_pgp_block(remaining_contents):
         return (block_type, '\n'.join(block_lines))
   else:
     return None
+
+
+def _random_ipv4_address():
+  return '%i.%i.%i.%i' % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+
+def _random_date():
+  return '%i-%02i-%02i %02i:%02i:%02i' % (random.randint(2000, 2015), random.randint(1, 12), random.randint(1, 20), random.randint(0, 23), random.randint(0, 59), random.randint(0, 59))
+
+
+def _random_crypto_blob(block_type = None):
+  """
+  Provides a random string that can be used for crypto blocks.
+  """
+
+  crypto_blob = stem.util.str_tools._split_by_length(base64.b64encode('%0140x' % random.randrange(16 ** 140)), 64)
+
+  if block_type:
+    return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % (block_type, crypto_blob, block_type)
+  else:
+    return crypto_blob
 
 
 def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):

@@ -162,7 +162,7 @@ class TestTutorial(unittest.TestCase):
   @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
   def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
     reader = reader_mock().__enter__()
-    reader.__iter__.return_value = iter([RelayDescriptor.create()])
+    reader.__iter__.return_value = iter([RelayDescriptor.create({'router': 'caerSidi 71.35.133.197 9001 0 0'})])
 
     exec_documentation_example('past_descriptors.py')
     self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())

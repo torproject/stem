@@ -310,10 +310,8 @@ def main():
 
   _print_static_issues(static_check_issues)
 
-  runtime_label = '(%i seconds)' % (time.time() - start_time)
-
   if error_tracker.has_errors_occured():
-    println('TESTING FAILED %s' % runtime_label, ERROR, STDERR)
+    println('TESTING FAILED (%i seconds)' % (time.time() - start_time), ERROR, STDERR)
 
     for line in error_tracker:
       println('  %s' % line, ERROR, STDERR)
@@ -329,7 +327,7 @@ def main():
     if skipped_tests > 0:
       println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)
 
-    println('TESTING PASSED %s\n' % runtime_label, SUCCESS)
+    println('TESTING PASSED (%i seconds)\n' % (time.time() - start_time), SUCCESS)
 
   new_capabilities = test.get_new_capabilities()
 
@@ -369,26 +367,23 @@ def _print_static_issues(static_check_issues):
 def _run_test(args, test_class, output_filters, logging_buffer):
   start_time = time.time()
 
+  # Test classes look like...
+  #
+  #   test.unit.util.conf.TestConf.test_parse_enum_csv
+  #
+  # We want to strip the 'test.unit.' or 'test.integ.' prefix since it's
+  # redundant. We also want to drop the test class name. The individual test
+  # name at the end it optional (only present if we used the '--test'
+  # argument).
+
+  label_comp = test_class.split('.')[2:]
+  del label_comp[-1 if label_comp[-1][0].isupper() else -2]
+  test_label = '  %-52s' % ('.'.join(label_comp) + '...')
+
   if args.verbose:
     test.output.print_divider(test_class)
   else:
-    # Test classes look like...
-    #
-    #   test.unit.util.conf.TestConf.test_parse_enum_csv
-    #
-    # We want to strip the 'test.unit.' or 'test.integ.' prefix since it's
-    # redundant. We also want to drop the test class name. The individual test
-    # name at the end it optional (only present if we used the '--test'
-    # argument).
-
-    label_comp = test_class.split('.')[2:]
-    del label_comp[-1 if label_comp[-1][0].isupper() else -2]
-    label = '.'.join(label_comp)
-
-    label = '  %s...' % label
-    label = '%-54s' % label
-
-    println(label, STATUS, NO_NL)
+    println(test_label, STATUS, NO_NL)
 
   try:
     suite = unittest.TestLoader().loadTestsFromName(test_class)
@@ -413,7 +408,7 @@ def _run_test(args, test_class, output_filters, logging_buffer):
     println(' success (%0.2fs)' % (time.time() - start_time), SUCCESS)
   else:
     if args.quiet:
-      println(label, STATUS, NO_NL, STDERR)
+      println(test_label, STATUS, NO_NL, STDERR)
       println(' failed (%0.2fs)' % (time.time() - start_time), ERROR, STDERR)
       println(test.output.apply_filters(test_results.getvalue(), *output_filters), STDERR)
     else:
@@ -421,7 +416,6 @@ def _run_test(args, test_class, output_filters, logging_buffer):
       println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
 
   test.output.print_logging(logging_buffer)
-
   return run_result
 
 

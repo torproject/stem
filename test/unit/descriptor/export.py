@@ -25,7 +25,10 @@ class TestExport(unittest.TestCase):
       self.skipTest('(header added in python 2.7)')
       return
 
-    desc = RelayDescriptor.create()
+    desc = RelayDescriptor.create({
+      'router': 'caerSidi 71.35.133.197 9001 0 0',
+      'published': '2012-03-01 17:15:27',
+    })
 
     desc_csv = export_csv(desc, included_fields = ('nickname', 'address', 'published'), header = False)
     expected = 'caerSidi,71.35.133.197,2012-03-01 17:15:27\n'
