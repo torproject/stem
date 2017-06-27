@@ -258,6 +258,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
   @test.require.cryptography
   def test_descriptor_signing(self):
     RelayDescriptor.create(sign = True)
+    self.assertRaisesRegexp(NotImplementedError, 'Signing of BridgeDescriptor not implemented', BridgeDescriptor.create, sign = True)
 
   @patch('time.time', Mock(return_value = time.mktime(datetime.date(2010, 1, 1).timetuple())))
   def test_with_ed25519(self):

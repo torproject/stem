@@ -4,13 +4,12 @@ Unit tests for stem.descriptor.microdescriptor.
 
 import unittest
 
-import stem.exit_policy
-
 import stem.descriptor
+import stem.exit_policy
+import test.require
 
 from stem.util import str_type
 from stem.descriptor.microdescriptor import Microdescriptor
-
 from test.unit.descriptor import get_resource
 
 FIRST_ONION_KEY = """\
@@ -95,6 +94,10 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEqual(None, desc.identifier)
     self.assertEqual({}, desc.protocols)
     self.assertEqual([], desc.get_unrecognized_lines())
+
+  @test.require.cryptography
+  def test_descriptor_signing(self):
+    self.assertRaisesRegexp(NotImplementedError, 'Signing of Microdescriptor not implemented', Microdescriptor.create, sign = True)
 
   def test_unrecognized_line(self):
     """

@@ -4,6 +4,8 @@ Unit tests for the DirectoryAuthority of stem.descriptor.networkstatus.
 
 import unittest
 
+import test.require
+
 from stem.descriptor.networkstatus import (
   AUTHORITY_HEADER,
   DirectoryAuthority,
@@ -51,6 +53,10 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertEqual(None, authority.legacy_dir_key)
     self.assertEqual(KeyCertificate.create(), authority.key_certificate)
     self.assertEqual([], authority.get_unrecognized_lines())
+
+  @test.require.cryptography
+  def test_descriptor_signing(self):
+    self.assertRaisesRegexp(NotImplementedError, 'Signing of DirectoryAuthority not implemented', DirectoryAuthority.create, sign = True)
 
   def test_unrecognized_line(self):
     """

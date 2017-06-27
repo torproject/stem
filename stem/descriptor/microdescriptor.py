@@ -264,6 +264,9 @@ class Microdescriptor(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, MICRODESCRIPTOR)
 
   def __init__(self, raw_contents, validate = False, annotations = None):

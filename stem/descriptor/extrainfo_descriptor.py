@@ -974,6 +974,9 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
 
   @lru_cache()
@@ -1010,6 +1013,9 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, BRIDGE_EXTRAINFO_HEADER, BRIDGE_EXTRAINFO_FOOTER)
 
   def digest(self):

@@ -252,6 +252,9 @@ class HiddenServiceDescriptor(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, HIDDEN_SERVICE_HEADER, HIDDEN_SERVICE_FOOTER)
 
   @classmethod

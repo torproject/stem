@@ -962,6 +962,9 @@ class BridgeDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, BRIDGE_SERVER_HEADER)
 
   def digest(self):

@@ -512,6 +512,9 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
 
   def __init__(self, raw_content, validate = False):
@@ -960,6 +963,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, authorities = None, routers = None):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     attr = {} if attr is None else dict(attr)
 
     is_vote = attr.get('vote-status') == 'vote'
@@ -1424,6 +1430,9 @@ class DirectoryAuthority(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, is_vote = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     attr = {} if attr is None else dict(attr)
 
     # include mandatory 'vote-digest' if a consensus
@@ -1618,6 +1627,9 @@ class KeyCertificate(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
 
   def __init__(self, raw_content, validate = False):

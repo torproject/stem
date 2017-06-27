@@ -529,6 +529,9 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_V2_HEADER)
 
   def _name(self, is_plural = False):
@@ -626,6 +629,9 @@ class RouterStatusEntryV3(RouterStatusEntry):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_V3_HEADER)
 
   def _name(self, is_plural = False):
@@ -699,6 +705,9 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
     return _descriptor_content(attr, exclude, sign, ROUTER_STATUS_ENTRY_MICRO_V3_HEADER)
 
   def _name(self, is_plural = False):

@@ -5,6 +5,8 @@ Unit tests for the NetworkStatusDocumentV2 of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
+import test.require
+
 from stem.descriptor.networkstatus import (
   NETWORK_STATUS_DOCUMENT_HEADER_V2,
   NETWORK_STATUS_DOCUMENT_FOOTER_V2,
@@ -111,3 +113,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     self.assertEqual([], document.options)
     self.assertEqual('moria2', document.signing_authority)
     self.assertEqual(NETWORK_STATUS_DOCUMENT_FOOTER_V2[0][1][7:], document.signature)
+
+  @test.require.cryptography
+  def test_descriptor_signing(self):
+    self.assertRaisesRegexp(NotImplementedError, 'Signing of NetworkStatusDocumentV2 not implemented', NetworkStatusDocumentV2.create, sign = True)

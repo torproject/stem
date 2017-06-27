@@ -6,6 +6,7 @@ import datetime
 import unittest
 
 import stem.descriptor
+import test.require
 
 from stem.descriptor.networkstatus import (
   KEY_CERTIFICATE_HEADER,
@@ -147,6 +148,10 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
       self.assertEqual(None, cert.crosscert)
       self.assertEqual(expected_key_cert, cert.certification)
       self.assertEqual([], cert.get_unrecognized_lines())
+
+  @test.require.cryptography
+  def test_descriptor_signing(self):
+    self.assertRaisesRegexp(NotImplementedError, 'Signing of KeyCertificate not implemented', KeyCertificate.create, sign = True)
 
   def test_unrecognized_line(self):
     """
