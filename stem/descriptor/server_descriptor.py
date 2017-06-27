@@ -68,10 +68,10 @@ from stem.descriptor import (
   _parse_protocol_line,
   _parse_key_block,
   _append_router_signature,
+  _random_nickname,
   _random_ipv4_address,
   _random_date,
   _random_crypto_blob,
-  _random_nickname,
 )
 
 try:

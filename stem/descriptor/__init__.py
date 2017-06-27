@@ -1038,6 +1038,14 @@ def _append_router_signature(content, private_key):
   return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])
 
 
+def _random_nickname():
+  return ('Unnamed%i' % random.randint(0, sys.maxint))[:20]
+
+
+def _random_fingerprint():
+  return ('%040x' % random.randrange(16 ** 40)).upper()
+
+
 def _random_ipv4_address():
   return '%i.%i.%i.%i' % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
@@ -1057,10 +1065,6 @@ def _random_crypto_blob(block_type = None):
     return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % (block_type, crypto_blob, block_type)
   else:
     return crypto_blob
-
-
-def _random_nickname():
-  return ('Unnamed%i' % random.randint(0, sys.maxint))[:19]
 
 
 def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
