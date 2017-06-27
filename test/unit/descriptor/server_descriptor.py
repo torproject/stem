@@ -732,8 +732,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc = BridgeDescriptor.create()
 
-    self.assertEqual('Unnamed', desc.nickname)
-    self.assertEqual('10.45.227.253', desc.address)
+    self.assertTrue(desc.nickname.startswith('Unnamed'))
     self.assertEqual(None, desc.fingerprint)
     self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
 

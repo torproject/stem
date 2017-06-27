@@ -116,14 +116,6 @@ SINGLE_FIELDS = (
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
 REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
 
-BRIDGE_SERVER_HEADER = (
-  ('router', 'Unnamed 10.45.227.253 9001 0 0'),
-  ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
-  ('published', '2012-03-22 17:34:38'),
-  ('bandwidth', '409600 819200 5120'),
-  ('reject', '*:*'),
-)
-
 
 def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   """
@@ -965,7 +957,13 @@ class BridgeDescriptor(ServerDescriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, BRIDGE_SERVER_HEADER)
+    return _descriptor_content(attr, exclude, sign, (
+      ('router', 'Unnamed%s %s 9001 0 0' % (random.randint(0, sys.maxint), _random_ipv4_address())),
+      ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
+      ('published', _random_date()),
+      ('bandwidth', '409600 819200 5120'),
+      ('reject', '*:*'),
+    ))
 
   def digest(self):
     return self._digest
