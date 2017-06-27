@@ -198,10 +198,6 @@ descriptor...
   signing-key
   ...
 
-**Note:** Stem doesn't yet support signing its descriptors (:trac:`10227`).
-Until it does try using `leekspin <https://pypi.python.org/pypi/leekspin>`_
-instead.
-
 .. _validating-the-descriptors-content:
 
 Validating the descriptor's content
@@ -324,7 +320,7 @@ Capability                  Stem                  Metrics-lib         Zoossh
 =========================== ===================== =================== ==============
 Language                    :green:`Python`       :green:`Java`       :green:`Go`
 Checks signatures           :green:`Mostly`       :red:`No`           :red:`No`
-Create new descriptors      :red:`No`             :red:`No`           :red:`No`
+Create new descriptors      :green:`Yes`          :red:`No`           :red:`No`
 Lazy parsing                :green:`Yes`          :red:`No`           :green:`Yes`
 Type detection by @type     :green:`Yes`          :green:`Yes`        :green:`Yes`
 Type detection by filename  :green:`Yes`          :red:`No`           :red:`No`
