@@ -89,6 +89,8 @@ from stem.descriptor import (
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
+  _signing_key,
+  _append_router_signature,
 )
 
 try:
@@ -973,11 +975,20 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = (), sign = False, private_signing_key = None):
     if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+      if attr and 'router-signature' in attr:
+        raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
 
-    return _descriptor_content(attr, exclude, sign, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+      signing_key = _signing_key(private_signing_key)
+      content = _descriptor_content(attr, exclude, sign, RELAY_EXTRAINFO_HEADER) + b'\nrouter-signature\n'
+      return _append_router_signature(content, signing_key.private)
+    else:
+      return _descriptor_content(attr, exclude, sign, RELAY_EXTRAINFO_HEADER, RELAY_EXTRAINFO_FOOTER)
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, private_signing_key = None):
+    return cls(cls.content(attr, exclude, sign, private_signing_key), validate = validate)
 
   @lru_cache()
   def digest(self):

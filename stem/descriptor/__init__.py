@@ -39,6 +39,7 @@ Package for parsing and processing descriptor data.
 
 import base64
 import codecs
+import collections
 import copy
 import hashlib
 import os
@@ -97,6 +98,18 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
   'DOCUMENT',
   'BARE_DOCUMENT',
 )
+
+
+class SigningKey(collections.namedtuple('SigningKey', ['private', 'public', 'public_digest'])):
+  """
+  Key used by relays to sign their server and extrainfo descriptors.
+
+  .. versionadded:: 1.6.0
+
+  :var cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private: private key
+  :var cryptography.hazmat.backends.openssl.rsa._RSAPublicKey public: public key
+  :var bytes public_digest: block that can be used for the a server descrptor's 'signing-key' field
+  """
 
 
 def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = None, **kwargs):
@@ -951,6 +964,74 @@ def _get_pseudo_pgp_block(remaining_contents):
         return (block_type, '\n'.join(block_lines))
   else:
     return None
+
+
+def _signing_key(private_key = None):
+  """
+  Serializes a signing key if we have one. Otherwise this creates a new signing
+  key we can use to create descriptors.
+
+  :param cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private_key: private key
+
+  :returns: :class:`~stem.descriptor.__init__.SigningKey` that can be used to
+    create descriptors
+  """
+
+  if not stem.prereq.is_crypto_available():
+    raise ImportError('Signing requires the cryptography module')
+
+  from cryptography.hazmat.backends import default_backend
+  from cryptography.hazmat.primitives import serialization
+  from cryptography.hazmat.primitives.asymmetric import rsa
+
+  if private_key is None:
+    private_key = rsa.generate_private_key(
+      public_exponent = 65537,
+      key_size = 1024,
+      backend = default_backend(),
+    )
+
+    # When signing the cryptography module includes a constant indicating
+    # the hash algorithm used. Tor doesn't. This causes signature
+    # validation failures and unfortunately cryptography have no nice way
+    # of excluding these so we need to mock out part of their internals...
+    #
+    #   https://github.com/pyca/cryptography/issues/3713
+
+    def no_op(*args, **kwargs):
+      return 1
+
+    private_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
+    private_key._backend.openssl_assert = no_op
+
+  public_key = private_key.public_key()
+  public_digest = b'\n' + public_key.public_bytes(
+    encoding = serialization.Encoding.PEM,
+    format = serialization.PublicFormat.PKCS1,
+  ).strip()
+
+  return SigningKey(private_key, public_key, public_digest)
+
+
+def _append_router_signature(content, private_key):
+  """
+  Appends a router signature to a server or extrainfo descriptor.
+
+  :param bytes content: descriptor content up through 'router-signature\\n'
+  :param cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private_key:
+    private relay signing key
+
+  :returns: **bytes** with the signed descriptor content
+  """
+
+  if not stem.prereq.is_crypto_available():
+    raise ImportError('Signing requires the cryptography module')
+
+  from cryptography.hazmat.primitives import hashes
+  from cryptography.hazmat.primitives.asymmetric import padding
+
+  signature = base64.b64encode(private_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
+  return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])
 
 
 def _random_ipv4_address():

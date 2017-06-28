@@ -136,7 +136,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of RelayExtraInfoDescriptor not implemented', RelayExtraInfoDescriptor.create, sign = True)
+    RelayExtraInfoDescriptor.create(sign = True)
     self.assertRaisesRegexp(NotImplementedError, 'Signing of BridgeExtraInfoDescriptor not implemented', BridgeExtraInfoDescriptor.create, sign = True)
 
   def test_multiple_metrics_bridge_descriptors(self):
