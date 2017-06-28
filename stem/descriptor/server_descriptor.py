@@ -806,8 +806,10 @@ class RelayDescriptor(ServerDescriptor):
     if attr is None:
       attr = {}
 
+    nickname = ('Unnamed%i' % random.randint(0, sys.maxint))[:19]
+
     base_header = (
-      ('router', 'Unnamed%i %s 9001 0 0' % (random.randint(0, sys.maxint), _random_ipv4_address())),
+      ('router', '%s %s 9001 0 0' % (nickname, _random_ipv4_address())),
       ('published', _random_date()),
       ('bandwidth', '153600 256000 104590'),
       ('reject', '*:*'),
