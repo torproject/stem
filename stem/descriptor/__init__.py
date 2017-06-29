@@ -46,6 +46,7 @@ import os
 import random
 import re
 import string
+import sys
 import tarfile
 
 import stem.prereq
@@ -1053,6 +1054,10 @@ def _random_crypto_blob(block_type = None):
     return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % (block_type, crypto_blob, block_type)
   else:
     return crypto_blob
+
+
+def _random_nickname():
+  return ('Unnamed%i' % random.randint(0, sys.maxint))[:19]
 
 
 def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):

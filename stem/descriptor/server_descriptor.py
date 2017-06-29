@@ -35,9 +35,7 @@ import base64
 import binascii
 import functools
 import hashlib
-import random
 import re
-import sys
 
 import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
@@ -71,6 +69,7 @@ from stem.descriptor import (
   _random_ipv4_address,
   _random_date,
   _random_crypto_blob,
+  _random_nickname,
 )
 
 try:
@@ -806,10 +805,8 @@ class RelayDescriptor(ServerDescriptor):
     if attr is None:
       attr = {}
 
-    nickname = ('Unnamed%i' % random.randint(0, sys.maxint))[:19]
-
     base_header = (
-      ('router', '%s %s 9001 0 0' % (nickname, _random_ipv4_address())),
+      ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('published', _random_date()),
       ('bandwidth', '153600 256000 104590'),
       ('reject', '*:*'),
@@ -927,7 +924,7 @@ class BridgeDescriptor(ServerDescriptor):
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
     return _descriptor_content(attr, exclude, sign, (
-      ('router', 'Unnamed%s %s 9001 0 0' % (random.randint(0, sys.maxint), _random_ipv4_address())),
+      ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
       ('published', _random_date()),
       ('bandwidth', '409600 819200 5120'),
