@@ -51,6 +51,7 @@ from stem.util import str_type
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  create_signing_key,
   _descriptor_content,
   _descriptor_components,
   _read_until_keywords,
@@ -64,7 +65,6 @@ from stem.descriptor import (
   _parse_forty_character_hex,
   _parse_protocol_line,
   _parse_key_block,
-  _signing_key,
   _append_router_signature,
   _random_ipv4_address,
   _random_date,
@@ -801,7 +801,7 @@ class RelayDescriptor(ServerDescriptor):
         self.certificate.validate(self)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, private_signing_key = None):
+  def content(cls, attr = None, exclude = (), sign = False, signing_key = None):
     if attr is None:
       attr = {}
 
@@ -820,7 +820,9 @@ class RelayDescriptor(ServerDescriptor):
       elif attr and 'router-signature' in attr:
         raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
 
-      signing_key = _signing_key(private_signing_key)
+      if signing_key is None:
+        signing_key = create_signing_key()
+
       attr['signing-key'] = signing_key.public_digest
 
       content = _descriptor_content(attr, exclude, sign, base_header) + b'\nrouter-signature\n'
@@ -831,8 +833,8 @@ class RelayDescriptor(ServerDescriptor):
       ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, private_signing_key = None):
-    return cls(cls.content(attr, exclude, sign, private_signing_key), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None):
+    return cls(cls.content(attr, exclude, sign, signing_key), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
   def digest(self):

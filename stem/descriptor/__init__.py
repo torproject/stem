@@ -10,6 +10,7 @@ Package for parsing and processing descriptor data.
 
   parse_file - Parses the descriptors in a file.
   create - Creates a new custom descriptor.
+  create_signing_key - Cretes a signing key that can be used for creating descriptors.
 
   Descriptor - Common parent for all descriptor file types.
     |- get_path - location of the descriptor on disk if it came from a file
@@ -967,10 +968,12 @@ def _get_pseudo_pgp_block(remaining_contents):
     return None
 
 
-def _signing_key(private_key = None):
+def create_signing_key(private_key = None):
   """
   Serializes a signing key if we have one. Otherwise this creates a new signing
   key we can use to create descriptors.
+
+  .. versionadded:: 1.6.0
 
   :param cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private_key: private key
 
