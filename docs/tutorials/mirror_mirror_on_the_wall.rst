@@ -307,7 +307,7 @@ Are there any other parsing libraries?
 --------------------------------------
 
 Yup! Stem isn't the only game in town when it comes to parsing. `Metrics-lib
-<https://gitweb.torproject.org/metrics-lib.git/>`_ is a highly mature parsing
+<https://metrics.torproject.org/metrics-lib.html>`_ is a highly mature parsing
 library for Java, and `Zoossh
 <https://gitweb.torproject.org/user/phw/zoossh.git/>`_ is available for Go.
 Each library has its own capabilities...
