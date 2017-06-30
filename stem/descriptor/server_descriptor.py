@@ -21,6 +21,7 @@ etc). This information is provided from a few sources...
 
   ServerDescriptor - Tor server descriptor.
     |- RelayDescriptor - Server descriptor for a relay.
+    |  +- make_router_status_entry - Creates a router status entry for this descriptor.
     |
     |- BridgeDescriptor - Scrubbed server descriptor for a bridge.
     |  |- is_scrubbed - checks if our content has been properly scrubbed
@@ -46,6 +47,7 @@ import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.util import str_type
 
 from stem.descriptor import (
@@ -854,6 +856,33 @@ class RelayDescriptor(ServerDescriptor):
     """
 
     return self._digest_for_content(b'router ', b'\nrouter-signature\n')
+
+  def make_router_status_entry(self):
+    """
+    Provides a RouterStatusEntryV3 for this descriptor content.
+
+    .. versionadded:: 1.6.0
+
+    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+      that would be in the consensus
+    """
+
+    attr = {
+      'r': ' '.join([
+        self.nickname,
+        base64.b64encode(binascii.unhexlify(self.fingerprint)).rstrip('='),
+        base64.b64encode(binascii.unhexlify(self.digest())).rstrip('='),
+        self.published.strftime('%Y-%m-%d %H:%M:%S'),
+        self.address,
+        str(self.or_port),
+        str(self.dir_port) if self.dir_port else '0',
+      ]),
+    }
+
+    if self.tor_version:
+      attr['v'] = self.tor_version
+
+    return RouterStatusEntryV3.create(attr)
 
   @lru_cache()
   def onion_key_crosscert_digest(self):
