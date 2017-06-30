@@ -976,6 +976,9 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, signing_key = None):
+    if signing_key:
+      sign = True
+
     if sign:
       if attr and 'router-signature' in attr:
         raise ValueError('Cannot sign the descriptor if a router-signature has been provided')

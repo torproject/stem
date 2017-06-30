@@ -802,6 +802,9 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, signing_key = None):
+    if signing_key:
+      sign = True
+
     if attr is None:
       attr = {}
 
