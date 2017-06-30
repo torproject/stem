@@ -826,6 +826,10 @@ class RelayDescriptor(ServerDescriptor):
       if signing_key is None:
         signing_key = create_signing_key()
 
+      if 'fingerprint' not in attr:
+        fingerprint = hashlib.sha1(_bytes_for_block(signing_key.public_digest.strip())).hexdigest().upper()
+        attr['fingerprint'] = ' '.join(stem.util.str_tools._split_by_length(fingerprint, 4))
+
       attr['signing-key'] = signing_key.public_digest
 
       content = _descriptor_content(attr, exclude, sign, base_header) + b'\nrouter-signature\n'
