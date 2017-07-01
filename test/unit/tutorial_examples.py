@@ -18,7 +18,7 @@ import stem.prereq
 from stem.control import Controller
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.remote import DIRECTORY_AUTHORITIES
-from stem.descriptor.router_status_entry import ROUTER_STATUS_ENTRY_V3_HEADER, RouterStatusEntryV3
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.response import ControlMessage
 from stem.util import str_type
@@ -109,7 +109,7 @@ def _get_circ_event(id, status, hop1, hop2, hop3, purpose):
 
 
 def _get_router_status(address = None, port = None, nickname = None, fingerprint_base64 = None, s_line = None):
-  r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1]
+  r_line = 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'
 
   if address:
     r_line = r_line.replace('71.35.150.29', address)
@@ -330,7 +330,10 @@ class TestTutorialExamples(unittest.TestCase):
       for fingerprint, relay in consensus.routers.items():
         print('%s: %s' % (fingerprint, relay.nickname))
 
-    network_status = NetworkStatusDocumentV3.create(routers = (RouterStatusEntryV3.create(),))
+    network_status = NetworkStatusDocumentV3.create(routers = (RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    }),))
+
     query_mock().run.return_value = [network_status]
     parse_file_mock.return_value = itertools.cycle([network_status])
 

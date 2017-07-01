@@ -397,13 +397,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     consensus_file.close()
 
     for router in consensus.routers.values():
-      self.assertEqual('caerSidi', router.nickname)
+      self.assertTrue(router.nickname.startswith('Unnamed'))
 
     # second example: using stem.descriptor.parse_file
 
     with io.BytesIO(content) as consensus_file:
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
-        self.assertEqual('caerSidi', router.nickname)
+        self.assertTrue(router.nickname.startswith('Unnamed'))
 
   @test.require.cryptography
   def test_signature_validation(self):

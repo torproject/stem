@@ -128,7 +128,9 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
-    downloader_mock().get_consensus().run.return_value = [RouterStatusEntryV2.create()]
+    downloader_mock().get_consensus().run.return_value = [RouterStatusEntryV2.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]
 
     exec_documentation_example('current_descriptors.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
@@ -137,7 +139,9 @@ class TestTutorial(unittest.TestCase):
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
     controller = from_port_mock().__enter__()
-    controller.get_network_statuses.return_value = [RouterStatusEntryV2.create()]
+    controller.get_network_statuses.return_value = [RouterStatusEntryV2.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]
 
     exec_documentation_example('descriptor_from_tor_control_socket.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
@@ -151,7 +155,9 @@ class TestTutorial(unittest.TestCase):
       for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
         print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 
-    test_file = io.BytesIO(NetworkStatusDocumentV3.content(routers = [RouterStatusEntryV3.create()]))
+    test_file = io.BytesIO(NetworkStatusDocumentV3.content(routers = [RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]))
     test_file.name = '/home/atagar/.tor/cached-consensus'
     open_mock.return_value = test_file
 
