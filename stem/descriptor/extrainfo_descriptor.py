@@ -975,10 +975,10 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       if signing_key is None:
         signing_key = create_signing_key()
 
-      content = _descriptor_content(attr, exclude, sign, base_header) + b'\nrouter-signature\n'
+      content = _descriptor_content(attr, exclude, base_header) + b'\nrouter-signature\n'
       return _append_router_signature(content, signing_key.private)
     else:
-      return _descriptor_content(attr, exclude, sign, base_header, (
+      return _descriptor_content(attr, exclude, base_header, (
         ('router-signature', _random_crypto_blob('SIGNATURE')),
       ))
 
@@ -1023,7 +1023,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, (
+    return _descriptor_content(attr, exclude, (
       ('extra-info', 'ec2bridgereaac65a3 %s' % _random_fingerprint()),
       ('published', _random_date()),
     ), (

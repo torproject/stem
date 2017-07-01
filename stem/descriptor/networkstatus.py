@@ -468,7 +468,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, (
+    return _descriptor_content(attr, exclude, (
       ('network-status-version', '2'),
       ('dir-source', '%s %s 80' % (_random_ipv4_address(), _random_ipv4_address())),
       ('fingerprint', _random_fingerprint()),
@@ -945,7 +945,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       elif k not in attr:
         attr[k] = v
 
-    desc_content = _descriptor_content(attr, exclude, sign, (
+    desc_content = _descriptor_content(attr, exclude, (
       ('network-status-version', '3'),
       ('vote-status', 'consensus'),
       ('consensus-methods', None),
@@ -1424,7 +1424,7 @@ class DirectoryAuthority(Descriptor):
     if not is_vote and not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
       attr['vote-digest'] = _random_fingerprint()
 
-    content = _descriptor_content(attr, exclude, sign, (
+    content = _descriptor_content(attr, exclude, (
       ('dir-source', '%s %s no.place.com %s 9030 9090' % (_random_nickname(), _random_fingerprint(), _random_ipv4_address())),
       ('contact', 'Mike Perry <email>'),
     ))
@@ -1617,7 +1617,7 @@ class KeyCertificate(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, (
+    return _descriptor_content(attr, exclude, (
       ('dir-key-certificate-version', '3'),
       ('fingerprint', _random_fingerprint()),
       ('dir-key-published', _random_date()),

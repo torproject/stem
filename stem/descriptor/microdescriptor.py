@@ -263,7 +263,7 @@ class Microdescriptor(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, (
+    return _descriptor_content(attr, exclude, (
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ))
 

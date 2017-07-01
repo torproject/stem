@@ -315,9 +315,8 @@ class TestTutorialExamples(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.parse_file')
-  @patch('%s.open' % __name__, create = True)
   @patch('stem.descriptor.remote.Query')
-  def test_persisting_a_consensus(self, query_mock, open_mock, parse_file_mock, stdout_mock):
+  def test_persisting_a_consensus(self, query_mock, parse_file_mock, stdout_mock):
     def tutorial_example_2():
       from stem.descriptor import DocumentHandler, parse_file
 

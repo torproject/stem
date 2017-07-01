@@ -355,7 +355,7 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
-def _descriptor_content(attr = None, exclude = (), sign = False, header_template = (), footer_template = ()):
+def _descriptor_content(attr = None, exclude = (), header_template = (), footer_template = ()):
   """
   Constructs a minimal descriptor with the given attributes. The content we
   provide back is of the form...
@@ -386,17 +386,11 @@ def _descriptor_content(attr = None, exclude = (), sign = False, header_template
 
   :param dict attr: keyword/value mappings to be included in the descriptor
   :param list exclude: mandatory keywords to exclude from the descriptor
-  :param bool sign: includes cryptographic signatures and digests if True
   :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
   :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
 
   :returns: bytes with the requested descriptor content
-
-  :raises: **ImportError** if cryptography is unavailable and sign is True
   """
-
-  if sign and not stem.prereq.is_crypto_available():
-    raise ImportError('Signing descriptors requries the cryptography module')
 
   header_content, footer_content = [], []
   attr = {} if attr is None else dict(attr)  # shallow copy since we're destructive

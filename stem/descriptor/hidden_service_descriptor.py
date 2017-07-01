@@ -242,7 +242,7 @@ class HiddenServiceDescriptor(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, (
+    return _descriptor_content(attr, exclude, (
       ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
       ('version', '2'),
       ('permanent-key', _random_crypto_blob('RSA PUBLIC KEY')),
