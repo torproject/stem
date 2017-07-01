@@ -7,10 +7,11 @@ import unittest
 import test.require
 
 from stem.descriptor.networkstatus import (
-  AUTHORITY_HEADER,
   DirectoryAuthority,
   KeyCertificate,
 )
+
+DIR_SOURCE_LINE = 'turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090'
 
 
 class TestDirectoryAuthority(unittest.TestCase):
@@ -21,15 +22,14 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     authority = DirectoryAuthority.create()
 
-    self.assertEqual('turtles', authority.nickname)
-    self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
+    self.assertTrue(authority.nickname.startswith('Unnamed'))
+    self.assertEqual(40, len(authority.fingerprint))
     self.assertEqual('no.place.com', authority.hostname)
-    self.assertEqual('76.73.17.194', authority.address)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
     self.assertEqual(False, authority.is_legacy)
     self.assertEqual('Mike Perry <email>', authority.contact)
-    self.assertEqual('0B6D1E9A300B895AA2D0B427F92917B6995C3C1C', authority.vote_digest)
+    self.assertEqual(40, len(authority.vote_digest))
     self.assertEqual(None, authority.legacy_dir_key)
     self.assertEqual(None, authority.key_certificate)
     self.assertEqual([], authority.get_unrecognized_lines())
@@ -41,17 +41,15 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     authority = DirectoryAuthority.create(is_vote = True)
 
-    self.assertEqual('turtles', authority.nickname)
-    self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
+    self.assertTrue(authority.nickname.startswith('Unnamed'))
+    self.assertEqual(40, len(authority.fingerprint))
     self.assertEqual('no.place.com', authority.hostname)
-    self.assertEqual('76.73.17.194', authority.address)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
     self.assertEqual(False, authority.is_legacy)
     self.assertEqual('Mike Perry <email>', authority.contact)
     self.assertEqual(None, authority.vote_digest)
     self.assertEqual(None, authority.legacy_dir_key)
-    self.assertEqual(KeyCertificate.create(), authority.key_certificate)
     self.assertEqual([], authority.get_unrecognized_lines())
 
   @test.require.cryptography
@@ -96,7 +94,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
     authority = DirectoryAuthority(content, False)
-    self.assertEqual('turtles', authority.nickname)
+    self.assertTrue(authority.nickname.startswith('Unnamed'))
     self.assertEqual(['ho-hum 567'], authority.get_unrecognized_lines())
 
   def test_missing_fields(self):
@@ -113,14 +111,14 @@ class TestDirectoryAuthority(unittest.TestCase):
       if excluded_field == 'dir-source':
         self.assertEqual('Mike Perry <email>', authority.contact)
       else:
-        self.assertEqual('turtles', authority.nickname)
+        self.assertTrue(authority.nickname.startswith('Unnamed'))
 
   def test_blank_lines(self):
     """
     Includes blank lines, which should be ignored.
     """
 
-    authority = DirectoryAuthority.create({'dir-source': AUTHORITY_HEADER[0][1] + '\n\n\n'})
+    authority = DirectoryAuthority.create({'dir-source': DIR_SOURCE_LINE + '\n\n\n'})
     self.assertEqual('Mike Perry <email>', authority.contact)
 
   def test_duplicate_lines(self):
@@ -135,15 +133,15 @@ class TestDirectoryAuthority(unittest.TestCase):
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
-      self.assertEqual('turtles', authority.nickname)
+      self.assertTrue(authority.nickname.startswith('Unnamed'))
 
   def test_missing_dir_source_field(self):
     """
     Excludes fields from the 'dir-source' line.
     """
 
-    for missing_value in AUTHORITY_HEADER[0][1].split(' '):
-      dir_source = AUTHORITY_HEADER[0][1].replace(missing_value, '').replace('  ', ' ')
+    for missing_value in DIR_SOURCE_LINE.split(' '):
+      dir_source = DIR_SOURCE_LINE.replace(missing_value, '').replace('  ', ' ')
       content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
@@ -168,7 +166,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     )
 
     for value in test_values:
-      dir_source = AUTHORITY_HEADER[0][1].replace('27B6B5996C426270A5C95488AA5BCEB6BCC86956', value)
+      dir_source = DIR_SOURCE_LINE.replace('27B6B5996C426270A5C95488AA5BCEB6BCC86956', value)
       content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
@@ -190,7 +188,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     )
 
     for value in test_values:
-      dir_source = AUTHORITY_HEADER[0][1].replace('76.73.17.194', value)
+      dir_source = DIR_SOURCE_LINE.replace('76.73.17.194', value)
       content = DirectoryAuthority.content({'dir-source': dir_source})
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
@@ -215,7 +213,7 @@ class TestDirectoryAuthority(unittest.TestCase):
           if not include_or_port and not include_dir_port:
             continue
 
-          dir_source = AUTHORITY_HEADER[0][1]
+          dir_source = DIR_SOURCE_LINE
 
           if include_or_port:
             dir_source = dir_source.replace('9090', value)
@@ -269,11 +267,12 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
     authority = DirectoryAuthority(content, False)
-    self.assertEqual('turtles', authority.nickname)
+    self.assertTrue(authority.nickname.startswith('Unnamed'))
 
     # exclude  key cert from a vote
-    content = DirectoryAuthority.content(is_vote = True).replace(b'\n' + key_cert, b'')
+
+    content = '\n'.join(DirectoryAuthority.content(is_vote = True).splitlines()[:-5])
     self.assertRaises(ValueError, DirectoryAuthority, content, True, True)
 
     authority = DirectoryAuthority(content, False, True)
-    self.assertEqual('turtles', authority.nickname)
+    self.assertTrue(authority.nickname.startswith('Unnamed'))

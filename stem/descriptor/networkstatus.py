@@ -63,7 +63,6 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.descriptor import (
-  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
   DocumentHandler,
@@ -77,6 +76,11 @@ from stem.descriptor import (
   _parse_forty_character_hex,
   _parse_protocol_line,
   _parse_key_block,
+  _random_nickname,
+  _random_fingerprint,
+  _random_ipv4_address,
+  _random_date,
+  _random_crypto_blob,
 )
 
 from stem.descriptor.router_status_entry import (
@@ -215,57 +219,6 @@ PARAM_RANGE = {
   'onion-key-rotation-days': (1, 90),
   'onion-key-grace-period-days': (1, 90),  # max is the highest onion-key-rotation-days
 }
-
-AUTHORITY_HEADER = (
-  ('dir-source', 'turtles 27B6B5996C426270A5C95488AA5BCEB6BCC86956 no.place.com 76.73.17.194 9030 9090'),
-  ('contact', 'Mike Perry <email>'),
-)
-
-KEY_CERTIFICATE_HEADER = (
-  ('dir-key-certificate-version', '3'),
-  ('fingerprint', '27B6B5996C426270A5C95488AA5BCEB6BCC86956'),
-  ('dir-key-published', '2011-11-28 21:51:04'),
-  ('dir-key-expires', '2012-11-28 21:51:04'),
-  ('dir-identity-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-)
-
-KEY_CERTIFICATE_FOOTER = (
-  ('dir-key-certification', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
-)
-
-NETWORK_STATUS_DOCUMENT_HEADER_V2 = (
-  ('network-status-version', '2'),
-  ('dir-source', '18.244.0.114 18.244.0.114 80'),
-  ('fingerprint', '719BE45DE224B607C53707D0E2143E2D423E74CF'),
-  ('contact', 'arma at mit dot edu'),
-  ('published', '2005-12-16 00:13:46'),
-  ('dir-signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-)
-
-NETWORK_STATUS_DOCUMENT_FOOTER_V2 = (
-  ('directory-signature', 'moria2\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
-)
-
-NETWORK_STATUS_DOCUMENT_HEADER = (
-  ('network-status-version', '3'),
-  ('vote-status', 'consensus'),
-  ('consensus-methods', None),
-  ('consensus-method', None),
-  ('published', None),
-  ('valid-after', '2012-09-02 22:00:00'),
-  ('fresh-until', '2012-09-02 22:00:00'),
-  ('valid-until', '2012-09-02 22:00:00'),
-  ('voting-delay', '300 300'),
-  ('client-versions', None),
-  ('server-versions', None),
-  ('package', None),
-  ('known-flags', 'Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid'),
-  ('params', None),
-)
-
-VOTE_HEADER_DEFAULTS = {'consensus-methods': '1 9', 'published': '2012-09-02 22:00:00'}
-CONSENSUS_HEADER_DEFAULTS = {'consensus-method': '9'}
 
 
 class PackageVersion(collections.namedtuple('PackageVersion', ['name', 'version', 'url', 'digests'])):
@@ -515,7 +468,16 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, NETWORK_STATUS_DOCUMENT_HEADER_V2, NETWORK_STATUS_DOCUMENT_FOOTER_V2)
+    return _descriptor_content(attr, exclude, sign, (
+      ('network-status-version', '2'),
+      ('dir-source', '%s %s 80' % (_random_ipv4_address(), _random_ipv4_address())),
+      ('fingerprint', _random_fingerprint()),
+      ('contact', 'arma at mit dot edu'),
+      ('published', _random_date()),
+      ('dir-signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
+    ), (
+      ('directory-signature', 'moria2' + _random_crypto_blob('SIGNATURE')),
+    ))
 
   def __init__(self, raw_content, validate = False):
     super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
@@ -967,9 +929,12 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
     attr = {} if attr is None else dict(attr)
-
     is_vote = attr.get('vote-status') == 'vote'
-    extra_defaults = VOTE_HEADER_DEFAULTS if is_vote else CONSENSUS_HEADER_DEFAULTS
+
+    if is_vote:
+      extra_defaults = {'consensus-methods': '1 9', 'published': _random_date()}
+    else:
+      extra_defaults = {'consensus-method': '9'}
 
     if is_vote and authorities is None:
       authorities = [DirectoryAuthority.create(is_vote = is_vote)]
@@ -980,7 +945,26 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       elif k not in attr:
         attr[k] = v
 
-    desc_content = _descriptor_content(attr, exclude, sign, NETWORK_STATUS_DOCUMENT_HEADER, NETWORK_STATUS_DOCUMENT_FOOTER)
+    desc_content = _descriptor_content(attr, exclude, sign, (
+      ('network-status-version', '3'),
+      ('vote-status', 'consensus'),
+      ('consensus-methods', None),
+      ('consensus-method', None),
+      ('published', None),
+      ('valid-after', _random_date()),
+      ('fresh-until', _random_date()),
+      ('valid-until', _random_date()),
+      ('voting-delay', '300 300'),
+      ('client-versions', None),
+      ('server-versions', None),
+      ('package', None),
+      ('known-flags', 'Authority BadExit Exit Fast Guard HSDir Named Running Stable Unnamed V2Dir Valid'),
+      ('params', None),
+    ), (
+      ('directory-footer', ''),
+      ('bandwidth-weights', None),
+      ('directory-signature', '%s %s%s' % (_random_fingerprint(), _random_fingerprint(), _random_crypto_blob('SIGNATURE'))),
+    ))
 
     # inject the authorities and/or routers between the header and footer
 
@@ -1438,9 +1422,12 @@ class DirectoryAuthority(Descriptor):
     # include mandatory 'vote-digest' if a consensus
 
     if not is_vote and not ('vote-digest' in attr or (exclude and 'vote-digest' in exclude)):
-      attr['vote-digest'] = '0B6D1E9A300B895AA2D0B427F92917B6995C3C1C'
+      attr['vote-digest'] = _random_fingerprint()
 
-    content = _descriptor_content(attr, exclude, sign, AUTHORITY_HEADER)
+    content = _descriptor_content(attr, exclude, sign, (
+      ('dir-source', '%s %s no.place.com %s 9030 9090' % (_random_nickname(), _random_fingerprint(), _random_ipv4_address())),
+      ('contact', 'Mike Perry <email>'),
+    ))
 
     if is_vote:
       content += b'\n' + KeyCertificate.content()
@@ -1630,7 +1617,16 @@ class KeyCertificate(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, KEY_CERTIFICATE_HEADER, KEY_CERTIFICATE_FOOTER)
+    return _descriptor_content(attr, exclude, sign, (
+      ('dir-key-certificate-version', '3'),
+      ('fingerprint', _random_fingerprint()),
+      ('dir-key-published', _random_date()),
+      ('dir-key-expires', _random_date()),
+      ('dir-identity-key', _random_crypto_blob('RSA PUBLIC KEY')),
+      ('dir-signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
+    ), (
+      ('dir-key-certification', _random_crypto_blob('SIGNATURE')),
+    ))
 
   def __init__(self, raw_content, validate = False):
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
@@ -1771,17 +1767,3 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     )
 
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
-
-
-DOC_SIG = DocumentSignature(
-  'sha1',
-  '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
-  'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
-  '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB,
-)
-
-NETWORK_STATUS_DOCUMENT_FOOTER = (
-  ('directory-footer', ''),
-  ('bandwidth-weights', None),
-  ('directory-signature', '%s %s\n%s' % (DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature)),
-)
