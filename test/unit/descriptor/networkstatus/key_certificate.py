@@ -8,12 +8,7 @@ import unittest
 import stem.descriptor
 import test.require
 
-from stem.descriptor.networkstatus import (
-  KEY_CERTIFICATE_HEADER,
-  KEY_CERTIFICATE_FOOTER,
-  KeyCertificate,
-)
-
+from stem.descriptor.networkstatus import KeyCertificate
 from test.unit.descriptor import get_resource
 
 
@@ -28,13 +23,8 @@ class TestKeyCertificate(unittest.TestCase):
     self.assertEqual(3, certificate.version)
     self.assertEqual(None, certificate.address)
     self.assertEqual(None, certificate.dir_port)
-    self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', certificate.fingerprint)
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.identity_key)
-    self.assertEqual(datetime.datetime(2011, 11, 28, 21, 51, 4), certificate.published)
-    self.assertEqual(datetime.datetime(2012, 11, 28, 21, 51, 4), certificate.expires)
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.signing_key)
+    self.assertEqual(40, len(certificate.fingerprint))
     self.assertEqual(None, certificate.crosscert)
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in certificate.certification)
     self.assertEqual([], certificate.get_unrecognized_lines())
 
   def test_real_certificates(self):
@@ -182,7 +172,15 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
     Parse a key certificate where a mandatory field is missing.
     """
 
-    mandatory_fields = [entry[0] for entry in KEY_CERTIFICATE_HEADER + KEY_CERTIFICATE_FOOTER]
+    mandatory_fields = (
+      'dir-key-certificate-version',
+      'fingerprint',
+      'dir-key-published',
+      'dir-key-expires',
+      'dir-identity-key',
+      'dir-signing-key',
+      'dir-key-certification',
+    )
 
     for excluded_field in mandatory_fields:
       content = KeyCertificate.content(exclude = (excluded_field,))
@@ -193,7 +191,7 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
       if excluded_field == 'fingerprint':
         self.assertEqual(3, certificate.version)
       else:
-        self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', certificate.fingerprint)
+        self.assertEqual(40, len(certificate.fingerprint))
 
   def test_blank_lines(self):
     """

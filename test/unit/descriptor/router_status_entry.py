@@ -20,7 +20,6 @@ from test.unit.descriptor import (
 )
 
 from stem.descriptor.router_status_entry import (
-  ROUTER_STATUS_ENTRY_V3_HEADER,
   RouterStatusEntryV2,
   RouterStatusEntryV3,
   RouterStatusEntryMicroV3,
@@ -53,8 +52,8 @@ m 18,19,20 sha256=AkZH3gIvz3wunsroqh5izBJizdYuR7kn2oVbsvqgML8
 m 21 sha256=AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE
 """
 
-expect_invalid_attr = functools.partial(base_expect_invalid_attr, RouterStatusEntryV3, 'nickname', 'caerSidi')
-expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RouterStatusEntryV3, 'nickname', 'caerSidi')
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RouterStatusEntryV3, 'nickname', 'Unnamed')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RouterStatusEntryV3, 'nickname', 'Unnamed')
 
 
 def vote_document():
@@ -98,11 +97,8 @@ class TestRouterStatusEntry(unittest.TestCase):
     entry = RouterStatusEntryV2.create()
 
     self.assertEqual(None, entry.document)
-    self.assertEqual('caerSidi', entry.nickname)
-    self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', entry.fingerprint)
+    self.assertTrue(entry.nickname.startswith('Unnamed'))
     self.assertEqual('A106452D87BD7B803B6CE916291ED368DC5BD091', entry.digest)
-    self.assertEqual(datetime.datetime(2012, 8, 6, 11, 19, 31), entry.published)
-    self.assertEqual('71.35.150.29', entry.address)
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(None, entry.dir_port)
     self.assertEqual(None, entry.flags)
@@ -119,11 +115,8 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     expected_flags = set([Flag.FAST, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.VALID])
     self.assertEqual(None, entry.document)
-    self.assertEqual('caerSidi', entry.nickname)
-    self.assertEqual('A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB', entry.fingerprint)
+    self.assertTrue(entry.nickname.startswith('Unnamed'))
     self.assertEqual('A106452D87BD7B803B6CE916291ED368DC5BD091', entry.digest)
-    self.assertEqual(datetime.datetime(2012, 8, 6, 11, 19, 31), entry.published)
-    self.assertEqual('71.35.150.29', entry.address)
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(None, entry.dir_port)
     self.assertEqual(expected_flags, set(entry.flags))
@@ -148,10 +141,7 @@ class TestRouterStatusEntry(unittest.TestCase):
 
     expected_flags = set([Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.NAMED, Flag.RUNNING, Flag.STABLE, Flag.V2DIR, Flag.VALID])
     self.assertEqual(None, entry.document)
-    self.assertEqual('Konata', entry.nickname)
-    self.assertEqual('011209176CDBAA2AC1F48C2C5B4990CE771C5B0C', entry.fingerprint)
-    self.assertEqual(datetime.datetime(2012, 9, 24, 13, 40, 40), entry.published)
-    self.assertEqual('69.64.48.168', entry.address)
+    self.assertTrue(entry.nickname.startswith('Unnamed'))
     self.assertEqual(9001, entry.or_port)
     self.assertEqual(9030, entry.dir_port)
     self.assertEqual(expected_flags, set(entry.flags))
@@ -279,7 +269,7 @@ class TestRouterStatusEntry(unittest.TestCase):
       self.assertRaises(ValueError, RouterStatusEntryV3, content, True)
 
       entry = RouterStatusEntryV3(content, False)
-      self.assertEqual('caerSidi', entry.nickname)
+      self.assertTrue(entry.nickname.startswith('Unnamed'))
 
   def test_missing_r_field(self):
     """
@@ -315,7 +305,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('caerSidi', value)
+      r_line = '%s p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0' % value
 
       # TODO: Initial whitespace is consumed as part of the keyword/value
       # divider. This is a bug in the case of V3 router status entries, but
@@ -344,7 +334,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('p1aag7VwarGxqctS7/fS0y5FU+s', value)
+      r_line = 'caerSidi %s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0' % value
       expect_invalid_attr(self, {'r': r_line}, 'fingerprint')
 
   def test_malformed_published_date(self):
@@ -369,7 +359,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('2012-08-06 11:19:31', value)
+      r_line = 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE %s 71.35.150.29 9001 0' % value
       expect_invalid_attr(self, {'r': r_line}, 'published')
 
   def test_malformed_address(self):
@@ -386,7 +376,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     )
 
     for value in test_values:
-      r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1].replace('71.35.150.29', value)
+      r_line = 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 %s 9001 0' % value
       expect_invalid_attr(self, {'r': r_line}, 'address')
 
   def test_malformed_port(self):
@@ -407,7 +397,7 @@ class TestRouterStatusEntry(unittest.TestCase):
           if not include_or_port and not include_dir_port:
             continue
 
-          r_line = ROUTER_STATUS_ENTRY_V3_HEADER[0][1]
+          r_line = 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'
 
           if include_or_port:
             r_line = r_line.replace(' 9001 ', ' %s ' % value)

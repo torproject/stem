@@ -7,12 +7,7 @@ import unittest
 
 import test.require
 
-from stem.descriptor.networkstatus import (
-  NETWORK_STATUS_DOCUMENT_HEADER_V2,
-  NETWORK_STATUS_DOCUMENT_FOOTER_V2,
-  NetworkStatusDocumentV2,
-)
-
+from stem.descriptor.networkstatus import NetworkStatusDocumentV2
 from test.unit.descriptor import get_resource
 
 
@@ -101,18 +96,13 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 
     self.assertEqual({}, document.routers)
     self.assertEqual(2, document.version)
-    self.assertEqual('18.244.0.114', document.hostname)
-    self.assertEqual('18.244.0.114', document.address)
     self.assertEqual(80, document.dir_port)
-    self.assertEqual('719BE45DE224B607C53707D0E2143E2D423E74CF', document.fingerprint)
+    self.assertEqual(40, len(document.fingerprint))
     self.assertEqual('arma at mit dot edu', document.contact)
-    self.assertEqual(NETWORK_STATUS_DOCUMENT_HEADER_V2[5][1][1:], document.signing_key)
     self.assertEqual([], document.client_versions)
     self.assertEqual([], document.server_versions)
-    self.assertEqual(datetime.datetime(2005, 12, 16, 0, 13, 46), document.published)
     self.assertEqual([], document.options)
     self.assertEqual('moria2', document.signing_authority)
-    self.assertEqual(NETWORK_STATUS_DOCUMENT_FOOTER_V2[0][1][7:], document.signature)
 
   @test.require.cryptography
   def test_descriptor_signing(self):

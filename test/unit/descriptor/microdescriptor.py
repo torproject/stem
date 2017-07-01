@@ -83,7 +83,6 @@ class TestMicrodescriptor(unittest.TestCase):
 
     desc = Microdescriptor.create()
 
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.onion_key)
     self.assertEqual(None, desc.ntor_onion_key)
     self.assertEqual([], desc.or_addresses)
     self.assertEqual([], desc.family)

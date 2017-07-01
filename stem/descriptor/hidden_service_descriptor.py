@@ -31,7 +31,6 @@ import stem.util.connection
 import stem.util.str_tools
 
 from stem.descriptor import (
-  CRYPTO_BLOB,
   PGP_BLOCK_END,
   Descriptor,
   _descriptor_content,
@@ -42,6 +41,8 @@ from stem.descriptor import (
   _parse_simple_line,
   _parse_timestamp_line,
   _parse_key_block,
+  _random_date,
+  _random_crypto_blob,
 )
 
 try:
@@ -81,20 +82,6 @@ SINGLE_INTRODUCTION_POINT_FIELDS = [
 
 BASIC_AUTH = 1
 STEALTH_AUTH = 2
-
-HIDDEN_SERVICE_HEADER = (
-  ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
-  ('version', '2'),
-  ('permanent-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
-  ('secret-id-part', 'e24kgecavwsznj7gpbktqsiwgvngsf4e'),
-  ('publication-time', '2015-02-23 20:00:00'),
-  ('protocol-versions', '2,3'),
-  ('introduction-points', '\n-----BEGIN MESSAGE-----\n-----END MESSAGE-----'),
-)
-
-HIDDEN_SERVICE_FOOTER = (
-  ('signature', '\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB),
-)
 
 
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
@@ -255,7 +242,17 @@ class HiddenServiceDescriptor(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, HIDDEN_SERVICE_HEADER, HIDDEN_SERVICE_FOOTER)
+    return _descriptor_content(attr, exclude, (
+      ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
+      ('version', '2'),
+      ('permanent-key', _random_crypto_blob('RSA PUBLIC KEY')),
+      ('secret-id-part', 'e24kgecavwsznj7gpbktqsiwgvngsf4e'),
+      ('publication-time', _random_date()),
+      ('protocol-versions', '2,3'),
+      ('introduction-points', '\n-----BEGIN MESSAGE-----\n-----END MESSAGE-----'),
+    ), (
+      ('signature', _random_crypto_blob('SIGNATURE')),
+    ))
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):

@@ -14,11 +14,11 @@ import test.require
 from stem import Flag
 from stem.util import str_type
 
+from stem.descriptor import CRYPTO_BLOB
+
 from stem.descriptor.networkstatus import (
   HEADER_STATUS_DOCUMENT_FIELDS,
   FOOTER_STATUS_DOCUMENT_FIELDS,
-  NETWORK_STATUS_DOCUMENT_FOOTER,
-  DOC_SIG,
   DEFAULT_PARAMS,
   PackageVersion,
   DirectoryAuthority,
@@ -309,9 +309,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(9, document.consensus_method)
     self.assertEqual([], document.consensus_methods)
     self.assertEqual(None, document.published)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_after)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.fresh_until)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_until)
     self.assertEqual(300, document.vote_delay)
     self.assertEqual(300, document.dist_delay)
     self.assertEqual([], document.client_versions)
@@ -332,7 +329,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual((), document.directory_authorities)
     self.assertEqual({}, document.bandwidth_weights)
-    self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
   def test_minimal_vote(self):
@@ -353,10 +349,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(True, document.is_vote)
     self.assertEqual(None, document.consensus_method)
     self.assertEqual([1, 9], document.consensus_methods)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.published)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_after)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.fresh_until)
-    self.assertEqual(datetime.datetime(2012, 9, 2, 22, 0, 0), document.valid_until)
     self.assertEqual(300, document.vote_delay)
     self.assertEqual(300, document.dist_delay)
     self.assertEqual([], document.client_versions)
@@ -372,7 +364,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual(None, document.shared_randomness_current_value)
     self.assertEqual(DEFAULT_PARAMS, document.params)
     self.assertEqual({}, document.bandwidth_weights)
-    self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
   @test.require.cryptography
@@ -397,13 +388,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     consensus_file.close()
 
     for router in consensus.routers.values():
-      self.assertEqual('caerSidi', router.nickname)
+      self.assertTrue(router.nickname.startswith('Unnamed'))
 
     # second example: using stem.descriptor.parse_file
 
     with io.BytesIO(content) as consensus_file:
       for router in stem.descriptor.parse_file(consensus_file, 'network-status-consensus-3 1.0'):
-        self.assertEqual('caerSidi', router.nickname)
+        self.assertTrue(router.nickname.startswith('Unnamed'))
 
   @test.require.cryptography
   def test_signature_validation(self):
@@ -464,14 +455,11 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     # the document that the entries refer to should actually be the minimal
     # descriptor (ie, without the entries)
 
-    expected_document = NetworkStatusDocumentV3.create()
-
     descriptor_file = io.BytesIO(content)
     entries = list(_parse_file(descriptor_file))
 
     self.assertEqual(entry1, entries[0])
     self.assertEqual(entry2, entries[1])
-    self.assertEqual(expected_document, entries[0].document)
 
   def test_missing_fields(self):
     """
@@ -946,7 +934,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
     # excludes a footer from a version that shouldn't have it
@@ -969,7 +956,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       authorities = (DirectoryAuthority.create(is_vote = True),)
     )
 
-    self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
   def test_footer_with_value(self):
@@ -981,7 +967,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
     document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual([DOC_SIG], document.signatures)
     self.assertEqual([], document.get_unrecognized_lines())
 
   def test_bandwidth_wights_ok(self):
@@ -1059,7 +1044,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = NetworkStatusDocumentV3.create({
       'network-status-version': '3 microdesc',
-      'directory-signature': 'sha256 ' + NETWORK_STATUS_DOCUMENT_FOOTER[2][1],
+      'directory-signature': 'sha256 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4 BF112F1C6D5543CFD0A32215ACABD4197B5279AD\n-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB,
     })
 
     self.assertEqual('sha256', document.signatures[0].method)
@@ -1085,7 +1070,12 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for test_value in test_values:
       for test_attr in range(3):
-        attrs = [DOC_SIG.identity, DOC_SIG.key_digest, DOC_SIG.signature]
+        attrs = [
+          '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
+          'BF112F1C6D5543CFD0A32215ACABD4197B5279AD',
+          '-----BEGIN SIGNATURE-----%s-----END SIGNATURE-----' % CRYPTO_BLOB,
+        ]
+
         attrs[test_attr] = test_value
 
         content = NetworkStatusDocumentV3.content({'directory-signature': '%s %s\n%s' % tuple(attrs)})
@@ -1279,7 +1269,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     # make the dir-key-published field of the certiciate be malformed
     authority_content = DirectoryAuthority.content(is_vote = True)
-    authority_content = authority_content.replace(b'dir-key-published 2011', b'dir-key-published 2011a')
+    authority_content = authority_content.replace(b'dir-key-published 2', b'dir-key-published b2')
     authority = DirectoryAuthority(authority_content, False, True)
 
     content = NetworkStatusDocumentV3.content({'vote-status': 'vote'}, authorities = (authority,))

@@ -23,8 +23,8 @@ from test.unit.descriptor import (
   base_expect_invalid_attr_for_text,
 )
 
-expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayExtraInfoDescriptor, 'nickname', 'ninja')
-expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayExtraInfoDescriptor, 'nickname', 'ninja')
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayExtraInfoDescriptor, 'nickname', 'Unnamed')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, RelayExtraInfoDescriptor, 'nickname', 'Unnamed')
 
 
 class TestExtraInfoDescriptor(unittest.TestCase):
@@ -201,9 +201,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     """
 
     desc = RelayExtraInfoDescriptor.create()
-    self.assertEqual('ninja', desc.nickname)
-    self.assertEqual('B2289C3EAB83ECD6EB916A2F481A02E6B76A0A48', desc.fingerprint)
-    self.assertTrue(stem.descriptor.CRYPTO_BLOB in desc.signature)
+    self.assertTrue(desc.nickname.startswith('Unnamed'))
 
   def test_unrecognized_line(self):
     """
@@ -721,8 +719,6 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     desc = BridgeExtraInfoDescriptor.create()
 
     self.assertEqual('ec2bridgereaac65a3', desc.nickname)
-    self.assertEqual('1EC248422B57D9C0BD751892FE787585407479A4', desc.fingerprint)
-    self.assertEqual('006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4', desc.digest())
     self.assertEqual([], desc.get_unrecognized_lines())
 
     # check that we don't have crypto fields

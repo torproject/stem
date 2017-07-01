@@ -69,7 +69,6 @@ import hashlib
 import stem.exit_policy
 
 from stem.descriptor import (
-  CRYPTO_BLOB,
   Descriptor,
   _descriptor_content,
   _descriptor_components,
@@ -78,6 +77,7 @@ from stem.descriptor import (
   _parse_simple_line,
   _parse_protocol_line,
   _parse_key_block,
+  _random_crypto_blob,
 )
 
 from stem.descriptor.router_status_entry import (
@@ -102,10 +102,6 @@ SINGLE_FIELDS = (
   'p',
   'p6',
   'pr',
-)
-
-MICRODESCRIPTOR = (
-  ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % CRYPTO_BLOB),
 )
 
 
@@ -267,7 +263,9 @@ class Microdescriptor(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, sign, MICRODESCRIPTOR)
+    return _descriptor_content(attr, exclude, (
+      ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
+    ))
 
   def __init__(self, raw_contents, validate = False, annotations = None):
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
