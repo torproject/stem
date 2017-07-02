@@ -838,6 +838,7 @@ class RelayDescriptor(ServerDescriptor):
       return _append_router_signature(content, signing_key.private)
     else:
       return _descriptor_content(attr, exclude, base_header, (
+        ('router-sig-ed25519', None),
         ('router-signature', _random_crypto_blob('SIGNATURE')),
       ))
 
@@ -867,6 +868,9 @@ class RelayDescriptor(ServerDescriptor):
       that would be in the consensus
     """
 
+    if not self.fingerprint:
+      raise ValueError('Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.')
+
     attr = {
       'r': ' '.join([
         self.nickname,
@@ -877,10 +881,18 @@ class RelayDescriptor(ServerDescriptor):
         str(self.or_port),
         str(self.dir_port) if self.dir_port else '0',
       ]),
+      'w': 'Bandwidth=%i' % self.average_bandwidth,
+      'p': self.exit_policy.summary().replace(', ', ','),
     }
 
     if self.tor_version:
-      attr['v'] = self.tor_version
+      attr['v'] = 'Tor %s' % self.tor_version
+
+    if self.or_addresses:
+      attr['a'] = ['%s:%s' % (addr, port) for addr, port, _ in self.or_addresses]
+
+    if self.certificate:
+      attr['id'] = 'ed25519 %s' % base64.b64encode(self.certificate.key).rstrip('=')
 
     return RouterStatusEntryV3.create(attr)
 

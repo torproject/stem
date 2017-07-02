@@ -11,6 +11,7 @@ import time
 import unittest
 
 import stem.descriptor
+import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -259,6 +260,76 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
   def test_descriptor_signing(self):
     RelayDescriptor.create(sign = True)
     self.assertRaisesRegexp(NotImplementedError, 'Signing of BridgeDescriptor not implemented', BridgeDescriptor.create, sign = True)
+
+  def test_router_status_entry(self):
+    """
+    Tests creation of router status entries.
+    """
+
+    desc_without_fingerprint = RelayDescriptor.create()
+    exc_msg = 'Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.'
+    self.assertRaisesRegexp(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
+
+    desc = RelayDescriptor.create({
+      'router': 'caerSidi 71.35.133.197 9001 0 0',
+      'published': '2012-02-29 04:03:19',
+      'fingerprint': '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44',
+      'or-address': ['71.35.133.197:9001', '[12ab:2e19:3bcf::02:9970]:9001'],
+      'onion-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB,
+      'signing-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB,
+    }).make_router_status_entry()
+
+    self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3, type(desc))
+    self.assertEqual('caerSidi', desc.nickname)
+    self.assertEqual('4F0C867DF0EF68160568C826838F482CEA7CFE44', desc.fingerprint)
+    self.assertEqual(datetime.datetime(2012, 2, 29, 4, 3, 19), desc.published)
+    self.assertEqual('71.35.133.197', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(None, desc.dir_port)
+    self.assertEqual(['Fast', 'Named', 'Running', 'Stable', 'Valid'], desc.flags)
+    self.assertEqual(None, desc.version)
+    self.assertEqual(None, desc.version_line)
+
+    self.assertEqual([(u'71.35.133.197', 9001, False), (u'12ab:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
+    self.assertEqual(None, desc.identifier_type)
+    self.assertEqual(None, desc.identifier)
+    self.assertEqual('4F0069BF91C04581B7C3CA9272E2D3228D4EA571', desc.digest)
+    self.assertEqual(153600, desc.bandwidth)
+    self.assertEqual(None, desc.measured)
+    self.assertEqual(False, desc.is_unmeasured)
+    self.assertEqual([], desc.unrecognized_bandwidth_entries)
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), desc.exit_policy)
+    self.assertEqual([], desc.microdescriptor_hashes)
+
+  def test_make_router_status_entry_with_live_descriptor(self):
+    """
+    Tests creation of router status entries with a live server descriptor.
+    """
+
+    with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True)).make_router_status_entry()
+
+    self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3, type(desc))
+    self.assertEqual('destiny', desc.nickname)
+    self.assertEqual('F65E0196C94DFFF48AFBF2F5F9E3E19AAE583FD0', desc.fingerprint)
+    self.assertEqual(datetime.datetime(2015, 8, 22, 15, 21, 45), desc.published)
+    self.assertEqual('94.242.246.23', desc.address)
+    self.assertEqual(9001, desc.or_port)
+    self.assertEqual(443, desc.dir_port)
+    self.assertEqual(['Fast', 'Named', 'Running', 'Stable', 'Valid'], desc.flags)
+    self.assertEqual(stem.version.Version('0.2.7.2-alpha-dev'), desc.version)
+    self.assertEqual('Tor 0.2.7.2-alpha-dev', desc.version_line)
+
+    self.assertEqual([('2a01:608:ffff:ff07::1:23', 9003, True)], desc.or_addresses)
+    self.assertEqual('ed25519', desc.identifier_type)
+    self.assertEqual('pbYagEQPUiNjcDp/oY2oESXkDzd8PZlr26kaR7nUkao', desc.identifier)
+    self.assertEqual('B5E441051D139CCD84BC765D130B01E44DAC29AD', desc.digest)
+    self.assertEqual(149715200, desc.bandwidth)
+    self.assertEqual(None, desc.measured)
+    self.assertEqual(False, desc.is_unmeasured)
+    self.assertEqual([], desc.unrecognized_bandwidth_entries)
+    self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 25,465,587,10000,14464'), desc.exit_policy)
+    self.assertEqual([], desc.microdescriptor_hashes)
 
   @patch('time.time', Mock(return_value = time.mktime(datetime.date(2010, 1, 1).timetuple())))
   def test_with_ed25519(self):

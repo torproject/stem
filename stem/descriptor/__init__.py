@@ -405,6 +405,9 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
 
       if value is None:
         continue
+      elif isinstance(value, (tuple, list)):
+        for v in value:
+          content.append('%s %s' % (keyword, v))
       elif value == '':
         content.append(keyword)
       elif value.startswith('\n'):
@@ -413,7 +416,14 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
       else:
         content.append('%s %s' % (keyword, value))
 
-  remainder = [('%s %s' % (k, v) if v else k) for k, v in attr.items()]
+  remainder = []
+
+  for k, v in attr.items():
+    if isinstance(v, (tuple, list)):
+      remainder += ['%s %s' % (k, entry) for entry in v]
+    else:
+      remainder.append('%s %s' % (k, v))
+
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
 
 

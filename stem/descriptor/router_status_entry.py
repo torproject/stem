@@ -292,9 +292,8 @@ def _parse_id_line(descriptor, entries):
   value = _value('id', entries)
 
   if value:
-    if not (descriptor.document and descriptor.document.is_vote):
-      vote_status = 'vote' if descriptor.document else '<undefined document>'
-      raise ValueError("%s 'id' line should only appear in votes (appeared in a %s): id %s" % (descriptor._name(), vote_status, value))
+    if descriptor.document and not descriptor.document.is_vote:
+      raise ValueError("%s 'id' line should only appear in votes: id %s" % (descriptor._name(), value))
 
     value_comp = value.split()
 
