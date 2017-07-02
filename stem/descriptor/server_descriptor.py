@@ -796,8 +796,8 @@ class RelayDescriptor(ServerDescriptor):
         if self.onion_key_crosscert:
           onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
 
-          if onion_key_crosscert_digest != self.onion_key_crosscert_digest():
-            raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self.onion_key_crosscert_digest()))
+          if onion_key_crosscert_digest != self._onion_key_crosscert_digest():
+            raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self._onion_key_crosscert_digest()))
 
       if stem.prereq._is_pynacl_available() and self.certificate:
         self.certificate.validate(self)
@@ -885,7 +885,7 @@ class RelayDescriptor(ServerDescriptor):
     return RouterStatusEntryV3.create(attr)
 
   @lru_cache()
-  def onion_key_crosscert_digest(self):
+  def _onion_key_crosscert_digest(self):
     """
     Provides the digest of the onion-key-crosscert data. This consists of the
     RSA identity key sha1 and ed25519 identity key.
