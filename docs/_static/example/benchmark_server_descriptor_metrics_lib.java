@@ -1,10 +1,15 @@
 package org.torproject.descriptor;
 
+import org.torproject.descriptor.Descriptor;
+import org.torproject.descriptor.DescriptorReader;
+import org.torproject.descriptor.DescriptorSourceFactory;
+import org.torproject.descriptor.ServerDescriptor;
+
 import java.io.File;
 import java.util.Iterator;
-import org.torproject.descriptor.DescriptorSourceFactory;
 
 public class MeasurePerformance {
+
   public static void main(String[] args) {
     measureAverageAdvertisedBandwidth(new File("server-descriptors-2015-11.tar"));
   }
@@ -12,27 +17,24 @@ public class MeasurePerformance {
   private static void measureAverageAdvertisedBandwidth(
       File tarballFileOrDirectory) {
     System.out.println("Starting measureAverageAdvertisedBandwidth");
-    long startedMillis = System.currentTimeMillis();
-    long sumAdvertisedBandwidth = 0, countedServerDescriptors = 0;
+    final long startedMillis = System.currentTimeMillis();
+    long sumAdvertisedBandwidth = 0;
+    long countedServerDescriptors = 0;
     DescriptorReader descriptorReader =
         DescriptorSourceFactory.createDescriptorReader();
-    descriptorReader.addTarball(tarballFileOrDirectory);
-    descriptorReader.addDirectory(tarballFileOrDirectory);
-    Iterator<DescriptorFile> descriptorFiles =
-        descriptorReader.readDescriptors();
-    while (descriptorFiles.hasNext()) {
-      DescriptorFile descriptorFile = descriptorFiles.next();
-      for (Descriptor descriptor : descriptorFile.getDescriptors()) {
-        if (!(descriptor instanceof ServerDescriptor)) {
-          continue;
-        }
-        ServerDescriptor serverDescriptor = (ServerDescriptor) descriptor;
-        sumAdvertisedBandwidth += (long) Math.min(Math.min(
-            serverDescriptor.getBandwidthRate(),
-            serverDescriptor.getBandwidthBurst()),
-            serverDescriptor.getBandwidthObserved());
-        countedServerDescriptors++;
+    Iterator<Descriptor> descriptors =
+        descriptorReader.readDescriptors(tarballFileOrDirectory).iterator();
+    while (descriptors.hasNext()) {
+      Descriptor descriptor = descriptors.next();
+      if (!(descriptor instanceof ServerDescriptor)) {
+        continue;
       }
+      ServerDescriptor serverDescriptor = (ServerDescriptor) descriptor;
+      sumAdvertisedBandwidth += (long) Math.min(Math.min(
+          serverDescriptor.getBandwidthRate(),
+          serverDescriptor.getBandwidthBurst()),
+          serverDescriptor.getBandwidthObserved());
+      countedServerDescriptors++;
     }
     long endedMillis = System.currentTimeMillis();
     System.out.println("Ending measureAverageAdvertisedBandwidth");
