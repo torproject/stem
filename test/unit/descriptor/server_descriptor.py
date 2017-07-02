@@ -290,7 +290,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(None, desc.version)
     self.assertEqual(None, desc.version_line)
 
-    self.assertEqual([(u'71.35.133.197', 9001, False), (u'12ab:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
+    self.assertEqual([('71.35.133.197', 9001, False), ('12ab:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
     self.assertEqual(None, desc.identifier_type)
     self.assertEqual(None, desc.identifier)
     self.assertEqual('4F0069BF91C04581B7C3CA9272E2D3228D4EA571', desc.digest)

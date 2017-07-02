@@ -47,7 +47,6 @@ import os
 import random
 import re
 import string
-import sys
 import tarfile
 
 import stem.prereq
@@ -1043,7 +1042,7 @@ def _append_router_signature(content, private_key):
 
 
 def _random_nickname():
-  return ('Unnamed%i' % random.randint(0, sys.maxint))[:20]
+  return ('Unnamed%i' % random.randint(0, 100000000000000))[:19]
 
 
 def _random_fingerprint():
