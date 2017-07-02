@@ -120,6 +120,10 @@ DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
 REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
 
 
+def _truncated_b64encode(content):
+  return stem.util.str_tools._to_unicode(base64.b64encode(content).rstrip(b'='))
+
+
 def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   """
   Iterates over the server descriptors in a file.
@@ -829,7 +833,7 @@ class RelayDescriptor(ServerDescriptor):
         signing_key = create_signing_key()
 
       if 'fingerprint' not in attr:
-        fingerprint = hashlib.sha1(_bytes_for_block(signing_key.public_digest.strip())).hexdigest().upper()
+        fingerprint = hashlib.sha1(_bytes_for_block(stem.util.str_tools._to_unicode(signing_key.public_digest.strip()))).hexdigest().upper()
         attr['fingerprint'] = ' '.join(stem.util.str_tools._split_by_length(fingerprint, 4))
 
       attr['signing-key'] = signing_key.public_digest
@@ -874,8 +878,8 @@ class RelayDescriptor(ServerDescriptor):
     attr = {
       'r': ' '.join([
         self.nickname,
-        base64.b64encode(binascii.unhexlify(self.fingerprint)).rstrip('='),
-        base64.b64encode(binascii.unhexlify(self.digest())).rstrip('='),
+        _truncated_b64encode(binascii.unhexlify(stem.util.str_tools._to_bytes(self.fingerprint))),
+        _truncated_b64encode(binascii.unhexlify(stem.util.str_tools._to_bytes(self.digest()))),
         self.published.strftime('%Y-%m-%d %H:%M:%S'),
         self.address,
         str(self.or_port),
@@ -892,7 +896,7 @@ class RelayDescriptor(ServerDescriptor):
       attr['a'] = ['%s:%s' % (addr, port) for addr, port, _ in self.or_addresses]
 
     if self.certificate:
-      attr['id'] = 'ed25519 %s' % base64.b64encode(self.certificate.key).rstrip('=')
+      attr['id'] = 'ed25519 %s' % _truncated_b64encode(self.certificate.key)
 
     return RouterStatusEntryV3.create(attr)
 

@@ -271,7 +271,7 @@ class TestDirectoryAuthority(unittest.TestCase):
 
     # exclude  key cert from a vote
 
-    content = '\n'.join(DirectoryAuthority.content(is_vote = True).splitlines()[:-5])
+    content = b'\n'.join(DirectoryAuthority.content(is_vote = True).splitlines()[:-5])
     self.assertRaises(ValueError, DirectoryAuthority, content, True, True)
 
     authority = DirectoryAuthority(content, False, True)

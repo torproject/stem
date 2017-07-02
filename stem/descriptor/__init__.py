@@ -1062,7 +1062,8 @@ def _random_crypto_blob(block_type = None):
   Provides a random string that can be used for crypto blocks.
   """
 
-  crypto_blob = '\n'.join(stem.util.str_tools._split_by_length(base64.b64encode('%0140x' % random.randrange(16 ** 140)), 64))
+  random_base64 = stem.util.str_tools._to_unicode(base64.b64encode(os.urandom(140)))
+  crypto_blob = '\n'.join(stem.util.str_tools._split_by_length(random_base64, 64))
 
   if block_type:
     return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % (block_type, crypto_blob, block_type)
