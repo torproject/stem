@@ -1,6 +1,33 @@
 #!/usr/bin/env python
 # Copyright 2012-2016, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
+#
+# Release Checklist
+# =================
+#
+# * Recache latest information (cache_manual.py and cache_fallback_directories.py)
+#
+# * Tag the release
+#   |- Bump stem's version (in stem/__init__.py and docs/index.rst).
+#   |- git commit -a -m "Stem release 1.0.0" 
+#   |- git tag -u 9ABBEEC6 -m "stem release 1.0.0" 1.0.0 d0bb81a
+#   +- git push --tags
+#
+# * Dry-run release on https://pypi.python.org/pypi/stem/
+#   |- python setup.py sdist
+#   |- gpg --detach-sig --armor dist/stem-dry-run-1.0.0.tar.gz
+#   |- twine upload dist/*
+#   +- Check that https://pypi.python.org/pypi/stem-dry-run/ looks correct, comparing it to https://pypi.python.org/pypi/stem/
+#
+# * Final release
+#   |- rm dist/*
+#   |- Change the setup.py's DRY_RUN flag to false.
+#   |- python setup.py sdist
+#   |- gpg --detach-sig --armor dist/stem-1.0.0.tar.gz
+#   +- twine upload dist/*
+#
+# * Contact package maintainers
+# * Announce the release (example: https://blog.torproject.org/blog/stem-release-11)
 
 import distutils.core
 import os
