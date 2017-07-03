@@ -1820,6 +1820,11 @@ class Controller(BaseController):
     Checks to see if tor server descriptors should be available or not.
     """
 
+    # TODO: Replace with a 'GETINFO desc/download-enabled' request when they're
+    # widely available...
+    #
+    #   https://gitweb.torproject.org/torspec.git/commit/?id=378699c
+
     return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
            self.get_conf('UseMicrodescriptors', None) == '0'
 
