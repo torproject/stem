@@ -2,7 +2,6 @@
 Unit tests for the stem.response.protocolinfo.ProtocolInfoResponse class.
 """
 
-import os
 import unittest
 
 import stem.response
@@ -156,37 +155,3 @@ class TestProtocolInfoResponse(unittest.TestCase):
 
     control_message = ControlMessage.from_str(UNICODE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(EXPECTED_UNICODE_PATH, control_message.cookie_path)
-
-  @patch('stem.util.proc.is_available', Mock(return_value = False))
-  @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_relative_cookie(self):
-    """
-    Checks an authentication cookie with a relative path where expansion both
-    succeeds and fails.
-    """
-
-    # we need to mock both pid and cwd lookups since the general cookie
-    # expanion works by...
-    # - resolving the pid of the "tor" process
-    # - using that to get tor's cwd
-
-    def call_function(command, default):
-      if command == stem.util.system.GET_PID_BY_NAME_PGREP % 'tor':
-        return ['10']
-      elif command == stem.util.system.GET_CWD_PWDX % 10:
-        return ['10: /tmp/foo']
-
-    with patch('stem.util.system.call') as call_mock:
-      call_mock.side_effect = call_function
-
-      control_message = ControlMessage.from_str(RELATIVE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
-      stem.connection._expand_cookie_path(control_message, stem.util.system.pid_by_name, 'tor')
-
-      self.assertEqual(os.path.join('/tmp/foo', 'tor-browser_en-US', 'Data', 'control_auth_cookie'), control_message.cookie_path)
-
-    # exercise cookie expansion where both calls fail (should work, just
-    # leaving the path unexpanded)
-
-    with patch('stem.util.system.call', Mock(return_value = None)):
-      control_message = ControlMessage.from_str(RELATIVE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
-      self.assertEqual('./tor-browser_en-US/Data/control_auth_cookie', control_message.cookie_path)

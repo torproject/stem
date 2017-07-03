@@ -985,11 +985,6 @@ def get_protocolinfo(controller):
   the tor process running on it. If the socket is already closed then it is
   first reconnected.
 
-  According to the control spec the cookie_file is an absolute path. However,
-  this often is not the case (especially for the Tor Browser Bundle). If the
-  path is relative then we'll make an attempt (which may not work) to correct
-  this (:trac:`1101`).
-
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.
 
@@ -1021,27 +1016,6 @@ def get_protocolinfo(controller):
       raise stem.SocketError(exc)
 
   stem.response.convert('PROTOCOLINFO', protocolinfo_response)
-
-  # attempt to expand relative cookie paths
-
-  if protocolinfo_response.cookie_path:
-    _expand_cookie_path(protocolinfo_response, stem.util.system.pid_by_name, 'tor')
-
-  # attempt to expand relative cookie paths via the control port or socket file
-
-  if isinstance(controller, stem.socket.ControlSocket):
-    control_socket = controller
-  else:
-    control_socket = controller.get_socket()
-
-  if isinstance(control_socket, stem.socket.ControlPort):
-    if control_socket.get_address() == '127.0.0.1':
-      pid_method = stem.util.system.pid_by_port
-      _expand_cookie_path(protocolinfo_response, pid_method, control_socket.get_port())
-  elif isinstance(control_socket, stem.socket.ControlSocketFile):
-    pid_method = stem.util.system.pid_by_open_file
-    _expand_cookie_path(protocolinfo_response, pid_method, control_socket.get_socket_path())
-
   return protocolinfo_response
 
 
@@ -1120,40 +1094,6 @@ def _read_cookie(cookie_path, is_safecookie):
   except IOError as exc:
     exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)
     raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
-
-
-def _expand_cookie_path(protocolinfo_response, pid_resolver, pid_resolution_arg):
-  """
-  Attempts to expand a relative cookie path with the given pid resolver. This
-  leaves the cookie_path alone if it's already absolute, **None**, or the
-  system calls fail.
-  """
-
-  cookie_path = protocolinfo_response.cookie_path
-  if cookie_path and not os.path.isabs(cookie_path):
-    try:
-      tor_pid = pid_resolver(pid_resolution_arg)
-
-      if not tor_pid:
-        raise IOError('pid lookup failed')
-
-      tor_cwd = stem.util.system.cwd(tor_pid)
-
-      if not tor_cwd:
-        raise IOError('cwd lookup failed')
-
-      cookie_path = stem.util.system.expand_path(cookie_path, tor_cwd)
-    except IOError as exc:
-      resolver_labels = {
-        stem.util.system.pid_by_name: ' by name',
-        stem.util.system.pid_by_port: ' by port',
-        stem.util.system.pid_by_open_file: ' by socket file',
-      }
-
-      pid_resolver_label = resolver_labels.get(pid_resolver, '')
-      log.debug('unable to expand relative tor cookie path%s: %s' % (pid_resolver_label, exc))
-
-  protocolinfo_response.cookie_path = cookie_path
 
 
 class AuthenticationFailure(Exception):
