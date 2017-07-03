@@ -264,6 +264,8 @@ $67B2BDA4264D8A189D9270E28B1D30A262838243=europa1 b3oeducbhjmbqmgw2i3jtz4fekkrin
 HS_DESC_NO_DESC_ID = '650 HS_DESC REQUESTED ajhb7kljbiru65qo NO_AUTH \
 $67B2BDA4264D8A189D9270E28B1D30A262838243'
 
+HS_DESC_NOT_FOUND = '650 HS_DESC REQUESTED ajhb7kljbiru65qo NO_AUTH UNKNOWN'
+
 HS_DESC_FAILED = '650 HS_DESC FAILED ajhb7kljbiru65qo NO_AUTH \
 $67B2BDA4264D8A189D9270E28B1D30A262838243 \
 b3oeducbhjmbqmgw2i3jtz4fekkrinwj REASON=NOT_FOUND'
@@ -922,6 +924,14 @@ class TestEvents(unittest.TestCase):
 
     self.assertEqual('$67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory)
     self.assertEqual('67B2BDA4264D8A189D9270E28B1D30A262838243', event.directory_fingerprint)
+    self.assertEqual(None, event.directory_nickname)
+    self.assertEqual(None, event.descriptor_id)
+    self.assertEqual(None, event.reason)
+
+    event = _get_event(HS_DESC_NOT_FOUND)
+
+    self.assertEqual('UNKNOWN', event.directory)
+    self.assertEqual(None, event.directory_fingerprint)
     self.assertEqual(None, event.directory_nickname)
     self.assertEqual(None, event.descriptor_id)
     self.assertEqual(None, event.reason)

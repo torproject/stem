@@ -9,7 +9,7 @@
 #
 # * Tag the release
 #   |- Bump stem's version (in stem/__init__.py and docs/index.rst).
-#   |- git commit -a -m "Stem release 1.0.0" 
+#   |- git commit -a -m "Stem release 1.0.0"
 #   |- git tag -u 9ABBEEC6 -m "stem release 1.0.0" 1.0.0 d0bb81a
 #   +- git push --tags
 #

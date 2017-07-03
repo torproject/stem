@@ -446,6 +446,9 @@ Library for working with the tor process.
   .. versionchanged:: 1.4.0
      Added the UPLOAD_REJECTED reason.
 
+  .. versionchanged:: 1.6.0
+     Added the QUERY_NO_HSDIR reason.
+
   =================== ===========
   HSDescReason        Description
   =================== ===========
@@ -453,6 +456,7 @@ Library for working with the tor process.
   **QUERY_REJECTED**  hidden service directory refused to provide the descriptor
   **UPLOAD_REJECTED** descriptor was rejected by the hidden service directory
   **NOT_FOUND**       descriptor with the given identifier wasn't found
+  **QUERY_NO_HSDIR**  no hidden service directory was found
   **UNEXPECTED**      failure type is unknown
   =================== ===========
 
@@ -848,6 +852,7 @@ HSDescReason = stem.util.enum.UppercaseEnum(
   'QUERY_REJECTED',
   'UPLOAD_REJECTED',
   'NOT_FOUND',
+  'QUERY_NO_HSDIR',
   'UNEXPECTED',
 )
 

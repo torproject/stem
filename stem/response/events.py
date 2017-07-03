@@ -657,11 +657,12 @@ class HSDescEvent(Event):
     self.directory_fingerprint = None
     self.directory_nickname = None
 
-    try:
-      self.directory_fingerprint, self.directory_nickname = \
-        stem.control._parse_circ_entry(self.directory)
-    except stem.ProtocolError:
-      raise stem.ProtocolError("HS_DESC's directory doesn't match a ServerSpec: %s" % self)
+    if self.directory != 'UNKNOWN':
+      try:
+        self.directory_fingerprint, self.directory_nickname = \
+          stem.control._parse_circ_entry(self.directory)
+      except stem.ProtocolError:
+        raise stem.ProtocolError("HS_DESC's directory doesn't match a ServerSpec: %s" % self)
 
     if self.replica is not None:
       if not self.replica.isdigit():
