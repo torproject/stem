@@ -3154,9 +3154,15 @@ class Controller(BaseController):
     elif not response.is_ok():
       raise stem.ProtocolError('+LOADCONF Received unexpected response\n%s' % str(response))
 
-  def save_conf(self):
+  def save_conf(self, force = False):
     """
     Saves the current configuration options into the active torrc file.
+
+    .. versionchanged:: 1.6.0
+       Added the force argument.
+
+    :param bool force: overwrite the configuration even if it includes a
+      '%include' clause, this is ignored if tor doesn't support it
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -3164,7 +3170,10 @@ class Controller(BaseController):
         the configuration file
     """
 
-    response = self.msg('SAVECONF')
+    if self.get_version() < stem.version.Requirement.SAVECONF_FORCE:
+      force = False
+
+    response = self.msg('SAVECONF FORCE' if force else 'SAVECONF')
     stem.response.convert('SINGLELINE', response)
 
     if response.is_ok():

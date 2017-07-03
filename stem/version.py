@@ -67,6 +67,7 @@ easily parsed and compared, for instance...
   **ADD_ONION_NON_ANONYMOUS**           ADD_ONION supports non-anonymous mode
   **LOADCONF**                          LOADCONF requests
   **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
+  **SAVECONF_FORCE**                    Added the 'FORCE' flag to SAVECONF
   **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
   **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
   **TORRC_PORT_FORWARDING**             'PortForwarding' config option
@@ -376,6 +377,7 @@ Requirement = stem.util.enum.Enum(
   ('ADD_ONION_NON_ANONYMOUS', Version('0.2.9.3-alpha')),
   ('LOADCONF', Version('0.2.1.1')),
   ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
+  ('SAVECONF_FORCE', Version('0.3.1.1-alpha')),
   ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),
   ('TORRC_CONTROL_SOCKET', Version('0.2.0.30')),
   ('TORRC_PORT_FORWARDING', Version('0.2.3.1-alpha')),

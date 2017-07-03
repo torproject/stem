@@ -48,6 +48,7 @@ The following are only available within Stem's `git repository
   * :func:`~stem.process.launch_tor` raised a ValueError if invoked when outside the main thread
   * Failure to authenticate could raise an improper response or hang (:trac:`22679`)
   * Renamed :class:`~stem.response.events.ConnectionBandwidthEvent` type attribute to conn_type to avoid conflict with parent class (:trac:`21774`)
+  * Added 'force' argument to :func:`~stem.control.Controller.save_conf` (:spec:`5c82d5e`)
   * Added the QUERY_NO_HSDIR :data:`~stem.HSDescReason` and recognizing unknown HSDir results (:spec:`1412d79`)
   * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
   * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)
