@@ -82,6 +82,7 @@ Applications
 `trnnr <https://github.com/NullHypothesis/trnnr>`_                                                          Python implementation of tor's nearest neighbour ranking.
 `TorTP <https://github.com/vinc3nt/stem-tortp>`_                                                            Configures iptables to torify all traffic.
 `BWScanner <https://github.com/TheTorProject/bwscanner>`_                                                   Measurements for the tor bandwidth authorities. Interesting example of txtorcon and stem being used together.
+`blockstack-tor <https://github.com/blockstack/blockstack-tor>`_                                            Tor integration for `Blockstack <https://github.com/blockstack/blockstack>`_
 =========================================================================================================== ==========
 
 Scripts
