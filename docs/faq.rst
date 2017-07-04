@@ -275,6 +275,7 @@ Library                                                             Language    
 `Txtorcon <https://txtorcon.readthedocs.org/>`_                     Python (Twisted)    February 2012 - Present
 `TorCtl <https://gitweb.torproject.org/pytorctl.git>`_              Python              July 2008 - November 2011
 `TorUtils <https://github.com/dapphp/TorUtils>`_                    PHP                 October 2015 - Present
+`Puccinia <https://gitlab.com/amphetamine/puccinia/>`_              Rust                October 2015 - Present
 `PHP TorCtl <https://github.com/dunglas/php-torcontrol/>`_          PHP                 February 2013
 `JTorCtl <https://gitweb.torproject.org/jtorctl.git>`_              Java                June 2005 - May 2009
 `Orc <https://github.com/sycamoreone/orc>`_                         Go                  January 2015
