@@ -73,6 +73,11 @@ class TestControl(unittest.TestCase):
       # Return a version without caching, so it will be the new version.
       self.assertEqual(version_2_2_object, self.controller.get_version())
 
+      # Spec says the getinfo response may optionally be prefixed by 'Tor '. In
+      # practice it doesn't but we should accept that.
+      get_info_mock.return_value = 'Tor 0.2.1.32'
+      self.assertEqual(version_2_1_object, self.controller.get_version())
+
       # Raise an exception in the get_info() call.
       get_info_mock.side_effect = InvalidArguments
 
