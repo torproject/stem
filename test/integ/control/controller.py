@@ -756,6 +756,16 @@ class TestController(unittest.TestCase):
         shutil.rmtree(tmpdir)
 
   @test.require.controller
+  def test_set_conf_when_immutable(self):
+    """
+    Issue a SETCONF for tor options that cannot be changed while running.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      self.assertRaisesRegexp(stem.InvalidArguments, "DisableAllSwap cannot be changed while tor's running", controller.set_conf, 'DisableAllSwap', '1')
+      self.assertRaisesRegexp(stem.InvalidArguments, "DisableAllSwap, User cannot be changed while tor's running", controller.set_options, {'User': 'atagar', 'DisableAllSwap': '1'})
+
+  @test.require.controller
   @test.require.version(Requirement.LOADCONF)
   def test_loadconf(self):
     """

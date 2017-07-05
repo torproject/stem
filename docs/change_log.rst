@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
   * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
   * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)
   * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset (:trac:`21329`)
+  * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
   * Failed to parse torrcs without a port on ipv6 exit policy entries
 
  * **Descriptors**

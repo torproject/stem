@@ -326,6 +326,26 @@ Listener = stem.util.enum.UppercaseEnum(
   'CONTROL',
 )
 
+# torrc options that cannot be changed once tor's running
+
+IMMUTABLE_CONFIG_OPTIONS = map(str.lower, (
+  'AccelDir',
+  'AccelName',
+  'DataDirectory',
+  'DisableAllSwap',
+  'DisableDebuggerAttachment',
+  'HardwareAccel',
+  'HiddenServiceNonAnonymousMode',
+  'HiddenServiceSingleHopMode',
+  'KeepBindCapabilities',
+  'PidFile',
+  'RunAsDaemon',
+  'Sandbox',
+  'SyslogIdentityTag',
+  'TokenBucketRefillInterval',
+  'User',
+))
+
 LOG_CACHE_FETCHES = True  # provide trace level logging for cache hits
 
 # Configuration options that are fetched by a special key. The keys are
@@ -2404,6 +2424,10 @@ class Controller(BaseController):
         self._set_cache({'get_custom_options': None})
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
+      immutable_params = [k for k, v in params if k.lower() in IMMUTABLE_CONFIG_OPTIONS]
+
+      if immutable_params:
+        raise stem.InvalidArguments(message = "%s cannot be changed while tor's running" % ', '.join(sorted(immutable_params)), arguments = immutable_params)
 
       if response.code == '552':
         if response.message.startswith("Unrecognized option: Unknown option '"):
