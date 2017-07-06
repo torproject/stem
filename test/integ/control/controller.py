@@ -683,6 +683,19 @@ class TestController(unittest.TestCase):
       controller.remove_ephemeral_hidden_service(response.service_id)
 
   @test.require.controller
+  @test.require.version(Requirement.ADD_ONION)
+  def test_rejecting_unanonymous_hidden_services_creation(self):
+    """
+    Attempt to create a non-anonymous hidden service despite not setting
+    HiddenServiceSingleHopMode and HiddenServiceNonAnonymousMode.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      self.assertEqual('Tor is in anonymous hidden service mode', str(controller.msg('ADD_ONION NEW:BEST Flags=NonAnonymous Port=4567')))
+
+  @test.require.controller
   def test_set_conf(self):
     """
     Exercises set_conf(), reset_conf(), and set_options() methods with valid
@@ -1171,6 +1184,7 @@ class TestController(unittest.TestCase):
       self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
   @test.require.controller
+  @test.require.online
   def test_get_server_descriptors(self):
     """
     Fetches a few descriptors via the get_server_descriptors() method.
@@ -1194,6 +1208,7 @@ class TestController(unittest.TestCase):
         # while to do so).
 
         count += 1
+
         if count > 10:
           break
 
