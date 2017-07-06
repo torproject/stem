@@ -336,6 +336,33 @@ class TestProcess(unittest.TestCase):
     assert_in('[notice] Configuration file "/path/that/really/shouldnt/exist" not present, using reasonable defaults.', output, 'Missing torrc should be allowed with --ignore-missing-torrc')
 
   @asynchronous
+  def test_unanonymous_hidden_service_config_must_match(tor_cmd):
+    """
+    Checking that startup fails if HiddenServiceNonAnonymousMode and
+    HiddenServiceSingleHopMode don't match.
+    """
+
+    try:
+      stem.process.launch_tor_with_config(
+        tor_cmd = tor_cmd,
+        config = {'HiddenServiceNonAnonymousMode': '1'},
+      )
+
+      raise AssertionError("Tor shouldn't start with 'HiddenServiceNonAnonymousMode' set but not 'HiddenServiceSingleHopMode'")
+    except OSError as exc:
+      assert_equal('Process terminated: HiddenServiceNonAnonymousMode does not provide any server anonymity. It must be used with HiddenServiceSingleHopMode set to 1.', str(exc))
+
+    try:
+      stem.process.launch_tor_with_config(
+        tor_cmd = tor_cmd,
+        config = {'HiddenServiceSingleHopMode': '1'},
+      )
+
+      raise AssertionError("Tor shouldn't start with 'HiddenServiceSingleHopMode' set but not 'HiddenServiceNonAnonymousMode'")
+    except OSError as exc:
+      assert_equal('Process terminated: HiddenServiceSingleHopMode does not provide any server anonymity. It must be used with HiddenServiceNonAnonymousMode set to 1.', str(exc))
+
+  @asynchronous
   def test_can_run_multithreaded(tor_cmd):
     """
     Our launch_tor() function uses signal to support its timeout argument.
