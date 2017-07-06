@@ -10,8 +10,7 @@ etc). This information is provided from a few sources...
 
 * The 'cached-descriptors' file in Tor's data directory.
 
-* Archived descriptors provided by CollecTor
-  (https://collector.torproject.org/).
+* Archived descriptors provided by `CollecTor <https://metrics.torproject.org/collector.html>`_.
 
 * Directory authorities and mirrors via their DirPort.
 
@@ -949,7 +948,7 @@ class RelayDescriptor(ServerDescriptor):
 class BridgeDescriptor(ServerDescriptor):
   """
   Bridge descriptor (`bridge descriptor specification
-  <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
+  <https://metrics.torproject.org/collector.html#bridge-descriptors>`_)
 
   :var str ed25519_certificate_hash: sha256 hash of the original identity-ed25519
   :var str router_digest_sha256: sha256 digest of this document
@@ -992,7 +991,7 @@ class BridgeDescriptor(ServerDescriptor):
     """
     Checks if we've been properly scrubbed in accordance with the `bridge
     descriptor specification
-    <https://collector.torproject.org/formats.html#bridge-descriptors>`_.
+    <https://metrics.torproject.org/collector.html#bridge-descriptors>`_.
     Validation is a moving target so this may not be fully up to date.
 
     :returns: **True** if we're scrubbed, **False** otherwise

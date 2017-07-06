@@ -122,7 +122,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   tries to determine the descriptor type based on the following...
 
   * The @type annotation on the first line. These are generally only found in
-    the `CollecTor archives <https://collector.torproject.org/formats.html#relay-descriptors>`_.
+    the `CollecTor archives <https://metrics.torproject.org/collector.html#relay-descriptors>`_.
 
   * The filename if it matches something from tor's data directory. For
     instance, tor's 'cached-descriptors' contains server descriptors.
@@ -166,7 +166,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
     my_descriptor_file = open(descriptor_path, 'rb')
 
   :param str,file,tarfile descriptor_file: path or opened file with the descriptor contents
-  :param str descriptor_type: `descriptor type <https://collector.torproject.org/formats.html>`_, this is guessed if not provided
+  :param str descriptor_type: `descriptor type <https://metrics.torproject.org/collector.html#data-formats>`_, this is guessed if not provided
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param stem.descriptor.__init__.DocumentHandler document_handler: method in

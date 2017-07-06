@@ -19,8 +19,7 @@ Extra-info descriptors are available from a few sources...
  * control port via 'GETINFO extra-info/digest/\*' queries
  * the 'cached-extrainfo' file in tor's data directory
 
-* Archived descriptors provided by CollecTor
-  (https://collector.torproject.org/).
+* Archived descriptors provided by `CollecTor <https://metrics.torproject.org/collector.html>`_.
 
 * Directory authorities and mirrors via their DirPort.
 
@@ -997,7 +996,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Bridge extra-info descriptor (`bridge descriptor specification
-  <https://collector.torproject.org/formats.html#bridge-descriptors>`_)
+  <https://metrics.torproject.org/collector.html#bridge-descriptors>`_)
 
   :var str ed25519_certificate_hash: sha256 hash of the original identity-ed25519
   :var str router_digest_sha256: sha256 digest of this document

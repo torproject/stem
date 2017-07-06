@@ -9,7 +9,7 @@ Documents can be obtained from a few sources...
 * The 'cached-consensus' file in Tor's data directory.
 
 * Archived descriptors provided by `CollecTor
-  <https://collector.torproject.org/>`_.
+  <https://metrics.torproject.org/collector.html>`_.
 
 * Directory authorities and mirrors via their DirPort.
 
