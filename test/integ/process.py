@@ -258,28 +258,31 @@ class TestProcess(unittest.TestCase):
     elif 'UseBridges' not in output or 'SocksPort' not in output:
       raise AssertionError("'tor --list-torrc-options' didn't have options we expect")
 
-  @test.require.command('sleep')
-  @patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope')))
-  def test_no_orphaned_process(self):
+  @asynchronous
+  def test_no_orphaned_process(tor_cmd):
     """
     Check that when an exception arises in the middle of spawning tor that we
     don't leave a lingering process.
     """
 
-    # We don't need to actually run tor for this test. Rather, any process will
-    # do the trick. Picking sleep so this'll clean itself up if our test fails.
+    if not stem.util.system.is_available('sleep'):
+      skip('(sleep unavailable)')
 
-    mock_tor_process = subprocess.Popen(['sleep', '60'])
+    with patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope'))):
+      # We don't need to actually run tor for this test. Rather, any process will
+      # do the trick. Picking sleep so this'll clean itself up if our test fails.
 
-    with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
-      try:
-        stem.process.launch_tor()
-        self.fail("tor shoudn't have started")
-      except KeyboardInterrupt as exc:
-        if os.path.exists('/proc/%s' % mock_tor_process.pid):
-          self.fail('launch_tor() left a lingering tor process')
+      mock_tor_process = subprocess.Popen(['sleep', '60'])
 
-        self.assertEqual('nope', str(exc))
+      with patch('subprocess.Popen', Mock(return_value = mock_tor_process)):
+        try:
+          stem.process.launch_tor(tor_cmd)
+          raise AssertionError("tor shoudn't have started")
+        except KeyboardInterrupt as exc:
+          if os.path.exists('/proc/%s' % mock_tor_process.pid):
+            raise AssertionError('launch_tor() left a lingering tor process')
+
+          assert_equal('nope', str(exc))
 
   @asynchronous
   def test_torrc_arguments(tor_cmd):
