@@ -2,6 +2,8 @@
 Tests the stem.process functions with various use cases.
 """
 
+from __future__ import absolute_import
+
 import binascii
 import hashlib
 import os
@@ -45,7 +47,11 @@ DataDirectory %s
 
 
 def random_port():
-  return str(random.randint(1024, 65535))
+  while True:
+    port = random.randint(1024, 65535)
+
+    if stem.util.system.pid_by_port(port) is None:
+      return str(port)
 
 
 @contextmanager
@@ -552,8 +558,8 @@ class TestProcess(unittest.TestCase):
       except OSError:
         runtime = time.time() - start_time
 
-        if not (runtime > 0.05 and runtime < 1):
-          raise AssertionError('Test should have taken 0.05-1 seconds, took %0.1f instead' % runtime)
+        if not (runtime > 0.05 and runtime < 3):
+          raise AssertionError('Test should have taken 0.05-3 seconds, took %0.1f instead' % runtime)
 
   @asynchronous
   def test_take_ownership_via_pid(tor_cmd):
