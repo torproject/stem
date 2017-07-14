@@ -33,8 +33,9 @@ import linecache
 import multiprocessing
 import os
 import re
-import time
 import threading
+import time
+import traceback
 import unittest
 
 import stem.prereq
@@ -167,6 +168,8 @@ class AsyncTest(object):
         conn.send(AsyncResult('failure', str(exc)))
       except SkipTest as exc:
         conn.send(AsyncResult('skipped', str(exc)))
+      except:
+        conn.send(AsyncResult('error', traceback.format_exc()))
       finally:
         conn.close()
 
@@ -206,6 +209,8 @@ class AsyncTest(object):
         self._status = AsyncStatus.FINISHED
 
       if test and self._result.type == 'failure':
+        test.fail(self._result.msg)
+      elif test and self._result.type == 'error':
         test.fail(self._result.msg)
       elif test and self._result.type == 'skipped':
         test.skipTest(self._result.msg)
