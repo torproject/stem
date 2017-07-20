@@ -255,6 +255,12 @@ class TimedTestRunner(unittest.TextTestRunner):
 
         # TODO: remove when dropping python 2.6 support
 
+        def assertItemsEqual(self, expected, actual):
+          if stem.prereq._is_python_26():
+            self.assertEqual(set(expected), set(actual))
+          else:
+            return super(original_type, self).assertItemsEqual(expected, actual)
+
         def assertRaisesRegexp(self, exc_type, exc_msg, func, *args, **kwargs):
           if stem.prereq._is_python_26():
             try:

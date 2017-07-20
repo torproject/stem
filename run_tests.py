@@ -64,13 +64,6 @@ New capabilities are:
 """
 
 
-if stem.prereq._is_python_26():
-  def assertItemsEqual(self, expected, actual):
-    self.assertEqual(set(expected), set(actual))
-
-  unittest.TestCase.assertItemsEqual = assertItemsEqual
-
-
 def get_unit_tests(module_prefix = None):
   """
   Provides the classes for our unit tests.
