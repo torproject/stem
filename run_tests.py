@@ -105,16 +105,15 @@ def get_integ_tests(module_prefix = None):
 
 def _get_tests(modules, module_prefix):
   for import_name in modules:
-    if import_name:
-      module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
+    module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
 
-      if not module_prefix or module.startswith(module_prefix):
-        yield import_name
-      elif module_prefix.startswith(module):
-        # single test for this module
+    if not module_prefix or module.startswith(module_prefix):
+      yield import_name
+    elif module_prefix.startswith(module):
+      # single test for this module
 
-        test_module = module_prefix.rsplit('.', 1)[1]
-        yield '%s.%s' % (import_name, test_module)
+      test_name = module_prefix.rsplit('.', 1)[1]
+      yield '%s.%s' % (import_name, test_name)
 
 
 def get_torrc_entries(target):
