@@ -38,7 +38,6 @@ CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
   'test.unit_tests': '',
   'test.integ_tests': '',
-  'target.torrc': {},
 })
 
 MOCK_UNAVAILABLE_MSG = """\
@@ -107,35 +106,6 @@ def _get_tests(modules, module_prefix):
 
       test_name = module_prefix.rsplit('.', 1)[1]
       yield '%s.%s' % (import_name, test_name)
-
-
-def get_torrc_entries(target):
-  """
-  Provides the torrc entries used to run the given target.
-
-  :param Target target: target to provide the custom torrc contents of
-
-  :returns: list of :class:`~test.runner.Torrc` entries for the given target
-
-  :raises: **ValueError** if the target.torrc config has entries that don't map
-    to test.runner.Torrc
-  """
-
-  # converts the 'target.torrc' csv into a list of test.runner.Torrc enums
-
-  config_csv = CONFIG['target.torrc'].get(target)
-  torrc_opts = []
-
-  if config_csv:
-    for opt in config_csv.split(','):
-      opt = opt.strip()
-
-      if opt in test.runner.Torrc.keys():
-        torrc_opts.append(test.runner.Torrc[opt])
-      else:
-        raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
-
-  return torrc_opts
 
 
 def main():
@@ -239,7 +209,8 @@ def main():
     error_tracker.set_category('UNIT TEST')
 
     for test_class in get_unit_tests(args.specific_test):
-      run_result = _run_test(args, test_class, output_filters, logging_buffer)
+      run_result = _run_test(args, test_class, output_filters)
+      test.output.print_logging(logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
     println()
@@ -252,20 +223,19 @@ def main():
       error_tracker.set_category(target)
 
       try:
-        integ_runner.start(args.attribute_targets, args.tor_path, extra_torrc_opts = get_torrc_entries(target))
+        integ_runner.start(target, args.attribute_targets, args.tor_path)
 
         println('Running tests...\n', STATUS)
 
         for test_class in get_integ_tests(args.specific_test):
-          run_result = _run_test(args, test_class, output_filters, logging_buffer)
+          run_result = _run_test(args, test_class, output_filters)
+          test.output.print_logging(logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
       except KeyboardInterrupt:
         println('  aborted starting tor: keyboard interrupt\n', ERROR)
         break
       except ValueError as exc:
-        # can arise if get_torrc_entries() runs into a bad settings.cfg data
-
-        println(str(exc), ERROR)
+        println(str(exc), ERROR)  # can arise if there's bad settings.cfg data
         break
       except OSError:
         error_tracker.register_error()
@@ -356,7 +326,7 @@ def _print_static_issues(static_check_issues):
       println()
 
 
-def _run_test(args, test_class, output_filters, logging_buffer):
+def _run_test(args, test_class, output_filters):
   start_time = time.time()
 
   # Test classes look like...
@@ -407,7 +377,6 @@ def _run_test(args, test_class, output_filters, logging_buffer):
       println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
       println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
 
-  test.output.print_logging(logging_buffer)
   return run_result
 
 

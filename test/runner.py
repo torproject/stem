@@ -54,6 +54,7 @@ from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
   'integ.log': './test/data/log',
+  'target.torrc': {},
 })
 
 SOCKS_PORT = 1112
@@ -169,14 +170,14 @@ class Runner(object):
 
     self._owner_controller = None
 
-  def start(self, attribute_targets, tor_cmd, extra_torrc_opts):
+  def start(self, config_target, attribute_targets, tor_cmd):
     """
     Makes temporary testing resources and starts tor, blocking until it
     completes.
 
+    :param str config_target: **Target** for this test run's torrc settings
     :param list attribute_targets: **Targets** for our non-configuration attributes
     :param str tor_cmd: command to start tor with
-    :param list extra_torrc_opts: additional torrc options for our test instance
 
     :raises: OSError if unable to run test preparations or start tor
     """
@@ -213,6 +214,18 @@ class Runner(object):
 
         os.chdir(tor_cwd)
         data_dir_path = './%s' % os.path.basename(self._test_dir)
+
+      config_csv = CONFIG['target.torrc'].get(config_target)
+      extra_torrc_opts = []
+
+      if config_csv:
+        for opt in config_csv.split(','):
+          opt = opt.strip()
+
+          if opt in Torrc.keys():
+            extra_torrc_opts.append(Torrc[opt])
+          else:
+            raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
 
       self._custom_opts = extra_torrc_opts
       self._torrc_contents = BASE_TORRC % (data_dir_path, data_dir_path)
