@@ -34,7 +34,7 @@ class TestConnection(unittest.TestCase):
       resolver_command = RESOLVER_COMMAND[resolver].format(pid = runner.get_pid())
       resolver_output = stem.util.system.call(resolver_command)
 
-      self.fail('Unable to find our controller connection with %s (%s). Connections found were...\n\n%s\n\nCommand output was...\n\n%s' % (resolver, , resolver_command, '\n'.join(map(str, connections)), resolver_output))
+      self.fail('Unable to find our controller connection with %s (%s). Connections found were...\n\n%s\n\nCommand output was...\n\n%s' % (resolver, resolver_command, '\n'.join(map(str, connections)), resolver_output))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)
