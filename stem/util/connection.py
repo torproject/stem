@@ -28,8 +28,12 @@ Connection and networking based utility functions.
   Method for resolving a process' connections.
 
   .. versionadded:: 1.1.0
+
   .. versionchanged:: 1.4.0
      Added **NETSTAT_WINDOWS**.
+
+  .. versionchanged:: 1.6.0
+     Added **BSD_FSTAT**.
 
   ====================  ===========
   Resolver              Description

@@ -5,10 +5,11 @@ that we're running.
 
 import unittest
 
+import stem.util.system
 import test.require
 import test.runner
 
-from stem.util.connection import Resolver, get_connections, system_resolvers
+from stem.util.connection import RESOLVER_COMMAND, Resolver, get_connections, system_resolvers
 
 
 class TestConnection(unittest.TestCase):
@@ -30,7 +31,10 @@ class TestConnection(unittest.TestCase):
         if conn.local_address == '127.0.0.1' and conn.local_port == test.runner.CONTROL_PORT:
           return
 
-      self.fail('Unable to find localhost connection with %s:\n%s' % (resolver, '\n'.join(map(str, connections))))
+      resolver_command = RESOLVER_COMMAND[resolver].format(pid = runner.get_pid())
+      resolver_output = stem.util.system.call(resolver_command)
+
+      self.fail('Unable to find our controller connection with %s (%s). Connections found were...\n\n%s\n\nCommand output was...\n\n%s' % (resolver, , resolver_command, '\n'.join(map(str, connections)), resolver_output))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)
