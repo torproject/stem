@@ -30,7 +30,7 @@ class TestConnection(unittest.TestCase):
         if conn.local_address == '127.0.0.1' and conn.local_port == test.runner.CONTROL_PORT:
           return
 
-      self.fail('Unable to find localhost connection with %s:\n%s' % (resolver, '\n'.join(connections)))
+      self.fail('Unable to find localhost connection with %s:\n%s' % (resolver, '\n'.join(map(str, connections))))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)
