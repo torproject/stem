@@ -35,6 +35,10 @@ Connection and networking based utility functions.
   .. versionchanged:: 1.6.0
      Added **BSD_FSTAT**.
 
+  .. deprecated:: 1.6.0
+     The SOCKSTAT connection resolver is proving to be unreliable
+     (:trac:`23057`), and will be dropped in the 2.0.0 release unless fixed.
+
   ====================  ===========
   Resolver              Description
   ====================  ===========

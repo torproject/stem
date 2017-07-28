@@ -51,9 +51,6 @@ class TestConnection(unittest.TestCase):
   def test_connections_by_lsof(self):
     self.check_resolver(Resolver.LSOF)
 
-  def test_connections_by_sockstat(self):
-    self.check_resolver(Resolver.SOCKSTAT)
-
   def test_connections_by_bsd_sockstat(self):
     self.check_resolver(Resolver.BSD_SOCKSTAT)
 
