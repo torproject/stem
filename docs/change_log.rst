@@ -77,6 +77,7 @@ The following are only available within Stem's `git repository
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
   * Supporing pid arguments in :func:`~stem.util.system.is_running`
   * Normalized :func:`~stem.util.term.format` to return unicode
+  * Don't load vim swap files as configurations
 
  * **Interpreter**
 

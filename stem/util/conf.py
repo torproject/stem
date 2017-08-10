@@ -475,6 +475,9 @@ class Config(object):
     .. versionchanged:: 1.3.0
        Added the **commenting** argument.
 
+    .. versionchanged:: 1.6.0
+       Avoid loading vim swap files.
+
     :param str path: file or directory path to be loaded, this uses the last
       loaded path if not provided
     :param bool commenting: ignore line content after a '#' if **True**, read
@@ -494,6 +497,9 @@ class Config(object):
     if os.path.isdir(self._path):
       for root, dirnames, filenames in os.walk(self._path):
         for filename in filenames:
+          if filename.endswith('.swp'):
+            continue  # vim swap file
+
           self.load(os.path.join(root, filename))
 
       return
