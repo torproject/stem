@@ -485,7 +485,8 @@ def send_message(control_file, message, raw = False):
     control_file.flush()
 
     log_message = message.replace('\r\n', '\n').rstrip()
-    log.trace('Sent to tor:\n' + log_message)
+    msg_div = '\n' if '\n' in log_message else ' '
+    log.trace('Sent to tor:%s%s' % (msg_div, log_message))
   except socket.error as exc:
     log.info('Failed to send message: %s' % exc)
 
@@ -593,14 +594,15 @@ def recv_message(control_file):
 
       raw_content_str = b''.join(raw_content)
       log_message = stem.util.str_tools._to_unicode(raw_content_str.replace(b'\r\n', b'\n').rstrip())
+      log_message_lines = log_message.split('\n')
 
-      if TRUNCATE_LOGS:
-        log_message_lines = log_message.split('\n')
+      if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
+        log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
 
-        if len(log_message_lines) > TRUNCATE_LOGS:
-          log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
-
-      log.trace('Received from tor:\n' + log_message)
+      if log_message_lines > 2:
+        log.trace('Received from tor:\n%s' % log_message)
+      else:
+        log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
 
       return stem.response.ControlMessage(parsed_content, raw_content_str)
     elif divider == '+':
