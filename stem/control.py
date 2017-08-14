@@ -395,11 +395,6 @@ UNCACHEABLE_GETCONF_PARAMS = (
   'hiddenserviceauthorizeclient',
 )
 
-# number of sequential attempts before we decide that the Tor geoip database
-# is unavailable
-
-GEOIP_FAILURE_THRESHOLD = 5
-
 SERVER_DESCRIPTORS_UNSUPPORTED = "Tor is currently not configured to retrieve \
 server descriptors. As of Tor version 0.2.3.25 it downloads microdescriptors \
 instead unless you set 'UseMicrodescriptors 0' in your torrc."
@@ -1035,11 +1030,8 @@ class Controller(BaseController):
 
     self._event_listeners = {}
     self._event_listeners_lock = threading.RLock()
-
-    # number of sequential 'GETINFO ip-to-country/*' lookups that have failed
-
-    self._geoip_failure_count = 0
     self._enabled_features = []
+    self._is_geoip_unavailable = None
 
     super(Controller, self).__init__(control_socket, is_authenticated)
 
@@ -1125,8 +1117,7 @@ class Controller(BaseController):
         provided a default response
       * :class:`stem.InvalidArguments` if the 'params' requested was
         invalid
-      * :class:`stem.ProtocolError` if the geoip database is known to be
-        unavailable
+      * :class:`stem.ProtocolError` if the geoip database is unavailable
     """
 
     start_time = time.time()
@@ -1154,8 +1145,6 @@ class Controller(BaseController):
 
     for param in params:
       if param.startswith('ip-to-country/') and self.is_geoip_unavailable():
-        # the geoip database already looks to be unavailable - abort the request
-
         raise stem.ProtocolError('Tor geoip database is unavailable')
 
     # if everything was cached then short circuit making the query
@@ -1189,9 +1178,7 @@ class Controller(BaseController):
           if key in CACHEABLE_GETINFO_PARAMS or key in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF:
             to_cache[key] = value
           elif key.startswith('ip-to-country/'):
-            # both cache-able and means that we should reset the geoip failure count
             to_cache[key] = value
-            self._geoip_failure_count = -1
 
         self._set_cache(to_cache, 'getinfo')
 
@@ -1202,21 +1189,7 @@ class Controller(BaseController):
       else:
         return list(reply.values())[0]
     except stem.ControllerError as exc:
-      # bump geoip failure count if...
-      # * we're caching results
-      # * this was soley a geoip lookup
-      # * we've never had a successful geoip lookup (failure count isn't -1)
-
-      is_geoip_request = len(params) == 1 and list(params)[0].startswith('ip-to-country/')
-
-      if is_geoip_request and self.is_caching_enabled() and self._geoip_failure_count != -1:
-        self._geoip_failure_count += 1
-
-        if self.is_geoip_unavailable():
-          log.warn("Tor's geoip database is unavailable.")
-
       log.debug('GETINFO %s (failed: %s)' % (' '.join(params), exc))
-
       raise
 
   @with_default()
@@ -3157,7 +3130,7 @@ class Controller(BaseController):
     with self._cache_lock:
       self._request_cache = {}
       self._last_newnym = 0.0
-      self._geoip_failure_count = 0
+      self._is_geoip_unavailable = None
 
   def load_conf(self, configtext):
     """
@@ -3667,18 +3640,33 @@ class Controller(BaseController):
 
   def is_geoip_unavailable(self):
     """
-    Provides **True** if we've concluded hat our geoip database is unavailable,
-    **False** otherwise. This is determined by having our 'GETINFO
-    ip-to-country/\*' lookups fail so this will default to **False** if we
-    aren't making those queries.
+    Provides **True** if tor's geoip database is unavailable, **False**
+    otherwise.
 
-    Geoip failures will be untracked if caching is disabled.
+    .. versionchanged:: 1.6.0
+       No longer requires previously failed GETINFO requests to determine this.
 
-    :returns: **bool** to indicate if we've concluded our geoip database to be
-      unavailable or not
+    .. deprecated:: 1.6.0
+       If this becomes available in tor we'll be deprecating this in our 2.x
+       release (:trac:`23237`). If not this will be renamed to
+       is_geoip_available.
+
+
+    :returns: **bool** indicating if we've determined tor's geoip database to
+      be unavailable or not
     """
 
-    return self._geoip_failure_count >= GEOIP_FAILURE_THRESHOLD
+    if self._is_geoip_unavailable is None:
+      try:
+        self.get_info('ip-to-country/0.0.0.0')
+        self._is_geoip_unavailable = False
+      except stem.ControllerError as exc:
+        if 'GeoIP data not loaded' in str(exc):
+          self._is_geoip_unavailable = True
+        else:
+          return False  # unexpected issue, fail open and don't cache
+
+    return self._is_geoip_unavailable
 
   def map_address(self, mapping):
     """
