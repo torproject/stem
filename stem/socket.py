@@ -599,7 +599,7 @@ def recv_message(control_file):
       if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
         log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
 
-      if log_message_lines > 2:
+      if len(log_message_lines) > 2:
         log.trace('Received from tor:\n%s' % log_message)
       else:
         log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
