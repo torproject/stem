@@ -786,6 +786,17 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       ('fast-speed=40960', {str_type('fast-speed'): 40960}),    # numeric value
       ('guard-wfu=94.669%', {str_type('guard-wfu'): 0.94669}),  # percentage value
       ('guard-wfu=94.669% guard-tk=691200', {str_type('guard-wfu'): 0.94669, str_type('guard-tk'): 691200}),  # multiple values
+      ('stable-uptime=0 stable-mtbf=0 fast-speed=0 guard-wfu=0.000% guard-tk=0 guard-bw-inc-exits=0 guard-bw-exc-exits=0 enough-mtbf=1 ignoring-advertised-bws=0', {
+        str_type('stable-uptime'): 0,
+        str_type('stable-mtbf'): 0,
+        str_type('fast-speed'): 0,
+        str_type('guard-wfu'): 0.0,
+        str_type('guard-tk'): 0,
+        str_type('guard-bw-inc-exits'): 0,
+        str_type('guard-bw-exc-exits'): 0,
+        str_type('enough-mtbf'): 1,
+        str_type('ignoring-advertised-bws'): 0,
+      }),
     )
 
     for test_value, expected_value in test_values:
