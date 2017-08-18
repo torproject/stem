@@ -258,6 +258,9 @@ class DaemonTask(object):
     :raises: exception raised by the function if it failed with one
     """
 
+    if self.status == State.PENDING:
+      self.run()
+
     if self.status == State.RUNNING:
       response = self._pipe.recv()
       self._process.join()

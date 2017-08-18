@@ -23,7 +23,6 @@
 """
 
 import importlib
-import multiprocessing
 import os
 import re
 import sys
@@ -169,7 +168,6 @@ class Task(object):
 
     self._is_background_task = background
     self._background_process = None
-    self._background_pipe = None
 
   def run(self):
     start_time = time.time()
@@ -180,14 +178,7 @@ class Task(object):
 
     try:
       if self._is_background_task:
-        def _run_wrapper(conn, runner, args):
-          os.nice(15)
-          conn.send(runner(*args) if args else runner())
-          conn.close()
-
-        self._background_pipe, child_pipe = multiprocessing.Pipe()
-        self._background_process = multiprocessing.Process(target = _run_wrapper, args = (child_pipe, self.runner, self.args))
-        self._background_process.start()
+        self._background_process = stem.util.system.DaemonTask(self.runner, self.args, start = True)
       else:
         self.result = self.runner(*self.args) if self.args else self.runner()
 
@@ -215,11 +206,7 @@ class Task(object):
 
   def join(self):
     if self._background_process:
-      try:
-        self.result = self._background_pipe.recv()
-        self._background_process.join()
-      except IOError:
-        pass
+      self.result = self._background_process.join()
 
 
 class ModuleVersion(Task):
