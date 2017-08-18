@@ -13,6 +13,8 @@ import stem.util.system
 import test.require
 import test.runner
 
+from stem.util.system import State, DaemonTask
+
 try:
   # added in python 3.3
   from unittest.mock import Mock, patch
@@ -70,6 +72,39 @@ require_path = test.require.needs(lambda: 'PATH' in os.environ, 'requires PATH')
 
 
 class TestSystem(unittest.TestCase):
+  def test_daemon_task_when_successful(self):
+    """
+    Checks a simple, successfully DaemonTask that simply echos a value.
+    """
+
+    task = DaemonTask(lambda arg: arg, ('hello world',))
+
+    self.assertEqual(None, task.result)
+    self.assertEqual(State.PENDING, task.status)
+
+    task.run()
+    self.assertEqual('hello world', task.join())
+    self.assertEqual(State.DONE, task.status)
+    self.assertTrue(0 < task.runtime < 1.0)
+
+  def test_daemon_task_on_failure(self):
+    """
+    Checks DaemonTask when an exception is raised.
+    """
+
+    def _test_task(arg):
+      raise RuntimeError(arg)
+
+    task = DaemonTask(_test_task, ('hello world',))
+
+    self.assertEqual(None, task.result)
+    self.assertEqual(State.PENDING, task.status)
+
+    task.run()
+    self.assertRaisesRegexp(RuntimeError, 'hello world', task.join)
+    self.assertEqual(State.FAILED, task.status)
+    self.assertTrue(0 < task.runtime < 1.0)
+
   @require_path
   def test_is_available(self):
     """

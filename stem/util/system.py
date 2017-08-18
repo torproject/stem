@@ -45,12 +45,28 @@ best-effort, providing **None** if the lookup fails.
 
   get_process_name - provides our process' name
   set_process_name - changes our process' name
+
+.. data:: Status (enum)
+
+  State of a subprocess.
+
+  .. versionadded:: 1.6.0
+
+  ====================  ===========
+  Status                Description
+  ====================  ===========
+  PENDING               not yet started
+  RUNNING               currently being performed
+  DONE                  completed successfully
+  FAILED                failed with an exception
+  ====================  ===========
 """
 
 import ctypes
 import ctypes.util
 import distutils.spawn
 import mimetypes
+import multiprocessing
 import os
 import platform
 import re
@@ -59,11 +75,19 @@ import tarfile
 import threading
 import time
 
+import stem.util.enum
 import stem.util.proc
 import stem.util.str_tools
 
 from stem import UNDEFINED
 from stem.util import str_type, log
+
+State = stem.util.enum.UppercaseEnum(
+  'PENDING',
+  'RUNNING',
+  'DONE',
+  'FAILED',
+)
 
 # Mapping of commands to if they're available or not.
 
@@ -178,6 +202,93 @@ class CallTimeoutError(CallError):
   def __init__(self, msg, command, exit_status, runtime, stdout, stderr, timeout):
     super(CallTimeoutError, self).__init__(msg, command, exit_status, runtime, stdout, stderr)
     self.timeout = timeout
+
+
+class DaemonTask(object):
+  """
+  Invokes the given function in a subprocess, returning the value.
+
+  .. versionadded:: 1.6.0
+
+  :var function runner: function to be invoked by the subprocess
+  :var tuple args: arguments to provide to the subprocess
+  :var int priority: subprocess nice priority
+
+  :var stem.util.system.State status: state of the subprocess
+  :var float runtime: seconds subprocess took to complete
+  :var object result: return value of subprocess if successful
+  :var exception error: exception raised by subprocess if it failed
+  """
+
+  def __init__(self, runner, args = None, priority = 15, start = False):
+    self.runner = runner
+    self.args = args
+    self.priority = priority
+
+    self.status = State.PENDING
+    self.runtime = None
+    self.result = None
+    self.error = None
+
+    self._process = None
+    self._pipe = None
+
+    if start:
+      self.run()
+
+  def run(self):
+    """
+    Invokes the task if it hasn't already been started. If it has this is a
+    no-op.
+    """
+
+    if self.status == State.PENDING:
+      self._pipe, child_pipe = multiprocessing.Pipe()
+      self._process = multiprocessing.Process(target = DaemonTask._run_wrapper, args = (child_pipe, self.priority, self.runner, self.args))
+      self._process.start()
+      self.status = State.RUNNING
+
+  def join(self):
+    """
+    Provides the result of the daemon task. If still running this blocks until
+    the task is completed.
+
+    :returns: response of the function we ran
+
+    :raises: exception raised by the function if it failed with one
+    """
+
+    if self.status == State.RUNNING:
+      response = self._pipe.recv()
+      self._process.join()
+
+      self.status = response[0]
+      self.runtime = response[1]
+
+      if self.status == State.DONE:
+        self.result = response[2]
+      elif self.status == State.FAILED:
+        self.error = response[2]
+
+    if self.status == State.DONE:
+      return self.result
+    elif self.status == State.FAILED:
+      raise self.error
+    else:
+      raise RuntimeError('BUG: unexpected status from daemon task, %s' % self.status)
+
+  @staticmethod
+  def _run_wrapper(conn, priority, runner, args):
+    start_time = time.time()
+    os.nice(priority)
+
+    try:
+      result = runner(*args) if args else runner()
+      conn.send((State.DONE, time.time() - start_time, result))
+    except Exception as exc:
+      conn.send((State.FAILED, time.time() - start_time, exc))
+    finally:
+      conn.close()
 
 
 def is_windows():
