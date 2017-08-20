@@ -100,6 +100,7 @@ class TestProc(unittest.TestCase):
 
   @patch('stem.util.proc._get_line')
   @patch('stem.util.proc.system_start_time', Mock(return_value = 10))
+  @patch('stem.util.proc.CLOCK_TICKS', 100)
   def test_stats(self, get_line_mock):
     """
     Tests stats() with all combinations of stat_type arguments.
