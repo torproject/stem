@@ -262,8 +262,8 @@ class DaemonTask(object):
       self.run()
 
     if self.status == State.RUNNING:
-      response = self._pipe.recv()
       self._process.join()
+      response = self._pipe.recv()
 
       self.status = response[0]
       self.runtime = response[1]
