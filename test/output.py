@@ -89,7 +89,7 @@ def print_logging(logging_buffer):
     for entry in logging_buffer:
       println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
 
-    print()
+    print('')
 
 
 def apply_filters(testing_output, *filters):
