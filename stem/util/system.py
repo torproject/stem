@@ -25,6 +25,7 @@ best-effort, providing **None** if the lookup fails.
 
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
+  size_of - provides the memory usage of an object
   call - runs the given system command and provides back the results
 
   name_by_pid - gets the name for a process by the given pid
@@ -62,15 +63,18 @@ best-effort, providing **None** if the lookup fails.
   ====================  ===========
 """
 
+import collections
 import ctypes
 import ctypes.util
 import distutils.spawn
+import itertools
 import mimetypes
 import multiprocessing
 import os
 import platform
 import re
 import subprocess
+import sys
 import tarfile
 import threading
 import time
@@ -88,6 +92,17 @@ State = stem.util.enum.UppercaseEnum(
   'DONE',
   'FAILED',
 )
+
+DEFAULT_SIZE = sys.getsizeof(0)  # estimate if object lacks a __sizeof__
+
+SIZE_RECURSES = {
+  tuple: iter,
+  list: iter,
+  collections.deque: iter,
+  dict: lambda d: itertools.chain.from_iterable(d.items()),
+  set: iter,
+  frozenset: iter,
+}
 
 # Mapping of commands to if they're available or not.
 
@@ -420,6 +435,40 @@ def is_running(command):
       return command in command_listing
 
   return None
+
+
+def size_of(obj, exclude = None):
+  """
+  Provides the `approximate memory usage of an object
+  <https://code.activestate.com/recipes/577504/>`_. This can recurse tuples,
+  lists, deques, dicts, and sets. To teach this function to inspect additional
+  object types expand SIZE_RECURSES...
+
+  ::
+
+    stem.util.system.SIZE_RECURSES[SomeClass] = SomeClass.get_elements
+
+  .. versionadded:: 1.6.0
+
+  :param object obj: object to provide the size of
+  :param set exclude: object ids to exclude from size estimation
+
+  :returns: **int** with the size of the object in bytes
+  """
+
+  if exclude is None:
+    exclude = set()
+  elif id(obj) in exclude:
+    return 0
+
+  size = sys.getsizeof(obj, DEFAULT_SIZE)
+  exclude.add(id(obj))
+
+  if type(obj) in SIZE_RECURSES:
+    for entry in SIZE_RECURSES[type(obj)](obj):
+      size += size_of(obj, exclude)
+
+  return size
 
 
 def name_by_pid(pid):

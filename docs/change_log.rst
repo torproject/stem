@@ -80,6 +80,7 @@ The following are only available within Stem's `git repository
   * Supporing pid arguments in :func:`~stem.util.system.is_running`
   * Normalized :func:`~stem.util.term.format` to return unicode
   * Don't load vim swap files as configurations
+  * Added :func:`~stem.util.system.size_of`
 
  * **Interpreter**
 

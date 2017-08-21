@@ -148,6 +148,15 @@ class TestSystem(unittest.TestCase):
     self.assertFalse(system.is_running('irssi'))
     self.assertEqual(None, system.is_running('irssi'))
 
+  def test_size_of(self):
+    """
+    Exercises the size_of function.
+    """
+
+    self.assertTrue(10 < system.size_of('hello') < 50)
+    self.assertTrue(10 < system.size_of([]) < 50)
+    self.assertTrue(system.size_of([]) < system.size_of(['hello']) < system.size_of(['hello', 'world']))
+
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
