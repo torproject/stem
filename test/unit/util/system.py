@@ -153,10 +153,8 @@ class TestSystem(unittest.TestCase):
     Exercises the size_of function.
     """
 
-    self.assertTrue(10 < system.size_of('hello') < 50)
-    self.assertTrue(10 < system.size_of([]) < 50)
+    self.assertTrue(system.size_of('') < system.size_of('hello') < system.size_of('hello world'))
     self.assertTrue(system.size_of([]) < system.size_of(['hello']) < system.size_of(['hello', 'world']))
-    self.assertTrue(100 < system.size_of({'hello': 'world'}) < 300)
     self.assertTrue(system.size_of({}) < system.size_of({'hello': 'world'}) < system.size_of({'hello': 'world', 'more': 'stuff'}))
 
   @patch('stem.util.system.call')
