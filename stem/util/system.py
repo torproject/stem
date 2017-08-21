@@ -466,7 +466,7 @@ def size_of(obj, exclude = None):
 
   if type(obj) in SIZE_RECURSES:
     for entry in SIZE_RECURSES[type(obj)](obj):
-      size += size_of(obj, exclude)
+      size += size_of(entry, exclude)
 
   return size
 
