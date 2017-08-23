@@ -49,6 +49,7 @@ us what our torrc options do...
 
 import os
 import shutil
+import sqlite3
 import sys
 import tempfile
 
@@ -312,6 +313,10 @@ class Manual(object):
     requirements, and is faster too. Only drawback is that this manual
     content is only as up to date as the Stem release we're using.
 
+    .. versionchanged:: 1.6.0
+       Added support for sqlite cache. Support for
+       :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
+
     :param str path: cached manual content to read, if not provided this uses
       the bundled manual information
 
@@ -320,6 +325,19 @@ class Manual(object):
     :raises: **IOError** if a **path** was provided and we were unable to read it
     """
 
+    # TODO: drop _from_config_cache() with stem 2.x
+
+    if path is not None and path.endswith('.sqlite'):
+      return Manual._from_sqlite_cache(path)
+    else:
+      return Manual._from_config_cache(path)
+
+  @staticmethod
+  def _from_sqlite_cache(path):
+    pass
+
+  @staticmethod
+  def _from_config_cache(path):
     conf = stem.util.conf.Config()
     conf.load(path if path else CACHE_PATH, commenting = False)
 
@@ -434,11 +452,26 @@ class Manual(object):
     """
     Persists the manual content to a given location.
 
+    .. versionchanged:: 1.6.0
+       Added support for sqlite cache. Support for
+       :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
+
     :param str path: path to save our manual content to
 
     :raises: **IOError** if unsuccessful
     """
 
+    # TODO: drop _save_as_config() with stem 2.x
+
+    if path.endswith('.sqlite'):
+      return self._save_as_sqlite(path)
+    else:
+      return self._save_as_config(path)
+
+  def _save_as_sqlite(self, path):
+    pass
+
+  def _save_as_config(self, path):
     conf = stem.util.conf.Config()
     conf.set('name', self.name)
     conf.set('synopsis', self.synopsis)
