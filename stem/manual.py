@@ -327,6 +327,9 @@ class Manual(object):
 
     # TODO: drop _from_config_cache() with stem 2.x
 
+    if path is None:
+      path = CACHE_PATH
+
     if path is not None and path.endswith('.sqlite'):
       return Manual._from_sqlite_cache(path)
     else:
@@ -334,12 +337,38 @@ class Manual(object):
 
   @staticmethod
   def _from_sqlite_cache(path):
-    pass
+    with sqlite3.connect(path) as conn:
+      cursor = conn.cursor()
+
+      cursor.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata')
+      name, synopsis, description, man_commit, stem_commit = cursor.fetchone()
+
+      cursor.execute('SELECT name, description FROM commandline')
+      commandline = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, description FROM signals')
+      signals = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, description FROM files')
+      files = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, category, usage, summary, description FROM torrc')
+      config_options = OrderedDict()
+
+      for entry in cursor.fetchall():
+        option, category, usage, summary, option_description = entry
+        config_options[option] = ConfigOption(option, category, usage, summary, option_description)
+
+      manual = Manual(name, synopsis, description, commandline, signals, files, config_options)
+      manual.man_commit = man_commit
+      manual.stem_commit = stem_commit
+
+      return manual
 
   @staticmethod
   def _from_config_cache(path):
     conf = stem.util.conf.Config()
-    conf.load(path if path else CACHE_PATH, commenting = False)
+    conf.load(path, commenting = False)
 
     config_options = OrderedDict()
 
@@ -469,7 +498,31 @@ class Manual(object):
       return self._save_as_config(path)
 
   def _save_as_sqlite(self, path):
-    pass
+    with sqlite3.connect(path + '.new') as conn:
+      conn.execute('CREATE TABLE metadata(name TEXT, synopsis TEXT, description TEXT, man_commit TEXT, stem_commit TEXT)')
+      conn.execute('CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE torrc(name TEXT PRIMARY KEY, category TEXT, usage TEXT, summary TEXT, description TEXT)')
+
+      conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit) VALUES (?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit))
+
+      for k, v in self.commandline_options.items():
+        conn.execute('INSERT INTO commandline(name, description) VALUES (?,?)', (k, v))
+
+      for k, v in self.signals.items():
+        conn.execute('INSERT INTO signals(name, description) VALUES (?,?)', (k, v))
+
+      for k, v in self.files.items():
+        conn.execute('INSERT INTO files(name, description) VALUES (?,?)', (k, v))
+
+      for v in self.config_options.values():
+        conn.execute('INSERT INTO torrc(name, category, usage, summary, description) VALUES (?,?,?,?,?)', (v.name, v.category, v.usage, v.summary, v.description))
+
+    if os.path.exists(path):
+      os.remove(path)
+
+    os.rename(path + '.new', path)
 
   def _save_as_config(self, path):
     conf = stem.util.conf.Config()
