@@ -102,6 +102,11 @@ def _cached_manual():
 
 
 class TestManual(unittest.TestCase):
+  def test_database(self):
+    with stem.manual.database() as cursor:
+      cursor.execute('SELECT description FROM torrc WHERE name="CookieAuthFile"')
+      self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", cursor.fetchone()[0])
+
   def test_has_all_summaries(self):
     """
     Check that we have brief, human readable summaries for all of tor's

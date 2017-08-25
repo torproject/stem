@@ -47,6 +47,7 @@ us what our torrc options do...
 .. versionadded:: 1.5.0
 """
 
+import contextlib
 import os
 import shutil
 import sqlite3
@@ -92,6 +93,28 @@ CATEGORY_SECTIONS = OrderedDict((
   ('HIDDEN SERVICE OPTIONS', Category.HIDDEN_SERVICE),
   ('TESTING NETWORK OPTIONS', Category.TESTING),
 ))
+
+
+@contextlib.contextmanager
+def database(path = None):
+  """
+  Provides a database cursor for a sqlite cache.
+
+  .. versionadded:: 1.6.0
+
+  :param str path: cached manual content to read, if not provided this uses
+    the bundled manual information
+
+  :returns: :class:`sqlite3.Cursor` for the database cache
+
+  :raises: **IOError** if a **path** was provided and we were unable to read it
+  """
+
+  if path is None:
+    path = CACHE_PATH
+
+  with sqlite3.connect(path) as conn:
+    yield conn.cursor()
 
 
 class ConfigOption(object):
@@ -337,9 +360,7 @@ class Manual(object):
 
   @staticmethod
   def _from_sqlite_cache(path):
-    with sqlite3.connect(path) as conn:
-      cursor = conn.cursor()
-
+    with database(path) as cursor:
       cursor.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata')
       name, synopsis, description, man_commit, stem_commit = cursor.fetchone()
 
