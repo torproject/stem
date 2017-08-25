@@ -102,6 +102,11 @@ def _cached_manual():
 
 
 class TestManual(unittest.TestCase):
+  def test_database(self):
+    with stem.manual.database() as cursor:
+      cursor.execute('SELECT description FROM torrc WHERE name="CookieAuthFile"')
+      self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", cursor.fetchone()[0])
+
   def test_has_all_summaries(self):
     """
     Check that we have brief, human readable summaries for all of tor's
@@ -189,14 +194,26 @@ class TestManual(unittest.TestCase):
     self.assertEqual('Description of this new option.', option.description)
 
   @test.require.command('man')
-  def test_saving_manual(self):
+  def test_saving_manual_as_config(self):
     """
-    Check that we can save and reload manuals.
+    Check that we can save and reload manuals as a config.
     """
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
     with tempfile.NamedTemporaryFile(prefix = 'saved_test_manual.') as tmp:
+      manual.save(tmp.name)
+      loaded_manual = stem.manual.Manual.from_cache(tmp.name)
+      self.assertEqual(manual, loaded_manual)
+
+  def test_saving_manual_as_sqlite(self):
+    """
+    Check that we can save and reload manuals as sqlite.
+    """
+
+    manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
+
+    with tempfile.NamedTemporaryFile(prefix = 'saved_test_manual.', suffix = '.sqlite') as tmp:
       manual.save(tmp.name)
       loaded_manual = stem.manual.Manual.from_cache(tmp.name)
       self.assertEqual(manual, loaded_manual)

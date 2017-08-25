@@ -47,8 +47,10 @@ us what our torrc options do...
 .. versionadded:: 1.5.0
 """
 
+import contextlib
 import os
 import shutil
+import sqlite3
 import sys
 import tempfile
 
@@ -80,7 +82,7 @@ except ImportError:
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.cfg')
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
 
 CATEGORY_SECTIONS = OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
@@ -91,6 +93,28 @@ CATEGORY_SECTIONS = OrderedDict((
   ('HIDDEN SERVICE OPTIONS', Category.HIDDEN_SERVICE),
   ('TESTING NETWORK OPTIONS', Category.TESTING),
 ))
+
+
+@contextlib.contextmanager
+def database(path = None):
+  """
+  Provides a database cursor for a sqlite cache.
+
+  .. versionadded:: 1.6.0
+
+  :param str path: cached manual content to read, if not provided this uses
+    the bundled manual information
+
+  :returns: :class:`sqlite3.Cursor` for the database cache
+
+  :raises: **IOError** if a **path** was provided and we were unable to read it
+  """
+
+  if path is None:
+    path = CACHE_PATH
+
+  with sqlite3.connect(path) as conn:
+    yield conn.cursor()
 
 
 class ConfigOption(object):
@@ -312,6 +336,10 @@ class Manual(object):
     requirements, and is faster too. Only drawback is that this manual
     content is only as up to date as the Stem release we're using.
 
+    .. versionchanged:: 1.6.0
+       Added support for sqlite cache. Support for
+       :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
+
     :param str path: cached manual content to read, if not provided this uses
       the bundled manual information
 
@@ -320,8 +348,48 @@ class Manual(object):
     :raises: **IOError** if a **path** was provided and we were unable to read it
     """
 
+    # TODO: drop _from_config_cache() with stem 2.x
+
+    if path is None:
+      path = CACHE_PATH
+
+    if path is not None and path.endswith('.sqlite'):
+      return Manual._from_sqlite_cache(path)
+    else:
+      return Manual._from_config_cache(path)
+
+  @staticmethod
+  def _from_sqlite_cache(path):
+    with database(path) as cursor:
+      cursor.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata')
+      name, synopsis, description, man_commit, stem_commit = cursor.fetchone()
+
+      cursor.execute('SELECT name, description FROM commandline')
+      commandline = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, description FROM signals')
+      signals = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, description FROM files')
+      files = dict(cursor.fetchall())
+
+      cursor.execute('SELECT name, category, usage, summary, description FROM torrc')
+      config_options = OrderedDict()
+
+      for entry in cursor.fetchall():
+        option, category, usage, summary, option_description = entry
+        config_options[option] = ConfigOption(option, category, usage, summary, option_description)
+
+      manual = Manual(name, synopsis, description, commandline, signals, files, config_options)
+      manual.man_commit = man_commit
+      manual.stem_commit = stem_commit
+
+      return manual
+
+  @staticmethod
+  def _from_config_cache(path):
     conf = stem.util.conf.Config()
-    conf.load(path if path else CACHE_PATH, commenting = False)
+    conf.load(path, commenting = False)
 
     config_options = OrderedDict()
 
@@ -434,11 +502,50 @@ class Manual(object):
     """
     Persists the manual content to a given location.
 
+    .. versionchanged:: 1.6.0
+       Added support for sqlite cache. Support for
+       :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
+
     :param str path: path to save our manual content to
 
     :raises: **IOError** if unsuccessful
     """
 
+    # TODO: drop _save_as_config() with stem 2.x
+
+    if path.endswith('.sqlite'):
+      return self._save_as_sqlite(path)
+    else:
+      return self._save_as_config(path)
+
+  def _save_as_sqlite(self, path):
+    with sqlite3.connect(path + '.new') as conn:
+      conn.execute('CREATE TABLE metadata(name TEXT, synopsis TEXT, description TEXT, man_commit TEXT, stem_commit TEXT)')
+      conn.execute('CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)')
+      conn.execute('CREATE TABLE torrc(name TEXT PRIMARY KEY, category TEXT, usage TEXT, summary TEXT, description TEXT)')
+
+      conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit) VALUES (?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit))
+
+      for k, v in self.commandline_options.items():
+        conn.execute('INSERT INTO commandline(name, description) VALUES (?,?)', (k, v))
+
+      for k, v in self.signals.items():
+        conn.execute('INSERT INTO signals(name, description) VALUES (?,?)', (k, v))
+
+      for k, v in self.files.items():
+        conn.execute('INSERT INTO files(name, description) VALUES (?,?)', (k, v))
+
+      for v in self.config_options.values():
+        conn.execute('INSERT INTO torrc(name, category, usage, summary, description) VALUES (?,?,?,?,?)', (v.name, v.category, v.usage, v.summary, v.description))
+
+    if os.path.exists(path):
+      os.remove(path)
+
+    os.rename(path + '.new', path)
+
+  def _save_as_config(self, path):
     conf = stem.util.conf.Config()
     conf.set('name', self.name)
     conf.set('synopsis', self.synopsis)
