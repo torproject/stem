@@ -39,15 +39,20 @@ if __name__ == '__main__':
   print('Current stem commit: %s' % stem_commit)
   print('')
 
-  cached_manual = stem.manual.Manual.from_cache()
+  try:
+    cached_manual = stem.manual.Manual.from_cache()
+  except IOError:
+    cached_manual = None  # local copy has been deleted
+
   latest_manual = stem.manual.Manual.from_remote()
 
-  if cached_manual == latest_manual:
-    print('Manual information is already up to date, nothing to do.')
-    sys.exit(0)
+  if cached_manual:
+    if cached_manual == latest_manual:
+      print('Manual information is already up to date, nothing to do.')
+      sys.exit(0)
 
-  print('Differences detected...\n')
-  print(stem.manual._manual_differences(cached_manual, latest_manual))
+    print('Differences detected...\n')
+    print(stem.manual._manual_differences(cached_manual, latest_manual))
 
   latest_manual.man_commit = man_commit
   latest_manual.stem_commit = stem_commit

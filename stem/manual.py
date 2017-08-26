@@ -360,6 +360,9 @@ class Manual(object):
 
   @staticmethod
   def _from_sqlite_cache(path):
+    if not os.path.exists(path):
+      raise IOError("%s doesn't exist" % path)
+
     with sqlite3.connect(path) as conn:
       name, synopsis, description, man_commit, stem_commit = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata').fetchone()
 
