@@ -372,7 +372,7 @@ class Manual(object):
 
       config_options = OrderedDict()
 
-      for entry in conn.execute('SELECT name, category, usage, summary, description FROM torrc').fetchall():
+      for entry in conn.execute('SELECT name, category, usage, summary, description FROM torrc ORDER BY position').fetchall():
         option, category, usage, summary, option_description = entry
         config_options[option] = ConfigOption(option, category, usage, summary, option_description)
 
@@ -520,7 +520,7 @@ class Manual(object):
       conn.execute('CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)')
       conn.execute('CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)')
       conn.execute('CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)')
-      conn.execute('CREATE TABLE torrc(name TEXT PRIMARY KEY, category TEXT, usage TEXT, summary TEXT, description TEXT)')
+      conn.execute('CREATE TABLE torrc(name TEXT PRIMARY KEY, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)')
 
       conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit) VALUES (?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit))
 
@@ -533,8 +533,8 @@ class Manual(object):
       for k, v in self.files.items():
         conn.execute('INSERT INTO files(name, description) VALUES (?,?)', (k, v))
 
-      for v in self.config_options.values():
-        conn.execute('INSERT INTO torrc(name, category, usage, summary, description) VALUES (?,?,?,?,?)', (v.name, v.category, v.usage, v.summary, v.description))
+      for i, v in enumerate(self.config_options.values()):
+        conn.execute('INSERT INTO torrc(name, category, usage, summary, description, position) VALUES (?,?,?,?,?,?)', (v.name, v.category, v.usage, v.summary, v.description, i))
 
     if os.path.exists(path):
       os.remove(path)
