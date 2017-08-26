@@ -47,7 +47,6 @@ us what our torrc options do...
 .. versionadded:: 1.5.0
 """
 
-import contextlib
 import os
 import shutil
 import sqlite3
@@ -95,26 +94,33 @@ CATEGORY_SECTIONS = OrderedDict((
 ))
 
 
-@contextlib.contextmanager
 def database(path = None):
   """
-  Provides a database cursor for a sqlite cache.
+  Provides database connection for our sqlite cache. This database should be
+  treated as being read-only, with this restriction being enforced in the
+  future.
 
   .. versionadded:: 1.6.0
 
   :param str path: cached manual content to read, if not provided this uses
     the bundled manual information
 
-  :returns: :class:`sqlite3.Cursor` for the database cache
+  :returns: :class:`sqlite3.Connection` for the database cache
 
   :raises: **IOError** if a **path** was provided and we were unable to read it
   """
 
   if path is None:
     path = CACHE_PATH
+  elif not os.path.exists(path):
+    raise IOError("%s doesn't exist" % path)
 
-  with sqlite3.connect(path) as conn:
-    yield conn.cursor()
+  # TODO: When we only support python 3.4+ we can use sqlite's uri argument to
+  # get a read-only connection...
+  #
+  #   https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
+
+  return sqlite3.connect(path)
 
 
 class ConfigOption(object):

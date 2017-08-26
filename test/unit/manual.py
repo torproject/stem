@@ -103,9 +103,11 @@ def _cached_manual():
 
 class TestManual(unittest.TestCase):
   def test_database(self):
-    with stem.manual.database() as cursor:
-      cursor.execute('SELECT description FROM torrc WHERE name="CookieAuthFile"')
-      self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", cursor.fetchone()[0])
+    with stem.manual.database() as conn:
+      self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", conn.execute('SELECT description FROM torrc WHERE name="CookieAuthFile"').fetchone()[0])
+
+  def test_missing_database(self):
+    self.assertRaisesRegexp(IOError, "/no/such/path doesn't exist", stem.manual.database, '/no/such/path')
 
   def test_has_all_summaries(self):
     """
