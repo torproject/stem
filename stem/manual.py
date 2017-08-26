@@ -360,23 +360,16 @@ class Manual(object):
 
   @staticmethod
   def _from_sqlite_cache(path):
-    with database(path) as cursor:
-      cursor.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata')
-      name, synopsis, description, man_commit, stem_commit = cursor.fetchone()
+    with sqlite3.connect(path) as conn:
+      name, synopsis, description, man_commit, stem_commit = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata').fetchone()
 
-      cursor.execute('SELECT name, description FROM commandline')
-      commandline = dict(cursor.fetchall())
+      commandline = dict(conn.execute('SELECT name, description FROM commandline').fetchall())
+      signals = dict(conn.execute('SELECT name, description FROM signals').fetchall())
+      files = dict(conn.execute('SELECT name, description FROM files').fetchall())
 
-      cursor.execute('SELECT name, description FROM signals')
-      signals = dict(cursor.fetchall())
-
-      cursor.execute('SELECT name, description FROM files')
-      files = dict(cursor.fetchall())
-
-      cursor.execute('SELECT name, category, usage, summary, description FROM torrc')
       config_options = OrderedDict()
 
-      for entry in cursor.fetchall():
+      for entry in conn.execute('SELECT name, category, usage, summary, description FROM torrc').fetchall():
         option, category, usage, summary, option_description = entry
         config_options[option] = ConfigOption(option, category, usage, summary, option_description)
 
