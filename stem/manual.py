@@ -526,7 +526,7 @@ class Manual(object):
       conn.execute('CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)')
       conn.execute('CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)')
       conn.execute('CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)')
-      conn.execute('CREATE TABLE torrc(name TEXT PRIMARY KEY, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)')
+      conn.execute('CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)')
 
       conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit) VALUES (?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit))
 
@@ -540,7 +540,7 @@ class Manual(object):
         conn.execute('INSERT INTO files(name, description) VALUES (?,?)', (k, v))
 
       for i, v in enumerate(self.config_options.values()):
-        conn.execute('INSERT INTO torrc(name, category, usage, summary, description, position) VALUES (?,?,?,?,?,?)', (v.name, v.category, v.usage, v.summary, v.description, i))
+        conn.execute('INSERT INTO torrc(key, name, category, usage, summary, description, position) VALUES (?,?,?,?,?,?,?)', (v.name.upper(), v.name, v.category, v.usage, v.summary, v.description, i))
 
     if os.path.exists(path):
       os.remove(path)
