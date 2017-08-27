@@ -83,7 +83,7 @@ except ImportError:
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
-DATABASE = {}  # read-only sqlite database connections
+DATABASE = None  # cache database connections
 
 CATEGORY_SECTIONS = OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
@@ -96,7 +96,7 @@ CATEGORY_SECTIONS = OrderedDict((
 ))
 
 
-def query(query, path = None):
+def query(query, *param):
   """
   Performs the given query on our sqlite manual cache. This database should
   be treated as being read-only. File permissions generally enforce this, and
@@ -105,14 +105,11 @@ def query(query, path = None):
   .. versionadded:: 1.6.0
 
   :param str query: query to run on the cache
-  :param str path: cached manual content to read, if not provided this uses
-    the bundled manual information
+  :param list param: query parameters
 
   :returns: :class:`sqlite3.Cursor` with the query results
 
-  :raises:
-    * **sqlite3.OperationalError** if query fails
-    * **IOError** if a **path** was provided and we were unable to read it
+  :raises: **sqlite3.OperationalError** if query fails
   """
 
   # The only reason to explicitly close the sqlite connection is to ensure
@@ -124,15 +121,12 @@ def query(query, path = None):
   #
   #   https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
 
-  if path is None:
-    path = CACHE_PATH
-  elif not os.path.exists(path):
-    raise IOError("%s doesn't exist" % path)
+  global DATABASE
 
-  if path not in DATABASE:
-    DATABASE[path] = sqlite3.connect(path)
+  if DATABASE is None:
+    DATABASE = sqlite3.connect(CACHE_PATH)
 
-  return DATABASE[path].execute(query)
+  return DATABASE.execute(query, param)
 
 
 class ConfigOption(object):

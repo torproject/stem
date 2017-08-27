@@ -105,12 +105,10 @@ def _cached_manual():
 class TestManual(unittest.TestCase):
   def test_query(self):
     self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name="CookieAuthFile"').fetchone()[0])
+    self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name=?', 'CookieAuthFile').fetchone()[0])
 
   def test_query_on_failure(self):
     self.assertRaisesRegexp(sqlite3.OperationalError, 'near "hello": syntax error', stem.manual.query, 'hello world')
-
-  def test_query_with_missing_database(self):
-    self.assertRaisesRegexp(IOError, "/no/such/path doesn't exist", stem.manual.query, 'SELECT * FROM torrc', '/no/such/path')
 
   def test_has_all_summaries(self):
     """
