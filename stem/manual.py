@@ -34,6 +34,7 @@ us what our torrc options do...
 
 ::
 
+  query - performs a query on our cached sqlite manual information
   is_important - Indicates if a configuration option is of particularly common importance.
   download_man_page - Downloads tor's latest man page.
 
@@ -82,6 +83,7 @@ except ImportError:
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
+DATABASE = {}  # read-only sqlite database connections
 
 CATEGORY_SECTIONS = OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
@@ -94,33 +96,43 @@ CATEGORY_SECTIONS = OrderedDict((
 ))
 
 
-def database(path = None):
+def query(query, path = None):
   """
-  Provides database connection for our sqlite cache. This database should be
-  treated as being read-only, with this restriction being enforced in the
-  future.
+  Performs the given query on our sqlite manual cache. This database should
+  be treated as being read-only. File permissions generally enforce this, and
+  in the future will be enforced by this function as well.
 
   .. versionadded:: 1.6.0
 
+  :param str query: query to run on the cache
   :param str path: cached manual content to read, if not provided this uses
     the bundled manual information
 
-  :returns: :class:`sqlite3.Connection` for the database cache
+  :returns: :class:`sqlite3.Cursor` with the query results
 
-  :raises: **IOError** if a **path** was provided and we were unable to read it
+  :raises:
+    * **sqlite3.OperationalError** if query fails
+    * **IOError** if a **path** was provided and we were unable to read it
   """
+
+  # The only reason to explicitly close the sqlite connection is to ensure
+  # transactions are committed. Since we're only using read-only access this
+  # doesn't matter, and can allow interpreter shutdown to do the needful.
+  #
+  # TODO: When we only support python 3.4+ we can use sqlite's uri argument
+  # to enforce a read-only connection...
+  #
+  #   https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
 
   if path is None:
     path = CACHE_PATH
   elif not os.path.exists(path):
     raise IOError("%s doesn't exist" % path)
 
-  # TODO: When we only support python 3.4+ we can use sqlite's uri argument to
-  # get a read-only connection...
-  #
-  #   https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
+  if path not in DATABASE:
+    DATABASE[path] = sqlite3.connect(path)
 
-  return sqlite3.connect(path)
+  return DATABASE[path].execute(query)
 
 
 class ConfigOption(object):
