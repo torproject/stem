@@ -114,7 +114,7 @@ class TestInstallation(unittest.TestCase):
 
     try:
       try:
-        stem.util.system.call('%s setup.py sdist' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
+        stem.util.system.call('%s setup.py sdist --dryrun' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
       except Exception as exc:
         raise AssertionError("Unable to run 'python setup.py sdist': %s" % exc)
 
