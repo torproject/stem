@@ -14,14 +14,13 @@
 #   +- git push --tags
 #
 # * Dry-run release on https://pypi.python.org/pypi/stem/
-#   |- python setup.py sdist
+#   |- python setup.py sdist --dryrun
 #   |- gpg --detach-sig --armor dist/stem-dry-run-1.0.0.tar.gz
 #   |- twine upload dist/*
 #   +- Check that https://pypi.python.org/pypi/stem-dry-run/ looks correct, comparing it to https://pypi.python.org/pypi/stem/
 #
 # * Final release
 #   |- rm dist/*
-#   |- Change the setup.py's DRY_RUN flag to false.
 #   |- python setup.py sdist
 #   |- gpg --detach-sig --armor dist/stem-1.0.0.tar.gz
 #   +- twine upload dist/*
@@ -31,9 +30,15 @@
 
 import distutils.core
 import os
+import sys
 import stem
 
-DRY_RUN = True
+if '--dryrun' in sys.argv:
+  DRY_RUN = True
+  sys.argv.remove('--dryrun')
+else:
+  DRY_RUN = False
+
 SUMMARY = 'Stem is a Python controller library that allows applications to interact with Tor (https://www.torproject.org/).'
 DRY_RUN_SUMMARY = 'Ignore this package. This is dry-run release creation to work around PyPI limitations (https://github.com/pypa/packaging-problems/issues/74#issuecomment-260716129).'
 
