@@ -67,8 +67,8 @@ def _hash_attr(obj, *attributes, **kwargs):
 
     if attr_value is not None:
       if isinstance(attr_value, dict):
-        for k, v in attr_value.items():
-          my_hash = (my_hash + hash(k)) * 1024 + hash(v)
+        for k in sorted(attr_value.keys()):
+          my_hash = (my_hash + hash(k)) * 1024 + hash(attr_value[k])
       else:
         my_hash += hash(attr_value)
 
