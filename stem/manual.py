@@ -108,18 +108,18 @@ CATEGORY_SECTIONS = OrderedDict((
 ))
 
 
-class SchemeMismatch(IOError):
+class SchemaMismatch(IOError):
   """
   Database schema doesn't match what Stem supports.
 
   .. versionadded:: 1.6.0
 
   :var int database_schema: schema of the database
-  :var int library_schema: schema of the library
+  :var tuple supported_schemas: schemas library supports
   """
 
   def __init__(self, message, database_schema, library_schema):
-    super(SchemeMismatch, self).__init__(message)
+    super(SchemaMismatch, self).__init__(message)
     self.database_schema = database_schema
     self.library_schema = library_schema
 
@@ -410,7 +410,7 @@ class Manual(object):
         schema = conn.execute('SELECT version FROM schema').fetchone()[0]
 
         if schema != SCHEMA_VERSION:
-          raise SchemeMismatch("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema), schema, SCHEMA_VERSION)
+          raise SchemaMismatch("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema), schema, (SCHEMA_VERSION,))
 
         name, synopsis, description, man_commit, stem_commit = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata').fetchone()
       except sqlite3.OperationalError as exc:
