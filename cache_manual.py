@@ -41,6 +41,9 @@ if __name__ == '__main__':
 
   try:
     cached_manual = stem.manual.Manual.from_cache()
+  except stem.manual.SchemeMismatch as exc:
+    print('Cached database schema is out of date (was %s, but current version is %s)' % (exc.database_schema, exc.library_schema))
+    cached_manual = None
   except IOError:
     cached_manual = None  # local copy has been deleted
 

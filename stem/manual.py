@@ -97,6 +97,22 @@ CATEGORY_SECTIONS = OrderedDict((
 ))
 
 
+class SchemeMismatch(IOError):
+  """
+  Database schema doesn't match what Stem supports.
+
+  .. versionadded:: 1.6.0
+
+  :var int database_schema: schema of the database
+  :var int library_schema: schema of the library
+  """
+
+  def __init__(self, message, database_schema, library_schema):
+    super(SchemeMismatch, self).__init__(message)
+    self.database_schema = database_schema
+    self.library_schema = library_schema
+
+
 def query(query, *param):
   """
   Performs the given query on our sqlite manual cache. This database should
@@ -339,6 +355,7 @@ class Manual(object):
     self.config_options = config_options
     self.man_commit = None
     self.stem_commit = None
+    self.schema = None
 
   @staticmethod
   def from_cache(path = None):
@@ -384,7 +401,7 @@ class Manual(object):
         raise IOError('Failed to read database metadata from %s: %s' % (path, exc))
 
       if schema != SCHEMA_VERSION:
-        raise IOError("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema))
+        raise SchemeMismatch("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema), schema, SCHEMA_VERSION)
 
       commandline = dict(conn.execute('SELECT name, description FROM commandline').fetchall())
       signals = dict(conn.execute('SELECT name, description FROM signals').fetchall())
@@ -399,6 +416,7 @@ class Manual(object):
       manual = Manual(name, synopsis, description, commandline, signals, files, config_options)
       manual.man_commit = man_commit
       manual.stem_commit = stem_commit
+      manual.schema = schema
 
       return manual
 
