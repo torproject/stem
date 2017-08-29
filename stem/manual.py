@@ -84,7 +84,18 @@ Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHO
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
 DATABASE = None  # cache database connections
-SCHEMA_VERSION = 1  # version of the schema used by our sqlite cache
+
+SCHEMA_VERSION = 1  # version of our scheme, bump this if you change the following
+SCHEMA = (
+  'CREATE TABLE schema(version NUMBER)',
+  'INSERT INTO schema(version) VALUES (%i)' % SCHEMA_VERSION,
+
+  'CREATE TABLE metadata(name TEXT, synopsis TEXT, description TEXT, man_commit TEXT, stem_commit TEXT)',
+  'CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)',
+  'CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)',
+  'CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)',
+  'CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)',
+)
 
 CATEGORY_SECTIONS = OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
@@ -396,12 +407,14 @@ class Manual(object):
 
     with sqlite3.connect(path) as conn:
       try:
-        name, synopsis, description, man_commit, stem_commit, schema = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit, schema FROM metadata').fetchone()
+        schema = conn.execute('SELECT version FROM schema').fetchone()[0]
+
+        if schema != SCHEMA_VERSION:
+          raise SchemeMismatch("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema), schema, SCHEMA_VERSION)
+
+        name, synopsis, description, man_commit, stem_commit = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata').fetchone()
       except sqlite3.OperationalError as exc:
         raise IOError('Failed to read database metadata from %s: %s' % (path, exc))
-
-      if schema != SCHEMA_VERSION:
-        raise SchemeMismatch("Stem's current manual schema version is %s, but %s was version %s" % (SCHEMA_VERSION, path, schema), schema, SCHEMA_VERSION)
 
       commandline = dict(conn.execute('SELECT name, description FROM commandline').fetchall())
       signals = dict(conn.execute('SELECT name, description FROM signals').fetchall())
@@ -553,14 +566,16 @@ class Manual(object):
       return self._save_as_config(path)
 
   def _save_as_sqlite(self, path):
-    with sqlite3.connect(path + '.new') as conn:
-      conn.execute('CREATE TABLE metadata(name TEXT, synopsis TEXT, description TEXT, man_commit TEXT, stem_commit TEXT, schema NUMBER)')
-      conn.execute('CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)')
-      conn.execute('CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)')
-      conn.execute('CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)')
-      conn.execute('CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)')
+    tmp_path = path + '.new'
 
-      conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit, schema) VALUES (?,?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit, SCHEMA_VERSION))
+    if os.path.exists(tmp_path):
+      os.remove(tmp_path)
+
+    with sqlite3.connect(tmp_path) as conn:
+      for cmd in SCHEMA:
+        conn.execute(cmd)
+
+      conn.execute('INSERT INTO metadata(name, synopsis, description, man_commit, stem_commit) VALUES (?,?,?,?,?)', (self.name, self.synopsis, self.description, self.man_commit, self.stem_commit))
 
       for k, v in self.commandline_options.items():
         conn.execute('INSERT INTO commandline(name, description) VALUES (?,?)', (k, v))
@@ -577,7 +592,7 @@ class Manual(object):
     if os.path.exists(path):
       os.remove(path)
 
-    os.rename(path + '.new', path)
+    os.rename(tmp_path, path)
 
   def _save_as_config(self, path):
     conf = stem.util.conf.Config()
