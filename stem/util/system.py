@@ -129,7 +129,8 @@ GET_PID_BY_PORT_NETSTAT = 'netstat -npltu'
 GET_PID_BY_PORT_SOCKSTAT = 'sockstat -4l -P tcp -p %s'
 GET_PID_BY_PORT_LSOF = 'lsof -wnP -iTCP -sTCP:LISTEN'
 GET_PID_BY_FILE_LSOF = 'lsof -tw %s'
-GET_PIDS_BY_USER = 'ps -o pid -u %s'
+GET_PIDS_BY_USER_LINUX = 'ps -o pid -u %s'
+GET_PIDS_BY_USER_BSD = 'ps -o pid -U %s'
 GET_CWD_PWDX = 'pwdx %s'
 GET_CWD_LSOF = 'lsof -a -p %s -d cwd -Fn'
 GET_BSD_JAIL_ID_PS = 'ps -p %s -o jid'
@@ -861,7 +862,10 @@ def pids_by_user(user):
   #     915
 
   if is_available('ps'):
-    results = call(GET_PIDS_BY_USER % user, None)
+    if is_bsd():
+      results = call(GET_PIDS_BY_USER_BSD % user, None)
+    else:
+      results = call(GET_PIDS_BY_USER_LINUX % user, None)
 
     if results:
       try:
