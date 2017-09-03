@@ -87,14 +87,14 @@ DATABASE = None  # cache database connections
 
 SCHEMA_VERSION = 1  # version of our scheme, bump this if you change the following
 SCHEMA = (
-  'CREATE TABLE schema(version NUMBER)',
+  'CREATE TABLE schema(version INTEGER)',
   'INSERT INTO schema(version) VALUES (%i)' % SCHEMA_VERSION,
 
   'CREATE TABLE metadata(name TEXT, synopsis TEXT, description TEXT, man_commit TEXT, stem_commit TEXT)',
   'CREATE TABLE commandline(name TEXT PRIMARY KEY, description TEXT)',
   'CREATE TABLE signals(name TEXT PRIMARY KEY, description TEXT)',
   'CREATE TABLE files(name TEXT PRIMARY KEY, description TEXT)',
-  'CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position NUMBER)',
+  'CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position INTEGER)',
 )
 
 CATEGORY_SECTIONS = OrderedDict((
