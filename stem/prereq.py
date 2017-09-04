@@ -98,8 +98,13 @@ def is_crypto_available():
   try:
     from cryptography.utils import int_from_bytes, int_to_bytes
     from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives.serialization import load_der_public_key
+    from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.primitives.serialization import load_der_public_key
+
+    if not hasattr(rsa.RSAPrivateKey, 'sign'):
+      raise ImportError()
+
     return True
   except ImportError:
     log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
