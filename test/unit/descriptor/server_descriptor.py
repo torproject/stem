@@ -30,6 +30,12 @@ from test.unit.descriptor import (
 )
 
 try:
+  # Added in 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # added in python 3.3
   from unittest.mock import Mock, patch
 except ImportError:
@@ -270,14 +276,14 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     exc_msg = 'Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.'
     self.assertRaisesRegexp(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
 
-    desc = RelayDescriptor.create({
-      'router': 'caerSidi 71.35.133.197 9001 0 0',
-      'published': '2012-02-29 04:03:19',
-      'fingerprint': '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44',
-      'or-address': ['71.35.133.197:9001', '[12ab:2e19:3bcf::02:9970]:9001'],
-      'onion-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB,
-      'signing-key': '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB,
-    }).make_router_status_entry()
+    desc = RelayDescriptor.create(OrderedDict((
+      ('router', 'caerSidi 71.35.133.197 9001 0 0'),
+      ('published', '2012-02-29 04:03:19'),
+      ('fingerprint', '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44'),
+      ('or-address', ['71.35.133.197:9001', '[12ab:2e19:3bcf::02:9970]:9001']),
+      ('onion-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB),
+      ('signing-key', '\n-----BEGIN RSA PUBLIC KEY-----%s-----END RSA PUBLIC KEY-----' % stem.descriptor.CRYPTO_BLOB),
+    ))).make_router_status_entry()
 
     self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3, type(desc))
     self.assertEqual('caerSidi', desc.nickname)
@@ -293,7 +299,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual([('71.35.133.197', 9001, False), ('12ab:2e19:3bcf::02:9970', 9001, True)], desc.or_addresses)
     self.assertEqual(None, desc.identifier_type)
     self.assertEqual(None, desc.identifier)
-    self.assertEqual('4F0069BF91C04581B7C3CA9272E2D3228D4EA571', desc.digest)
+    self.assertEqual('A863EFE8395C41C880782B89B850D20EDD242BDA', desc.digest)
     self.assertEqual(153600, desc.bandwidth)
     self.assertEqual(None, desc.measured)
     self.assertEqual(False, desc.is_unmeasured)

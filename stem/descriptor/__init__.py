@@ -392,7 +392,7 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
   """
 
   header_content, footer_content = [], []
-  attr = {} if attr is None else dict(attr)  # shallow copy since we're destructive
+  attr = {} if attr is None else OrderedDict(attr)  # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
                             (footer_content, footer_template)):
