@@ -48,7 +48,7 @@ if __name__ == '__main__':
     cached_manual, db_schema = None, None  # local copy has been deleted
 
   if db_schema != stem.manual.SCHEMA_VERSION:
-    print('Cached database schema is out of date (was %s, but current version is %s)' % (exc.database_schema, stem.manual.SCHEMA_VERSION))
+    print('Cached database schema is out of date (was %s, but current version is %s)' % (db_schema, stem.manual.SCHEMA_VERSION))
     cached_manual = None
 
   latest_manual = stem.manual.Manual.from_remote()
