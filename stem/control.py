@@ -328,7 +328,7 @@ Listener = stem.util.enum.UppercaseEnum(
 
 # torrc options that cannot be changed once tor's running
 
-IMMUTABLE_CONFIG_OPTIONS = map(str.lower, (
+IMMUTABLE_CONFIG_OPTIONS = set(map(stem.util.str_tools._to_unicode, map(str.lower, (
   'AccelDir',
   'AccelName',
   'DataDirectory',
@@ -344,7 +344,7 @@ IMMUTABLE_CONFIG_OPTIONS = map(str.lower, (
   'SyslogIdentityTag',
   'TokenBucketRefillInterval',
   'User',
-))
+))))
 
 LOG_CACHE_FETCHES = True  # provide trace level logging for cache hits
 
@@ -2398,7 +2398,7 @@ class Controller(BaseController):
         self._set_cache({'get_custom_options': None})
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
-      immutable_params = [k for k, v in params if k.lower() in IMMUTABLE_CONFIG_OPTIONS]
+      immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
 
       if immutable_params:
         raise stem.InvalidArguments(message = "%s cannot be changed while tor's running" % ', '.join(sorted(immutable_params)), arguments = immutable_params)
