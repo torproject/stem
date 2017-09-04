@@ -153,8 +153,8 @@ class TestManual(unittest.TestCase):
     expand our example (or add another).
     """
 
-    if stem.util.system.is_mac():
-      self.skipTest('(man lacks --encoding arg on OSX, #18660)')
+    if stem.util.system.is_mac() or stem.util.system.is_bsd():
+      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
@@ -174,8 +174,8 @@ class TestManual(unittest.TestCase):
     options. Unlike most other tests this doesn't require network access.
     """
 
-    if stem.util.system.is_mac():
-      self.skipTest('(man lacks --encoding arg on OSX, #18660)')
+    if stem.util.system.is_mac() or stem.util.system.is_bsd():
+      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
@@ -202,6 +202,10 @@ class TestManual(unittest.TestCase):
     Check that we can save and reload manuals as a config.
     """
 
+    if stem.util.system.is_mac() or stem.util.system.is_bsd():
+      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
+      return
+
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
     with tempfile.NamedTemporaryFile(prefix = 'saved_test_manual.') as tmp:
@@ -209,10 +213,15 @@ class TestManual(unittest.TestCase):
       loaded_manual = stem.manual.Manual.from_cache(tmp.name)
       self.assertEqual(manual, loaded_manual)
 
+  @test.require.command('man')
   def test_saving_manual_as_sqlite(self):
     """
     Check that we can save and reload manuals as sqlite.
     """
+
+    if stem.util.system.is_mac() or stem.util.system.is_bsd():
+      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
+      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 

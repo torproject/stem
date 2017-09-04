@@ -663,7 +663,7 @@ def _get_categories(content):
 
     if line and not line.startswith(' '):
       if category:
-        if lines[-1] == '':
+        if lines and lines[-1] == '':
           lines = lines[:-1]  # sections end with an extra empty line
 
         categories[category] = lines
