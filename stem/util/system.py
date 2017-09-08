@@ -21,10 +21,8 @@ best-effort, providing **None** if the lookup fails.
   is_windows - checks if we're running on windows
   is_mac - checks if we're running on a mac
   is_gentoo - checks if we're running on gentoo
-  is_bsd - checks if we're running on the bsd family of operating systems
   is_slackware - checks if we're running on slackware
-
-  has_encoding_man - checks if the system's man command has --encoding=ascii available
+  is_bsd - checks if we're running on the bsd family of operating systems
 
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
@@ -313,18 +311,6 @@ class DaemonTask(object):
       conn.close()
 
 
-def has_encoding_man():
-  """
-  Checks if --encoding=ascii is available for man
-  """
-  retval = True 
-  if is_available('man'):
-    result = call('man --encoding=ascii man', [], error_return=True)
-    if 'unrecognized option' in result:
-      retval = False
-  return retval
- 
-
 def is_windows():
   """
   Checks if we are running on Windows.
@@ -355,6 +341,16 @@ def is_gentoo():
   return os.path.exists('/etc/gentoo-release')
 
 
+def is_slackware():
+  """
+  Checks if we are running on a Slackware system.
+
+  :returns: **bool** to indicate if we're on a Slackware system
+  """
+
+  return os.path.exists('/etc/slackware-version')
+
+
 def is_bsd():
   """
   Checks if we are within the BSD family of operating systems. This currently
@@ -364,16 +360,6 @@ def is_bsd():
   """
 
   return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD')
-
-
-def is_slackware():
-  """
-  Checks if we are running on a Slackware system.
-
-  :returns: **bool** to indicate if we're on a Slackware system
-  """
-
-  return os.path.exists('/etc/slackware-version')
 
 
 def is_available(command, cached=True):
@@ -1238,8 +1224,7 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None,
-         cwd = None, env = None, error_return = False):
+def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, cwd = None, env = None):
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -1311,10 +1296,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
     exit_status = process.poll()
 
     if not ignore_exit_status and exit_status != 0:
-      if error_return:
-         return stderr
-      else:
-         OSError('%s returned exit status %i' % (command, exit_status))
+      raise OSError('%s returned exit status %i' % (command, exit_status))
 
     if stdout:
       return stdout.decode('utf-8', 'replace').splitlines()
