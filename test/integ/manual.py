@@ -107,7 +107,7 @@ class TestManual(unittest.TestCase):
           stem.manual.download_man_page(file_handle = tmp)
           self.man_path = tmp.name
 
-        man_cmd = 'man %s -P cat %s' % ('' if stem.util.system.is_mac() else '--encoding=ascii', self.man_path)
+        man_cmd = 'man %s -P cat %s' % ('' if not stem.manual.HAS_ENCODING_ARG else '--encoding=ascii', self.man_path)
         self.man_content = stem.util.system.call(man_cmd, env = {'MANWIDTH': '10000000'})
       except Exception as exc:
         self.download_error = 'Unable to download the man page: %s' % exc

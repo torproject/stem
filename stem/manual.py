@@ -84,6 +84,7 @@ Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHO
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
 DATABASE = None  # cache database connections
+HAS_ENCODING_ARG = stem.util.system.is_mac() or stem.util.system.is_bsd() or stem.util.system.is_slackware()
 
 SCHEMA_VERSION = 1  # version of our scheme, bump this if you change the following
 SCHEMA = (
@@ -485,7 +486,7 @@ class Manual(object):
     :raises: **IOError** if unable to retrieve the manual
     """
 
-    man_cmd = 'man %s -P cat %s' % ('' if (stem.util.system.is_mac() or stem.util.system.is_bsd()) else '--encoding=ascii', man_path)
+    man_cmd = 'man %s -P cat %s' % ('' if HAS_ENCODING_ARG else '--encoding=ascii', man_path)
 
     try:
       man_output = stem.util.system.call(man_cmd, env = {'MANWIDTH': '10000000'})
