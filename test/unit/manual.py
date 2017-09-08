@@ -153,8 +153,8 @@ class TestManual(unittest.TestCase):
     expand our example (or add another).
     """
 
-    if stem.util.system.is_mac() or stem.util.system.is_bsd() or stem.util.system.is_slackware():
-      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
+    if not stem.util.system.has_encoding_man():
+      self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
@@ -174,7 +174,7 @@ class TestManual(unittest.TestCase):
     options. Unlike most other tests this doesn't require network access.
     """
 
-    if stem.util.system.is_mac() or stem.util.system.is_bsd() or stem.util.system.is_slackware():
+    if not stem.util.system.has_encoding_man():
       self.skipTest('(man lacks --encoding arg on OSX and BSD and Slackware, #18660)')
       return
 
@@ -202,8 +202,8 @@ class TestManual(unittest.TestCase):
     Check that we can save and reload manuals as a config.
     """
 
-    if stem.util.system.is_mac() or stem.util.system.is_bsd():
-      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
+    if not stem.util.system.has_encoding_man():
+      self.skipTest('(man lacks --encoding arg on OSX, BSD and Slackware, #18660)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
@@ -219,8 +219,8 @@ class TestManual(unittest.TestCase):
     Check that we can save and reload manuals as sqlite.
     """
 
-    if stem.util.system.is_mac() or stem.util.system.is_bsd():
-      self.skipTest('(man lacks --encoding arg on OSX and BSD, #18660)')
+    if not stem.util.system.has_encoding_man():
+      self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
       return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
@@ -297,8 +297,9 @@ class TestManual(unittest.TestCase):
     self.assertEqual(b'a2x output', output.getvalue())
     call_mock.assert_called_once_with('a2x -f manpage /no/such/path/tor.1.txt')
 
-  @patch('stem.util.system.is_mac', Mock(return_value = False))
+  @patch('stem.util.system.has_encoding_man', Mock(return_value = True))
   @patch('stem.util.system.is_bsd', Mock(return_value = False))
+  @patch('stem.util.system.is_mac', Mock(return_value = False))
   @patch('stem.util.system.is_slackware', Mock(return_value = False))
   @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):

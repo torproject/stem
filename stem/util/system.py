@@ -24,6 +24,8 @@ best-effort, providing **None** if the lookup fails.
   is_bsd - checks if we're running on the bsd family of operating systems
   is_slackware - checks if we're running on slackware
 
+  has_encoding_man - checks if the system's man command has --encoding=ascii available
+
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
   size_of - provides the memory usage of an object
@@ -310,6 +312,18 @@ class DaemonTask(object):
     finally:
       conn.close()
 
+
+def has_encoding_man():
+  """
+  Checks if --encoding=ascii is available for man
+  """
+  retval = True 
+  if is_available('man'):
+    result = call('man --encoding=ascii man', [], error_return=True)
+    if 'unrecognized option' in result:
+      retval = False
+  return retval
+ 
 
 def is_windows():
   """
@@ -1224,7 +1238,8 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, cwd = None, env = None):
+def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None,
+         cwd = None, env = None, error_return = False):
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -1296,7 +1311,10 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
     exit_status = process.poll()
 
     if not ignore_exit_status and exit_status != 0:
-      raise OSError('%s returned exit status %i' % (command, exit_status))
+      if error_return:
+         return stderr
+      else:
+         OSError('%s returned exit status %i' % (command, exit_status))
 
     if stdout:
       return stdout.decode('utf-8', 'replace').splitlines()
