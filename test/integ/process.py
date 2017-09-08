@@ -45,6 +45,8 @@ PublishServerDescriptor 0
 DataDirectory %s
 """
 
+TOR_CMD = None
+
 
 def random_port():
   while True:
@@ -110,9 +112,12 @@ def run_tor(tor_cmd, *args, **kwargs):
 class TestProcess(unittest.TestCase):
   @staticmethod
   def run_tests(args):
+    global TOR_CMD
+    TOR_CMD = args.tor_cmd
+
     for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
       if func.startswith('test.integ.process.'):
-        async_test.run(args.tor_cmd)
+        async_test.run(TOR_CMD)
 
   @asynchronous
   def test_version_argument(tor_cmd):
@@ -535,8 +540,7 @@ class TestProcess(unittest.TestCase):
       except OSError as exc:
         assert_equal('Process terminated: Failed to bind one of the listener ports.', str(exc))
 
-  @asynchronous
-  def test_launch_tor_with_timeout(tor_cmd):
+  def test_launch_tor_with_timeout(self):
     """
     Runs launch_tor where it times out before completing.
     """
@@ -546,7 +550,7 @@ class TestProcess(unittest.TestCase):
 
       try:
         stem.process.launch_tor_with_config(
-          tor_cmd = tor_cmd,
+          tor_cmd = TOR_CMD,
           timeout = 0.05,
           config = {
             'SocksPort': random_port(),
