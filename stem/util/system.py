@@ -22,6 +22,7 @@ best-effort, providing **None** if the lookup fails.
   is_mac - checks if we're running on a mac
   is_gentoo - checks if we're running on gentoo
   is_bsd - checks if we're running on the bsd family of operating systems
+  is_slackware - checks if we're running on slackware
 
   is_available - determines if a command is available on this system
   is_running - determines if a given process is running
@@ -349,6 +350,16 @@ def is_bsd():
   """
 
   return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD')
+
+
+def is_slackware():
+  """
+  Checks if we are running on a Slackware system.
+
+  :returns: **bool** to indicate if we're on a Slackware system
+  """
+
+  return os.path.exists('/etc/slackware-version')
 
 
 def is_available(command, cached=True):
