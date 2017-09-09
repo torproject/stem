@@ -211,7 +211,12 @@ class AuthDirNewDescEvent(Event):
   descriptors. The descriptor type contained within this event is unspecified
   so the descriptor contents are left unparsed.
 
-  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha.
+  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha and
+  removed in 0.3.2.1-alpha. (:spec:`6e887ba`)
+
+  .. deprecated:: 1.6.0
+
+     Tor dropped this event as of version 0.3.2.1. (:spec:`6e887ba`)
 
   :var stem.AuthDescriptorAction action: what is being done with the descriptor
   :var str message: explanation of why we chose this action

@@ -181,6 +181,11 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   Enums are mapped to :class:`~stem.response.events.Event` subclasses as
   follows...
 
+  .. deprecated:: 1.6.0
+
+     Tor dropped EventType.AUTHDIR_NEWDESCS as of version 0.3.2.1.
+     (:spec:`6e887ba`)
+
   ======================= ===========
   EventType               Event Class
   ======================= ===========
