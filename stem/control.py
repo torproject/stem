@@ -3647,10 +3647,11 @@ class Controller(BaseController):
        No longer requires previously failed GETINFO requests to determine this.
 
     .. deprecated:: 1.6.0
-       If this becomes available in tor we'll be deprecating this in our 2.x
-       release (:trac:`23237`). If not this will be renamed to
-       is_geoip_available.
+       This is available as of Tor 0.3.2.1 through the following instead...
 
+       ::
+
+         controller.get_info('ip-to-country/ipv4-available', 0) == '1'
 
     :returns: **bool** indicating if we've determined tor's geoip database to
       be unavailable or not

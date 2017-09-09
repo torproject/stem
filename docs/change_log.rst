@@ -55,6 +55,7 @@ The following are only available within Stem's `git repository
   * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset (:trac:`21329`)
   * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
   * :func:`~stem.control.Controller.is_geoip_unavailable` now determines if database is available right away
+  * Deprecated :func:`~stem.control.Controller.is_geoip_unavailable`, this is now available via getinfo instead (:trac:`23237`, :spec:`dc973f8`)
   * Caching manual information as sqlite rather than stem.util.conf, making :func:`stem.manual.Manual.from_cache` about ~8x faster
   * Added :func:`~stem.manual.database` to get a cursor for the manual cache
   * Failed to parse torrcs without a port on ipv6 exit policy entries
