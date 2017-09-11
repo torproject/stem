@@ -84,7 +84,7 @@ Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHO
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
 DATABASE = None  # cache database connections
-HAS_ENCODING_ARG = stem.util.system.is_mac() or stem.util.system.is_bsd() or stem.util.system.is_slackware()
+HAS_ENCODING_ARG = not stem.util.system.is_mac() and not stem.util.system.is_bsd() and not stem.util.system.is_slackware()
 
 SCHEMA_VERSION = 1  # version of our scheme, bump this if you change the following
 SCHEMA = (
