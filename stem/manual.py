@@ -486,7 +486,7 @@ class Manual(object):
     :raises: **IOError** if unable to retrieve the manual
     """
 
-    man_cmd = 'man %s -P cat %s' % ('' if HAS_ENCODING_ARG else '--encoding=ascii', man_path)
+    man_cmd = 'man %s -P cat %s' % ('--encoding=ascii' if HAS_ENCODING_ARG else '', man_path)
 
     try:
       man_output = stem.util.system.call(man_cmd, env = {'MANWIDTH': '10000000'})
