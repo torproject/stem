@@ -4,13 +4,15 @@ dist: precise
 
 language: python
 
-# Available Python versions:
-# http://about.travis-ci.org/docs/user/ci-environment/#Python-VM-images
-python:
-  - "2.7"
-  - "3.6"
+matrix:
+  include:
+    - python: "2.7"
+    - python: "3.5"
+    - python: "3.6"
 
 env:
+  - TEST_PARAM: "--unit"
+  - TEST_PARAM: "--integ"
 
 # Dependencies installation commands
 install:
@@ -19,7 +21,7 @@ install:
 
 # Tests running commands
 script:
-  - ./run_tests.py --unit 
+  - ./run_tests.py $TEST_PARAM 
 
 notifications:
   email: false
