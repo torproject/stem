@@ -10,8 +10,8 @@ matrix:
     - python: "3.6"
 
 env:
-  - TEST_PARAM: "--unit"
-  - TEST_PARAM: "--integ"
+  - TEST_PARAM="--unit"
+  - TEST_PARAM="--integ"
 
 before_install:
   - sudo apt-get update -qq
