@@ -1,0 +1,36 @@
+# Travis CI configuration file
+# http://about.travis-ci.org/docs/
+dist: precise
+
+language: python
+
+# Available Python versions:
+# http://about.travis-ci.org/docs/user/ci-environment/#Python-VM-images
+python:
+  - "2.7"
+  - "3.6"
+
+env:
+
+# Dependencies installation commands
+install:
+  - pip install -U pip
+  - pip install -r requirements.txt
+
+# Tests running commands
+script:
+  # run real db tests under coverage to have several merging coverage report
+  # https://github.com/codecov/support/wiki/Merging-Reports
+  - run_tests.py --unit 
+
+notifications:
+  email: false
+
+after_script:
+  # List installed packages along with their versions.
+  - "pip list"
+
+sudo: false
+
+git:
+  depth: 300
