@@ -1,0 +1,38 @@
+# Travis CI configuration file
+# http://about.travis-ci.org/docs/
+
+language: python
+
+python:
+    - "2.7"
+    - "3.5"
+    - "3.6"
+
+env:
+  - TEST_PARAM="--unit"
+  - TEST_PARAM="--integ"
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq tor
+
+# Dependencies installation commands
+install:
+  - pip install -U pip
+  - pip install -r requirements.txt
+
+# Tests running commands
+script:
+  - ./run_tests.py $TEST_PARAM 
+
+notifications:
+  email: false
+
+after_script:
+  # List installed packages along with their versions.
+  - "pip list"
+
+sudo: false
+
+git:
+  depth: 300
