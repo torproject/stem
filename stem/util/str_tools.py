@@ -299,7 +299,7 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
   return (return_msg, remainder) if get_remainder else return_msg
 
 
-def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
+def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True, round = False):
   """
   Converts a number of bytes into a human readable label in its most
   significant units. For instance, 7500 bytes would return "7 KB". If the
@@ -318,18 +318,22 @@ def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True):
     >>> size_label(1050, 3, True)
     '1.025 Kilobytes'
 
+  .. versionchanged:: 1.6.0
+     Added round argument.
+
   :param int byte_count: number of bytes to be converted
   :param int decimal: number of decimal digits to be included
   :param bool is_long: expands units label
   :param bool is_bytes: provides units in bytes if **True**, bits otherwise
+  :param bool round: rounds normally if **True**, otherwise rounds down
 
   :returns: **str** with human readable representation of the size
   """
 
   if is_bytes:
-    return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long)
+    return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long, round)
   else:
-    return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long)
+    return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long, round)
 
 
 def time_label(seconds, decimal = 0, is_long = False):
@@ -542,7 +546,7 @@ def _parse_iso_timestamp(entry):
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 
-def _get_label(units, count, decimal, is_long):
+def _get_label(units, count, decimal, is_long, round = False):
   """
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
@@ -552,6 +556,7 @@ def _get_label(units, count, decimal, is_long):
   :param int count: number of base units being converted
   :param int decimal: decimal precision of label
   :param bool is_long: uses the long label if **True**, short label otherwise
+  :param bool round: rounds normally if **True**, otherwise rounds down
   """
 
   # formatted string for the requested number of digits
@@ -566,10 +571,12 @@ def _get_label(units, count, decimal, is_long):
 
   for count_per_unit, short_label, long_label in units:
     if count >= count_per_unit:
-      # Rounding down with a '%f' is a little clunky. Reducing the count so
-      # it'll divide evenly as the rounded down value.
+      if not round:
+        # Rounding down with a '%f' is a little clunky. Reducing the count so
+        # it'll divide evenly as the rounded down value.
 
-      count -= count % (count_per_unit / (10 ** decimal))
+        count -= count % (count_per_unit / (10 ** decimal))
+
       count_label = label_format % (count / count_per_unit)
 
       if is_long:

@@ -67,6 +67,11 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual('1.02 KB', str_tools.size_label(1050, 2))
     self.assertEqual('1.025 Kilobytes', str_tools.size_label(1050, 3, True))
 
+    self.assertEqual('1 KB', str_tools.size_label(1050, 0, round = True))
+    self.assertEqual('1.0 KB', str_tools.size_label(1050, 1, round = True))
+    self.assertEqual('1.03 KB', str_tools.size_label(1050, 2, round = True))
+    self.assertEqual('1.025 KB', str_tools.size_label(1050, 3, round = True))
+
     self.assertEqual('0 B', str_tools.size_label(0))
     self.assertEqual('0 Bytes', str_tools.size_label(0, is_long = True))
     self.assertEqual('0.00 B', str_tools.size_label(0, 2))
