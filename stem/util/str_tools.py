@@ -537,7 +537,7 @@ def _parse_iso_timestamp(entry):
   if len(microseconds) != 6 or not microseconds.isdigit():
     raise ValueError("timestamp's microseconds should be six digits")
 
-  if timestamp_str[10] == 'T':
+  if len(timestamp_str) > 10 and timestamp_str[10] == 'T':
     timestamp_str = timestamp_str[:10] + ' ' + timestamp_str[11:]
   else:
     raise ValueError("timestamp didn't contain delimeter 'T' between date and time")

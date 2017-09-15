@@ -180,6 +180,7 @@ class TestStrTools(unittest.TestCase):
     invalid_input = [
       None,
       32,
+      'boom',
       'hello world',
       '2012-11-08T16:48:41.42025',    # too few microsecond digits
       '2012-11-08T16:48:41.4202511',  # too many microsecond digits

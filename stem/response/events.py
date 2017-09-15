@@ -125,6 +125,25 @@ class Event(stem.response.ControlMessage):
     for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
 
+  def _iso_timestamp(self, timestamp):
+    """
+    Parses an iso timestamp (ISOTime2Frac in the control-spec).
+
+    :param str timestamp: timestamp to parse
+
+    :returns: **datetime** with the parsed timestamp
+
+    :raises: :class:`stem.ProtocolError` if timestamp is malformed
+    """
+
+    if timestamp is None:
+      return None
+
+    try:
+      return str_tools._parse_iso_timestamp(timestamp)
+    except ValueError as exc:
+      raise stem.ProtocolError('Unable to parse timestamp (%s): %s' % (exc, self))
+
   # method overwritten by our subclasses for special handling that they do
   def _parse(self):
     pass
@@ -369,15 +388,10 @@ class CircuitEvent(Event):
 
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
+    self.created = self._iso_timestamp(self.created)
 
     if self.build_flags is not None:
       self.build_flags = tuple(self.build_flags.split(','))
-
-    if self.created is not None:
-      try:
-        self.created = str_tools._parse_iso_timestamp(self.created)
-      except ValueError as exc:
-        raise stem.ProtocolError('Unable to parse create date (%s): %s' % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
@@ -468,15 +482,10 @@ class CircMinorEvent(Event):
 
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
+    self.created = self._iso_timestamp(self.created)
 
     if self.build_flags is not None:
       self.build_flags = tuple(self.build_flags.split(','))
-
-    if self.created is not None:
-      try:
-        self.created = str_tools._parse_iso_timestamp(self.created)
-      except ValueError as exc:
-        raise stem.ProtocolError('Unable to parse create date (%s): %s' % (exc, self))
 
     if not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
@@ -1055,12 +1064,16 @@ class StreamBwEvent(Event):
 
   The STREAM_BW event was introduced in tor version 0.1.2.8-beta.
 
+  .. versionchanged:: 1.6.0
+     Added the time attribute.
+
   :var str id: stream identifier
   :var long written: bytes sent by the application
   :var long read: bytes received by the application
+  :var datetime time: time when the measurement was recorded
   """
 
-  _POSITIONAL_ARGS = ('id', 'written', 'read')
+  _POSITIONAL_ARGS = ('id', 'written', 'read', 'time')
   _VERSION_ADDED = stem.version.Requirement.EVENT_STREAM_BW
 
   def _parse(self):
@@ -1075,6 +1088,7 @@ class StreamBwEvent(Event):
 
     self.read = int_type(self.read)
     self.written = int_type(self.written)
+    self.time = self._iso_timestamp(self.time)
 
 
 class TransportLaunchedEvent(Event):
@@ -1166,15 +1180,20 @@ class CircuitBandwidthEvent(Event):
 
   .. versionadded:: 1.2.0
 
+  .. versionchanged:: 1.6.0
+     Added the time attribute.
+
   :var str id: circuit identifier
   :var long read: bytes received by tor that second
   :var long written: bytes sent by tor that second
+  :var datetime time: time when the measurement was recorded
   """
 
   _KEYWORD_ARGS = {
     'ID': 'id',
     'READ': 'read',
     'WRITTEN': 'written',
+    'TIME': 'time',
   }
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_BW
@@ -1193,6 +1212,7 @@ class CircuitBandwidthEvent(Event):
 
     self.read = int_type(self.read)
     self.written = int_type(self.written)
+    self.time = self._iso_timestamp(self.time)
 
 
 class CellStatsEvent(Event):

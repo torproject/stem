@@ -55,6 +55,7 @@ The following are only available within Stem's `git repository
   * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset (:trac:`21329`)
   * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
   * :func:`~stem.control.Controller.is_geoip_unavailable` now determines if database is available right away
+  * Added the time attribute to :class:`~stem.response.events.StreamBwEvent` and :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`00b9daf`)
   * Deprecated :func:`~stem.control.Controller.is_geoip_unavailable`, this is now available via getinfo instead (:trac:`23237`, :spec:`dc973f8`)
   * Deprecated :class:`~stem.respose.events.AuthDirNewDescEvent` (:trac:`22377`, :spec:`6e887ba`)
   * Caching manual information as sqlite rather than stem.util.conf, making :func:`stem.manual.Manual.from_cache` about ~8x faster
@@ -119,7 +120,7 @@ and much more.
   * Added :func:`~stem.control.Controller.reconnect` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_set` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
-  * Added the replica attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
+  * Added the replica attribute to :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
   * Added the NoEdConsensus :data:`~stem.Flag` (:spec:`dc99160`)
   * Recognize listeners with IPv6 addresses in :func:`~stem.control.Controller.get_listeners`
   * :func:`~stem.process.launch_tor` could leave a lingering process during an unexpected exception (:trac:`17946`)
@@ -255,7 +256,7 @@ brings see `Nathan Willis' LWN article <http://lwn.net/Articles/632914/>`_.
   * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
   * Changed :func:`~stem.control.Controller.get_microdescriptor`, :func:`~stem.control.Controller.get_server_descriptor`, and :func:`~stem.control.Controller.get_network_status` to get our own descriptor if no fingerprint or nickname is provided.
   * Added :class:`~stem.exit_policy.ExitPolicy` methods for more easily handling 'private' policies (the `default prefix <https://www.torproject.org/docs/tor-manual.html.en#ExitPolicyRejectPrivate>`_) and the defaultly appended suffix. This includes :func:`~stem.exit_policy.ExitPolicy.has_private`, :func:`~stem.exit_policy.ExitPolicy.strip_private`, :func:`~stem.exit_policy.ExitPolicy.has_default`, and :func:`~stem.exit_policy.ExitPolicy.strip_default` :class:`~stem.exit_policy.ExitPolicy` methods in addition to :func:`~stem.exit_policy.ExitPolicyRule.is_private` and :func:`~stem.exit_policy.ExitPolicyRule.is_default` for the :class:`~stem.exit_policy.ExitPolicyRule`. (:trac:`10107`)
-  * Added the reason attribute to the :class:`~stem.response.events.HSDescEvent` (:spec:`7908c8d`)
+  * Added the reason attribute to :class:`~stem.response.events.HSDescEvent` (:spec:`7908c8d`)
   * :func:`~stem.process.launch_tor_with_config` could cause a "Too many open files" OSError if called too many times (:trac:`13141`)
   * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
   * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
@@ -305,7 +306,7 @@ among numerous other improvements and fixes.
   * Added :func:`~stem.control.Controller.is_newnym_available` and :func:`~stem.control.Controller.get_newnym_wait` methods to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_ports` and :func:`~stem.control.Controller.get_listeners` methods to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.drop_guards` (:trac:`10032`, :spec:`7c6c7fc`)
-  * Added the id attribute to the :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
+  * Added the id attribute to :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CELL_STATS events <api/response.html#stem.response.events.CellStatsEvent>`_ (:spec:`6f2919a`)

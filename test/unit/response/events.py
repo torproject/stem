@@ -487,8 +487,10 @@ CONN_BW_BAD_WRITTEN_VALUE = '650 CONN_BW ID=11 TYPE=DIR READ=272 WRITTEN=817.7'
 CONN_BW_BAD_MISSING_ID = '650 CONN_BW TYPE=DIR READ=272 WRITTEN=817'
 
 CIRC_BW = '650 CIRC_BW ID=11 READ=272 WRITTEN=817'
+CIRC_BW_WITH_TIMESTAMP = '650 CIRC_BW ID=11 READ=272 WRITTEN=817 TIME=2012-12-06T13:51:11.433755'
 CIRC_BW_BAD_WRITTEN_VALUE = '650 CIRC_BW ID=11 READ=272 WRITTEN=817.7'
 CIRC_BW_BAD_MISSING_ID = '650 CIRC_BW READ=272 WRITTEN=817'
+CIRC_BW_MALFORMED_TIMESTAMP = '650 CIRC_BW ID=11 READ=272 WRITTEN=817 TIME=boom'
 
 CELL_STATS_1 = '650 CELL_STATS ID=14 \
 OutboundQueue=19403 OutboundConn=15 \
@@ -1457,11 +1459,19 @@ class TestEvents(unittest.TestCase):
     self.assertEqual('2', event.id)
     self.assertEqual(15, event.written)
     self.assertEqual(25, event.read)
+    self.assertEqual(None, event.time)
 
     event = _get_event('650 STREAM_BW Stream02 0 0')
     self.assertEqual('Stream02', event.id)
     self.assertEqual(0, event.written)
     self.assertEqual(0, event.read)
+    self.assertEqual(None, event.time)
+
+    event = _get_event('650 STREAM_BW Stream02 0 0 2012-12-06T13:51:11.433755')
+    self.assertEqual('Stream02', event.id)
+    self.assertEqual(0, event.written)
+    self.assertEqual(0, event.read)
+    self.assertEqual(datetime.datetime(2012, 12, 6, 13, 51, 11, 433755), event.time)
 
     self.assertRaises(ProtocolError, _get_event, '650 STREAM_BW')
     self.assertRaises(ProtocolError, _get_event, '650 STREAM_BW 2')
@@ -1501,15 +1511,22 @@ class TestEvents(unittest.TestCase):
 
   def test_circ_bw_event(self):
     event = _get_event(CIRC_BW)
-
     self.assertTrue(isinstance(event, stem.response.events.CircuitBandwidthEvent))
     self.assertEqual(CIRC_BW.lstrip('650 '), str(event))
     self.assertEqual('11', event.id)
     self.assertEqual(272, event.read)
     self.assertEqual(817, event.written)
+    self.assertEqual(None, event.time)
+
+    event = _get_event(CIRC_BW_WITH_TIMESTAMP)
+    self.assertEqual('11', event.id)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+    self.assertEqual(datetime.datetime(2012, 12, 6, 13, 51, 11, 433755), event.time)
 
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_WRITTEN_VALUE)
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_MISSING_ID)
+    self.assertRaises(ProtocolError, _get_event, CIRC_BW_MALFORMED_TIMESTAMP)
 
   def test_cell_stats_event(self):
     event = _get_event(CELL_STATS_1)
