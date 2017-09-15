@@ -128,7 +128,7 @@ class TestInstallation(unittest.TestCase):
       issues = []
 
       for path in git_contents:
-        if path not in tar_contents and path not in ['.gitignore']:
+        if path not in tar_contents and path not in ['.gitignore', '.travis.yml']:
           issues.append('  * %s is missing from our release tarball' % path)
 
       for path in tar_contents:
