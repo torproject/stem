@@ -73,6 +73,9 @@ with open(os.path.join(STEM_BASE, '.gitignore')) as ignore_file:
     if line.startswith('*.'):
       IGNORED_FILE_TYPES.append(line[2:].strip())
 
+if os.path.exists(os.path.join(STEM_BASE, '.travis.yml')):
+    IGNORED_FILE_TYPES.append('.travis.yml')
+
 
 def get_new_capabilities():
   """
