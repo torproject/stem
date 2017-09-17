@@ -80,6 +80,8 @@ import stem.util.str_tools
 
 from stem.util import log
 
+MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
+
 # lines to limit our trace logging to, you can disable this by setting it to None
 
 TRUNCATE_LOGS = 10
@@ -484,9 +486,10 @@ def send_message(control_file, message, raw = False):
     control_file.write(stem.util.str_tools._to_bytes(message))
     control_file.flush()
 
-    log_message = message.replace('\r\n', '\n').rstrip()
-    msg_div = '\n' if '\n' in log_message else ' '
-    log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+    if log.is_tracing():
+      log_message = message.replace('\r\n', '\n').rstrip()
+      msg_div = '\n' if '\n' in log_message else ' '
+      log.trace('Sent to tor:%s%s' % (msg_div, log_message))
   except socket.error as exc:
     log.info('Failed to send message: %s' % exc)
 
@@ -557,7 +560,7 @@ def recv_message(control_file):
     # Parses the tor control lines. These are of the form...
     # <status code><divider><content>\r\n
 
-    if len(line) == 0:
+    if not line:
       # if the socket is disconnected then the readline() method will provide
       # empty content
 
@@ -568,7 +571,7 @@ def recv_message(control_file):
       prefix = logging_prefix % 'ProtocolError'
       log.info(prefix + 'line too short, "%s"' % log.escape(line))
       raise stem.ProtocolError('Badly formatted reply line: too short')
-    elif not re.match(b'^[a-zA-Z0-9]{3}[-+ ]', line):
+    elif not MESSAGE_PREFIX.match(line):
       prefix = logging_prefix % 'ProtocolError'
       log.info(prefix + 'malformed status code/divider, "%s"' % log.escape(line))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
@@ -593,16 +596,18 @@ def recv_message(control_file):
       parsed_content.append((status_code, divider, content))
 
       raw_content_str = b''.join(raw_content)
-      log_message = stem.util.str_tools._to_unicode(raw_content_str.replace(b'\r\n', b'\n').rstrip())
-      log_message_lines = log_message.split('\n')
 
-      if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
-        log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+      if log.is_tracing():
+        log_message = stem.util.str_tools._to_unicode(raw_content_str.replace(b'\r\n', b'\n').rstrip())
+        log_message_lines = log_message.split('\n')
 
-      if len(log_message_lines) > 2:
-        log.trace('Received from tor:\n%s' % log_message)
-      else:
-        log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
+        if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
+          log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+
+        if len(log_message_lines) > 2:
+          log.trace('Received from tor:\n%s' % log_message)
+        else:
+          log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
 
       return stem.response.ControlMessage(parsed_content, raw_content_str)
     elif divider == '+':

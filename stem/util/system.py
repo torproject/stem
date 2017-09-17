@@ -1284,14 +1284,16 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
     runtime = time.time() - start_time
 
     log.debug('System call: %s (runtime: %0.2f)' % (command, runtime))
-    trace_prefix = 'Received from system (%s)' % command
 
-    if stdout and stderr:
-      log.trace(trace_prefix + ', stdout:\n%s\nstderr:\n%s' % (stdout, stderr))
-    elif stdout:
-      log.trace(trace_prefix + ', stdout:\n%s' % stdout)
-    elif stderr:
-      log.trace(trace_prefix + ', stderr:\n%s' % stderr)
+    if log.is_tracing():
+      trace_prefix = 'Received from system (%s)' % command
+
+      if stdout and stderr:
+        log.trace(trace_prefix + ', stdout:\n%s\nstderr:\n%s' % (stdout, stderr))
+      elif stdout:
+        log.trace(trace_prefix + ', stdout:\n%s' % stdout)
+      elif stderr:
+        log.trace(trace_prefix + ', stderr:\n%s' % stderr)
 
     exit_status = process.poll()
 
