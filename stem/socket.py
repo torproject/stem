@@ -81,6 +81,7 @@ import stem.util.str_tools
 from stem.util import log
 
 MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
+ERROR_MSG = 'Error while receiving a control message (%s): %s'
 
 # lines to limit our trace logging to, you can disable this by setting it to None
 
@@ -526,7 +527,6 @@ def recv_message(control_file):
   """
 
   parsed_content, raw_content = [], []
-  logging_prefix = 'Error while receiving a control message (%s): '
 
   while True:
     try:
@@ -539,8 +539,7 @@ def recv_message(control_file):
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'socket file has been closed')
+      log.info(ERROR_MSG % ('SocketClosed', 'socket file has been closed'))
       raise stem.SocketClosed('socket file has been closed')
     except (socket.error, ValueError) as exc:
       # When disconnected we get...
@@ -551,8 +550,7 @@ def recv_message(control_file):
       # Python 3:
       #   ValueError: I/O operation on closed file.
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'received exception "%s"' % exc)
+      log.info(ERROR_MSG % ('SocketClosed', 'received exception "%s"' % exc))
       raise stem.SocketClosed(exc)
 
     raw_content.append(line)
@@ -564,20 +562,16 @@ def recv_message(control_file):
       # if the socket is disconnected then the readline() method will provide
       # empty content
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'empty socket content')
+      log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
       raise stem.SocketClosed('Received empty socket content.')
     elif len(line) < 4:
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'line too short, "%s"' % log.escape(line))
+      log.info(ERROR_MSG % ('ProtocolError', 'line too short, "%s"' % log.escape(line)))
       raise stem.ProtocolError('Badly formatted reply line: too short')
     elif not MESSAGE_PREFIX.match(line):
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'malformed status code/divider, "%s"' % log.escape(line))
+      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line)))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
     elif not line.endswith(b'\r\n'):
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'no CRLF linebreak, "%s"' % log.escape(line))
+      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line)))
       raise stem.ProtocolError('All lines should end with CRLF')
 
     line = line[:-2]  # strips off the CRLF
@@ -618,15 +612,13 @@ def recv_message(control_file):
         try:
           line = stem.util.str_tools._to_bytes(control_file.readline())
         except socket.error as exc:
-          prefix = logging_prefix % 'SocketClosed'
-          log.info(prefix + 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(b''.join(raw_content))))
+          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(b''.join(raw_content)))))
           raise stem.SocketClosed(exc)
 
         raw_content.append(line)
 
         if not line.endswith(b'\r\n'):
-          prefix = logging_prefix % 'ProtocolError'
-          log.info(prefix + 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(b''.join(raw_content)))
+          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(b''.join(raw_content))))
           raise stem.ProtocolError('All lines should end with CRLF')
         elif line == b'.\r\n':
           break  # data block termination
@@ -648,8 +640,8 @@ def recv_message(control_file):
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      prefix = logging_prefix % 'ProtocolError'
-      log.warn(prefix + "\"%s\" isn't a recognized divider type" % divider)
+
+      log.warn(ERROR_MSG % ('ProtocolError', "\"%s\" isn't a recognized divider type" % divider))
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
