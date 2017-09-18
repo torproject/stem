@@ -3298,7 +3298,7 @@ class Controller(BaseController):
     response = self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode('650 CIRC ' + circ + '\r\n')))
+      circ_message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_unicode('650 CIRC %s\r\n' % circ)))
       stem.response.convert('EVENT', circ_message, arrived_at = 0)
       circuits.append(circ_message)
 
@@ -3481,7 +3481,7 @@ class Controller(BaseController):
     response = self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode('650 STREAM ' + stream + '\r\n')))
+      message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream)))
       stem.response.convert('EVENT', message, arrived_at = 0)
       streams.append(message)
 

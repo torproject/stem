@@ -530,11 +530,7 @@ def recv_message(control_file):
 
   while True:
     try:
-      # From a real socket readline() would always provide bytes, but during
-      # tests we might be given a StringIO in which case it's unicode under
-      # python 3.x.
-
-      line = stem.util.str_tools._to_bytes(control_file.readline())
+      line = control_file.readline()
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'

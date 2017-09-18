@@ -2,17 +2,14 @@
 Unit tests for the stem.response.ControlMessage parsing and class.
 """
 
+import io
 import socket
 import unittest
-
-try:
-  from StringIO import StringIO
-except:
-  from io import StringIO
 
 import stem.socket
 import stem.response
 import stem.response.getinfo
+import stem.util.str_tools
 
 OK_REPLY = '250 OK\r\n'
 
@@ -128,7 +125,7 @@ class TestControlMessage(unittest.TestCase):
     for index, line in enumerate(infonames_lines):
       # replace the CRLF for the line
       infonames_lines[index] = line.rstrip('\r\n') + '\n'
-      test_socket_file = StringIO(''.join(infonames_lines))
+      test_socket_file = io.BytesIO(stem.util.str_tools._to_bytes(''.join(infonames_lines)))
       self.assertRaises(stem.ProtocolError, stem.socket.recv_message, test_socket_file)
 
       # puts the CRLF back
@@ -154,8 +151,8 @@ class TestControlMessage(unittest.TestCase):
         # - this is part of the message prefix
         # - this is disrupting the line ending
 
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO(removal_test_input))
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, StringIO(replacement_test_input))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, io.BytesIO(stem.util.str_tools._to_bytes(removal_test_input)))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, io.BytesIO(stem.util.str_tools._to_bytes(replacement_test_input)))
       else:
         # otherwise the data will be malformed, but this goes undetected
         self._assert_message_parses(removal_test_input)
@@ -179,7 +176,7 @@ class TestControlMessage(unittest.TestCase):
       stem.response.ControlMessage for the given input
     """
 
-    message = stem.socket.recv_message(StringIO(controller_reply))
+    message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes(controller_reply)))
 
     # checks that the raw_content equals the input value
     self.assertEqual(controller_reply, message.raw_content())
