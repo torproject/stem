@@ -560,9 +560,6 @@ def recv_message(control_file):
 
       log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
       raise stem.SocketClosed('Received empty socket content.')
-    elif len(line) < 4:
-      log.info(ERROR_MSG % ('ProtocolError', 'line too short, "%s"' % log.escape(line)))
-      raise stem.ProtocolError('Badly formatted reply line: too short')
     elif not MESSAGE_PREFIX.match(line):
       log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line)))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
@@ -570,8 +567,7 @@ def recv_message(control_file):
       log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line)))
       raise stem.ProtocolError('All lines should end with CRLF')
 
-    line = line[:-2]  # strips off the CRLF
-    status_code, divider, content = line[:3], line[3:4], line[4:]
+    status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
 
     if stem.prereq.is_python_3():
       status_code = stem.util.str_tools._to_unicode(status_code)
