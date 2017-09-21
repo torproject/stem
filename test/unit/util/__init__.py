@@ -12,6 +12,7 @@ __all__ = [
   'conf',
   'connection',
   'enum',
+  'log',
   'proc',
   'str_tools',
   'system',

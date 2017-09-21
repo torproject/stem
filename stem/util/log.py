@@ -88,6 +88,9 @@ DEDUPLICATION_MESSAGE_IDS = set()
 
 
 class _NullHandler(logging.Handler):
+  def __init__(self):
+    logging.Handler.__init__(self, level = logging.FATAL + 5)  # disable logging
+
   def emit(self, record):
     pass
 
@@ -117,6 +120,22 @@ def logging_level(runlevel):
     return LOG_VALUES[runlevel]
   else:
     return logging.FATAL + 5
+
+
+def is_tracing():
+  """
+  Checks if we're logging at the trace runlevel.
+
+  .. versionadded:: 1.6.0
+
+  :returns: **True** if we're logging at the trace runlevel and **False** otherwise
+  """
+
+  for handler in get_logger().handlers:
+    if handler.level <= logging_level(TRACE):
+      return True
+
+  return False
 
 
 def escape(message):

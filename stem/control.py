@@ -281,6 +281,11 @@ import stem.version
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import str_type, log
 
+# When closing the controller we attempt to finish processing enqueued events,
+# but if it takes longer than this we terminate.
+
+EVENTS_LISTENING_TIMEOUT = 0.1
+
 # state changes a control socket can have
 
 State = stem.util.enum.Enum('INIT', 'RESET', 'CLOSED')
@@ -957,10 +962,20 @@ class BaseController(object):
     socket.
     """
 
+    socket_closed_at = None
+
     while True:
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
+
+        # Attempt to finish processing enqueued events when our controller closes
+
+        if not self.is_alive():
+          if not socket_closed_at:
+            socket_closed_at = time.time()
+          elif time.time() - socket_closed_at > EVENTS_LISTENING_TIMEOUT:
+            break
       except queue.Empty:
         if not self.is_alive():
           break
@@ -1057,15 +1072,7 @@ class Controller(BaseController):
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
   def close(self):
-    # making a best-effort attempt to quit before detaching the socket
-    if self.is_authenticated():
-      try:
-        self.msg('QUIT')
-      except:
-        pass
-
-      self.clear_cache()
-
+    self.clear_cache()
     super(Controller, self).close()
 
   def authenticate(self, *args, **kwargs):
@@ -3298,7 +3305,7 @@ class Controller(BaseController):
     response = self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode('650 CIRC ' + circ + '\r\n')))
+      circ_message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_unicode('650 CIRC %s\r\n' % circ)))
       stem.response.convert('EVENT', circ_message, arrived_at = 0)
       circuits.append(circ_message)
 
@@ -3481,7 +3488,7 @@ class Controller(BaseController):
     response = self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.socket.recv_message(io.StringIO(stem.util.str_tools._to_unicode('650 STREAM ' + stream + '\r\n')))
+      message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream)))
       stem.response.convert('EVENT', message, arrived_at = 0)
       streams.append(message)
 

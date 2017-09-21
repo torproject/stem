@@ -69,6 +69,7 @@ Tor...
 
 from __future__ import absolute_import
 
+import io
 import re
 import socket
 import threading
@@ -79,6 +80,9 @@ import stem.response
 import stem.util.str_tools
 
 from stem.util import log
+
+MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
+ERROR_MSG = 'Error while receiving a control message (%s): %s'
 
 # lines to limit our trace logging to, you can disable this by setting it to None
 
@@ -484,9 +488,10 @@ def send_message(control_file, message, raw = False):
     control_file.write(stem.util.str_tools._to_bytes(message))
     control_file.flush()
 
-    log_message = message.replace('\r\n', '\n').rstrip()
-    msg_div = '\n' if '\n' in log_message else ' '
-    log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+    if log.is_tracing():
+      log_message = message.replace('\r\n', '\n').rstrip()
+      msg_div = '\n' if '\n' in log_message else ' '
+      log.trace('Sent to tor:%s%s' % (msg_div, log_message))
   except socket.error as exc:
     log.info('Failed to send message: %s' % exc)
 
@@ -522,22 +527,16 @@ def recv_message(control_file):
       a complete message
   """
 
-  parsed_content, raw_content = [], []
-  logging_prefix = 'Error while receiving a control message (%s): '
+  parsed_content, raw_content, first_line = None, None, True
 
   while True:
     try:
-      # From a real socket readline() would always provide bytes, but during
-      # tests we might be given a StringIO in which case it's unicode under
-      # python 3.x.
-
-      line = stem.util.str_tools._to_bytes(control_file.readline())
+      line = control_file.readline()
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'socket file has been closed')
+      log.info(ERROR_MSG % ('SocketClosed', 'socket file has been closed'))
       raise stem.SocketClosed('socket file has been closed')
     except (socket.error, ValueError) as exc:
       # When disconnected we get...
@@ -548,42 +547,42 @@ def recv_message(control_file):
       # Python 3:
       #   ValueError: I/O operation on closed file.
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'received exception "%s"' % exc)
+      log.info(ERROR_MSG % ('SocketClosed', 'received exception "%s"' % exc))
       raise stem.SocketClosed(exc)
-
-    raw_content.append(line)
 
     # Parses the tor control lines. These are of the form...
     # <status code><divider><content>\r\n
 
-    if len(line) == 0:
+    if not line:
       # if the socket is disconnected then the readline() method will provide
       # empty content
 
-      prefix = logging_prefix % 'SocketClosed'
-      log.info(prefix + 'empty socket content')
+      log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
       raise stem.SocketClosed('Received empty socket content.')
-    elif len(line) < 4:
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'line too short, "%s"' % log.escape(line))
-      raise stem.ProtocolError('Badly formatted reply line: too short')
-    elif not re.match(b'^[a-zA-Z0-9]{3}[-+ ]', line):
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'malformed status code/divider, "%s"' % log.escape(line))
+    elif not MESSAGE_PREFIX.match(line):
+      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line)))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
     elif not line.endswith(b'\r\n'):
-      prefix = logging_prefix % 'ProtocolError'
-      log.info(prefix + 'no CRLF linebreak, "%s"' % log.escape(line))
+      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line)))
       raise stem.ProtocolError('All lines should end with CRLF')
 
-    line = line[:-2]  # strips off the CRLF
-    status_code, divider, content = line[:3], line[3:4], line[4:]
-    content_lines = [content]
+    status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
 
     if stem.prereq.is_python_3():
       status_code = stem.util.str_tools._to_unicode(status_code)
       divider = stem.util.str_tools._to_unicode(divider)
+
+    # Most controller responses are single lines, in which case we don't need
+    # so much overhead.
+
+    if first_line:
+      if divider == ' ':
+        _log_trace(line)
+        return stem.response.ControlMessage([(status_code, divider, content)], line)
+      else:
+        parsed_content, raw_content, first_line = [], io.BytesIO(), False
+
+    raw_content.write(line)
 
     if divider == '-':
       # mid-reply line, keep pulling for more content
@@ -591,37 +590,25 @@ def recv_message(control_file):
     elif divider == ' ':
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
-
-      raw_content_str = b''.join(raw_content)
-      log_message = stem.util.str_tools._to_unicode(raw_content_str.replace(b'\r\n', b'\n').rstrip())
-      log_message_lines = log_message.split('\n')
-
-      if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
-        log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
-
-      if len(log_message_lines) > 2:
-        log.trace('Received from tor:\n%s' % log_message)
-      else:
-        log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
-
-      return stem.response.ControlMessage(parsed_content, raw_content_str)
+      _log_trace(raw_content.getvalue())
+      return stem.response.ControlMessage(parsed_content, raw_content.getvalue())
     elif divider == '+':
       # data entry, all of the following lines belong to the content until we
       # get a line with just a period
 
+      content_block = io.BytesIO()
+      content_block.write(content)
+
       while True:
         try:
-          line = stem.util.str_tools._to_bytes(control_file.readline())
+          line = control_file.readline()
+          raw_content.write(line)
         except socket.error as exc:
-          prefix = logging_prefix % 'SocketClosed'
-          log.info(prefix + 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(b''.join(raw_content))))
+          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(raw_content.getvalue()))))
           raise stem.SocketClosed(exc)
 
-        raw_content.append(line)
-
         if not line.endswith(b'\r\n'):
-          prefix = logging_prefix % 'ProtocolError'
-          log.info(prefix + 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(b''.join(raw_content)))
+          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(raw_content.getvalue())))
           raise stem.ProtocolError('All lines should end with CRLF')
         elif line == b'.\r\n':
           break  # data block termination
@@ -634,17 +621,17 @@ def recv_message(control_file):
         if line.startswith(b'..'):
           line = line[1:]
 
-        content_lines.append(line)
+        content_block.write(b'\n' + line)
 
       # joins the content using a newline rather than CRLF separator (more
       # conventional for multi-line string content outside the windows world)
 
-      parsed_content.append((status_code, divider, b'\n'.join(content_lines)))
+      parsed_content.append((status_code, divider, content_block.getvalue()))
     else:
       # this should never be reached due to the prefix regex, but might as well
       # be safe...
-      prefix = logging_prefix % 'ProtocolError'
-      log.warn(prefix + "\"%s\" isn't a recognized divider type" % divider)
+
+      log.warn(ERROR_MSG % ('ProtocolError', "\"%s\" isn't a recognized divider type" % divider))
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
@@ -675,3 +662,19 @@ def send_formatting(message):
     return '+%s\r\n.\r\n' % message.replace('\n', '\r\n')
   else:
     return message + '\r\n'
+
+
+def _log_trace(response):
+  if not log.is_tracing():
+    return
+
+  log_message = stem.util.str_tools._to_unicode(response.replace(b'\r\n', b'\n').rstrip())
+  log_message_lines = log_message.split('\n')
+
+  if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
+    log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+
+  if len(log_message_lines) > 2:
+    log.trace('Received from tor:\n%s' % log_message)
+  else:
+    log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))

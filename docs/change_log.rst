@@ -62,6 +62,7 @@ The following are only available within Stem's `git repository
   * Added :func:`~stem.manual.database` to get a cursor for the manual cache
   * Failed to parse torrcs without a port on ipv6 exit policy entries
   * Resilient to 'Tor' prefix in 'GETINFO version' result (:spec:`c5ff1b1`)
+  * Closing controller connection faster when under heavy event load
   * More succinct trace level logging
 
  * **Descriptors**
@@ -79,6 +80,8 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * Support connection resolution on OpenBSD using fstat (:trac:`13807`)
+  * Added :func:`~stem.util.system.size_of`
+  * Added :func:`~stem.util.log.is_tracing`
   * Added timeout argument to :func:`~stem.util.system.call`
   * Added cwd argument to :func:`~stem.util.system.call`
   * Added round argument to :func:`~stem.util.str_tools.size_label`
@@ -86,7 +89,6 @@ The following are only available within Stem's `git repository
   * Supporing pid arguments in :func:`~stem.util.system.is_running`
   * Normalized :func:`~stem.util.term.format` to return unicode
   * Don't load vim swap files as configurations
-  * Added :func:`~stem.util.system.size_of`
 
  * **Interpreter**
 
