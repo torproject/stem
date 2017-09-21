@@ -527,12 +527,11 @@ def recv_message(control_file):
       a complete message
   """
 
-  parsed_content, raw_content = [], io.BytesIO()
+  parsed_content, raw_content, first_line = None, None, True
 
   while True:
     try:
       line = control_file.readline()
-      raw_content.write(line)
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -573,25 +572,25 @@ def recv_message(control_file):
       status_code = stem.util.str_tools._to_unicode(status_code)
       divider = stem.util.str_tools._to_unicode(divider)
 
+    # Most controller responses are single lines, in which case we don't need
+    # some overhead.
+
+    if first_line:
+      if divider == ' ':
+        _log_trace(line)
+        return stem.response.ControlMessage([(status_code, divider, content)], line)
+      else:
+        parsed_content, raw_content, first_line = [], io.BytesIO(), False
+
+    raw_content.write(line)
+
     if divider == '-':
       # mid-reply line, keep pulling for more content
       parsed_content.append((status_code, divider, content))
     elif divider == ' ':
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
-
-      if log.is_tracing():
-        log_message = stem.util.str_tools._to_unicode(raw_content.getvalue().replace(b'\r\n', b'\n').rstrip())
-        log_message_lines = log_message.split('\n')
-
-        if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
-          log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
-
-        if len(log_message_lines) > 2:
-          log.trace('Received from tor:\n%s' % log_message)
-        else:
-          log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
-
+      _log_trace(raw_content.getvalue())
       return stem.response.ControlMessage(parsed_content, raw_content.getvalue())
     elif divider == '+':
       # data entry, all of the following lines belong to the content until we
@@ -663,3 +662,19 @@ def send_formatting(message):
     return '+%s\r\n.\r\n' % message.replace('\n', '\r\n')
   else:
     return message + '\r\n'
+
+
+def _log_trace(response):
+  if not log.is_tracing():
+    return
+
+  log_message = stem.util.str_tools._to_unicode(response.replace(b'\r\n', b'\n').rstrip())
+  log_message_lines = log_message.split('\n')
+
+  if TRUNCATE_LOGS and len(log_message_lines) > TRUNCATE_LOGS:
+    log_message = '\n'.join(log_message_lines[:TRUNCATE_LOGS] + ['... %i more lines...' % (len(log_message_lines) - TRUNCATE_LOGS)])
+
+  if len(log_message_lines) > 2:
+    log.trace('Received from tor:\n%s' % log_message)
+  else:
+    log.trace('Received from tor: %s' % log_message.replace('\n', '\\n'))
