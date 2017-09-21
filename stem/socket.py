@@ -573,7 +573,7 @@ def recv_message(control_file):
       divider = stem.util.str_tools._to_unicode(divider)
 
     # Most controller responses are single lines, in which case we don't need
-    # some overhead.
+    # so much overhead.
 
     if first_line:
       if divider == ' ':
