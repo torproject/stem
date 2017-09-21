@@ -94,6 +94,8 @@ except ImportError:
 # cache for the get_system_tor_version function
 VERSION_CACHE = {}
 
+VERSION_PATTERN = re.compile(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?(( \(\S*\))*)$')
+
 
 def get_system_tor_version(tor_cmd = 'tor'):
   """
@@ -156,13 +158,17 @@ class Version(object):
   <https://gitweb.torproject.org/torspec.git/tree/version-spec.txt>`_,
   such as "0.1.4" or "0.2.2.23-alpha (git-7dcd105be34a4f44)".
 
+  .. versionchanged:: 1.6.0
+     Added all_extra parameter..
+
   :var int major: major version
   :var int minor: minor version
   :var int micro: micro version
   :var int patch: patch level (**None** if undefined)
   :var str status: status tag such as 'alpha' or 'beta-dev' (**None** if undefined)
-  :var str extra: extra information without its parentheses such as
+  :var str extra: first extra information without its parentheses such as
     'git-8be6058d8f31e578' (**None** if undefined)
+  :var list all_extra: all extra information entries, without their parentheses
   :var str git_commit: git commit id (**None** if it wasn't provided)
 
   :param str version_str: version to be parsed
@@ -172,11 +178,11 @@ class Version(object):
 
   def __init__(self, version_str):
     self.version_str = version_str
-    version_parts = re.match(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?( \(\S*\))?$', version_str)
+    version_parts = VERSION_PATTERN.match(version_str)
     self._hash = None
 
     if version_parts:
-      major, minor, micro, patch, status, extra = version_parts.groups()
+      major, minor, micro, patch, status, extra_str, _ = version_parts.groups()
 
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
@@ -187,20 +193,19 @@ class Version(object):
       if status:
         status = status[1:]
 
-      if extra:
-        extra = extra[2:-1]
-
       self.major = int(major)
       self.minor = int(minor)
       self.micro = int(micro)
       self.patch = patch
       self.status = status
-      self.extra = extra
+      self.all_extra = [entry[1:-1] for entry in extra_str.strip().split()] if extra_str else []
+      self.extra = self.all_extra[0] if self.all_extra else None
+      self.git_commit = None
 
-      if extra and re.match('^git-[0-9a-f]{16}$', extra):
-        self.git_commit = extra[4:]
-      else:
-        self.git_commit = None
+      for extra in self.all_extra:
+        if extra and re.match('^git-[0-9a-f]{16}$', extra):
+          self.git_commit = extra[4:]
+          break
     else:
       raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 

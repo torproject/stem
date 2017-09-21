@@ -81,6 +81,16 @@ class TestVersion(unittest.TestCase):
     self.assertRaises(ValueError, stem.version.Version, '12.3')
     self.assertRaises(ValueError, stem.version.Version, '1.-2.3')
 
+  def test_with_multiple_extra(self):
+    """
+    Parse a version with multiple 'extra' fields.
+    """
+
+    version = Version('0.1.2 (release) (git-73ff13ab3cc9570d)')
+    self.assert_versions_match(version, 0, 1, 2, None, None, 'release')
+    self.assertEqual(['release', 'git-73ff13ab3cc9570d'], version.all_extra)
+    self.assertEqual('73ff13ab3cc9570d', version.git_commit)
+
   def test_comparison(self):
     """
     Tests comparision between Version instances.
@@ -224,6 +234,7 @@ class TestVersion(unittest.TestCase):
     self.assertEqual(extra, version.extra)
 
     if extra is None:
+      self.assertEqual([], version.all_extra)
       self.assertEqual(None, version.git_commit)
 
   def assert_version_is_greater(self, first_version, second_version):

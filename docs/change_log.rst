@@ -62,6 +62,7 @@ The following are only available within Stem's `git repository
   * Added :func:`~stem.manual.database` to get a cursor for the manual cache
   * Failed to parse torrcs without a port on ipv6 exit policy entries
   * Resilient to 'Tor' prefix in 'GETINFO version' result (:spec:`c5ff1b1`)
+  * Added a **all_extra** parameter to :class:`stem.version.Version` and support for multiple parenthetical entries (:trac:`22110`, :spec:`b50917d`)
   * Closing controller connection faster when under heavy event load
   * More succinct trace level logging
 
