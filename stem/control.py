@@ -387,10 +387,6 @@ CACHEABLE_GETINFO_PARAMS = (
 
 CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF = (
   'accounting/enabled',
-  'net/listeners/control',
-  'net/listeners/dir',
-  'net/listeners/or',
-  'net/listeners/socks',
 )
 
 # GETCONF parameters we shouldn't cache. This includes hidden service
@@ -1323,79 +1319,85 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    proxy_addrs = []
-    query = 'net/listeners/%s' % listener_type.lower()
+    listeners = self._get_cache(listener_type, 'listeners')
 
-    try:
-      for listener in self.get_info(query).split():
-        if not (listener.startswith('"') and listener.endswith('"')):
-          raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
-        elif ':' not in listener:
-          raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
+    if listeners is None:
+      proxy_addrs = []
+      query = 'net/listeners/%s' % listener_type.lower()
 
-        listener = listener[1:-1]  # strip quotes
-        addr, port = listener.rsplit(':', 1)
+      try:
+        for listener in self.get_info(query).split():
+          if not (listener.startswith('"') and listener.endswith('"')):
+            raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
+          elif ':' not in listener:
+            raise stem.ProtocolError("'GETINFO %s' had a listener without a colon: %s" % (query, listener))
 
-        # Skip unix sockets, for instance...
-        #
-        # GETINFO net/listeners/control
-        # 250-net/listeners/control="unix:/tmp/tor/socket"
-        # 250 OK
-
-        if addr == 'unix':
-          continue
-
-        if addr.startswith('[') and addr.endswith(']'):
-          addr = addr[1:-1]  # unbracket ipv6 address
-
-        proxy_addrs.append((addr, port))
-    except stem.InvalidArguments:
-      # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
-      # Some options (like the ORPort) can have optional attributes after the
-      # actual port number.
-
-      port_option = {
-        Listener.OR: 'ORPort',
-        Listener.DIR: 'DirPort',
-        Listener.SOCKS: 'SocksPort',
-        Listener.TRANS: 'TransPort',
-        Listener.NATD: 'NatdPort',
-        Listener.DNS: 'DNSPort',
-        Listener.CONTROL: 'ControlPort',
-      }[listener_type]
-
-      listener_option = {
-        Listener.OR: 'ORListenAddress',
-        Listener.DIR: 'DirListenAddress',
-        Listener.SOCKS: 'SocksListenAddress',
-        Listener.TRANS: 'TransListenAddress',
-        Listener.NATD: 'NatdListenAddress',
-        Listener.DNS: 'DNSListenAddress',
-        Listener.CONTROL: 'ControlListenAddress',
-      }[listener_type]
-
-      port_value = self.get_conf(port_option).split()[0]
-
-      for listener in self.get_conf(listener_option, multiple = True):
-        if ':' in listener:
+          listener = listener[1:-1]  # strip quotes
           addr, port = listener.rsplit(':', 1)
+
+          # Skip unix sockets, for instance...
+          #
+          # GETINFO net/listeners/control
+          # 250-net/listeners/control="unix:/tmp/tor/socket"
+          # 250 OK
+
+          if addr == 'unix':
+            continue
 
           if addr.startswith('[') and addr.endswith(']'):
             addr = addr[1:-1]  # unbracket ipv6 address
 
           proxy_addrs.append((addr, port))
-        else:
-          proxy_addrs.append((listener, port_value))
+      except stem.InvalidArguments:
+        # Tor version is old (pre-tor-0.2.2.26-beta), use get_conf() instead.
+        # Some options (like the ORPort) can have optional attributes after the
+        # actual port number.
 
-    # validate that address/ports are valid, and convert ports to ints
+        port_option = {
+          Listener.OR: 'ORPort',
+          Listener.DIR: 'DirPort',
+          Listener.SOCKS: 'SocksPort',
+          Listener.TRANS: 'TransPort',
+          Listener.NATD: 'NatdPort',
+          Listener.DNS: 'DNSPort',
+          Listener.CONTROL: 'ControlPort',
+        }[listener_type]
 
-    for addr, port in proxy_addrs:
-      if not stem.util.connection.is_valid_ipv4_address(addr) and not stem.util.connection.is_valid_ipv6_address(addr):
-        raise stem.ProtocolError('Invalid address for a %s listener: %s' % (listener_type, addr))
-      elif not stem.util.connection.is_valid_port(port):
-        raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))
+        listener_option = {
+          Listener.OR: 'ORListenAddress',
+          Listener.DIR: 'DirListenAddress',
+          Listener.SOCKS: 'SocksListenAddress',
+          Listener.TRANS: 'TransListenAddress',
+          Listener.NATD: 'NatdListenAddress',
+          Listener.DNS: 'DNSListenAddress',
+          Listener.CONTROL: 'ControlListenAddress',
+        }[listener_type]
 
-    return [(addr, int(port)) for (addr, port) in proxy_addrs]
+        port_value = self.get_conf(port_option).split()[0]
+
+        for listener in self.get_conf(listener_option, multiple = True):
+          if ':' in listener:
+            addr, port = listener.rsplit(':', 1)
+
+            if addr.startswith('[') and addr.endswith(']'):
+              addr = addr[1:-1]  # unbracket ipv6 address
+
+            proxy_addrs.append((addr, port))
+          else:
+            proxy_addrs.append((listener, port_value))
+
+      # validate that address/ports are valid, and convert ports to ints
+
+      for addr, port in proxy_addrs:
+        if not stem.util.connection.is_valid_ipv4_address(addr) and not stem.util.connection.is_valid_ipv6_address(addr):
+          raise stem.ProtocolError('Invalid address for a %s listener: %s' % (listener_type, addr))
+        elif not stem.util.connection.is_valid_port(port):
+          raise stem.ProtocolError('Invalid port for a %s listener: %s' % (listener_type, port))
+
+      listeners = [(addr, int(port)) for (addr, port) in proxy_addrs]
+      self._set_cache({listener_type: listeners}, 'listeners')
+
+    return listeners
 
   @with_default()
   def get_accounting_stats(self, default = UNDEFINED):
@@ -2405,6 +2407,7 @@ class Controller(BaseController):
         # reset any getinfo parameters that can be changed by a SETCONF
 
         self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
+        self._set_cache(None, 'listeners')
 
         self._set_cache(to_cache, 'getconf')
         self._set_cache({'get_custom_options': None})
@@ -3099,6 +3102,15 @@ class Controller(BaseController):
 
     with self._cache_lock:
       if not self.is_caching_enabled():
+        return
+
+      # if no params are provided then clear the namespace
+
+      if not params and namespace:
+        for cache_key in self._request_cache.keys():
+          if cache_key.startswith('%s.' % namespace):
+            del self._request_cache[cache_key]
+
         return
 
       for key, value in list(params.items()):

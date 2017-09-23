@@ -159,7 +159,7 @@ class Version(object):
   such as "0.1.4" or "0.2.2.23-alpha (git-7dcd105be34a4f44)".
 
   .. versionchanged:: 1.6.0
-     Added all_extra parameter..
+     Added all_extra parameter.
 
   :var int major: major version
   :var int minor: minor version

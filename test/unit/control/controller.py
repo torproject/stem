@@ -162,6 +162,7 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual([('127.0.0.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
     self.assertEqual([9050], self.controller.get_ports(Listener.CONTROL))
+    self.controller.clear_cache()
 
     # non-local addresss
 
@@ -172,6 +173,7 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual([('27.4.4.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
     self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
+    self.controller.clear_cache()
 
     # Exercise via the GETINFO option.
 
@@ -184,6 +186,7 @@ class TestControl(unittest.TestCase):
     )
 
     self.assertEqual([1112, 1114], self.controller.get_ports(Listener.CONTROL))
+    self.controller.clear_cache()
 
     # IPv6 address
 
@@ -196,6 +199,7 @@ class TestControl(unittest.TestCase):
 
     # unix socket file
 
+    self.controller.clear_cache()
     get_info_mock.return_value = '"unix:/tmp/tor/socket"'
 
     self.assertEqual([], self.controller.get_listeners(Listener.CONTROL))
@@ -220,6 +224,7 @@ class TestControl(unittest.TestCase):
     }[param]
 
     self.assertEqual([('127.0.0.1', 9050)], self.controller.get_socks_listeners())
+    self.controller.clear_cache()
 
     # Again, an old tor, but SocksListenAddress overrides the port number.
 
@@ -229,6 +234,7 @@ class TestControl(unittest.TestCase):
     }[param]
 
     self.assertEqual([('127.0.0.1', 1112)], self.controller.get_socks_listeners())
+    self.controller.clear_cache()
 
     # Again, an old tor, but multiple listeners
 
@@ -238,6 +244,7 @@ class TestControl(unittest.TestCase):
     }[param]
 
     self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)], self.controller.get_socks_listeners())
+    self.controller.clear_cache()
 
     # Again, an old tor, but no SOCKS listeners
 
@@ -247,6 +254,7 @@ class TestControl(unittest.TestCase):
     }[param]
 
     self.assertEqual([], self.controller.get_socks_listeners())
+    self.controller.clear_cache()
 
     # Where tor provides invalid ports or addresses
 
@@ -289,6 +297,7 @@ class TestControl(unittest.TestCase):
 
     # no SOCKS listeners
 
+    self.controller.clear_cache()
     get_info_mock.return_value = ''
     self.assertEqual([], self.controller.get_socks_listeners())
 
