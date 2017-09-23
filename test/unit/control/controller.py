@@ -311,6 +311,7 @@ class TestControl(unittest.TestCase):
     )
 
     for response in invalid_responses:
+      self.controller.clear_cache()
       get_info_mock.return_value = response
       self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 

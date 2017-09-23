@@ -1141,6 +1141,10 @@ class Controller(BaseController):
       is_multiple = True
       params = set(params)
 
+    for param in params:
+      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
+        raise stem.ProtocolError('Tor geoip database is unavailable')
+
     # check for cached results
 
     from_cache = [param.lower() for param in params]
@@ -1150,10 +1154,6 @@ class Controller(BaseController):
       user_expected_key = _case_insensitive_lookup(params, key)
       reply[user_expected_key] = cached_results[key]
       params.remove(user_expected_key)
-
-    for param in params:
-      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
-        raise stem.ProtocolError('Tor geoip database is unavailable')
 
     # if everything was cached then short circuit making the query
     if not params:
