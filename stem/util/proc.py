@@ -375,14 +375,15 @@ def connections(pid = None, user = None):
       if proc_file_path.endswith('6') and not os.path.exists(proc_file_path):
         continue  # ipv6 proc contents are optional
 
+      protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
+      is_ipv6 = proc_file_path.endswith('6')
+
       try:
         with open(proc_file_path, 'rb') as proc_file:
           proc_file.readline()  # skip the first line
 
           for line in proc_file:
             _, l_addr, f_addr, status, _, _, _, uid, _, inode = line.split()[:10]
-            protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-            is_ipv6 = proc_file_path.endswith('6')
 
             if inodes and inode not in inodes:
               continue
