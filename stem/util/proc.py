@@ -368,7 +368,7 @@ def connections(pid = None, user = None):
     if not IS_PWD_AVAILABLE:
       raise IOError("This requires python's pwd module, which is unavailable on Windows.")
 
-    inodes = _inodes_for_sockets(pid) if pid else []
+    inodes = _inodes_for_sockets(pid) if pid else set()
     process_uid = pwd.getpwnam(user).pw_uid if user else None
 
     for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
@@ -414,12 +414,12 @@ def _inodes_for_sockets(pid):
 
   :param int pid: process id of the process to be queried
 
-  :returns: **list** with inodes for its sockets
+  :returns: **set** with inodes for its sockets
 
   :raises: **IOError** if it can't be determined
   """
 
-  inodes = []
+  inodes = set()
 
   try:
     fd_contents = os.listdir('/proc/%s/fd' % pid)
@@ -435,7 +435,7 @@ def _inodes_for_sockets(pid):
       fd_name = os.readlink(fd_path)
 
       if fd_name.startswith('socket:['):
-        inodes.append(stem.util.str_tools._to_bytes(fd_name[8:-1]))
+        inodes.add(stem.util.str_tools._to_bytes(fd_name[8:-1]))
     except OSError as exc:
       if not os.path.exists(fd_path):
         continue  # descriptors may shift while we're in the middle of iterating over them
