@@ -80,6 +80,7 @@ except AttributeError:
   CLOCK_TICKS = None
 
 IS_LITTLE_ENDIAN = sys.byteorder == 'little'
+ENCODED_ADDR = {}  # cache of encoded ips to their decoded version
 
 Stat = stem.util.enum.Enum(
   ('COMMAND', 'command'), ('CPU_UTIME', 'utime'),
@@ -467,29 +468,31 @@ def _decode_proc_address_encoding(addr, is_ipv6):
   """
 
   ip, port = addr.rsplit(b':', 1)
-
   port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
 
-  if not is_ipv6:
-    ip_encoded = base64.b16decode(ip)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(ip)
-    ip = socket.inet_ntop(socket.AF_INET, ip_encoded)
-  else:
-    if IS_LITTLE_ENDIAN:
-      # Group into eight characters, then invert in pairs...
-      #
-      #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
+  if ip not in ENCODED_ADDR:
+    if not is_ipv6:
+      ip_encoded = base64.b16decode(ip)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(ip)
+      ENCODED_ADDR[ip] = socket.inet_ntop(socket.AF_INET, ip_encoded)
+    else:
+      ip_encoded = ip
 
-      inverted = []
+      if IS_LITTLE_ENDIAN:
+        # Group into eight characters, then invert in pairs...
+        #
+        #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
 
-      for i in range(4):
-        grouping = ip[8 * i:8 * (i + 1)]
-        inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
+        inverted = []
 
-      ip = b''.join(inverted)
+        for i in range(4):
+          grouping = ip[8 * i:8 * (i + 1)]
+          inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
 
-    ip = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip)))
+        ip_encoded = b''.join(inverted)
 
-  return (ip, port)
+      ENCODED_ADDR[ip] = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip_encoded)))
+
+  return (ENCODED_ADDR[ip], port)
 
 
 def _is_float(*value):
