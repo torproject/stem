@@ -79,6 +79,8 @@ try:
 except AttributeError:
   CLOCK_TICKS = None
 
+IS_LITTLE_ENDIAN = sys.byteorder == 'little'
+
 Stat = stem.util.enum.Enum(
   ('COMMAND', 'command'), ('CPU_UTIME', 'utime'),
   ('CPU_STIME', 'stime'), ('START_TIME', 'start time')
@@ -469,10 +471,10 @@ def _decode_proc_address_encoding(addr, is_ipv6):
   port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
 
   if not is_ipv6:
-    ip_encoded = base64.b16decode(ip)[::-1] if sys.byteorder == 'little' else base64.b16decode(ip)
+    ip_encoded = base64.b16decode(ip)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(ip)
     ip = socket.inet_ntop(socket.AF_INET, ip_encoded)
   else:
-    if sys.byteorder == 'little':
+    if IS_LITTLE_ENDIAN:
       # Group into eight characters, then invert in pairs...
       #
       #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
