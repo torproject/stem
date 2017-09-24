@@ -369,7 +369,7 @@ def connections(pid = None, user = None):
       raise IOError("This requires python's pwd module, which is unavailable on Windows.")
 
     inodes = _inodes_for_sockets(pid) if pid else set()
-    process_uid = pwd.getpwnam(user).pw_uid if user else None
+    process_uid = str(pwd.getpwnam(user).pw_uid) if user else None
 
     for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
       if proc_file_path.endswith('6') and not os.path.exists(proc_file_path):
@@ -387,7 +387,7 @@ def connections(pid = None, user = None):
 
             if inodes and inode not in inodes:
               continue
-            elif process_uid and int(uid) != process_uid:
+            elif process_uid and uid != process_uid:
               continue
             elif protocol == 'tcp' and status != b'01':
               continue  # skip tcp connections that aren't yet established
