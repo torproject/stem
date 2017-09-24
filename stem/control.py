@@ -3064,7 +3064,12 @@ class Controller(BaseController):
     :returns: cached value corresponding to key or **None** if the key wasn't found
     """
 
-    return self._get_cache_map([param], namespace).get(param, None)
+    with self._cache_lock:
+      if not self.is_caching_enabled():
+        return None
+
+      cache_key = '%s.%s' % (namespace, param) if namespace else param
+      return self._request_cache.get(cache_key, None)
 
   def _get_cache_map(self, params, namespace = None):
     """
@@ -3081,10 +3086,7 @@ class Controller(BaseController):
 
       if self.is_caching_enabled():
         for param in params:
-          if namespace:
-            cache_key = '%s.%s' % (namespace, param)
-          else:
-            cache_key = param
+          cache_key = '%s.%s' % (namespace, param) if namespace else param
 
           if cache_key in self._request_cache:
             cached_values[param] = self._request_cache[cache_key]
