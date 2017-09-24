@@ -79,6 +79,9 @@ try:
 except AttributeError:
   CLOCK_TICKS = None
 
+IS_LITTLE_ENDIAN = sys.byteorder == 'little'
+ENCODED_ADDR = {}  # cache of encoded ips to their decoded version
+
 Stat = stem.util.enum.Enum(
   ('COMMAND', 'command'), ('CPU_UTIME', 'utime'),
   ('CPU_STIME', 'stime'), ('START_TIME', 'start time')
@@ -368,12 +371,15 @@ def connections(pid = None, user = None):
     if not IS_PWD_AVAILABLE:
       raise IOError("This requires python's pwd module, which is unavailable on Windows.")
 
-    inodes = _inodes_for_sockets(pid) if pid else []
-    process_uid = pwd.getpwnam(user).pw_uid if user else None
+    inodes = _inodes_for_sockets(pid) if pid else set()
+    process_uid = str(pwd.getpwnam(user).pw_uid) if user else None
 
     for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
       if proc_file_path.endswith('6') and not os.path.exists(proc_file_path):
         continue  # ipv6 proc contents are optional
+
+      protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
+      is_ipv6 = proc_file_path.endswith('6')
 
       try:
         with open(proc_file_path, 'rb') as proc_file:
@@ -381,12 +387,10 @@ def connections(pid = None, user = None):
 
           for line in proc_file:
             _, l_addr, f_addr, status, _, _, _, uid, _, inode = line.split()[:10]
-            protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-            is_ipv6 = proc_file_path.endswith('6')
 
             if inodes and inode not in inodes:
               continue
-            elif process_uid and int(uid) != process_uid:
+            elif process_uid and uid != process_uid:
               continue
             elif protocol == 'tcp' and status != b'01':
               continue  # skip tcp connections that aren't yet established
@@ -414,12 +418,12 @@ def _inodes_for_sockets(pid):
 
   :param int pid: process id of the process to be queried
 
-  :returns: **list** with inodes for its sockets
+  :returns: **set** with inodes for its sockets
 
   :raises: **IOError** if it can't be determined
   """
 
-  inodes = []
+  inodes = set()
 
   try:
     fd_contents = os.listdir('/proc/%s/fd' % pid)
@@ -435,7 +439,7 @@ def _inodes_for_sockets(pid):
       fd_name = os.readlink(fd_path)
 
       if fd_name.startswith('socket:['):
-        inodes.append(stem.util.str_tools._to_bytes(fd_name[8:-1]))
+        inodes.add(stem.util.str_tools._to_bytes(fd_name[8:-1]))
     except OSError as exc:
       if not os.path.exists(fd_path):
         continue  # descriptors may shift while we're in the middle of iterating over them
@@ -464,29 +468,31 @@ def _decode_proc_address_encoding(addr, is_ipv6):
   """
 
   ip, port = addr.rsplit(b':', 1)
-
   port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
 
-  if not is_ipv6:
-    ip_encoded = base64.b16decode(ip)[::-1] if sys.byteorder == 'little' else base64.b16decode(ip)
-    ip = socket.inet_ntop(socket.AF_INET, ip_encoded)
-  else:
-    if sys.byteorder == 'little':
-      # Group into eight characters, then invert in pairs...
-      #
-      #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
+  if ip not in ENCODED_ADDR:
+    if not is_ipv6:
+      ip_encoded = base64.b16decode(ip)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(ip)
+      ENCODED_ADDR[ip] = socket.inet_ntop(socket.AF_INET, ip_encoded)
+    else:
+      ip_encoded = ip
 
-      inverted = []
+      if IS_LITTLE_ENDIAN:
+        # Group into eight characters, then invert in pairs...
+        #
+        #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
 
-      for i in range(4):
-        grouping = ip[8 * i:8 * (i + 1)]
-        inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
+        inverted = []
 
-      ip = b''.join(inverted)
+        for i in range(4):
+          grouping = ip[8 * i:8 * (i + 1)]
+          inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
 
-    ip = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip)))
+        ip_encoded = b''.join(inverted)
 
-  return (ip, port)
+      ENCODED_ADDR[ip] = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip_encoded)))
+
+  return (ENCODED_ADDR[ip], port)
 
 
 def _is_float(*value):

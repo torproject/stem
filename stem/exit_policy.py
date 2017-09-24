@@ -282,6 +282,9 @@ class ExitPolicy(object):
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
     """
 
+    if not self.is_exiting_allowed():
+      return False
+
     for rule in self._get_rules():
       if rule.is_match(address, port, strict):
         return rule.is_accept
