@@ -379,27 +379,70 @@ def connections(pid = None, user = None):
         continue  # ipv6 proc contents are optional
 
       protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-      is_ipv6 = proc_file_path.endswith('6')
+      is_tcp, is_udp, is_ipv6 = protocol == 'tcp', protocol == 'udp', proc_file_path.endswith('6')
+      title = ''
 
       try:
         with open(proc_file_path, 'rb') as proc_file:
-          proc_file.readline()  # skip the first line
+          title = proc_file.readline()
+
+          if 'local_address' in title:
+            laddr_start = title.index('local_address')
+            laddr_end = laddr_start + (8 if not is_ipv6 else 32)
+
+            lport_start = laddr_end + 1
+            lport_end = lport_start + 4
+          else:
+            raise IOError("title line missing 'local_address', %s" % title)
+
+          if 'rem_address' in title or 'remote_address' in title:
+            raddr_start = title.index('rem_address') if 'rem_address' in title else title.index('remote_address')
+            raddr_end = raddr_start + (8 if not is_ipv6 else 32)
+
+            rport_start = raddr_end + 1
+            rport_end = rport_start + 4
+          else:
+            raise IOError("title line missing 'remote_address', %s" % title)
+
+          if 'st' in title:
+            status_start = title.index('st')
+            status_end = status_start + 2
+          else:
+            raise IOError("title line missing 'st', %s" % title)
+
+          if 'retrnsmt' in title and 'uid' in title:
+            # unlike the above fields uid is right aligned
+            uid_start = title.index('retrnsmt') + 9
+            uid_end = title.index('uid') + 3
+          elif 'retrnsmt' not in title:
+            raise IOError("title line missing 'retrnsmt', %s" % title)
+          else:
+            raise IOError("title line missing 'uid', %s" % title)
+
+          if 'timeout' in title:
+            # inodes can lack a header, and are a dynamic size
+            inode_start = title.index('timeout') + 8
+          else:
+            raise IOError("title line missing 'timeout', %s" % title)
 
           for line in proc_file:
-            _, l_addr, f_addr, status, _, _, _, uid, _, inode = line.split()[:10]
-
-            if inodes and inode not in inodes:
+            if inodes and line[inode_start:].split(' ', 1)[0] not in inodes:
               continue
-            elif process_uid and uid != process_uid:
+            elif process_uid and line[uid_start:uid_end].strip() != process_uid:
               continue
-            elif protocol == 'tcp' and status != b'01':
+            elif is_tcp and line[status_start:status_end] != b'01':
               continue  # skip tcp connections that aren't yet established
-            elif protocol == 'udp' and (f_addr == '00000000:0000' or f_addr == '00000000000000000000000000000000:0000'):
+
+            l_addr = _unpack_addr(line[laddr_start:laddr_end])
+            l_port = int(line[lport_start:lport_end], 16)
+
+            r_addr = _unpack_addr(line[raddr_start:raddr_end])
+            r_port = int(line[rport_start:rport_end], 16)
+
+            if is_udp and (r_addr == '0.0.0.0' or r_addr == '0000:0000:0000:0000:0000:0000') and r_port == 0:
               continue  # skip udp connections with a blank destination
 
-            local_ip, local_port = _decode_proc_address_encoding(l_addr, is_ipv6)
-            foreign_ip, foreign_port = _decode_proc_address_encoding(f_addr, is_ipv6)
-            conn.append(stem.util.connection.Connection(local_ip, local_port, foreign_ip, foreign_port, protocol, is_ipv6))
+            conn.append(stem.util.connection.Connection(l_addr, l_port, r_addr, r_port, protocol, is_ipv6))
       except IOError as exc:
         raise IOError("unable to read '%s': %s" % (proc_file_path, exc))
       except Exception as exc:
@@ -450,7 +493,7 @@ def _inodes_for_sockets(pid):
   return inodes
 
 
-def _decode_proc_address_encoding(addr, is_ipv6):
+def _unpack_addr(addr):
   """
   Translates an address entry in the /proc/net/* contents to a human readable
   form (`reference <http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html>`_,
@@ -458,24 +501,21 @@ def _decode_proc_address_encoding(addr, is_ipv6):
 
   ::
 
-    "0500000A:0016" -> ("10.0.0.5", 22)
-    "F804012A4A5190010000000002000000:01BB" -> ("2a01:4f8:190:514a::2", 443)
+    "0500000A" -> "10.0.0.5"
+    "F804012A4A5190010000000002000000" -> "2a01:4f8:190:514a::2"
 
   :param str addr: proc address entry to be decoded
-  :param bool is_ipv6: if we should treat the address as ipv6
 
-  :returns: **tuple** of the form **(addr, port)**, with addr as a string and port an int
+  :returns: **str** of the decoded address
   """
 
-  ip, port = addr.rsplit(b':', 1)
-  port = int(port, 16)  # the port is represented as a two-byte hexadecimal number
-
-  if ip not in ENCODED_ADDR:
-    if not is_ipv6:
-      ip_encoded = base64.b16decode(ip)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(ip)
-      ENCODED_ADDR[ip] = socket.inet_ntop(socket.AF_INET, ip_encoded)
+  if addr not in ENCODED_ADDR:
+    if len(addr) == 8:
+      # IPv4 address
+      decoded = base64.b16decode(addr)[::-1] if IS_LITTLE_ENDIAN else base64.b16decode(addr)
+      ENCODED_ADDR[addr] = socket.inet_ntop(socket.AF_INET, decoded)
     else:
-      ip_encoded = ip
+      # IPv6 address
 
       if IS_LITTLE_ENDIAN:
         # Group into eight characters, then invert in pairs...
@@ -485,14 +525,16 @@ def _decode_proc_address_encoding(addr, is_ipv6):
         inverted = []
 
         for i in range(4):
-          grouping = ip[8 * i:8 * (i + 1)]
+          grouping = addr[8 * i:8 * (i + 1)]
           inverted += [grouping[2 * i:2 * (i + 1)] for i in range(4)][::-1]
 
-        ip_encoded = b''.join(inverted)
+        encoded = b''.join(inverted)
+      else:
+        encoded = addr
 
-      ENCODED_ADDR[ip] = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(ip_encoded)))
+      ENCODED_ADDR[addr] = stem.util.connection.expand_ipv6_address(socket.inet_ntop(socket.AF_INET6, base64.b16decode(encoded)))
 
-  return (ENCODED_ADDR[ip], port)
+  return ENCODED_ADDR[addr]
 
 
 def _is_float(*value):

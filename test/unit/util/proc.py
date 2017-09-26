@@ -16,6 +16,8 @@ try:
 except ImportError:
   from mock import Mock, patch
 
+TITLE_LINE = 'sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt  uid  timeout'
+
 TCP6_CONTENT = b"""\
   sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
    0: 00000000000000000000000000000000:1495 00000000000000000000000000000000:0000 0A 00000000:00000000 00:00000000 00000000   106        0 14347030 1 0000000000000000 100 0 0 10 0
@@ -210,8 +212,8 @@ class TestProc(unittest.TestCase):
       '/proc/%s/fd/4' % pid: 'pipe:[40404]',
     }[param]
 
-    tcp = b'\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111 8 99999999'
-    udp = b'\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111 H IIIIIIII'
+    tcp = b'%s\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111        8 99999999' % TITLE_LINE
+    udp = b'%s\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111        H IIIIIIII' % TITLE_LINE
 
     path_exists_mock.side_effect = lambda param: {
       '/proc/net/tcp': True,
@@ -258,9 +260,9 @@ class TestProc(unittest.TestCase):
     }[param]
 
     open_mock.side_effect = lambda param, mode: {
-      '/proc/net/tcp': io.BytesIO(b''),
+      '/proc/net/tcp': io.BytesIO(TITLE_LINE),
       '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
-      '/proc/net/udp': io.BytesIO(b''),
+      '/proc/net/udp': io.BytesIO(TITLE_LINE),
     }[param]
 
     expected_results = [
@@ -286,9 +288,9 @@ class TestProc(unittest.TestCase):
     }[param]
 
     open_mock.side_effect = lambda param, mode: {
-      '/proc/net/tcp': io.BytesIO(b''),
+      '/proc/net/tcp': io.BytesIO(TITLE_LINE),
       '/proc/net/tcp6': io.BytesIO(TCP6_CONTENT),
-      '/proc/net/udp': io.BytesIO(b''),
+      '/proc/net/udp': io.BytesIO(TITLE_LINE),
     }[param]
 
     expected_results = [

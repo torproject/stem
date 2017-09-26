@@ -88,6 +88,7 @@ The following are only available within Stem's `git repository
   * Added round argument to :func:`~stem.util.str_tools.size_label`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
   * Supporing pid arguments in :func:`~stem.util.system.is_running`
+  * Made connection resolution via proc about 5x faster
   * Normalized :func:`~stem.util.term.format` to return unicode
   * Don't load vim swap files as configurations
 
