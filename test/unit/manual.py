@@ -297,6 +297,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual(b'a2x output', output.getvalue())
     call_mock.assert_called_once_with('a2x -f manpage /no/such/path/tor.1.txt')
 
+  @patch('stem.manual.HAS_ENCODING_ARG', Mock(return_value = True))
   @patch('stem.util.system.is_mac', Mock(return_value = False))
   @patch('stem.util.system.is_bsd', Mock(return_value = False))
   @patch('stem.util.system.is_slackware', Mock(return_value = False))
