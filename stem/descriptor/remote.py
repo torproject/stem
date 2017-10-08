@@ -869,7 +869,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'longclaw': DirectoryAuthority(
     nickname = 'longclaw',
-    address = '199.254.238.52',
+    address = '199.58.81.140',
     or_port = 443,
     dir_port = 80,
     is_bandwidth_authority = True,

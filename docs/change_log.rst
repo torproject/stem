@@ -77,6 +77,7 @@ The following are only available within Stem's `git repository
   * Added server descriptor's new protocol attribute (:spec:`eb4fb3c`)
   * Added extrainfo descriptor's new padding_counts attributes (:spec:`0803997`)
   * Shared randomness properties weren't being read in votes (:trac:`21102`)
+  * Updated longclaw authority's address (:trac:`23592`)
 
  * **Utilities**
 
