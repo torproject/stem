@@ -29,6 +29,22 @@ etc). This information is provided from a few sources...
     |- digest - calculates the upper-case hex digest value for our content
     |- get_annotations - dictionary of content prior to the descriptor entry
     +- get_annotation_lines - lines that provided the annotations
+
+.. data:: BridgeDistribution (enum)
+
+  Preferred method of distributing this relay if a bridge.
+
+  .. versionadded:: 1.6.0
+
+  ===================== ===========
+  BridgeDistribution    Description
+  ===================== ===========
+  **ANY**               No proference, BridgeDB will pick how the bridge is distributed.
+  **HTTPS**             Provided via the `web interface <https://bridges.torproject.org>`_.
+  **EMAIL**             Provided in response to emails to bridges@torproject.org.
+  **MOAT**              Provided in interactive menus within Tor Browser.
+  **HYPHAE**            Provided via a cryptographic invitation-based system.
+  ===================== ===========
 """
 
 import base64
@@ -42,6 +58,7 @@ import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
 import stem.util.connection
+import stem.util.enum
 import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
@@ -101,6 +118,7 @@ SINGLE_FIELDS = (
   'read-history',
   'write-history',
   'eventdns',
+  'bridge-distribution-request',
   'family',
   'caches-extra-info',
   'extra-info-digest',
@@ -115,8 +133,17 @@ SINGLE_FIELDS = (
   'router-sig-ed25519',
 )
 
+BridgeDistribution = stem.util.enum.Enum(
+  ('ANY', 'any'),
+  ('HTTPS', 'https'),
+  ('EMAIL', 'email'),
+  ('MOAT', 'moat'),
+  ('HYPHAE', 'hyphae'),
+)
+
 DEFAULT_IPV6_EXIT_POLICY = stem.exit_policy.MicroExitPolicy('reject 1-65535')
 REJECT_ALL_POLICY = stem.exit_policy.ExitPolicy('reject *:*')
+DEFAULT_BRIDGE_DISTRIBUTION = 'any'
 
 
 def _truncated_b64encode(content):
@@ -423,6 +450,7 @@ _parse_allow_single_hop_exits_line = _parse_if_present('allow-single-hop-exits',
 _parse_tunneled_dir_server_line = _parse_if_present('tunnelled-dir-server', 'allow_tunneled_dir_requests')
 _parse_proto_line = _parse_protocol_line('proto', 'protocols')
 _parse_caches_extra_info_line = _parse_if_present('caches-extra-info', 'extra_info_cache')
+_parse_bridge_distribution_request_line = _parse_simple_line('bridge-distribution-request', 'bridge_distribution')
 _parse_family_line = _parse_simple_line('family', 'family', func = lambda v: set(v.split(' ')))
 _parse_eventdns_line = _parse_simple_line('eventdns', 'eventdns', func = lambda v: v == '1')
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
@@ -456,6 +484,8 @@ class ServerDescriptor(Descriptor):
   :var bytes contact: contact information
   :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
+  :var BridgeDistribution bridge_distribution: **\*** preferred method of providing this relay's
+    address if a bridge
   :var set family: **\*** nicknames or fingerprints of declared family
 
   :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
@@ -495,7 +525,8 @@ class ServerDescriptor(Descriptor):
      Added the allow_tunneled_dir_requests attribute.
 
   .. versionchanged:: 1.6.0
-     Added the extra_info_sha256_digest and protocols attributes.
+     Added the extra_info_sha256_digest, protocols, and bridge_distribution
+     attributes.
   """
 
   ATTRIBUTES = {
@@ -515,6 +546,7 @@ class ServerDescriptor(Descriptor):
     'operating_system': (None, _parse_platform_line),
     'uptime': (None, _parse_uptime_line),
     'exit_policy_v6': (DEFAULT_IPV6_EXIT_POLICY, _parse_ipv6_policy_line),
+    'bridge_distribution': (DEFAULT_BRIDGE_DISTRIBUTION, _parse_bridge_distribution_request_line),
     'family': (set(), _parse_family_line),
 
     'average_bandwidth': (None, _parse_bandwidth_line),
@@ -565,6 +597,7 @@ class ServerDescriptor(Descriptor):
     'tunnelled-dir-server': _parse_tunneled_dir_server_line,
     'proto': _parse_proto_line,
     'caches-extra-info': _parse_caches_extra_info_line,
+    'bridge-distribution-request': _parse_bridge_distribution_request_line,
     'family': _parse_family_line,
     'eventdns': _parse_eventdns_line,
   }

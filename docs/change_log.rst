@@ -75,6 +75,7 @@ The following are only available within Stem's `git repository
   * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Added server descriptor's new extra_info_sha256_digest attribute (:spec:`0f03581`)
   * Added server descriptor's new protocol attribute (:spec:`eb4fb3c`)
+  * Added server descriptor's new bridge_distribution attribute (:trac:`21177`)
   * Added extrainfo descriptor's new padding_counts attributes (:spec:`0803997`)
   * Shared randomness properties weren't being read in votes (:trac:`21102`)
   * Updated longclaw authority's address (:trac:`23592`)

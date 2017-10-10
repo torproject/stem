@@ -21,7 +21,7 @@ import test.require
 
 from stem.util import str_type
 from stem.descriptor.certificate import CertType, ExtensionType
-from stem.descriptor.server_descriptor import RelayDescriptor, BridgeDescriptor
+from stem.descriptor.server_descriptor import BridgeDistribution, RelayDescriptor, BridgeDescriptor
 
 from test.unit.descriptor import (
   get_resource,
@@ -141,6 +141,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('D225B728768D7EA4B5587C13A7A9D22EBBEE6E66', desc.extra_info_digest)
     self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(BridgeDistribution.ANY, desc.bridge_distribution)
     self.assertEqual(expected_family, desc.family)
     self.assertEqual(153600, desc.average_bandwidth)
     self.assertEqual(256000, desc.burst_bandwidth)
@@ -200,6 +201,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(None, desc.extra_info_digest)
     self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(None, desc.hidden_service_dir)
+    self.assertEqual(BridgeDistribution.ANY, desc.bridge_distribution)
     self.assertEqual(set(), desc.family)
     self.assertEqual(102400, desc.average_bandwidth)
     self.assertEqual(10485760, desc.burst_bandwidth)
@@ -248,6 +250,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('56403D838DE152421CD401B8E57DAD4483A3D56B', desc.extra_info_digest)
     self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(['2'], desc.hidden_service_dir)
+    self.assertEqual(BridgeDistribution.ANY, desc.bridge_distribution)
     self.assertEqual(set(), desc.family)
     self.assertEqual(102400, desc.average_bandwidth)
     self.assertEqual(204800, desc.burst_bandwidth)
@@ -504,6 +507,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('BB1F13AA431421BEA29B840A2E33BB1C31C2990B', desc.extra_info_digest)
     self.assertEqual(None, desc.extra_info_sha256_digest)
     self.assertEqual(None, desc.hidden_service_dir)
+    self.assertEqual(BridgeDistribution.ANY, desc.bridge_distribution)
     self.assertEqual(set(), desc.family)
     self.assertEqual(3220480, desc.average_bandwidth)
     self.assertEqual(6441984, desc.burst_bandwidth)
@@ -752,6 +756,14 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     fingerprint = '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE45'
     expect_invalid_attr(self, {'opt fingerprint': fingerprint}, 'fingerprint', fingerprint.replace(' ', ''))
+
+  def test_with_bridge_distribution(self):
+    """
+    Include a preferred method of bridge distribution.
+    """
+
+    desc = RelayDescriptor.create({'bridge-distribution-request': 'email'})
+    self.assertEqual(BridgeDistribution.EMAIL, desc.bridge_distribution)
 
   def test_ipv6_policy(self):
     """
