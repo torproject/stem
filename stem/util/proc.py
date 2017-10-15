@@ -439,8 +439,10 @@ def connections(pid = None, user = None):
             r_addr = _unpack_addr(line[raddr_start:raddr_end])
             r_port = int(line[rport_start:rport_end], 16)
 
-            if is_udp and (r_addr == '0.0.0.0' or r_addr == '0000:0000:0000:0000:0000:0000') and r_port == 0:
-              continue  # skip udp connections with a blank destination
+            if r_addr == '0.0.0.0' or r_addr == '0000:0000:0000:0000:0000:0000':
+              continue  # no address
+            elif l_port == 0 or r_port == 0:
+              continue  # no port
 
             conn.append(stem.util.connection.Connection(l_addr, l_port, r_addr, r_port, protocol, is_ipv6))
       except IOError as exc:
