@@ -1147,8 +1147,7 @@ class Controller(BaseController):
 
     # check for cached results
 
-    from_cache = [param.lower() for param in params]
-    cached_results = self._get_cache_map(from_cache, 'getinfo')
+    cached_results = self._get_cache_map(map(str.lower, params), 'getinfo')
 
     for key in cached_results:
       user_expected_key = _case_insensitive_lookup(params, key)
@@ -2163,13 +2162,10 @@ class Controller(BaseController):
     if params == []:
       return {}
 
-    # translate context sensitive options
+    # check for cached results, translating context sensitive options
+
     lookup_params = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in params])
-
-    # check for cached results
-
-    from_cache = [param.lower() for param in lookup_params]
-    cached_results = self._get_cache_map(from_cache, 'getconf')
+    cached_results = self._get_cache_map(map(str.lower, lookup_params), 'getconf')
 
     for key in cached_results:
       user_expected_key = _case_insensitive_lookup(lookup_params, key)
