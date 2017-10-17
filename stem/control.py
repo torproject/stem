@@ -3109,7 +3109,7 @@ class Controller(BaseController):
       # if no params are provided then clear the namespace
 
       if not params and namespace:
-        for cache_key in self._request_cache.keys():
+        for cache_key in list(self._request_cache.keys()):
           if cache_key.startswith('%s.' % namespace):
             del self._request_cache[cache_key]
 
@@ -3122,7 +3122,7 @@ class Controller(BaseController):
           cache_key = key
 
         if value is None:
-          if cache_key in self._request_cache:
+          if cache_key in list(self._request_cache.keys()):
             del self._request_cache[cache_key]
         else:
           self._request_cache[cache_key] = value
