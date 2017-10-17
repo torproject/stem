@@ -16,7 +16,7 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-TITLE_LINE = 'sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt  uid  timeout'
+TITLE_LINE = b'sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt  uid  timeout'
 
 TCP6_CONTENT = b"""\
   sl  local_address                         remote_address                        st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode

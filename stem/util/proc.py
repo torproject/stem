@@ -372,22 +372,22 @@ def connections(pid = None, user = None):
       raise IOError("This requires python's pwd module, which is unavailable on Windows.")
 
     inodes = _inodes_for_sockets(pid) if pid else set()
-    process_uid = str(pwd.getpwnam(user).pw_uid) if user else None
+    process_uid = stem.util.str_tools._to_bytes(str(pwd.getpwnam(user).pw_uid)) if user else None
 
     for proc_file_path in ('/proc/net/tcp', '/proc/net/tcp6', '/proc/net/udp', '/proc/net/udp6'):
       if proc_file_path.endswith('6') and not os.path.exists(proc_file_path):
         continue  # ipv6 proc contents are optional
 
       protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-      is_tcp, is_udp, is_ipv6 = protocol == 'tcp', protocol == 'udp', proc_file_path.endswith('6')
+      is_tcp, is_ipv6 = protocol == 'tcp', proc_file_path.endswith('6')
       title = ''
 
       try:
         with open(proc_file_path, 'rb') as proc_file:
           title = proc_file.readline()
 
-          if 'local_address' in title:
-            laddr_start = title.index('local_address')
+          if b'local_address' in title:
+            laddr_start = title.index(b'local_address')
             laddr_end = laddr_start + (8 if not is_ipv6 else 32)
 
             lport_start = laddr_end + 1
@@ -395,8 +395,8 @@ def connections(pid = None, user = None):
           else:
             raise IOError("title line missing 'local_address', %s" % title)
 
-          if 'rem_address' in title or 'remote_address' in title:
-            raddr_start = title.index('rem_address') if 'rem_address' in title else title.index('remote_address')
+          if b'rem_address' in title or b'remote_address' in title:
+            raddr_start = title.index(b'rem_address') if b'rem_address' in title else title.index(b'remote_address')
             raddr_end = raddr_start + (8 if not is_ipv6 else 32)
 
             rport_start = raddr_end + 1
@@ -404,29 +404,29 @@ def connections(pid = None, user = None):
           else:
             raise IOError("title line missing 'remote_address', %s" % title)
 
-          if 'st' in title:
-            status_start = title.index('st')
+          if b'st' in title:
+            status_start = title.index(b'st')
             status_end = status_start + 2
           else:
             raise IOError("title line missing 'st', %s" % title)
 
-          if 'retrnsmt' in title and 'uid' in title:
+          if b'retrnsmt' in title and b'uid' in title:
             # unlike the above fields uid is right aligned
-            uid_start = title.index('retrnsmt') + 9
-            uid_end = title.index('uid') + 3
-          elif 'retrnsmt' not in title:
+            uid_start = title.index(b'retrnsmt') + 9
+            uid_end = title.index(b'uid') + 3
+          elif b'retrnsmt' not in title:
             raise IOError("title line missing 'retrnsmt', %s" % title)
           else:
             raise IOError("title line missing 'uid', %s" % title)
 
-          if 'timeout' in title:
+          if b'timeout' in title:
             # inodes can lack a header, and are a dynamic size
-            inode_start = title.index('timeout') + 8
+            inode_start = title.index(b'timeout') + 8
           else:
             raise IOError("title line missing 'timeout', %s" % title)
 
           for line in proc_file:
-            if inodes and line[inode_start:].split(' ', 1)[0] not in inodes:
+            if inodes and line[inode_start:].split(b' ', 1)[0] not in inodes:
               continue
             elif process_uid and line[uid_start:uid_end].strip() != process_uid:
               continue
