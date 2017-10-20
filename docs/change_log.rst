@@ -78,6 +78,7 @@ The following are only available within Stem's `git repository
   * Added server descriptor's new bridge_distribution attribute (:trac:`21177`)
   * Added extrainfo descriptor's new padding_counts attributes (:spec:`0803997`)
   * Shared randomness properties weren't being read in votes (:trac:`21102`)
+  * Added bastet as a new authority (:trac:`23912`)
   * Updated longclaw authority's address (:trac:`23592`)
 
  * **Utilities**
