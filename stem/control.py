@@ -1048,6 +1048,7 @@ class Controller(BaseController):
     self._event_listeners_lock = threading.RLock()
     self._enabled_features = []
     self._is_geoip_unavailable = None
+    self._last_fingerprint_exc = None
 
     super(Controller, self).__init__(control_socket, is_authenticated)
 
@@ -1144,6 +1145,8 @@ class Controller(BaseController):
     for param in params:
       if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
         raise stem.ProtocolError('Tor geoip database is unavailable')
+      elif param == 'fingerprint' and self._last_fingerprint_exc and self.get_conf('ORPort', None) is None:
+        raise self._last_fingerprint_exc  # we already know we're not a relay
 
     # check for cached results
 
@@ -1189,6 +1192,9 @@ class Controller(BaseController):
 
         self._set_cache(to_cache, 'getinfo')
 
+      if 'fingerprint' in params:
+        self._last_fingerprint_exc = None
+
       log.debug('GETINFO %s (runtime: %0.4f)' % (' '.join(params), time.time() - start_time))
 
       if is_multiple:
@@ -1196,6 +1202,9 @@ class Controller(BaseController):
       else:
         return list(reply.values())[0]
     except stem.ControllerError as exc:
+      if 'fingerprint' in params:
+        self._last_fingerprint_exc = exc
+
       log.debug('GETINFO %s (failed: %s)' % (' '.join(params), exc))
       raise
 

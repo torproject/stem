@@ -45,6 +45,33 @@ class TestControl(unittest.TestCase):
     for event in stem.control.EventType:
       self.assertTrue(stem.control.event_description(event) is not None)
 
+  @patch('stem.control.Controller.msg')
+  def test_get_get_info(self, msg_mock):
+    msg_mock.return_value = ControlMessage.from_str('250-hello=hi right back!\r\n250 OK\r\n', 'GETINFO')
+    self.assertEqual('hi right back!', self.controller.get_info('hello'))
+
+  @patch('stem.control.Controller.msg')
+  @patch('stem.control.Controller.get_conf')
+  def test_get_get_info_without_fingerprint(self, get_conf_mock, msg_mock):
+    msg_mock.return_value = ControlMessage.from_str('551 Not running in server mode\r\n')
+    get_conf_mock.return_value = None
+
+    self.assertEqual(None, self.controller._last_fingerprint_exc)
+    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertEqual("GETINFO response didn't have an OK status:\nNot running in server mode", str(self.controller._last_fingerprint_exc))
+    self.assertEqual(1, msg_mock.call_count)
+
+    # now that we have a cached failure we should provide that back
+
+    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertEqual(1, msg_mock.call_count)
+
+    # ... but if we become a relay we'll call it again
+
+    get_conf_mock.return_value = '443'
+    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertEqual(2, msg_mock.call_count)
+
   @patch('stem.control.Controller.get_info')
   def test_get_version(self, get_info_mock):
     """
