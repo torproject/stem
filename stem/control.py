@@ -3111,9 +3111,9 @@ class Controller(BaseController):
       if not self.is_caching_enabled():
         return
 
-      # if no params are provided then clear the namespace
+      # if params is None then clear the namespace
 
-      if not params and namespace:
+      if params is None and namespace:
         for cache_key in list(self._request_cache.keys()):
           if cache_key.startswith('%s.' % namespace):
             del self._request_cache[cache_key]
