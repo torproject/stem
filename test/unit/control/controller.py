@@ -5,6 +5,7 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import datetime
 import io
+import time
 import unittest
 
 import stem.descriptor.router_status_entry
@@ -46,13 +47,37 @@ class TestControl(unittest.TestCase):
       self.assertTrue(stem.control.event_description(event) is not None)
 
   @patch('stem.control.Controller.msg')
-  def test_get_get_info(self, msg_mock):
+  def test_get_info(self, msg_mock):
     msg_mock.return_value = ControlMessage.from_str('250-hello=hi right back!\r\n250 OK\r\n', 'GETINFO')
     self.assertEqual('hi right back!', self.controller.get_info('hello'))
 
   @patch('stem.control.Controller.msg')
+  def test_get_info_address_caching(self, msg_mock):
+    test_start = time.time()
+    msg_mock.return_value = ControlMessage.from_str('551 Address unknown\r\n')
+
+    self.assertEqual(0, self.controller._address_cached_at)
+    self.assertEqual(None, self.controller._last_address_exc)
+    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
+    self.assertTrue(test_start <= self.controller._address_cached_at <= time.time())
+    self.assertEqual("GETINFO response didn't have an OK status:\nAddress unknown", str(self.controller._last_address_exc))
+    self.assertEqual(1, msg_mock.call_count)
+
+    # now that we have a cached failure we should provide that back
+
+    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
+    self.assertEqual(1, msg_mock.call_count)
+
+    # pretend it's a minute later and try again, now with an address
+
+    msg_mock.return_value = ControlMessage.from_str('250-address=17.2.89.80\r\n250 OK\r\n', 'GETINFO')
+    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
+    self.controller._address_cached_at -= 60
+    self.assertEqual('17.2.89.80', self.controller.get_info('address'))
+
+  @patch('stem.control.Controller.msg')
   @patch('stem.control.Controller.get_conf')
-  def test_get_get_info_without_fingerprint(self, get_conf_mock, msg_mock):
+  def test_get_info_without_fingerprint(self, get_conf_mock, msg_mock):
     msg_mock.return_value = ControlMessage.from_str('551 Not running in server mode\r\n')
     get_conf_mock.return_value = None
 

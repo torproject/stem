@@ -372,6 +372,7 @@ MAPPED_CONFIG_KEYS = {
 # unchangeable GETINFO parameters
 
 CACHEABLE_GETINFO_PARAMS = (
+  'address',
   'version',
   'config-file',
   'exit-policy/default',
@@ -388,6 +389,12 @@ CACHEABLE_GETINFO_PARAMS = (
 CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF = (
   'accounting/enabled',
 )
+
+# 'GETINFO address' isn't technically cachable, but it's also both highly
+# requested and highly static. As such fetching it at a fixed rate. If
+# you'd like you can set this global to zero to disable caching.
+
+CACHE_ADDRESS_FOR = 1.0
 
 # GETCONF parameters we shouldn't cache. This includes hidden service
 # perameters due to the funky way they're set and retrieved (for instance,
@@ -1048,6 +1055,9 @@ class Controller(BaseController):
     self._event_listeners_lock = threading.RLock()
     self._enabled_features = []
     self._is_geoip_unavailable = None
+
+    self._address_cached_at = 0
+    self._last_address_exc = None
     self._last_fingerprint_exc = None
 
     super(Controller, self).__init__(control_socket, is_authenticated)
@@ -1145,6 +1155,8 @@ class Controller(BaseController):
     for param in params:
       if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
         raise stem.ProtocolError('Tor geoip database is unavailable')
+      elif param == 'address' and self._last_address_exc and (time.time() - self._address_cached_at) < CACHE_ADDRESS_FOR:
+        raise self._last_address_exc  # we already know we can't resolve an address
       elif param == 'fingerprint' and self._last_fingerprint_exc and self.get_conf('ORPort', None) is None:
         raise self._last_fingerprint_exc  # we already know we're not a relay
 
@@ -1153,6 +1165,9 @@ class Controller(BaseController):
     cached_results = self._get_cache_map(map(str.lower, params), 'getinfo')
 
     for key in cached_results:
+      if key == 'address' and (time.time() - self._address_cached_at) > CACHE_ADDRESS_FOR:
+        continue  # cached address is too old
+
       user_expected_key = _case_insensitive_lookup(params, key)
       reply[user_expected_key] = cached_results[key]
       params.remove(user_expected_key)
@@ -1192,6 +1207,10 @@ class Controller(BaseController):
 
         self._set_cache(to_cache, 'getinfo')
 
+      if 'address' in params:
+        self._address_cached_at = time.time()
+        self._last_address_exc = None
+
       if 'fingerprint' in params:
         self._last_fingerprint_exc = None
 
@@ -1202,6 +1221,10 @@ class Controller(BaseController):
       else:
         return list(reply.values())[0]
     except stem.ControllerError as exc:
+      if 'address' in params:
+        self._address_cached_at = time.time()
+        self._last_address_exc = exc
+
       if 'fingerprint' in params:
         self._last_fingerprint_exc = exc
 
