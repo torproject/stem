@@ -212,8 +212,8 @@ class TestProc(unittest.TestCase):
       '/proc/%s/fd/4' % pid: 'pipe:[40404]',
     }[param]
 
-    tcp = b'%s\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111        8 99999999' % TITLE_LINE
-    udp = b'%s\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111        H IIIIIIII' % TITLE_LINE
+    tcp = TITLE_LINE + b'\n 0: 11111111:1111 22222222:2222 01 44444444:44444444 55:55555555 66666666 1111        8 99999999'
+    udp = TITLE_LINE + b'\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111        H IIIIIIII'
 
     path_exists_mock.side_effect = lambda param: {
       '/proc/net/tcp': True,
