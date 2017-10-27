@@ -158,6 +158,9 @@ class AsyncTest(object):
     self._status = AsyncStatus.PENDING
 
   def run(self, *runner_args, **kwargs):
+    if stem.prereq._is_python_26():
+      return  # not supported under python 2.6
+
     def _wrapper(conn, runner, args):
       os.nice(12)
 
@@ -199,6 +202,9 @@ class AsyncTest(object):
     self.result(None)
 
   def result(self, test):
+    if stem.prereq._is_python_26():
+      return  # not supported under python 2.6
+
     with self._process_lock:
       if self._status == AsyncStatus.PENDING:
         self.run()

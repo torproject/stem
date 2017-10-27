@@ -6,13 +6,20 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
-import importlib
 import os
 import sys
 import threading
 import time
 import traceback
 import unittest
+
+try:
+  # TODO: added in python 2.7, drop check when removing 2.6 support
+
+  import importlib
+  RUN_ASYNC_TESTS = true
+except ImportError:
+  RUN_ASYNC_TESTS = False
 
 try:
   from StringIO import StringIO
@@ -194,7 +201,7 @@ def main():
     async_args = test.AsyncTestArgs(default_test_dir, args.tor_path)
 
     for module_str in stem.util.test_tools.ASYNC_TESTS:
-      if not args.specific_test or module_str.startswith(args.specific_test):
+      if RUN_ASYNC_TESTS and (not args.specific_test or module_str.startswith(args.specific_test)):
         module = importlib.import_module(module_str.rsplit('.', 1)[0])
         test_classes = [v for k, v in module.__dict__.items() if k.startswith('Test')]
 

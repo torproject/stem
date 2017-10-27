@@ -45,7 +45,7 @@ PublishServerDescriptor 0
 DataDirectory %s
 """
 
-TOR_CMD = None
+TOR_CMD = 'tor'
 
 
 def random_port():
