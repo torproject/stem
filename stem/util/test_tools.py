@@ -273,7 +273,7 @@ class TimedTestRunner(unittest.TextTestRunner):
               func(*args, **kwargs)
               self.fail('Expected a %s to be raised but nothing was' % exc_type)
             except exc_type as exc:
-              self.assertTrue(re.match(exc_msg, str(exc)))
+              self.assertTrue(re.search(exc_msg, str(exc), re.MULTILINE))
           else:
             return super(original_type, self).assertRaisesRegexp(exc_type, exc_msg, func, *args, **kwargs)
 
