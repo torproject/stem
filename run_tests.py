@@ -17,7 +17,7 @@ try:
   # TODO: added in python 2.7, drop check when removing 2.6 support
 
   import importlib
-  RUN_ASYNC_TESTS = true
+  RUN_ASYNC_TESTS = True
 except ImportError:
   RUN_ASYNC_TESTS = False
 
