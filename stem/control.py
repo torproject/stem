@@ -1162,7 +1162,8 @@ class Controller(BaseController):
 
     # check for cached results
 
-    cached_results = self._get_cache_map(map(str.lower, params), 'getinfo')
+    from_cache = [param.lower() for param in params]
+    cached_results = self._get_cache_map(from_cache, 'getinfo')
 
     for key in cached_results:
       if key == 'address' and (time.time() - self._address_cached_at) > CACHE_ADDRESS_FOR:
@@ -2194,10 +2195,13 @@ class Controller(BaseController):
     if params == []:
       return {}
 
-    # check for cached results, translating context sensitive options
-
+    # translate context sensitive options
     lookup_params = set([MAPPED_CONFIG_KEYS.get(entry, entry) for entry in params])
-    cached_results = self._get_cache_map(map(str.lower, lookup_params), 'getconf')
+
+    # check for cached results
+
+    from_cache = [param.lower() for param in lookup_params]
+    cached_results = self._get_cache_map(from_cache, 'getconf')
 
     for key in cached_results:
       user_expected_key = _case_insensitive_lookup(lookup_params, key)
