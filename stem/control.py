@@ -1987,6 +1987,7 @@ class Controller(BaseController):
 
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(desc_content),
+      False,
       entry_class = desc_class,
     )
 
