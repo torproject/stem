@@ -824,14 +824,14 @@ class NewConsensusEvent(Event):
   _VERSION_ADDED = stem.version.Requirement.EVENT_NEWCONSENSUS
 
   def _parse(self):
-    content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
+    self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
 
     # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
     # our other events.
 
     if PARSE_NEWCONSENSUS_EVENTS:
       self.desc = list(stem.descriptor.router_status_entry._parse_file(
-        io.BytesIO(str_tools._to_bytes(content)),
+        io.BytesIO(str_tools._to_bytes(self.consensus_content)),
         False,
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
       ))
