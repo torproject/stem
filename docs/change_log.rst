@@ -56,6 +56,7 @@ The following are only available within Stem's `git repository
   * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
   * :func:`~stem.control.Controller.is_geoip_unavailable` now determines if database is available right away
   * Added the time attribute to :class:`~stem.response.events.StreamBwEvent` and :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`00b9daf`)
+  * Added the consensus_content attribute to :class:`~stem.response.events.NewConsensusEvent` and deprecated its 'desc'
   * Deprecated :func:`~stem.control.Controller.is_geoip_unavailable`, this is now available via getinfo instead (:trac:`23237`, :spec:`dc973f8`)
   * Deprecated :class:`~stem.respose.events.AuthDirNewDescEvent` (:trac:`22377`, :spec:`6e887ba`)
   * Caching manual information as sqlite rather than stem.util.conf, making :func:`stem.manual.Manual.from_cache` about ~8x faster

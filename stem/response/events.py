@@ -20,6 +20,7 @@ from stem.util import str_type, int_type, connection, log, str_tools, tor_tools
 KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\S*)$')
 QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
 CELL_TYPE = re.compile('^[a-z0-9_]+$')
+PARSE_NEWCONSENSUS_EVENTS = True
 
 
 class Event(stem.response.ControlMessage):
@@ -234,7 +235,6 @@ class AuthDirNewDescEvent(Event):
   removed in 0.3.2.1-alpha. (:spec:`6e887ba`)
 
   .. deprecated:: 1.6.0
-
      Tor dropped this event as of version 0.3.2.1. (:spec:`6e887ba`)
 
   :var stem.AuthDescriptorAction action: what is being done with the descriptor
@@ -804,6 +804,19 @@ class NewConsensusEvent(Event):
 
   The NEWCONSENSUS event was introduced in tor version 0.2.1.13-alpha.
 
+  .. versionchanged:: 1.6.0
+     Added the consensus_content attribute.
+
+  .. deprecated:: 1.6.0
+     In Stem 2.0 we'll remove the desc attribute, so this event only provides
+     the unparsed consensus. Callers can then parse it if they'd like. To drop
+     parsing before then you can set...
+
+     ::
+
+       stem.response.events.PARSE_NEWCONSENSUS_EVENTS = False
+
+  :var str consensus_content: consensus content
   :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
 
@@ -816,11 +829,14 @@ class NewConsensusEvent(Event):
     # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
     # our other events.
 
-    self.desc = list(stem.descriptor.router_status_entry._parse_file(
-      io.BytesIO(str_tools._to_bytes(content)),
-      False,
-      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
-    ))
+    if PARSE_NEWCONSENSUS_EVENTS:
+      self.desc = list(stem.descriptor.router_status_entry._parse_file(
+        io.BytesIO(str_tools._to_bytes(content)),
+        False,
+        entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
+      ))
+    else:
+      self.desc = None
 
 
 class NewDescEvent(Event):
