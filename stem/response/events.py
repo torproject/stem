@@ -774,7 +774,6 @@ class NetworkStatusEvent(Event):
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
-      True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
 
@@ -818,7 +817,6 @@ class NewConsensusEvent(Event):
 
     self.desc = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
-      True,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     ))
 
