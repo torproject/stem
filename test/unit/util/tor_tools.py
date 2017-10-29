@@ -4,6 +4,7 @@ Unit tests for the stem.util.tor_tools functions.
 
 import unittest
 
+import stem.util.str_tools
 import stem.util.tor_tools
 
 
@@ -16,6 +17,8 @@ class TestTorTools(unittest.TestCase):
     valid_fingerprints = (
       '$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB',
       '$a7569a83b5706ab1b1a9cb52eff7d2d32e4553eb',
+      stem.util.str_tools._to_bytes('$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'),
+      stem.util.str_tools._to_unicode('$A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'),
     )
 
     invalid_fingerprints = (
@@ -44,6 +47,8 @@ class TestTorTools(unittest.TestCase):
       'caerSidi',
       'a',
       'abcABC123',
+      stem.util.str_tools._to_bytes('caerSidi'),
+      stem.util.str_tools._to_unicode('caerSidi'),
     )
 
     invalid_nicknames = (
@@ -69,6 +74,8 @@ class TestTorTools(unittest.TestCase):
       '0',
       '2',
       'abcABC123',
+      stem.util.str_tools._to_bytes('2'),
+      stem.util.str_tools._to_unicode('2'),
     )
 
     invalid_circuit_ids = (
@@ -94,6 +101,8 @@ class TestTorTools(unittest.TestCase):
     valid_hex_digits = (
       '12345',
       'AbCdE',
+      stem.util.str_tools._to_bytes('AbCdE'),
+      stem.util.str_tools._to_unicode('AbCdE'),
     )
 
     invalid_hex_digits = (
