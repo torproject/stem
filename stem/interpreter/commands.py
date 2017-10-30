@@ -26,6 +26,8 @@ try:
 except ImportError:
   from io import StringIO
 
+MAX_EVENTS = 100
+
 
 def _get_fingerprint(arg, controller):
   """
@@ -133,7 +135,10 @@ class ControlInterpreter(code.InteractiveConsole):
 
     def handle_event_wrapper(event_message):
       handle_event_real(event_message)
-      self._received_events.append(event_message)
+      self._received_events.insert(0, event_message)
+
+      if len(self._received_events) > MAX_EVENTS:
+        self._received_events.pop()
 
     self._controller._handle_event = handle_event_wrapper
 
