@@ -169,6 +169,7 @@ class ControlMessage(object):
 
     self._parsed_content = parsed_content
     self._raw_content = raw_content
+    self._str = None
 
   def is_ok(self):
     """
@@ -245,7 +246,10 @@ class ControlMessage(object):
     formatting.
     """
 
-    return '\n'.join(list(self))
+    if self._str is None:
+      self._str = '\n'.join(list(self))
+
+    return self._str
 
   def __iter__(self):
     """
