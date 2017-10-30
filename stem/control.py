@@ -1323,7 +1323,7 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    return [port for (addr, port) in self.get_listeners(listener_type) if addr == '127.0.0.1']
+    return [port for (addr, port) in self.get_listeners(listener_type) if addr in ('127.0.0.1', '0.0.0.0')]
 
   @with_default()
   def get_listeners(self, listener_type, default = UNDEFINED):
