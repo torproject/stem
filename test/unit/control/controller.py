@@ -227,7 +227,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
     self.controller.clear_cache()
 
-    # Exercise via the GETINFO option.
+    # exercise via the GETINFO option
 
     get_info_mock.side_effect = None
     get_info_mock.return_value = '"127.0.0.1:1112" "127.0.0.1:1114"'
@@ -238,6 +238,14 @@ class TestControl(unittest.TestCase):
     )
 
     self.assertEqual([1112, 1114], self.controller.get_ports(Listener.CONTROL))
+    self.controller.clear_cache()
+
+    # with all localhost addresses, including a couple that aren't
+
+    get_info_mock.side_effect = None
+    get_info_mock.return_value = '"27.4.4.1:1113" "127.0.0.5:1114" "0.0.0.0:1115" "[::]:1116" "[::1]:1117" "[10::]:1118"'
+
+    self.assertEqual([1114, 1115, 1116, 1117], self.controller.get_ports(Listener.OR))
     self.controller.clear_cache()
 
     # IPv6 address
