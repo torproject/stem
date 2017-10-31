@@ -401,9 +401,10 @@ def is_running(command):
   Checks for if a process with a given name or pid is running.
 
   .. versionchanged:: 1.6.0
-     Added support for pid arguments.
+     Added support for list and pid arguments.
 
-  :param str,int command: process name if a str or pid if an int to be checked
+  :param str,list,int command: process name if a str, multiple process names if
+    a list, or pid if an int to be checked
 
   :returns: **True** if the process is running, **False** if it's not among ps
     results, and **None** if ps can't be queried
@@ -444,7 +445,15 @@ def is_running(command):
 
     if command_listing:
       command_listing = map(str_type.strip, command_listing)
-      return command in command_listing
+
+      if isinstance(command, (bytes, unicode)):
+        command = [command]
+
+      for cmd in command:
+        if cmd in command_listing:
+          return True
+
+      return False
 
   return None
 

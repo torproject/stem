@@ -54,6 +54,7 @@ The following are only available within Stem's `git repository
   * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)
   * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset (:trac:`21329`)
   * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
+  * :func:`~stem.control.Controller.get_ports` didn't provide ports for many representations of localhost (:trac:`24085`)
   * :func:`~stem.control.Controller.is_geoip_unavailable` now determines if database is available right away
   * Added the time attribute to :class:`~stem.response.events.StreamBwEvent` and :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`00b9daf`)
   * Added the consensus_content attribute to :class:`~stem.response.events.NewConsensusEvent` and deprecated its 'desc'
@@ -65,6 +66,7 @@ The following are only available within Stem's `git repository
   * Resilient to 'Tor' prefix in 'GETINFO version' result (:spec:`c5ff1b1`)
   * Added a **all_extra** parameter to :class:`stem.version.Version` and support for multiple parenthetical entries (:trac:`22110`, :spec:`b50917d`)
   * Closing controller connection faster when under heavy event load
+  * Better messaging when unable to connect to tor on FreeBSD
   * More succinct trace level logging
 
  * **Descriptors**
@@ -100,6 +102,7 @@ The following are only available within Stem's `git repository
 
   * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands (:trac:`21541`)
   * Allowing interpreter to continue after tor shutsdown (:trac:`22374`)
+  * Interpreter buffered an unbounded number of events, leaking memory over time
 
  * **Website**
 

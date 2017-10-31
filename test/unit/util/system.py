@@ -137,9 +137,11 @@ class TestSystem(unittest.TestCase):
       self.assertTrue(system.is_running('irssi'))
       self.assertTrue(system.is_running('moc'))
       self.assertTrue(system.is_running('tor'))
+      self.assertTrue(system.is_running(['funky-tor', 'tor']))
       self.assertTrue(system.is_running('ps'))
       self.assertTrue(system.is_running('firefox'))
-      self.assertEqual(False, system.is_running('something_else'))
+      self.assertFalse(system.is_running('something_else'))
+      self.assertFalse(system.is_running(['funky-tor', 'funkier-tor']))
 
     # mock both calls failing
 

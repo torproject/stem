@@ -198,6 +198,12 @@ CONNECT_MESSAGES = {
   'wrong_socket_type': WRONG_SOCKET_TYPE_MSG.strip(),
 }
 
+COMMON_TOR_COMMANDS = (
+  'tor',
+  'tor.real',  # TBB command ran
+  '/usr/local/bin/tor',  # FreeBSD expands the whole path, this is the default location
+)
+
 
 def connect(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.Controller):
   """
@@ -273,12 +279,10 @@ def connect(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/
   # If unable to connect to either a control socket or port then finally fail
   # out. If we only attempted to connect to one of them then provide the error
   # output from that. Otherwise we provide a more generic error message.
-  #
-  # We check for a 'tor.real' process name because that's what TBB uses.
 
   if not control_connection:
     if control_socket and control_port:
-      is_tor_running = stem.util.system.is_running('tor') or stem.util.system.is_running('tor.real')
+      is_tor_running = stem.util.system.is_running(COMMON_TOR_COMMANDS)
       error_msg = CONNECT_MESSAGES['no_control_port'] if is_tor_running else CONNECT_MESSAGES['tor_isnt_running']
 
     print(error_msg)
