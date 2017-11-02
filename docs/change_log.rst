@@ -65,6 +65,7 @@ The following are only available within Stem's `git repository
   * Failed to parse torrcs without a port on ipv6 exit policy entries
   * Resilient to 'Tor' prefix in 'GETINFO version' result (:spec:`c5ff1b1`)
   * Added a **all_extra** parameter to :class:`stem.version.Version` and support for multiple parenthetical entries (:trac:`22110`, :spec:`b50917d`)
+  * Setting 'UseMicrodescriptors 1' in your torrc caused :func:`~stem.control.Controller.get_network_statuses` to error (:trac:`24110`)
   * Closing controller connection faster when under heavy event load
   * Better messaging when unable to connect to tor on FreeBSD
   * More succinct trace level logging

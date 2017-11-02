@@ -1889,17 +1889,6 @@ class Controller(BaseController):
     or nickname. If the relay identifier could be either a fingerprint *or*
     nickname then it's queried as a fingerprint.
 
-    This provides
-    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`
-    instances if tor is using microdescriptors...
-
-    ::
-
-      controller.get_conf('UseMicrodescriptors', '0') == '1'
-
-    ... and :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
-    otherwise.
-
     If no **relay** is provided then this defaults to ourselves. Remember that
     this requires that we've retrieved our own descriptor from remote
     authorities so this both won't be available for newly started relays and
@@ -1911,7 +1900,7 @@ class Controller(BaseController):
     :param str relay: fingerprint or nickname of the relay to be queried
     :param object default: response if the query fails
 
-    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntry`
+    :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
       for the given relay
 
     :raises:
@@ -1948,10 +1937,7 @@ class Controller(BaseController):
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
-    if self.get_conf('UseMicrodescriptors', '0') == '1':
-      return stem.descriptor.router_status_entry.RouterStatusEntryMicroV3(desc_content)
-    else:
-      return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
+    return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
   @with_default(yields = True)
   def get_network_statuses(self, default = UNDEFINED):
@@ -1961,21 +1947,10 @@ class Controller(BaseController):
     Provides an iterator for all of the router status entries that tor
     currently knows about.
 
-    This provides
-    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`
-    instances if tor is using microdescriptors...
-
-    ::
-
-      controller.get_conf('UseMicrodescriptors', '0') == '1'
-
-    ... and :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
-    otherwise.
-
     :param list default: items to provide if the query fails
 
     :returns: iterates over
-      :class:`~stem.descriptor.router_status_entry.RouterStatusEntry` for
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for
       relays in the tor network
 
     :raises: :class:`stem.ControllerError` if unable to query tor and no
@@ -1987,11 +1962,6 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/8248
 
-    if self.get_conf('UseMicrodescriptors', '0') == '1':
-      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryMicroV3
-    else:
-      desc_class = stem.descriptor.router_status_entry.RouterStatusEntryV3
-
     desc_content = self.get_info('ns/all', get_bytes = True)
 
     if not desc_content:
@@ -2000,7 +1970,7 @@ class Controller(BaseController):
     desc_iterator = stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(desc_content),
       False,
-      entry_class = desc_class,
+      entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
     )
 
     for desc in desc_iterator:
