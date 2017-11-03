@@ -982,6 +982,8 @@ def create_signing_key(private_key = None):
 
   :returns: :class:`~stem.descriptor.__init__.SigningKey` that can be used to
     create descriptors
+
+  :raises: **ImportError** if the cryptography module is unavailable
   """
 
   if not stem.prereq.is_crypto_available():

@@ -14,7 +14,9 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 
   check_requirements - checks for minimum requirements for running stem
   is_python_3 - checks if python 3.0 or later is available
+  is_sqlite_available - checks if the sqlite3 module is available
   is_crypto_available - checks if the cryptography module is available
+  is_mock_available - checks if the mock module is available
 """
 
 import inspect
@@ -81,6 +83,24 @@ def is_python_3():
   """
 
   return sys.version_info[0] == 3
+
+
+@lru_cache()
+def is_sqlite_available():
+  """
+  Checks if the sqlite3 module is available. Usually this is built in, but some
+  platforms such as FreeBSD and Gentoo exclude it by default.
+
+  .. versionadded:: 1.6.0
+
+  :returns: **True** if we can use the sqlite3 module and **False** otherwise
+  """
+
+  try:
+    import sqlite3
+    return True
+  except ImportError:
+    return False
 
 
 @lru_cache()

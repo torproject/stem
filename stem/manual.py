@@ -50,7 +50,6 @@ us what our torrc options do...
 
 import os
 import shutil
-import sqlite3
 import sys
 import tempfile
 
@@ -138,8 +137,15 @@ def query(query, *param):
 
   :returns: :class:`sqlite3.Cursor` with the query results
 
-  :raises: **sqlite3.OperationalError** if query fails
+  :raises:
+    * **ImportError** if the sqlite3 module is unavailable
+    * **sqlite3.OperationalError** if query fails
   """
+
+  if not stem.prereq.is_sqlite_available():
+    raise ImportError('Querying requires the sqlite3 module')
+
+  import sqlite3
 
   # The only reason to explicitly close the sqlite connection is to ensure
   # transactions are committed. Since we're only using read-only access this
@@ -387,8 +393,11 @@ class Manual(object):
 
     :returns: :class:`~stem.manual.Manual` with our bundled manual information
 
-    :raises: **IOError** if a **path** was provided and we were unable to read
-      it or the schema is out of date
+    :raises:
+      * **ImportError** if cache is sqlite and the sqlite3 module is
+        unavailable
+      * **IOError** if a **path** was provided and we were unable to read
+        it or the schema is out of date
     """
 
     # TODO: drop _from_config_cache() with stem 2.x
@@ -403,6 +412,11 @@ class Manual(object):
 
   @staticmethod
   def _from_sqlite_cache(path):
+    if not stem.prereq.is_sqlite_available():
+      raise ImportError('Reading a sqlite cache requires the sqlite3 module')
+
+    import sqlite3
+
     if not os.path.exists(path):
       raise IOError("%s doesn't exist" % path)
 
@@ -556,7 +570,10 @@ class Manual(object):
 
     :param str path: path to save our manual content to
 
-    :raises: **IOError** if unsuccessful
+    :raises:
+      * **ImportError** if saving as sqlite and the sqlite3 module is
+        unavailable
+      * **IOError** if unsuccessful
     """
 
     # TODO: drop _save_as_config() with stem 2.x
@@ -567,6 +584,10 @@ class Manual(object):
       return self._save_as_config(path)
 
   def _save_as_sqlite(self, path):
+    if not stem.prereq.is_sqlite_available():
+      raise ImportError('Saving a sqlite cache requires the sqlite3 module')
+
+    import sqlite3
     tmp_path = path + '.new'
 
     if os.path.exists(tmp_path):
