@@ -444,9 +444,9 @@ def is_running(command):
       command_listing = call(secondary_resolver, None)
 
     if command_listing:
-      command_listing = map(str_type.strip, command_listing)
+      command_listing = [c.strip() for c in command_listing]
 
-      if isinstance(command, (bytes, unicode)):
+      if isinstance(command, (bytes, str_type)):
         command = [command]
 
       for cmd in command:
