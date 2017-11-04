@@ -3333,7 +3333,7 @@ class Controller(BaseController):
     response = self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_unicode('650 CIRC %s\r\n' % circ)))
+      circ_message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ)))
       stem.response.convert('EVENT', circ_message, arrived_at = 0)
       circuits.append(circ_message)
 
