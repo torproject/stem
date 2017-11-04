@@ -21,6 +21,8 @@ Miscellaneous utility functions for working with tor.
 
 import re
 
+import stem.util.str_tools
+
 # The control-spec defines the following as...
 #
 #   Fingerprint = "$" 40*HEXDIG
@@ -54,6 +56,9 @@ def is_valid_fingerprint(entry, check_prefix = False):
   :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
 
+  if isinstance(entry, bytes):
+    entry = stem.util.str_tools._to_unicode(entry)
+
   try:
     if check_prefix:
       if not entry or entry[0] != '$':
@@ -75,6 +80,9 @@ def is_valid_nickname(entry):
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
 
+  if isinstance(entry, bytes):
+    entry = stem.util.str_tools._to_unicode(entry)
+
   try:
     return bool(NICKNAME_PATTERN.match(entry))
   except TypeError:
@@ -87,6 +95,9 @@ def is_valid_circuit_id(entry):
 
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
+
+  if isinstance(entry, bytes):
+    entry = stem.util.str_tools._to_unicode(entry)
 
   try:
     return bool(CIRC_ID_PATTERN.match(entry))
@@ -123,6 +134,9 @@ def is_valid_hidden_service_address(entry):
 
   :returns: **True** if the string could be a hidden service address, **False** otherwise
   """
+
+  if isinstance(entry, bytes):
+    entry = stem.util.str_tools._to_unicode(entry)
 
   try:
     return bool(HS_ADDRESS_PATTERN.match(entry))
