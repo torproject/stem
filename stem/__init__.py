@@ -478,7 +478,7 @@ Library for working with the tor process.
 
 import stem.util.enum
 
-__version__ = '1.5.4-dev'
+__version__ = '1.6.0'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
 __url__ = 'https://stem.torproject.org/'
