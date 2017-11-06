@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.6`
 * :ref:`version_1.5`
 * :ref:`version_1.4`
 * :ref:`version_1.3`
