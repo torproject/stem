@@ -46,7 +46,7 @@ The following are only available within Stem's `git repository
 
 .. _version_1.6:
 
-Version 1.6 (November 5th, 2018)
+Version 1.6 (November 5th, 2017)
 --------------------------------
 
 Year long accumulation of fixes and improvements in support of the Nyx 2.0 release.
