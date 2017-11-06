@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2012-2016, Damian Johnson and The Tor Project
+# Copyright 2012-2017, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 #
 # Release Checklist
@@ -18,6 +18,7 @@
 #   |- gpg --detach-sig --armor dist/stem-dry-run-1.0.0.tar.gz
 #   |- twine upload dist/*
 #   +- Check that https://pypi.python.org/pypi/stem-dry-run/ looks correct, comparing it to https://pypi.python.org/pypi/stem/
+#      +- Don't worry about the 'Bug Tracker' being missing. That's an attribute of the project itself.
 #
 # * Final release
 #   |- rm dist/*
