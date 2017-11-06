@@ -43,6 +43,13 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+.. _version_1.6:
+
+Version 1.6 (November 5th, 2018)
+--------------------------------
+
+Year long accumulation of fixes and improvements in support of the Nyx 2.0 release.
+
  * **Controller**
 
   * :func:`~stem.process.launch_tor` raised a ValueError if invoked when outside the main thread
