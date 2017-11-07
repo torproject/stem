@@ -37,7 +37,7 @@ What is Stem?
 
 Stem is a Python controller library that you can use to interact with `Tor
 <https://www.torproject.org/>`_. With it you can write scripts and applications
-with capabilities similar `arm <https://www.atagar.com/arm/>`_.
+with capabilities similar `Nyx <https://nyx.torproject.org/>`_.
 
 From a technical standpoint, Stem is a Python implementation of Tor's
 `directory <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ and
@@ -356,7 +356,7 @@ An important thing to note is that a new circuit does not necessarily mean a new
 
 Tor does not have a method for cycling your IP address. This is on purpose, and done for a couple reasons. The first is that this capability is usually requested for not-so-nice reasons such as ban evasion or SEO. Second, repeated circuit creation puts a very high load on the Tor network, so please don't!
 
-With all that out of the way, how do you create a new circuit? You can customize the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://en.wikipedia.org/wiki/Vidalia_%28software%29>`_ and `arm <https://www.atagar.com/arm/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
+With all that out of the way, how do you create a new circuit? You can customize the rate at which Tor cycles circuits with the **MaxCircuitDirtiness** option in your `torrc <https://www.torproject.org/docs/faq.html.en#torrc>`_. `Vidalia <https://en.wikipedia.org/wiki/Vidalia_%28software%29>`_ and `Nyx <https://nyx.torproject.org/>`_ both provide a method to request a new identity, and you can do so programmatically by sending Tor a NEWNYM signal.
 
 To do this with telnet...
 

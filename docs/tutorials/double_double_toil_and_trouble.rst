@@ -10,7 +10,7 @@ Applications
 
 .. Image Sources:
    
-   * Arm
+   * Nyx
      Source: Oxygen (http://www.oxygen-icons.org/)
      License: CC v3 (A, SA)
      File: apps/utilities-system-monitor.png
@@ -27,11 +27,11 @@ Applications
    :widths: 1 10
    :header-rows: 0
 
-   * - .. image:: /_static/arm.png
-          :target: https://www.atagar.com/arm/
+   * - .. image:: /_static/nyx.png
+          :target: https://nyx.torproject.org/
 
-     - .. image:: /_static/label/arm.png
-          :target: https://www.atagar.com/arm/
+     - .. image:: /_static/label/nyx.png
+          :target: https://nyx.torproject.org/
 
        Terminal status monitor for Tor. This provides a top like interface
        including system resource usage, connection information, and much more.
