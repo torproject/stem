@@ -126,13 +126,13 @@ Download
      - .. image:: /_static/label/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-       Packages maintained by Juan for Fedora. These include **python-stem**
-       (for Python 2.x), **python3-stem** (for Python 3.x), and
-       **python-stem-doc** (this website).
+       Packages maintained by Juan for Fedora using **dnf** or **yum**. These
+       include **python-stem** (for Python 2.x), **python3-stem** (for Python
+       3.x), and **python-stem-doc** (this website).
 
        ::
 
-         % sudo yum install python-stem
+         % sudo dnf install python-stem
 
    * - .. image:: /_static/section/download/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
