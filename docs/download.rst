@@ -157,7 +157,7 @@ Download
 
        ::
 
-           % wget https://aur.archlinux.org/packages/st/stem/stem.tar.gz
+           % wget https://aur.archlinux.org/cgit/aur.git/snapshot/stem.tar.gz
            % tar -xvf stem.tar.gz
            % cd stem; makepkg --install
 
