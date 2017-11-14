@@ -195,7 +195,7 @@ Download
      - .. image:: /_static/label/openbsd.png
           :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
 
-       Port by George and Attila OpenBSD.
+       Port by pascal for OpenBSD.
 
        ::
 
