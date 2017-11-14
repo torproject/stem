@@ -49,6 +49,12 @@ Download
      Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
      Author: Anton Gural
    
+   * OpenBSD
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/apps/openbsd.png
+   
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
@@ -182,6 +188,18 @@ Download
        ::
 
            % pkg install security/py-stem
+
+   * - .. image:: /_static/section/download/openbsd.png
+          :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
+
+     - .. image:: /_static/label/openbsd.png
+          :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
+
+       Port by George and Attila OpenBSD.
+
+       ::
+
+           % pkg_add py-stem
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
