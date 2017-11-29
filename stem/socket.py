@@ -167,11 +167,11 @@ class ControlSocket(object):
         # everything down. However, there's a couple cases where this will
         # cause deadlock...
         #
-        # * this socketClosed was *caused by* a close() call, which is joining
-        #   on our thread
+        # * This SocketClosed was *caused by* a close() call, which is joining
+        #   on our thread.
         #
-        # * a send() call that's currently in flight is about to call close(),
-        #   also attempting to join on us
+        # * A send() call that's currently in flight is about to call close(),
+        #   also attempting to join on us.
         #
         # To resolve this we make a non-blocking call to acquire the send lock.
         # If we get it then great, we can close safely. If not then one of the

@@ -1266,6 +1266,8 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
     * **CallTimeoutError** if the timeout is reached without a default
   """
 
+  # TODO: in stem 2.x return a struct with stdout, stderr, and runtime instead
+
   global SYSTEM_CALL_TIME
 
   if isinstance(command, str):

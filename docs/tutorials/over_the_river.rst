@@ -70,6 +70,30 @@ Now if we run this...
 
 .. image:: /_static/hidden_service.png
 
+.. _hidden-service-authentication:
+
+Hidden service authentication
+-----------------------------
+
+Hidden services you create can restrict their access, requiring in essence a
+password...
+
+::
+
+  >>> from stem.control import Controller
+  >>> controller = Controller.from_port()
+  >>> controller.authenticate()
+  >>> response = controller.create_ephemeral_hidden_service({80: 8080}, await_publication=True, basic_auth={'bob': None, 'alice': None})
+  >>> response.service_id, response.client_auth
+  ('l3lnorirzn7hrjnw', {'alice': 'I6AMKiay+UkM5MfrvdnF2A', 'bob': 'VLsbrSGyrb5JYEvZmQ3tMg'})
+
+To access this service users simply provide this credential to tor via their
+torrc or SETCONF prior to visiting it...
+
+::
+
+  >>> controller.set_conf('HidServAuth', 'l3lnorirzn7hrjnw.onion I6AMKiay+UkM5MfrvdnF2A')
+
 .. _ephemeral-hidden-services:
 
 Ephemeral hidden services
