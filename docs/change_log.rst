@@ -44,6 +44,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
+
 .. _version_1.6:
 
 Version 1.6 (November 5th, 2017)

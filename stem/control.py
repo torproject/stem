@@ -2804,7 +2804,7 @@ class Controller(BaseController):
 
     return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
-  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, basic_auth = None):
+  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, basic_auth = None, max_streams = None):
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2862,6 +2862,9 @@ class Controller(BaseController):
        'HiddenServiceSingleHopMode 1' and 'HiddenServiceNonAnonymousMode 1' in
        your torrc.
 
+    .. versionchanged:: 1.7.0
+       Added the max_streams argument.
+
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
     :param str key_type: type of key being provided, generates a new key if
@@ -2875,6 +2878,8 @@ class Controller(BaseController):
     :param bool await_publication: blocks until our descriptor is successfully
       published if **True**
     :param dict basic_auth: required user credentials to access this service
+    :param int max_streams: maximum number of streams the hidden service will
+      accept, unlimited if zero or not set
 
     :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
 
@@ -2908,12 +2913,21 @@ class Controller(BaseController):
 
       flags.append('BasicAuth')
 
+    if max_streams is not None:
+      if self.get_version() < stem.version.Requirement.ADD_ONION_MAX_STREAMS:
+        raise stem.UnsatisfiableRequest(message = 'Limitation of the maximum number of streams to accept was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_MAX_STREAMS)
+
+      flags.append('MaxStreamsCloseCircuit')
+
     if self.get_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
       if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
         flags.append('NonAnonymous')
 
     if flags:
       request += ' Flags=%s' % ','.join(flags)
+
+    if max_streams is not None:
+      request += ' MaxStreams=%s' % max_streams
 
     if isinstance(ports, int):
       request += ' Port=%s' % ports

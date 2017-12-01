@@ -66,6 +66,7 @@ easily parsed and compared, for instance...
   **ADD_ONION**                         ADD_ONION and DEL_ONION requests
   **ADD_ONION_BASIC_AUTH**              ADD_ONION supports basic authentication
   **ADD_ONION_NON_ANONYMOUS**           ADD_ONION supports non-anonymous mode
+  **ADD_ONION_MAX_STREAMS**             ADD_ONION support for MaxStreamsCloseCircuit
   **LOADCONF**                          LOADCONF requests
   **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
   **SAVECONF_FORCE**                    Added the 'FORCE' flag to SAVECONF
@@ -382,6 +383,7 @@ Requirement = stem.util.enum.Enum(
   ('ADD_ONION', Version('0.2.7.1-alpha')),
   ('ADD_ONION_BASIC_AUTH', Version('0.2.9.1-alpha')),
   ('ADD_ONION_NON_ANONYMOUS', Version('0.2.9.3-alpha')),
+  ('ADD_ONION_MAX_STREAMS', Version('0.2.7.2-alpha')),
   ('LOADCONF', Version('0.2.1.1')),
   ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
   ('SAVECONF_FORCE', Version('0.3.1.1-alpha')),
