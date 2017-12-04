@@ -899,9 +899,9 @@ DIRECTORY_AUTHORITIES = {
 
 def get_authorities():
   """
-  Provides the Tor directory authority information as of **Tor on 11/21/14**.
-  The directory information hardcoded into Tor and occasionally changes, so the
-  information this provides might not necessarily match your version of tor.
+  Provides cached Tor directory authority information. The directory
+  information hardcoded into Tor and occasionally changes, so the information
+  this provides might not necessarily match your version of tor.
 
   :returns: **dict** of **str** nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
   """
