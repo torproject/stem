@@ -610,7 +610,7 @@ class DescriptorDownloader(object):
 
     :param str authority_v3ident: fingerprint of the authority key for which
       to get the consensus, see `'v3ident' in tor's config.c
-      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
+      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c>`_
       for the values.
     :param bool microdescriptor: provides the microdescriptor consensus if
       **True**, standard consensus otherwise
