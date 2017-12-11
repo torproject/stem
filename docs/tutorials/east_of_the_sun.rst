@@ -3,7 +3,30 @@ East of the Sun & West of the Moon
 
 The following is an overview of some of the utilities Stem provides.
 
+* :ref:`terminal-styling`
 * :ref:`connection-resolution`
+
+.. _terminal-styling:
+
+Terminal Styling
+----------------
+
+Know what's better than text? Pretty text!
+
+OSX, Linux, BSD... really, everything except Windows supports terminal
+formatting through `ANSI escape sequences
+<https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>`_. Doing this
+yourself is easy, but we also provide a module to make it `even easier
+<../api/util/term.html>`_.
+
+|
+
+.. image:: /_static/words_with.png
+
+|
+
+.. literalinclude:: /_static/example/words_with.py
+   :language: python
 
 .. _connection-resolution:
 
@@ -46,4 +69,3 @@ simple script that dumps Tor's present connections.
 
     192.168.0.1:59014 => 38.229.79.2:443
     192.168.0.1:58822 => 68.169.35.102:443
-
