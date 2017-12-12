@@ -453,7 +453,7 @@ class CreateHiddenServiceOutput(collections.namedtuple('CreateHiddenServiceOutpu
 
   :var str path: hidden service directory
   :var str hostname: content of the hostname file if available
-  :var dict hostname_for_client:mapping of client names to their onion address
+  :var dict hostname_for_client: mapping of client names to their onion address
     if available
   :var dict config: tor's new hidden service configuration
   """
@@ -2846,6 +2846,8 @@ class Controller(BaseController):
 
     ... while both alice and bob can access with existing credentials in the
     following...
+
+    ::
 
       controller.create_ephemeral_hidden_service(80, basic_auth = {
         'alice': 'l4BT016McqV2Oail+Bwe6w',
