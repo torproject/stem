@@ -130,6 +130,12 @@ def query(query, *param):
   be treated as being read-only. File permissions generally enforce this, and
   in the future will be enforced by this function as well.
 
+  ::
+
+    >>> import stem.manual
+    >>> print(stem.manual.query('SELECT description FROM torrc WHERE key=?', 'CONTROLSOCKET').fetchone()[0])
+    Like ControlPort, but listens on a Unix domain socket, rather than a TCP socket.  0 disables ControlSocket (Unix and Unix-like systems only.)
+
   .. versionadded:: 1.6.0
 
   :param str query: query to run on the cache
