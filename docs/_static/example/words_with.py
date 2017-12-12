@@ -15,7 +15,6 @@ def get_words_with(target, attr):
   :returns: **iterable** with words containing that substring
   """
 
-  matches = []
   word_matcher = re.compile('(.*)(%s)(.*)' % target, re.I)
 
   with open('/etc/dictionaries-common/words') as dictionary_file:
