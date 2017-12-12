@@ -4,6 +4,7 @@ East of the Sun & West of the Moon
 The following is an overview of some of the utilities Stem provides.
 
 * :ref:`terminal-styling`
+* :ref:`multiprocessing`
 * :ref:`connection-resolution`
 
 .. _terminal-styling:
@@ -28,6 +29,39 @@ yourself is easy, but we also provide a module to make it `even easier
 .. literalinclude:: /_static/example/words_with.py
    :language: python
 
+.. _multiprocessing:
+
+Multiprocessing
+---------------
+
+Python's `multiprocessing module
+<https://docs.python.org/2/library/multiprocessing.html>`_ gives building
+blocks to parallelize around the `Global Interpreter Lock
+<https://en.wikipedia.org/wiki/Global_interpreter_lock>`_. However, honestly
+it's clunky to use.
+
+Ever just wanted to simply turn your threads into subprocesses? `We can do
+that <../api/util/system.html#stem.util.system.DaemonTask>`_.
+
+**Threaded**
+
+.. literalinclude:: /_static/example/fibonacci_threaded.py
+   :language: python
+
+::
+
+  % python fibonacci_threaded.py
+  took 21.1 seconds
+
+**Multi-process**
+
+.. literalinclude:: /_static/example/fibonacci_multiprocessing.py
+   :language: python
+
+::
+
+  % python fibonacci_multiprocessing.py
+  took 6.2 seconds
 .. _connection-resolution:
 
 Connection Resolution
@@ -69,3 +103,4 @@ simple script that dumps Tor's present connections.
 
     192.168.0.1:59014 => 38.229.79.2:443
     192.168.0.1:58822 => 68.169.35.102:443
+
