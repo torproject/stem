@@ -272,7 +272,7 @@ def connect(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/
       if port == 'default':
         control_connection = _connection_for_default_port(address)
       else:
-        control_connection = stem.socket.ControlPort(address, port)
+        control_connection = stem.socket.ControlPort(address, int(port))
     except stem.SocketError as exc:
       error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
 

@@ -47,6 +47,7 @@ The following are only available within Stem's `git repository
  * **Controller**
 
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
+  * Stacktrace if :func:`stem.connection.connect` had a string port argument
 
 .. _version_1.6:
 
