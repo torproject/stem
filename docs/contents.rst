@@ -17,6 +17,7 @@ Contents
    tutorials/examples/compare_flags
    tutorials/examples/exit_used
    tutorials/examples/list_circuits
+   tutorials/examples/relay_connections
    tutorials/examples/outdated_relays
    tutorials/examples/persisting_a_consensus
    tutorials/examples/votes_by_bandwidth_authorities

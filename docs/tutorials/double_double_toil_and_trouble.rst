@@ -99,6 +99,14 @@ Client Usage
 
   Tells you the exit used for each Tor connection.
 
+Relays
+------
+
+* `Connection Summary <examples/relay_connections.html>`_
+
+  Provides a summary of your inbound and outbound connections and exiting
+  usage.
+
 Descriptors
 -----------
 

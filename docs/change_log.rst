@@ -49,6 +49,12 @@ The following are only available within Stem's `git repository
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Stacktrace if :func:`stem.connection.connect` had a string port argument
 
+ * **Website**
+
+  * Added `terminal styling <tutorials/east_of_the_sun.html#terminal-styling>`_ to our utilities tutorial
+  * Added `multiprocessing <tutorials/east_of_the_sun.html#multiprocessing>`_ to our utilities tutorial
+  * Added a `relay connection summary example <tutorials/examples/relay_connections.html>`_
+
 .. _version_1.6:
 
 Version 1.6 (November 5th, 2017)
