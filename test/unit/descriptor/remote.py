@@ -58,7 +58,7 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 -----END SIGNATURE-----
 """
 
-FALLBACK_DIR_CONTENT = b"""\
+FALLBACK_DIR_CONTENT_V1 = b"""\
 /* Trial fallbacks for 0.2.8.1-alpha with ADDRESS_AND_PORT_STABLE_DAYS = 30
  * This works around an issue where relays post a descriptor without a DirPort
  * when restarted. If these relays stay up, they will have been up for 120 days
@@ -68,6 +68,13 @@ FALLBACK_DIR_CONTENT = b"""\
 "62.210.124.124:9130 orport=9101 id=2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E"
 " ipv6=[2001:bc8:3f23:100::1]:9101"
 " weight=43680",
+"""
+
+FALLBACK_DIR_CONTENT_V2 = b"""\
+"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+" ipv6=[2a01:4f8:162:51e2::2]:9001"
+/* nickname=rueckgrat */
+/* extrainfo=1 */
 """
 
 
@@ -178,8 +185,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
 
   @patch(URL_OPEN)
-  def test_fallback_directories_from_remote(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
+  def test_fallback_directories_from_remote_v1(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT_V1)
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
 
     expected = {
@@ -195,6 +202,25 @@ class TestDescriptorDownloader(unittest.TestCase):
         dir_port = 9130,
         fingerprint = '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E',
         orport_v6 = ('2001:bc8:3f23:100::1', 9101),
+      ),
+    }
+
+    self.assertEqual(expected, fallback_directories)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_v2(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT_V2)
+    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+
+    expected = {
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
+        address = '5.9.110.236',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+        nickname = 'rueckgrat',
+        has_extrainfo = True,
+        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
       ),
     }
 

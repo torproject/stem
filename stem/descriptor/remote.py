@@ -939,12 +939,25 @@ class FallbackDirectory(Directory):
 
   .. versionadded:: 1.5.0
 
+  .. versionchanged:: 1.7.0
+     Added the nickname and has_extrainfo attributes.
+
+  .. versionchanged:: 1.7.0
+     Support for parsing `second version of the fallback directories
+     <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
+
+  :var str nickname: relay nickname
+  :var bool has_extrainfo: **True** if the relay should be able to provide
+    extrainfo descriptors, **False** otherwise.
   :var str orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, orport_v6 = None):
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None):
     super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
+
+    self.nickname = nickname
+    self.has_extrainfo = has_extrainfo
     self.orport_v6 = orport_v6
 
   @staticmethod
@@ -971,11 +984,11 @@ class FallbackDirectory(Directory):
 
       attr = {}
 
-      for attr_name in ('address', 'or_port', 'dir_port', 'orport6_address', 'orport6_port'):
+      for attr_name in ('address', 'or_port', 'dir_port', 'nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
         key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
-        if not attr[attr_name] and not attr_name.startswith('orport6_'):
+        if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
           raise IOError("'%s' is missing from %s" % (key, CACHE_PATH))
 
       if not connection.is_valid_ipv4_address(attr['address']):
@@ -984,6 +997,8 @@ class FallbackDirectory(Directory):
         raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
         raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
+      elif attr['nickname'] and not connection.is_valid_nickname(attr['nickname']):
+        raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
       elif attr['orport6_address'] and not connection.is_valid_ipv6_address(attr['orport6_address']):
         raise IOError("'%s.orport6_address' was an invalid IPv6 address (%s)" % (fingerprint, attr['orport6_address']))
       elif attr['orport6_port'] and not connection.is_valid_port(attr['orport6_port']):
@@ -1034,11 +1049,20 @@ class FallbackDirectory(Directory):
       exc = sys.exc_info()[1]
       raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
 
+    if '/* nickname=' in fallback_dir_page:
+      return FallbackDirectory._parse_v2(fallback_dir_page)
+    else:
+      return FallbackDirectory._parse_v1(fallback_dir_page)
+
+  @staticmethod
+  def _parse_v1(fallback_dir_page):
     # Example of an entry...
     #
     #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
     #   " ipv6=[2a03:b0c0:0:1010::a4:b001]:9001"
     #   " weight=43680",
+
+    # TODO: this method can be removed once gitweb provides a v2 formatted document
 
     results, attr = {}, {}
 
@@ -1084,6 +1108,74 @@ class FallbackDirectory(Directory):
           )
 
           attr = {}
+
+    return results
+
+  @staticmethod
+  def _parse_v2(fallback_dir_page):
+    # Example of an entry...
+    #
+    #   "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+    #   " ipv6=[2a01:4f8:162:51e2::2]:9001"
+    #   /* nickname=rueckgrat */
+    #   /* extrainfo=1 */
+
+    results, attr = {}, {}
+
+    for line in fallback_dir_page.splitlines():
+      addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
+      nickname_match = re.match('/\* nickname=(\S+) \*/', line)
+      has_extrainfo_match = re.match('/\* extrainfo=([0-1]) \*/', line)
+      ipv6_line_match = re.match('" ipv6=\[([\da-f:]+)\]:(\d+)"', line)
+
+      if addr_line_match:
+        address, dir_port, or_port, fingerprint = addr_line_match.groups()
+
+        if not connection.is_valid_ipv4_address(address):
+          raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
+        elif not connection.is_valid_port(or_port):
+          raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
+        elif not connection.is_valid_port(dir_port):
+          raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
+        elif not tor_tools.is_valid_fingerprint(fingerprint):
+          raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+
+        attr = {
+          'address': address,
+          'or_port': int(or_port),
+          'dir_port': int(dir_port),
+          'fingerprint': fingerprint,
+        }
+      elif ipv6_line_match:
+        address, port = ipv6_line_match.groups()
+
+        if not connection.is_valid_ipv6_address(address):
+          raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
+        elif not connection.is_valid_port(port):
+          raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
+
+        attr['orport_v6'] = (address, int(port))
+      elif nickname_match:
+        nickname = nickname_match.group(1)
+
+        if not tor_tools.is_valid_nickname(nickname):
+          raise IOError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+
+        attr['nickname'] = nickname
+      elif has_extrainfo_match:
+        attr['has_extrainfo'] = has_extrainfo_match.group(1) == '1'
+
+        results[attr.get('fingerprint')] = FallbackDirectory(
+          address = attr.get('address'),
+          or_port = attr.get('or_port'),
+          dir_port = attr.get('dir_port'),
+          fingerprint = attr.get('fingerprint'),
+          nickname = attr.get('nickname'),
+          has_extrainfo = attr.get('has_extrainfo', False),
+          orport_v6 = attr.get('orport_v6'),
+        )
+
+        attr = {}
 
     return results
 
