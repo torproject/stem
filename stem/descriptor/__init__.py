@@ -29,9 +29,10 @@ Package for parsing and processing descriptor data.
   and upfront runtime. However, if read time and memory aren't a concern then
   **DOCUMENT** can provide you with a fully populated document.
 
-  This handler doesn't change the fact that provide descriptors return an
-  iterator. In the case of **DOCUMENT** and **BARE_DOCUMENT** that iterator
-  would have just a single item - the document itself.
+  Handlers don't change the fact that most methods that provide
+  descriptors return an iterator. In the case of **DOCUMENT** and
+  **BARE_DOCUMENT** that iterator would have just a single item -
+  the document itself.
 
   Simple way to handle this is to call **next()** to get the iterator's one and
   only value...
