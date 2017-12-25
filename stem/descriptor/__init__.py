@@ -113,6 +113,7 @@ except ImportError:
 __all__ = [
   'bandwidth_file',
   'certificate',
+  'collector',
   'export',
   'extrainfo_descriptor',
   'hidden_service_descriptor',
