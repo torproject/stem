@@ -50,8 +50,6 @@ With this you can either download and read directly from CollecTor...
 .. versionadded:: 1.7.0
 """
 
-import bz2
-import gzip
 import io
 import json
 import time
@@ -66,20 +64,73 @@ import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 
-Compression = stem.util.enum.Enum('NONE', 'GZIP', 'BZ2', 'XZ')
-
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
-COMPRESSION_SUFFIX = {
-  Compression.NONE: '',
-  Compression.GZIP: '.gz',
-  Compression.BZ2: '.bz2',
-  Compression.XZ: '.xz',
-}
+
+class Compression(object):
+  """
+  Compression method supported by CollecTor.
+
+  :var bool available: **True** if this method of decryption is available,
+    **False** otherwise
+  :var str extension: file extension of this compression
+  """
+
+  def __init__(self, module, extension):
+    # Compression modules are optional. Usually gzip and bz2 are available, but
+    # they might be missing if compiling python yourself. As for lzma it was
+    # added in python 3.3.
+
+    try:
+      self._module = __import__(module)
+      self.available = True
+    except ImportError:
+      self._module = None
+      self.available = False
+
+    self.extension = extension
+    self._module_name = module
+
+  def decompress(self, content):
+    """
+    Decompresses the given content via this method.
+
+    :param bytes content: content to be decompressed
+
+    :returns: **unicode** with the decompressed content
+
+    :raises: **ImportError** if this method if decompression is unavalable
+    """
+
+    if not self.available:
+      raise ImportError("'%s' decompression module is unavailable" % self)
+
+    if self._module_name == 'gzip':
+      if stem.prereq.is_python_3():
+        decompressed = self._module.decompress(content)
+      else:
+        # prior to python 3.2 gzip only had GzipFile
+        decompressed = self._module.GzipFile(fileobj = io.BytesIO(content)).read()
+    elif self._module_name == 'bz2':
+      decompressed = self._module.decompress(content)
+    elif self._module_name == 'lzma':
+      decompressed = self._module.decompress(content)
+    else:
+      raise ImportError("BUG: No implementation for %s decompression" % self)
+
+    return stem.util.str_tools._to_unicode(decompressed)
+
+  def __str__(self):
+    return self._module_name
 
 
-def url(resource, compression = Compression.NONE):
+GZIP = Compression('gzip', '.gz')
+BZ2 = Compression('bz2', '.bz2')
+LZMA = Compression('lzma', '.xz')
+
+
+def url(resource, compression = None):
   """
   Provides CollecTor url for the given resource.
 
@@ -90,9 +141,6 @@ def url(resource, compression = Compression.NONE):
   :returns: **str** with the CollecTor url
   """
 
-  if compression not in COMPRESSION_SUFFIX:
-    raise ValueError("'%s' isn't a compression enumeration" % compression)
-
   # TODO: Not yet sure how to most elegantly map resources to urls. No doubt
   # this'll change as we add more types.
 
@@ -101,7 +149,8 @@ def url(resource, compression = Compression.NONE):
   else:
     raise ValueError("'%s' isn't a recognized resource type" % resource)
 
-  return ''.join((COLLECTOR_URL, '/'.join(path), COMPRESSION_SUFFIX[compression]))
+  suffix = compression.extension if compression else ''
+  return ''.join((COLLECTOR_URL, '/'.join(path), suffix))
 
 
 class CollecTor(object):
@@ -111,14 +160,23 @@ class CollecTor(object):
   that's fetched as required.
 
   :var descriptor.collector.Compression compression: compression type to
-    download from
+    download from, if undefiled we'll use the best decompression available
   :var int retries: number of times to attempt the request if downloading it
     fails
   :var float timeout: duration before we'll time out our request
   """
 
-  def __init__(self, compression = Compression.XZ, retries = 2, timeout = None):
-    self.compression = compression
+  def __init__(self, compression = 'best', retries = 2, timeout = None):
+    if compression == 'best':
+      self.compression = None
+
+      for option in (LZMA, BZ2, GZIP):
+        if option.available:
+          self.compression = option
+          break
+    else:
+      self.compression = compression
+
     self.retries = retries
     self.timeout = timeout
 
@@ -140,20 +198,16 @@ class CollecTor(object):
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
-      response = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
+      # TODO: add retry support
 
-      # TODO: add compression and retry support
+      response_bytes = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
 
-      if self.compression == Compression.GZIP:
-        if stem.prereq.is_python_3():
-          response = gzip.decompress(response)
-        else:
-          # prior to python 3.2 gzip only had GzipFile
-          response = gzip.GzipFile(fileobj = io.BytesIO(response)).read()
-      elif self.compression == Compression.BZ2:
-        response = bz2.decompress(response)
+      if self.compression:
+        response = self.compression.decompress(response_bytes)
+      else:
+        response = stem.util.str_tools._to_unicode(response_bytes)
 
-      self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
+      self._cached_index = json.loads(response)
       self._cached_index_at = time.time()
 
     return self._cached_index
