@@ -98,7 +98,7 @@ class Compression(object):
 
     :param bytes content: content to be decompressed
 
-    :returns: **unicode** with the decompressed content
+    :returns: **bytes** with the decompressed content
 
     :raises: **ImportError** if this method if decompression is unavalable
     """
@@ -108,18 +108,16 @@ class Compression(object):
 
     if self._module_name == 'gzip':
       if stem.prereq.is_python_3():
-        decompressed = self._module.decompress(content)
+        return self._module.decompress(content)
       else:
         # prior to python 3.2 gzip only had GzipFile
-        decompressed = self._module.GzipFile(fileobj = io.BytesIO(content)).read()
+        return self._module.GzipFile(fileobj = io.BytesIO(content)).read()
     elif self._module_name == 'bz2':
-      decompressed = self._module.decompress(content)
+      return self._module.decompress(content)
     elif self._module_name == 'lzma':
-      decompressed = self._module.decompress(content)
+      return self._module.decompress(content)
     else:
       raise ImportError('BUG: No implementation for %s decompression' % self)
-
-    return stem.util.str_tools._to_unicode(decompressed)
 
   def __str__(self):
     return self._module_name
@@ -200,14 +198,12 @@ class CollecTor(object):
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
       # TODO: add retry support
 
-      response_bytes = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
+      response = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
 
       if self.compression:
-        response = self.compression.decompress(response_bytes)
-      else:
-        response = stem.util.str_tools._to_unicode(response_bytes)
+        response = self.compression.decompress(response)
 
-      self._cached_index = json.loads(response)
+      self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
 
     return self._cached_index
