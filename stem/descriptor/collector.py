@@ -117,7 +117,7 @@ class Compression(object):
     elif self._module_name == 'lzma':
       decompressed = self._module.decompress(content)
     else:
-      raise ImportError("BUG: No implementation for %s decompression" % self)
+      raise ImportError('BUG: No implementation for %s decompression' % self)
 
     return stem.util.str_tools._to_unicode(decompressed)
 
