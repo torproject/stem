@@ -18,7 +18,12 @@ class TestCollector(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_index_gzip(self):
-    self._test_index(Compression.NONE)
+    self._test_index(Compression.GZ)
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_index_bz2(self):
+    self._test_index(Compression.BZ2)
 
   def _test_index(self, compression):
     collector = CollecTor(compression = compression)

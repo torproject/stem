@@ -50,6 +50,7 @@ With this you can either download and read directly from CollecTor...
 .. versionadded:: 1.7.0
 """
 
+import bz2
 import gzip
 import io
 import json
@@ -149,6 +150,8 @@ class CollecTor(object):
         else:
           # prior to python 3.2 gzip only had GzipFile
           response = gzip.GzipFile(fileobj = io.BytesIO(response)).read()
+      elif self.compression == Compression.BZ2:
+        response = bz2.decompress(response)
 
       self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
