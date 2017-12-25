@@ -50,6 +50,8 @@ With this you can either download and read directly from CollecTor...
 .. versionadded:: 1.7.0
 """
 
+import gzip
+import io
 import json
 import time
 
@@ -59,7 +61,9 @@ try:
 except ImportError:
   import urllib2 as urllib
 
+import stem.prereq
 import stem.util.enum
+import stem.util.str_tools
 
 Compression = stem.util.enum.Enum('NONE', 'BZ2', 'GZ', 'XZ')
 
@@ -139,7 +143,14 @@ class CollecTor(object):
 
       # TODO: add compression and retry support
 
-      self._cached_index = json.loads(response)
+      if self.compression == Compression.GZ:
+        if stem.prereq.is_python_3():
+          response = gzip.decompress(response)
+        else:
+          # prior to python 3.2 gzip only had GzipFile
+          response = gzip.GzipFile(fileobj = io.BytesIO(response)).read()
+
+      self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
 
     return self._cached_index
