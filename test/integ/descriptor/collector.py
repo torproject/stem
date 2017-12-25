@@ -18,7 +18,7 @@ class TestCollector(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_index_gzip(self):
-    self._test_index(Compression.GZ)
+    self._test_index(Compression.GZIP)
 
   @test.require.only_run_once
   @test.require.online

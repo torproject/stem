@@ -66,15 +66,15 @@ import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 
-Compression = stem.util.enum.Enum('NONE', 'BZ2', 'GZ', 'XZ')
+Compression = stem.util.enum.Enum('NONE', 'GZIP', 'BZ2', 'XZ')
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
 COMPRESSION_SUFFIX = {
   Compression.NONE: '',
+  Compression.GZIP: '.gz',
   Compression.BZ2: '.bz2',
-  Compression.GZ: '.gz',
   Compression.XZ: '.xz',
 }
 
@@ -144,7 +144,7 @@ class CollecTor(object):
 
       # TODO: add compression and retry support
 
-      if self.compression == Compression.GZ:
+      if self.compression == Compression.GZIP:
         if stem.prereq.is_python_3():
           response = gzip.decompress(response)
         else:
