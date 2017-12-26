@@ -100,7 +100,11 @@ class Compression(object):
 
     :returns: **bytes** with the decompressed content
 
-    :raises: **ImportError** if this method if decompression is unavalable
+    :raises:
+      If unable to decompress this provide...
+
+      * **IOError** if content isn't compressed with this
+      * **ImportError** if this method if decompression is unavalable
     """
 
     if not self.available:
@@ -190,7 +194,8 @@ class CollecTor(object):
     :raises:
       If unable to retrieve the index this provide...
 
-        * **ValueError** if the index is malformed
+        * **ValueError** if json is malformed
+        * **IOError** if unable to decompress
         * **socket.timeout** if our request timed out
         * **urllib2.URLError** for most request failures
     """
@@ -201,7 +206,10 @@ class CollecTor(object):
       response = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
 
       if self.compression:
-        response = self.compression.decompress(response)
+        try:
+          response = self.compression.decompress(response)
+        except Exception as exc:
+          raise IOError('Unable to decompress response as %s: %s' % (self.compression, exc))
 
       self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()

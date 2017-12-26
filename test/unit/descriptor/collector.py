@@ -36,3 +36,18 @@ class TestCollector(unittest.TestCase):
 
     collector = CollecTor(compression = None)
     self.assertEqual(expected, collector.index())
+
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not json')))
+  def test_index_malformed_json(self):
+    collector = CollecTor(compression = None)
+
+    if stem.prereq.is_python_3():
+      self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index)
+    else:
+      self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index)
+
+  def test_index_malformed_compression(self):
+    for compression in (GZIP, BZ2, LZMA):
+      with patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not compressed'))):
+        collector = CollecTor(compression = compression)
+        self.assertRaisesRegexp(IOError, 'Unable to decompress response as %s' % compression, collector.index)
