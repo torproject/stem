@@ -107,7 +107,7 @@ from stem.util import _hash_attr, connection, log, str_tools, tor_tools
 # fingerprint or hashes due to a limit on the url length by squid proxies.
 
 MAX_FINGERPRINTS = 96
-MAX_MICRODESCRIPTOR_HASHES = 92
+MAX_MICRODESCRIPTOR_HASHES = 90
 
 GITWEB_FALLBACK_DIR_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')

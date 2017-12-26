@@ -49,6 +49,10 @@ The following are only available within Stem's `git repository
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Stacktrace if :func:`stem.connection.connect` had a string port argument
 
+ * **Descriptors**
+
+  * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)
+
  * **Website**
 
   * Added `terminal styling <tutorials/east_of_the_sun.html#terminal-styling>`_ to our utilities tutorial
