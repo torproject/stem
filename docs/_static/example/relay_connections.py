@@ -52,7 +52,7 @@ def main():
 
   # categorize our connections
 
-  connections = collections.OrderedDict((
+  categories = collections.OrderedDict((
     (INBOUND_ORPORT, []),
     (INBOUND_DIRPORT, []),
     (INBOUND_CONTROLPORT, []),
@@ -68,18 +68,18 @@ def main():
         continue
 
     if conn.local_port in controller.get_ports(Listener.OR, []):
-      connections[INBOUND_ORPORT].append(conn)
+      categories[INBOUND_ORPORT].append(conn)
     elif conn.local_port in controller.get_ports(Listener.DIR, []):
-      connections[INBOUND_DIRPORT].append(conn)
+      categories[INBOUND_DIRPORT].append(conn)
     elif conn.local_port in controller.get_ports(Listener.CONTROL, []):
-      connections[INBOUND_CONTROLPORT].append(conn)
+      categories[INBOUND_CONTROLPORT].append(conn)
     elif conn.remote_port in relays.get(conn.remote_address, []):
-      connections[OUTBOUND_ORPORT].append(conn)
+      categories[OUTBOUND_ORPORT].append(conn)
     elif policy.can_exit_to(conn.remote_address, conn.remote_port):
-      connections[OUTBOUND_EXIT].append(conn)
+      categories[OUTBOUND_EXIT].append(conn)
       exit_connections.setdefault(conn.remote_port, []).append(conn)
     else:
-      connections[OUTBOUND_UNKNOWN].append(conn)
+      categories[OUTBOUND_UNKNOWN].append(conn)
 
   print(DIV)
   print(COLUMN % ('Type', 'IPv4', 'IPv6'))
@@ -87,7 +87,7 @@ def main():
 
   total_ipv4, total_ipv6 = 0, 0
 
-  for label, connections in connections.items():
+  for label, connections in categories.items():
     if len(connections) == 0:
       continue
 
