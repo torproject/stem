@@ -283,13 +283,17 @@ class ControlSocket(BaseSocket):
   def __init__(self):
     super(ControlSocket, self).__init__()
 
-  def send(self, message, raw = False):
+  def send(self, message, raw = None):
     """
     Formats and sends a message to the control socket. For more information see
     the :func:`~stem.socket.send_message` function.
 
+    .. deprecated:: 1.7.0
+       The **raw** argument is unhelpful and will be removed. Use
+       :func:`stem.socket.send_message` if you need this level of control
+       instead.
+
     :param str message: message to be formatted and sent to the socket
-    :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
 
     :raises:
       * :class:`stem.SocketError` if a problem arises in using the socket
@@ -301,7 +305,10 @@ class ControlSocket(BaseSocket):
         if not self.is_alive():
           raise stem.SocketClosed()
 
-        send_message(self._socket_file, message, raw)
+        if raw is None:
+          send_message(self._socket_file, message)
+        else:
+          send_message(self._socket_file, message, raw)
       except stem.SocketClosed:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
