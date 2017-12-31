@@ -47,6 +47,10 @@ Tor...
 ::
 
   BaseSocket - Thread safe socket.
+    |- RelaySocket - Socket for a relay's ORPort.
+    |  |- send - sends a message to the socket
+    |  +- recv - receives a response from the socket
+    |
     |- ControlSocket - Socket wrapper that speaks the tor control protocol.
     |  |- ControlPort - Control connection via a port.
     |  |- ControlSocketFile - Control connection via a local file socket.
@@ -85,6 +89,10 @@ ERROR_MSG = 'Error while receiving a control message (%s): %s'
 # lines to limit our trace logging to, you can disable this by setting it to None
 
 TRUNCATE_LOGS = 10
+
+# maximum number of bytes to read at a time from a relay socket
+
+MAX_READ_BUFFER_LEN = 10 * 1024 * 1024
 
 
 class BaseSocket(object):
@@ -336,6 +344,81 @@ class BaseSocket(object):
     raise NotImplementedError('Unsupported Operation: this should be implemented by the BaseSocket subclass')
 
 
+class RelaySocket(BaseSocket):
+  """
+  `Link-level connection
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_ to a Tor
+  relay.
+
+  :var str address: address our socket connects to
+  :var int port: ORPort our socket connects to
+  """
+
+  def __init__(self, address = '127.0.0.1', port = 9050, connect = True):
+    """
+    RelaySocket constructor.
+
+    :param str address: ip address of the relay
+    :param int port: orport of the relay
+    :param bool connect: connects to the socket if True, leaves it unconnected otherwise
+
+    :raises: :class:`stem.SocketError` if connect is **True** and we're
+      unable to establish a connection
+    """
+
+    super(RelaySocket, self).__init__()
+    self.address = address
+    self.port = port
+
+    if connect:
+      self.connect()
+
+  def send(self, message):
+    """
+    Sends a message to the relay's ORPort.
+
+    :param str message: message to be formatted and sent to the socket
+
+    :raises:
+      * :class:`stem.SocketError` if a problem arises in using the socket
+      * :class:`stem.SocketClosed` if the socket is known to be shut down
+    """
+
+    self._send(message, _write_to_socket)
+
+  def recv(self, max_response_size = MAX_READ_BUFFER_LEN):
+    """
+    Receives a message from the relay.
+
+    :param int max_response_size: maximum bytes to return
+
+    :returns: bytes for the message received
+
+    :raises:
+      * :class:`stem.ProtocolError` the content from the socket is malformed
+      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
+    """
+
+    # TODO: Not really sure what we'll want here. To start with just copying
+    # endosome's behavior.
+
+    def _read(control_file):
+      return control_file.read(max_response_size)
+
+    return self._recv(_read)
+
+  def is_localhost(self):
+    return self.address == '127.0.0.1'
+
+  def _make_socket(self):
+    try:
+      relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      relay_socket.connect((self.address, self.port))
+      return relay_socket
+    except socket.error as exc:
+      raise stem.SocketError(exc)
+
+
 class ControlSocket(BaseSocket):
   """
   Wrapper for a socket connection that speaks the Tor control protocol. To the
@@ -531,16 +614,20 @@ def send_message(control_file, message, raw = False):
   if not raw:
     message = send_formatting(message)
 
-  try:
-    control_file.write(stem.util.str_tools._to_bytes(message))
-    control_file.flush()
+  _write_to_socket(control_file, message)
 
-    if log.is_tracing():
-      log_message = message.replace('\r\n', '\n').rstrip()
-      msg_div = '\n' if '\n' in log_message else ' '
-      log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+  if log.is_tracing():
+    log_message = message.replace('\r\n', '\n').rstrip()
+    msg_div = '\n' if '\n' in log_message else ' '
+    log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+
+
+def _write_to_socket(socket_file, message):
+  try:
+    socket_file.write(stem.util.str_tools._to_bytes(message))
+    socket_file.flush()
   except socket.error as exc:
-    log.info('Failed to send message: %s' % exc)
+    log.info('Failed to send: %s' % exc)
 
     # When sending there doesn't seem to be a reliable method for
     # distinguishing between failures from a disconnect verses other things.
@@ -554,7 +641,7 @@ def send_message(control_file, message, raw = False):
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'
 
-    log.info('Failed to send message: file has been closed')
+    log.info('Failed to send: file has been closed')
     raise stem.SocketClosed('file has been closed')
 
 
