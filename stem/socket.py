@@ -46,16 +46,18 @@ Tor...
 
 ::
 
-  ControlSocket - Socket wrapper that speaks the tor control protocol.
-    |- ControlPort - Control connection via a port.
-    |  |- get_address - provides the ip address of our socket
-    |  +- get_port - provides the port of our socket
+  BaseSocket - Thread safe socket.
+    |- ControlSocket - Socket wrapper that speaks the tor control protocol.
+    |  |- ControlPort - Control connection via a port.
+    |  |  |- get_address - provides the ip address of our socket
+    |  |  +- get_port - provides the port of our socket
+    |  |
+    |  |- ControlSocketFile - Control connection via a local file socket.
+    |  |  +- get_socket_path - provides the path of the socket we connect to
+    |  |
+    |  |- send - sends a message to the socket
+    |  +- recv - receives a ControlMessage from the socket
     |
-    |- ControlSocketFile - Control connection via a local file socket.
-    |  +- get_socket_path - provides the path of the socket we connect to
-    |
-    |- send - sends a message to the socket
-    |- recv - receives a ControlMessage from the socket
     |- is_alive - reports if the socket is known to be closed
     |- is_localhost - returns if the socket is for the local system or not
     |- connect - connects a new socket
@@ -89,14 +91,9 @@ ERROR_MSG = 'Error while receiving a control message (%s): %s'
 TRUNCATE_LOGS = 10
 
 
-class ControlSocket(object):
+class BaseSocket(object):
   """
-  Wrapper for a socket connection that speaks the Tor control protocol. To the
-  better part this transparently handles the formatting for sending and
-  receiving complete messages. All methods are thread safe.
-
-  Callers should not instantiate this class directly, but rather use subclasses
-  which are expected to implement the **_make_socket()** method.
+  Thread safe socket, providing common socket functionality.
   """
 
   def __init__(self):
@@ -111,95 +108,21 @@ class ControlSocket(object):
     self._send_lock = threading.RLock()
     self._recv_lock = threading.RLock()
 
-  def send(self, message, raw = False):
-    """
-    Formats and sends a message to the control socket. For more information see
-    the :func:`~stem.socket.send_message` function.
-
-    :param str message: message to be formatted and sent to the socket
-    :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
-
-    :raises:
-      * :class:`stem.SocketError` if a problem arises in using the socket
-      * :class:`stem.SocketClosed` if the socket is known to be shut down
-    """
-
-    with self._send_lock:
-      try:
-        if not self.is_alive():
-          raise stem.SocketClosed()
-
-        send_message(self._socket_file, message, raw)
-      except stem.SocketClosed:
-        # if send_message raises a SocketClosed then we should properly shut
-        # everything down
-
-        if self.is_alive():
-          self.close()
-
-        raise
-
-  def recv(self):
-    """
-    Receives a message from the control socket, blocking until we've received
-    one. For more information see the :func:`~stem.socket.recv_message` function.
-
-    :returns: :class:`~stem.response.ControlMessage` for the message received
-
-    :raises:
-      * :class:`stem.ProtocolError` the content from the socket is malformed
-      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
-    """
-
-    with self._recv_lock:
-      try:
-        # makes a temporary reference to the _socket_file because connect()
-        # and close() may set or unset it
-
-        socket_file = self._socket_file
-
-        if not socket_file:
-          raise stem.SocketClosed()
-
-        return recv_message(socket_file)
-      except stem.SocketClosed:
-        # If recv_message raises a SocketClosed then we should properly shut
-        # everything down. However, there's a couple cases where this will
-        # cause deadlock...
-        #
-        # * This SocketClosed was *caused by* a close() call, which is joining
-        #   on our thread.
-        #
-        # * A send() call that's currently in flight is about to call close(),
-        #   also attempting to join on us.
-        #
-        # To resolve this we make a non-blocking call to acquire the send lock.
-        # If we get it then great, we can close safely. If not then one of the
-        # above are in progress and we leave the close to them.
-
-        if self.is_alive():
-          if self._send_lock.acquire(False):
-            self.close()
-            self._send_lock.release()
-
-        raise
-
   def is_alive(self):
     """
     Checks if the socket is known to be closed. We won't be aware if it is
     until we either use it or have explicitily shut it down.
 
     In practice a socket derived from a port knows about its disconnection
-    after a failed :func:`~stem.socket.ControlSocket.recv` call. Socket file
-    derived connections know after either a
-    :func:`~stem.socket.ControlSocket.send` or
-    :func:`~stem.socket.ControlSocket.recv`.
+    after failing to receive data, whereas socket file derived connections
+    know after either sending or receiving data.
 
     This means that to have reliable detection for when we're disconnected
     you need to continually pull from the socket (which is part of what the
     :class:`~stem.control.BaseController` does).
 
-    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    :returns: **bool** that's **True** if our socket is connected and **False**
+      otherwise
     """
 
     return self._is_alive
@@ -208,7 +131,8 @@ class ControlSocket(object):
     """
     Returns if the connection is for the local system or not.
 
-    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    :returns: **bool** that's **True** if the connection is for the local host
+      and **False** otherwise
     """
 
     return False
@@ -307,8 +231,8 @@ class ControlSocket(object):
     """
     The send lock is useful to classes that interact with us at a deep level
     because it's used to lock :func:`stem.socket.ControlSocket.connect` /
-    :func:`stem.socket.ControlSocket.close`, and by extension our
-    :func:`stem.socket.ControlSocket.is_alive` state changes.
+    :func:`stem.socket.BaseSocket.close`, and by extension our
+    :func:`stem.socket.BaseSocket.is_alive` state changes.
 
     :returns: **threading.RLock** that governs sending messages to our socket
       and state changes
@@ -347,7 +271,94 @@ class ControlSocket(object):
       * **NotImplementedError** if not implemented by a subclass
     """
 
-    raise NotImplementedError('Unsupported Operation: this should be implemented by the ControlSocket subclass')
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the BaseSocket subclass')
+
+
+class ControlSocket(BaseSocket):
+  """
+  Wrapper for a socket connection that speaks the Tor control protocol. To the
+  better part this transparently handles the formatting for sending and
+  receiving complete messages.
+
+  Callers should not instantiate this class directly, but rather use subclasses
+  which are expected to implement the **_make_socket()** method.
+  """
+
+  def __init__(self):
+    super(ControlSocket, self).__init__()
+
+  def send(self, message, raw = False):
+    """
+    Formats and sends a message to the control socket. For more information see
+    the :func:`~stem.socket.send_message` function.
+
+    :param str message: message to be formatted and sent to the socket
+    :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
+
+    :raises:
+      * :class:`stem.SocketError` if a problem arises in using the socket
+      * :class:`stem.SocketClosed` if the socket is known to be shut down
+    """
+
+    with self._send_lock:
+      try:
+        if not self.is_alive():
+          raise stem.SocketClosed()
+
+        send_message(self._socket_file, message, raw)
+      except stem.SocketClosed:
+        # if send_message raises a SocketClosed then we should properly shut
+        # everything down
+
+        if self.is_alive():
+          self.close()
+
+        raise
+
+  def recv(self):
+    """
+    Receives a message from the control socket, blocking until we've received
+    one. For more information see the :func:`~stem.socket.recv_message` function.
+
+    :returns: :class:`~stem.response.ControlMessage` for the message received
+
+    :raises:
+      * :class:`stem.ProtocolError` the content from the socket is malformed
+      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
+    """
+
+    with self._recv_lock:
+      try:
+        # makes a temporary reference to the _socket_file because connect()
+        # and close() may set or unset it
+
+        socket_file = self._socket_file
+
+        if not socket_file:
+          raise stem.SocketClosed()
+
+        return recv_message(socket_file)
+      except stem.SocketClosed:
+        # If recv_message raises a SocketClosed then we should properly shut
+        # everything down. However, there's a couple cases where this will
+        # cause deadlock...
+        #
+        # * This SocketClosed was *caused by* a close() call, which is joining
+        #   on our thread.
+        #
+        # * A send() call that's currently in flight is about to call close(),
+        #   also attempting to join on us.
+        #
+        # To resolve this we make a non-blocking call to acquire the send lock.
+        # If we get it then great, we can close safely. If not then one of the
+        # above are in progress and we leave the close to them.
+
+        if self.is_alive():
+          if self._send_lock.acquire(False):
+            self.close()
+            self._send_lock.release()
+
+        raise
 
 
 class ControlPort(ControlSocket):
