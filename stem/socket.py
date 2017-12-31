@@ -49,11 +49,7 @@ Tor...
   BaseSocket - Thread safe socket.
     |- ControlSocket - Socket wrapper that speaks the tor control protocol.
     |  |- ControlPort - Control connection via a port.
-    |  |  |- get_address - provides the ip address of our socket
-    |  |  +- get_port - provides the port of our socket
-    |  |
     |  |- ControlSocketFile - Control connection via a local file socket.
-    |  |  +- get_socket_path - provides the path of the socket we connect to
     |  |
     |  |- send - sends a message to the socket
     |  +- recv - receives a ControlMessage from the socket
@@ -365,6 +361,9 @@ class ControlPort(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlPort torrc
   option.
+
+  :var str address: address our socket connects to
+  :var int port: ControlPort our socket connects to
   """
 
   def __init__(self, address = '127.0.0.1', port = 9051, connect = True):
@@ -380,8 +379,8 @@ class ControlPort(ControlSocket):
     """
 
     super(ControlPort, self).__init__()
-    self._control_addr = address
-    self._control_port = port
+    self.address = address
+    self.port = port
 
     if connect:
       self.connect()
@@ -390,27 +389,33 @@ class ControlPort(ControlSocket):
     """
     Provides the ip address our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **address** attribute instead.
+
     :returns: str with the ip address of our socket
     """
 
-    return self._control_addr
+    return self.address
 
   def get_port(self):
     """
     Provides the port our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **port** attribute instead.
+
     :returns: int with the port of our socket
     """
 
-    return self._control_port
+    return self.port
 
   def is_localhost(self):
-    return self._control_addr == '127.0.0.1'
+    return self.address == '127.0.0.1'
 
   def _make_socket(self):
     try:
       control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      control_socket.connect((self._control_addr, self._control_port))
+      control_socket.connect((self.address, self.port))
       return control_socket
     except socket.error as exc:
       raise stem.SocketError(exc)
@@ -420,6 +425,8 @@ class ControlSocketFile(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlSocket torrc
   option.
+
+  :var str path: filesystem path of the socket we connect to
   """
 
   def __init__(self, path = '/var/run/tor/control', connect = True):
@@ -434,7 +441,7 @@ class ControlSocketFile(ControlSocket):
     """
 
     super(ControlSocketFile, self).__init__()
-    self._socket_path = path
+    self.path = path
 
     if connect:
       self.connect()
@@ -443,10 +450,13 @@ class ControlSocketFile(ControlSocket):
     """
     Provides the path our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **path** attribute instead.
+
     :returns: str with the path for our control socket
     """
 
-    return self._socket_path
+    return self.path
 
   def is_localhost(self):
     return True
@@ -454,7 +464,7 @@ class ControlSocketFile(ControlSocket):
   def _make_socket(self):
     try:
       control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-      control_socket.connect(self._socket_path)
+      control_socket.connect(self.path)
       return control_socket
     except socket.error as exc:
       raise stem.SocketError(exc)

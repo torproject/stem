@@ -364,10 +364,10 @@ class TestController(unittest.TestCase):
       control_socket = controller.get_socket()
 
       if isinstance(control_socket, stem.socket.ControlPort):
-        connection_value = str(control_socket.get_port())
+        connection_value = str(control_socket.port)
         config_key = 'ControlPort'
       elif isinstance(control_socket, stem.socket.ControlSocketFile):
-        connection_value = str(control_socket.get_socket_path())
+        connection_value = control_socket.path
         config_key = 'ControlSocket'
 
       # successful single query
