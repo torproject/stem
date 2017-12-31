@@ -223,6 +223,72 @@ class BaseSocket(object):
       if is_change:
         self._close()
 
+  def _send(self, message, handler):
+    """
+    Send message in a thread safe manner. Handler is expected to be of the form...
+
+    ::
+
+      my_handler(socket_file, message)
+    """
+
+    with self._send_lock:
+      try:
+        if not self.is_alive():
+          raise stem.SocketClosed()
+
+        handler(self._socket_file, message)
+      except stem.SocketClosed:
+        # if send_message raises a SocketClosed then we should properly shut
+        # everything down
+
+        if self.is_alive():
+          self.close()
+
+        raise
+
+  def _recv(self, handler):
+    """
+    Receives a message in a thread safe manner. Handler is expected to be of the form...
+
+    ::
+
+      my_handler(socket_file)
+    """
+
+    with self._recv_lock:
+      try:
+        # makes a temporary reference to the _socket_file because connect()
+        # and close() may set or unset it
+
+        socket_file = self._socket_file
+
+        if not socket_file:
+          raise stem.SocketClosed()
+
+        return handler(socket_file)
+      except stem.SocketClosed:
+        # If recv_message raises a SocketClosed then we should properly shut
+        # everything down. However, there's a couple cases where this will
+        # cause deadlock...
+        #
+        # * This SocketClosed was *caused by* a close() call, which is joining
+        #   on our thread.
+        #
+        # * A send() call that's currently in flight is about to call close(),
+        #   also attempting to join on us.
+        #
+        # To resolve this we make a non-blocking call to acquire the send lock.
+        # If we get it then great, we can close safely. If not then one of the
+        # above are in progress and we leave the close to them.
+
+        if self.is_alive():
+          if self._send_lock.acquire(False):
+            self.close()
+            self._send_lock.release()
+
+        raise
+
   def _get_send_lock(self):
     """
     The send lock is useful to classes that interact with us at a deep level
@@ -300,20 +366,7 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
 
-    with self._send_lock:
-      try:
-        if not self.is_alive():
-          raise stem.SocketClosed()
-
-        send_message(self._socket_file, message)
-      except stem.SocketClosed:
-        # if send_message raises a SocketClosed then we should properly shut
-        # everything down
-
-        if self.is_alive():
-          self.close()
-
-        raise
+    self._send(message, send_message)
 
   def recv(self):
     """
@@ -327,38 +380,7 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    with self._recv_lock:
-      try:
-        # makes a temporary reference to the _socket_file because connect()
-        # and close() may set or unset it
-
-        socket_file = self._socket_file
-
-        if not socket_file:
-          raise stem.SocketClosed()
-
-        return recv_message(socket_file)
-      except stem.SocketClosed:
-        # If recv_message raises a SocketClosed then we should properly shut
-        # everything down. However, there's a couple cases where this will
-        # cause deadlock...
-        #
-        # * This SocketClosed was *caused by* a close() call, which is joining
-        #   on our thread.
-        #
-        # * A send() call that's currently in flight is about to call close(),
-        #   also attempting to join on us.
-        #
-        # To resolve this we make a non-blocking call to acquire the send lock.
-        # If we get it then great, we can close safely. If not then one of the
-        # above are in progress and we leave the close to them.
-
-        if self.is_alive():
-          if self._send_lock.acquire(False):
-            self.close()
-            self._send_lock.release()
-
-        raise
+    return self._recv(recv_message)
 
 
 class ControlPort(ControlSocket):
