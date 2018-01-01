@@ -2,7 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Supports communication with sockets speaking the Tor control protocol. This
+Supports communication with sockets speaking Tor protocols. This
 allows us to send messages as basic strings, and receive responses as
 :class:`~stem.response.ControlMessage` instances.
 
@@ -350,6 +350,8 @@ class RelaySocket(BaseSocket):
   `Link-level connection
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_ to a Tor
   relay.
+
+  .. versionadded:: 1.7.0
 
   :var str address: address our socket connects to
   :var int port: ORPort our socket connects to
