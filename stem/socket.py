@@ -387,11 +387,9 @@ class RelaySocket(BaseSocket):
 
     self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
 
-  def recv(self, max_response_size = MAX_READ_BUFFER_LEN):
+  def recv(self):
     """
     Receives a message from the relay.
-
-    :param int max_response_size: maximum bytes to return
 
     :returns: bytes for the message received
 
@@ -400,10 +398,10 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    # TODO: Not really sure what we'll want here. To start with just copying
-    # endosome's behavior.
+    # TODO: Is MAX_READ_BUFFER_LEN defined in the spec? Not sure where it came
+    # from.
 
-    return self._recv(lambda s, sf: s.recv(max_response_size))
+    return self._recv(lambda s, sf: s.recv(MAX_READ_BUFFER_LEN))
 
   def is_localhost(self):
     return self.address == '127.0.0.1'
