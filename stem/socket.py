@@ -238,7 +238,7 @@ class BaseSocket(object):
 
     ::
 
-      my_handler(socket_file, message)
+      my_handler(socket, socket_file, message)
     """
 
     with self._send_lock:
@@ -246,7 +246,7 @@ class BaseSocket(object):
         if not self.is_alive():
           raise stem.SocketClosed()
 
-        handler(self._socket_file, message)
+        handler(self._socket, self._socket_file, message)
       except stem.SocketClosed:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
@@ -262,7 +262,7 @@ class BaseSocket(object):
 
     ::
 
-      my_handler(socket_file)
+      my_handler(socket, socket_file)
     """
 
     with self._recv_lock:
@@ -270,12 +270,12 @@ class BaseSocket(object):
         # makes a temporary reference to the _socket_file because connect()
         # and close() may set or unset it
 
-        socket_file = self._socket_file
+        my_socket, my_socket_file = self._socket, self._socket_file
 
-        if not socket_file:
+        if not my_socket or not my_socket_file:
           raise stem.SocketClosed()
 
-        return handler(socket_file)
+        return handler(my_socket, my_socket_file)
       except stem.SocketClosed:
         # If recv_message raises a SocketClosed then we should properly shut
         # everything down. However, there's a couple cases where this will
@@ -385,7 +385,7 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
 
-    self._send(message, _write_to_socket)
+    self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
 
   def recv(self, max_response_size = MAX_READ_BUFFER_LEN):
     """
@@ -403,10 +403,7 @@ class RelaySocket(BaseSocket):
     # TODO: Not really sure what we'll want here. To start with just copying
     # endosome's behavior.
 
-    def _read(control_file):
-      return control_file.read(max_response_size)
-
-    return self._recv(_read)
+    return self._recv(lambda s, sf: s.recv(max_response_size))
 
   def is_localhost(self):
     return self.address == '127.0.0.1'
@@ -450,7 +447,7 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
 
-    self._send(message, send_message)
+    self._send(message, lambda s, sf, msg: send_message(sf, msg))
 
   def recv(self):
     """
@@ -464,7 +461,7 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    return self._recv(recv_message)
+    return self._recv(lambda s, sf: recv_message(sf))
 
 
 class ControlPort(ControlSocket):
