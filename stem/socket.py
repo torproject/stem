@@ -74,6 +74,7 @@ from __future__ import absolute_import
 import io
 import re
 import socket
+import ssl
 import threading
 import time
 
@@ -414,7 +415,7 @@ class RelaySocket(BaseSocket):
     try:
       relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       relay_socket.connect((self.address, self.port))
-      return relay_socket
+      return ssl.wrap_socket(relay_socket)
     except socket.error as exc:
       raise stem.SocketError(exc)
 
