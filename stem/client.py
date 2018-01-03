@@ -31,6 +31,8 @@ providing higher level functions in much the same way as our
   Relay - Connection with a relay's ORPort.
 """
 
+import struct
+
 from stem.util import enum
 
 PackType = enum.Enum(
@@ -46,3 +48,15 @@ class Relay(object):
   Connection with a `Tor relay's ORPort
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
   """
+
+
+def serialize_versions(versions):
+  """
+  Provides the payload for a series of link versions.
+
+  :param list versions: link versions to serialize
+
+  :returns: **bytes** with a payload for these versions
+  """
+
+  return b''.join([struct.pack(PackType.SHORT, v) for v in versions])
