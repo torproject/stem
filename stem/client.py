@@ -44,16 +44,16 @@ PackType = enum.Enum(
 )
 
 
-class CellAttributes(collections.namedtuple('CellAttributes', ['name', 'value', 'fixed_length', 'for_circuit'])):
+class CellAttributes(collections.namedtuple('CellAttributes', ['name', 'value', 'fixed_size', 'for_circuit'])):
   """
   Metadata for cells tor will accept on its ORPort.
 
   :var str name: name of the cell type
   :var int value: integer value of the command on the wire
-  :var bool fixed_length: **True** if cells have a fixed length,
+  :var bool fixed_size: **True** if cells have a fixed length,
     **False** if variable
-  :var bool for_circuit: **True** if command is for a circuit, **False**
-    otherwise
+  :var bool for_circuit: **True** if command is for a circuit,
+    **False** otherwise
   """
 
 

@@ -13,7 +13,7 @@ class TestClient(unittest.TestCase):
 
     self.assertEqual('NETINFO', attr.name)
     self.assertEqual(8, attr.value)
-    self.assertEqual(True, attr.fixed_length)
+    self.assertEqual(True, attr.fixed_size)
     self.assertEqual(False, attr.for_circuit)
 
     self.assertEqual(10, stem.client.cell_attributes('CREATE2').value)
