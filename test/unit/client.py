@@ -4,21 +4,22 @@ Unit tests for the stem.client.
 
 import unittest
 
-import stem.client
+from stem.client import Cell
 
 
 class TestClient(unittest.TestCase):
-  def test_cell_attributes(self):
-    attr = stem.client.cell_attributes('NETINFO')
+  def test_cell_fetching(self):
+    cell = Cell.by_name('NETINFO')
 
-    self.assertEqual('NETINFO', attr.name)
-    self.assertEqual(8, attr.value)
-    self.assertEqual(True, attr.fixed_size)
-    self.assertEqual(False, attr.for_circuit)
+    self.assertEqual('NETINFO', cell.name)
+    self.assertEqual(8, cell.value)
+    self.assertEqual(True, cell.fixed_size)
+    self.assertEqual(False, cell.for_circuit)
 
-    self.assertEqual(10, stem.client.cell_attributes('CREATE2').value)
-    self.assertEqual('CREATE2', stem.client.cell_attributes(10).name)
+    self.assertEqual(10, Cell.by_name('CREATE2').value)
+    self.assertEqual('CREATE2', Cell.by_value(10).name)
 
-    self.assertRaises(ValueError, stem.client.cell_attributes, 'NOPE')
-    self.assertRaises(ValueError, stem.client.cell_attributes, 85)
-    self.assertRaises(ValueError, stem.client.cell_attributes, None)
+    self.assertRaises(ValueError, Cell.by_name, 'NOPE')
+    self.assertRaises(ValueError, Cell.by_value, 'NOPE')
+    self.assertRaises(ValueError, Cell.by_name, 85)
+    self.assertRaises(ValueError, Cell.by_name, None)
