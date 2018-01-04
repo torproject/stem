@@ -36,12 +36,14 @@ import struct
 
 from stem.util import enum
 
+ZERO = '\x00'
+
 
 class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_circuit'])):
   """
   Metadata for ORPort cells.
 
-  :var str name: name of the cell type
+  :var str name: command of the cell
   :var int value: integer value of the command on the wire
   :var bool fixed_size: **True** if cells have a fixed length,
     **False** if variable
@@ -54,7 +56,7 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     """
     Provides cell attributes by its name.
 
-    :parm str name: name of the cell type to fetch
+    :parm str name: cell command to fetch
 
     :raise: **ValueError** if cell type is invalid
     """
@@ -70,7 +72,7 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     """
     Provides cell attributes by its value.
 
-    :parm int value: value of the cell type to fetch
+    :parm int value: cell value to fetch
 
     :raise: **ValueError** if cell type is invalid
     """
@@ -80,6 +82,55 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
         return cell_type
 
     raise ValueError("'%s' isn't a valid cell value" % value)
+
+  @staticmethod
+  def pack(name, link_version, payload, circ_id = None):
+    """
+    Provides bytes that can be used on the wire for these cell attributes.
+
+    :param str name: cell command
+    :param int link_version: link protocol version
+    :param bytes payload: cell payload
+    :param int circ_id: circuit id, if for a circuit
+
+    :raise: **ValueError** if...
+      * cell type or circuit id is invalid
+      * payload is too large
+    """
+
+    attr = Cell.by_name(name)
+    circ_id_len = Pack.LONG if link_version > 3 else Pack.SHORT
+
+    if attr.for_circuit and circ_id is None:
+      if name.startswith('CREATE'):
+        # Since we're initiating the circuit we pick any value from a range
+        # that's determined by our link version.
+
+        circ_id = 0x80000000 if link_version > 3 else 0x01
+      else:
+        raise ValueError('%s cells require a circ_id' % name)
+    elif not attr.for_circuit:
+      if circ_id:
+        raise ValueError("%s cells don't concern circuits, circ_id is unused" % name)
+
+      circ_id = 0  # field is still mandatory for all cells
+
+    packed_circ_id = struct.pack(circ_id_len, circ_id)
+    packed_command = struct.pack(Pack.CHAR, attr.value)
+    packed_size = b'' if attr.fixed_size else struct.pack(Pack.SHORT, len(payload))
+    cell = b''.join((packed_circ_id, packed_command, packed_size, payload))
+
+    # pad fixed sized cells to the required length
+
+    if attr.fixed_size:
+      fixed_cell_len = 514 if link_version > 3 else 512
+
+      if len(cell) > fixed_cell_len:
+        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (name, len(cell), fixed_cell_len))
+
+      cell += ZERO * (fixed_cell_len - len(cell))
+
+    return cell
 
 
 class Relay(object):
