@@ -1049,67 +1049,7 @@ class FallbackDirectory(Directory):
       exc = sys.exc_info()[1]
       raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
 
-    if '/* nickname=' in fallback_dir_page:
-      return FallbackDirectory._parse_v2(fallback_dir_page)
-    else:
-      return FallbackDirectory._parse_v1(fallback_dir_page)
-
-  @staticmethod
-  def _parse_v1(fallback_dir_page):
-    # Example of an entry...
-    #
-    #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
-    #   " ipv6=[2a03:b0c0:0:1010::a4:b001]:9001"
-    #   " weight=43680",
-
-    # TODO: this method can be removed once gitweb provides a v2 formatted document
-
-    results, attr = {}, {}
-
-    for line in fallback_dir_page.splitlines():
-      if line.startswith('"'):
-        addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
-        ipv6_line_match = re.match('" ipv6=\[([\da-f:]+)\]:(\d+)"', line)
-
-        if addr_line_match:
-          address, dir_port, or_port, fingerprint = addr_line_match.groups()
-
-          if not connection.is_valid_ipv4_address(address):
-            raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
-          elif not connection.is_valid_port(or_port):
-            raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
-          elif not connection.is_valid_port(dir_port):
-            raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
-          elif not tor_tools.is_valid_fingerprint(fingerprint):
-            raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
-
-          attr = {
-            'address': address,
-            'or_port': int(or_port),
-            'dir_port': int(dir_port),
-            'fingerprint': fingerprint,
-          }
-        elif ipv6_line_match:
-          address, port = ipv6_line_match.groups()
-
-          if not connection.is_valid_ipv6_address(address):
-            raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
-          elif not connection.is_valid_port(port):
-            raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
-
-          attr['orport_v6'] = (address, int(port))
-        elif line.startswith('" weight=') and 'fingerprint' in attr:
-          results[attr.get('fingerprint')] = FallbackDirectory(
-            address = attr.get('address'),
-            or_port = attr.get('or_port'),
-            dir_port = attr.get('dir_port'),
-            fingerprint = attr.get('fingerprint'),
-            orport_v6 = attr.get('orport_v6'),
-          )
-
-          attr = {}
-
-    return results
+    return FallbackDirectory._parse_v2(fallback_dir_page)
 
   @staticmethod
   def _parse_v2(fallback_dir_page):
