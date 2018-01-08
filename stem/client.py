@@ -133,23 +133,33 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     return cell
 
 
+class VersionCell(Cell):
+  """
+  Link version negotiation cell.
+  """
+
+  @staticmethod
+  def pack(versions):
+    """
+    Provides the payload for a series of link versions.
+
+    :param list versions: link versions to serialize
+
+    :returns: **bytes** with a payload for these versions
+    """
+
+    # Used for link version negotiation so we don't have that yet. This is fine
+    # since VERSION cells avoid most version dependent attributes.
+
+    payload = b''.join([struct.pack(Pack.SHORT, v) for v in versions])
+    return Cell.pack('VERSIONS', 3, payload)
+
+
 class Relay(object):
   """
   Connection with a `Tor relay's ORPort
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
   """
-
-
-def serialize_versions(versions):
-  """
-  Provides the payload for a series of link versions.
-
-  :param list versions: link versions to serialize
-
-  :returns: **bytes** with a payload for these versions
-  """
-
-  return b''.join([struct.pack(Pack.SHORT, v) for v in versions])
 
 
 Pack = enum.Enum(
