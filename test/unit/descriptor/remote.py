@@ -59,10 +59,36 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 """
 
 FALLBACK_DIR_CONTENT = b"""\
+/* type=fallback */
+/* version=2.0.0 */
+/* timestamp=20170526090242 */
+/* ===== */
+/* Whitelist & blacklist excluded 1326 of 1513 candidates. */
+/* Checked IPv4 DirPorts served a consensus within 15.0s. */
+/*
+Final Count: 151 (Eligible 187, Target 392 (1963 * 0.20), Max 200)
+Excluded: 36 (Same Operator 27, Failed/Skipped Download 9, Excess 0)
+Bandwidth Range: 1.3 - 40.0 MByte/s
+*/
+/*
+Onionoo Source: details Date: 2017-05-16 07:00:00 Version: 4.0
+URL: https:onionoo.torproject.orgdetails?fields=fingerprint%2Cnickname%2Ccontact%2Clast_changed_address_or_port%2Cconsensus_weight%2Cadvertised_bandwidth%2Cor_addresses%2Cdir_address%2Crecommended_version%2Cflags%2Ceffective_family%2Cplatform&flag=V2Dir&type=relay&last_seen_days=-0&first_seen_days=30-
+*/
+/*
+Onionoo Source: uptime Date: 2017-05-16 07:00:00 Version: 4.0
+URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=relay&last_seen_days=-0
+*/
+/* ===== */
 "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
 " ipv6=[2a01:4f8:162:51e2::2]:9001"
 /* nickname=rueckgrat */
 /* extrainfo=1 */
+/* ===== */
+,
+"193.171.202.146:9030 orport=9001 id=01A9258A46E97FF8B2CAC7910577862C14F2C524"
+/* nickname= */
+/* extrainfo=0 */
+/* ===== */
 """
 
 
@@ -186,6 +212,15 @@ class TestDescriptorDownloader(unittest.TestCase):
         nickname = 'rueckgrat',
         has_extrainfo = True,
         orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+      ),
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
+        address = '193.171.202.146',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
+        nickname = None,
+        has_extrainfo = False,
+        orport_v6 = None,
       ),
     }
 
