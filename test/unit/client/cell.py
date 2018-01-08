@@ -12,10 +12,10 @@ from stem.client.cell import Cell
 class TestCell(unittest.TestCase):
   def test_by_name(self):
     cell = Cell.by_name('NETINFO')
-    self.assertEqual('NETINFO', cell.name)
-    self.assertEqual(8, cell.value)
-    self.assertEqual(True, cell.fixed_size)
-    self.assertEqual(False, cell.for_circuit)
+    self.assertEqual('NETINFO', cell.NAME)
+    self.assertEqual(8, cell.VALUE)
+    self.assertEqual(True, cell.IS_FIXED_SIZE)
+    self.assertEqual(False, cell.IS_FOR_CIRCUIT)
 
     self.assertRaises(ValueError, Cell.by_name, 'NOPE')
     self.assertRaises(ValueError, Cell.by_name, 85)

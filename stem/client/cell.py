@@ -25,6 +25,11 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     **False** otherwise
   """
 
+  NAME = 'UNKNOWN'
+  VALUE = -1
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
+
   @staticmethod
   def by_name(name):
     """
@@ -34,6 +39,9 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
 
     :raise: **ValueError** if cell type is invalid
     """
+
+    if name == 'NETINFO':
+      return NetinfoCell
 
     for cell_type in CELL_TYPES:
       if name == cell_type.name:
@@ -127,6 +135,12 @@ class VersionCell(Cell):
 
     payload = b''.join([struct.pack(Pack.SHORT, v) for v in versions])
     return Cell.pack('VERSIONS', 3, payload)
+
+
+class NetinfoCell(Cell):
+  NAME = 'NETINFO'
+  VALUE = 8
+  IS_FIXED_SIZE = True
 
 
 CELL_TYPES = (
