@@ -1,15 +1,16 @@
 """
-Unit tests for the stem.client.
+Unit tests for the stem.client.cell.
 """
 
 import struct
 import unittest
 
-from stem.client import Pack, Cell
+from stem.client import Pack
+from stem.client.cell import Cell
 
 
-class TestClient(unittest.TestCase):
-  def test_cell_by_name(self):
+class TestCell(unittest.TestCase):
+  def test_by_name(self):
     cell = Cell.by_name('NETINFO')
     self.assertEqual('NETINFO', cell.name)
     self.assertEqual(8, cell.value)
@@ -20,7 +21,7 @@ class TestClient(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_name, 85)
     self.assertRaises(ValueError, Cell.by_name, None)
 
-  def test_cell_by_value(self):
+  def test_by_value(self):
     cell = Cell.by_value(8)
     self.assertEqual('NETINFO', cell.name)
     self.assertEqual(8, cell.value)
@@ -31,7 +32,7 @@ class TestClient(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_value, 85)
     self.assertRaises(ValueError, Cell.by_value, None)
 
-  def test_cell_pack(self):
+  def test_pack(self):
     version_payload = struct.pack(Pack.SHORT, 2)
 
     # basic link v2 and v4 VERSIONS cell
