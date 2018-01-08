@@ -102,7 +102,7 @@ try:
     author = stem.__author__,
     author_email = stem.__contact__,
     url = stem.__url__,
-    packages = ['stem', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
+    packages = ['stem', 'stem.client', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
     package_data = {
