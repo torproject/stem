@@ -1081,31 +1081,47 @@ class FallbackDirectory(Directory):
     results = {}
 
     while lines:
-      # Example of an entry...
-      #
-      #   "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-      #   " ipv6=[2a01:4f8:162:51e2::2]:9001"
-      #   /* nickname=rueckgrat */
-      #   /* extrainfo=1 */
-
       section = FallbackDirectory._pop_section(lines)
 
-      if not section:
-        continue
-
-      address, or_port, dir_port, fingerprint = FallbackDirectory._parse_addr(section)
-
-      results[fingerprint] = FallbackDirectory(
-        address = address,
-        or_port = or_port,
-        dir_port = dir_port,
-        fingerprint = fingerprint,
-        nickname = FallbackDirectory._parse_nickname(section, fingerprint),
-        has_extrainfo = FallbackDirectory._parse_has_extrainfo(section),
-        orport_v6 = FallbackDirectory._parse_ipv6(section, fingerprint),
-      )
+      if section:
+        fallback = FallbackDirectory.from_str('\n'.join(section))
+        results[fallback.fingerprint] = fallback
 
     return results
+
+  @staticmethod
+  def from_str(content):
+    """
+    Parses a fallback from its textual representation. For example...
+
+    ::
+
+      "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+      " ipv6=[2a01:4f8:162:51e2::2]:9001"
+      /* nickname=rueckgrat */
+      /* extrainfo=1 */
+
+    .. versionadded:: 1.7.0
+
+    :param str content: text to parse
+
+    :returns: :class:`~stem.descriptor.remote.FallbackDirectory` in the text
+
+    :raises: **IOError** if content is malformed
+    """
+
+    lines = content.splitlines()
+    address, or_port, dir_port, fingerprint = FallbackDirectory._parse_addr(lines)
+
+    return FallbackDirectory(
+      address = address,
+      or_port = or_port,
+      dir_port = dir_port,
+      fingerprint = fingerprint,
+      nickname = FallbackDirectory._parse_nickname(lines, fingerprint),
+      has_extrainfo = FallbackDirectory._parse_has_extrainfo(lines),
+      orport_v6 = FallbackDirectory._parse_ipv6(lines, fingerprint),
+    )
 
   @staticmethod
   def _pop_section(lines):
