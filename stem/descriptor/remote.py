@@ -1084,8 +1084,11 @@ class FallbackDirectory(Directory):
       section = FallbackDirectory._pop_section(lines)
 
       if section:
-        fallback = FallbackDirectory.from_str('\n'.join(section))
-        results[fallback.fingerprint] = fallback
+        try:
+          fallback = FallbackDirectory.from_str('\n'.join(section))
+          results[fallback.fingerprint] = fallback
+        except ValueError as exc:
+          raise IOError(str(exc))
 
     return results
 
@@ -1107,7 +1110,7 @@ class FallbackDirectory(Directory):
 
     :returns: :class:`~stem.descriptor.remote.FallbackDirectory` in the text
 
-    :raises: **IOError** if content is malformed
+    :raises: **ValueError** if content is malformed
     """
 
     matches = {}
@@ -1121,7 +1124,7 @@ class FallbackDirectory(Directory):
           matches[matcher] = match_groups if len(match_groups) > 1 else match_groups[0]
 
     if FALLBACK_ADDR not in matches:
-      raise IOError('Malformed fallback address line:\n\n%s' % content)
+      raise ValueError('Malformed fallback address line:\n\n%s' % content)
 
     address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
     nickname = matches.get(FALLBACK_NICKNAME)
@@ -1129,19 +1132,19 @@ class FallbackDirectory(Directory):
     orport_v6 = matches.get(FALLBACK_IPV6)
 
     if not connection.is_valid_ipv4_address(address):
-      raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
+      raise ValueError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
     elif not connection.is_valid_port(or_port):
-      raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
+      raise ValueError('%s has an invalid or_port: %s' % (fingerprint, or_port))
     elif not connection.is_valid_port(dir_port):
-      raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
+      raise ValueError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
     elif not tor_tools.is_valid_fingerprint(fingerprint):
-      raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+      raise ValueError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
     elif nickname and not tor_tools.is_valid_nickname(nickname):
-      raise IOError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+      raise ValueError('%s has an invalid nickname: %s' % (fingerprint, nickname))
     elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
-      raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, orport_v6[0]))
+      raise ValueError('%s has an invalid IPv6 address: %s' % (fingerprint, orport_v6[0]))
     elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
-      raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, orport_v6[1]))
+      raise ValueError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, orport_v6[1]))
 
     return FallbackDirectory(
       address = address,
