@@ -40,12 +40,9 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :raise: **ValueError** if cell type is invalid
     """
 
-    if name == 'NETINFO':
-      return NetinfoCell
-
-    for cell_type in CELL_TYPES:
-      if name == cell_type.name:
-        return cell_type
+    for cls in CELL_TYPES:
+      if name == cls.NAME:
+        return cls
 
     raise ValueError("'%s' isn't a valid cell type" % name)
 
@@ -59,14 +56,14 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :raise: **ValueError** if cell type is invalid
     """
 
-    for cell_type in CELL_TYPES:
-      if value == cell_type.value:
-        return cell_type
+    for cls in CELL_TYPES:
+      if value == cls.VALUE:
+        return cls
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
-  @staticmethod
-  def pack(name, link_version, payload, circ_id = None):
+  @classmethod
+  def _pack(cls, link_version, payload, circ_id = None):
     """
     Provides bytes that can be used on the wire for these cell attributes.
 
@@ -80,35 +77,34 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
       * payload is too large
     """
 
-    attr = Cell.by_name(name)
     circ_id_len = Pack.LONG if link_version > 3 else Pack.SHORT
 
-    if attr.for_circuit and circ_id is None:
-      if name.startswith('CREATE'):
+    if cls.IS_FOR_CIRCUIT and circ_id is None:
+      if cls.NAME.startswith('CREATE'):
         # Since we're initiating the circuit we pick any value from a range
         # that's determined by our link version.
 
         circ_id = 0x80000000 if link_version > 3 else 0x01
       else:
-        raise ValueError('%s cells require a circ_id' % name)
-    elif not attr.for_circuit:
+        raise ValueError('%s cells require a circ_id' % cls.NAME)
+    elif not cls.IS_FOR_CIRCUIT:
       if circ_id:
-        raise ValueError("%s cells don't concern circuits, circ_id is unused" % name)
+        raise ValueError("%s cells don't concern circuits, circ_id is unused" % cls.NAME)
 
       circ_id = 0  # field is still mandatory for all cells
 
     packed_circ_id = struct.pack(circ_id_len, circ_id)
-    packed_command = struct.pack(Pack.CHAR, attr.value)
-    packed_size = b'' if attr.fixed_size else struct.pack(Pack.SHORT, len(payload))
+    packed_command = struct.pack(Pack.CHAR, cls.VALUE)
+    packed_size = b'' if cls.IS_FIXED_SIZE else struct.pack(Pack.SHORT, len(payload))
     cell = b''.join((packed_circ_id, packed_command, packed_size, payload))
 
     # pad fixed sized cells to the required length
 
-    if attr.fixed_size:
+    if cls.IS_FIXED_SIZE:
       fixed_cell_len = 514 if link_version > 3 else 512
 
       if len(cell) > fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (name, len(cell), fixed_cell_len))
+        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), fixed_cell_len))
 
       cell += ZERO * (fixed_cell_len - len(cell))
 
@@ -174,8 +170,8 @@ class VersionsCell(Cell):
   IS_FIXED_SIZE = False
   IS_FOR_CIRCUIT = False
 
-  @staticmethod
-  def pack(versions):
+  @classmethod
+  def pack(cls, versions):
     """
     Provides the payload for a series of link versions.
 
@@ -188,7 +184,7 @@ class VersionsCell(Cell):
     # since VERSION cells avoid most version dependent attributes.
 
     payload = b''.join([struct.pack(Pack.SHORT, v) for v in versions])
-    return Cell.pack('VERSIONS', 3, payload)
+    return cls._pack('VERSIONS', 3, payload)
 
 
 class NetinfoCell(Cell):
@@ -262,22 +258,22 @@ class AuthorizeCell(Cell):
 
 
 CELL_TYPES = (
-  Cell('PADDING', 0, True, False),              # Padding                  (section 7.2)
-  Cell('CREATE', 1, True, True),                # Create a circuit         (section 5.1)
-  Cell('CREATED', 2, True, True),               # Acknowledge create       (section 5.1)
-  Cell('RELAY', 3, True, True),                 # End-to-end data          (section 5.5 and 6)
-  Cell('DESTROY', 4, True, True),               # Stop using a circuit     (section 5.4)
-  Cell('CREATE_FAST', 5, True, True),           # Create a circuit, no PK  (section 5.1)
-  Cell('CREATED_FAST', 6, True, True),          # Circuit created, no PK   (section 5.1)
-  Cell('VERSIONS', 7, False, False),            # Negotiate proto version  (section 4)
-  Cell('NETINFO', 8, True, False),              # Time and address info    (section 4.5)
-  Cell('RELAY_EARLY', 9, True, True),           # End-to-end data; limited (section 5.6)
-  Cell('CREATE2', 10, True, True),              # Extended CREATE cell     (section 5.1)
-  Cell('CREATED2', 11, True, True),             # Extended CREATED cell    (section 5.1)
-  Cell('PADDING_NEGOTIATE', 12, True, False),   # Padding negotiation      (section 7.2)
-  Cell('VPADDING', 128, False, False),          # Variable-length padding  (section 7.2)
-  Cell('CERTS', 129, False, False),             # Certificates             (section 4.2)
-  Cell('AUTH_CHALLENGE', 130, False, False),    # Challenge value          (section 4.3)
-  Cell('AUTHENTICATE', 131, False, False),      # Client authentication    (section 4.5)
-  Cell('AUTHORIZE', 132, False, False),         # Client authorization     (not yet used)
+  PaddingCell,            # Padding                  (section 7.2)
+  CreateCell,             # Create a circuit         (section 5.1)
+  CreatedCell,            # Acknowledge create       (section 5.1)
+  RelayCell,              # End-to-end data          (section 5.5 and 6)
+  DestroyCell,            # Stop using a circuit     (section 5.4)
+  CreateFastCell,         # Create a circuit, no PK  (section 5.1)
+  CreatedFastCell,        # Circuit created, no PK   (section 5.1)
+  VersionsCell,           # Negotiate proto version  (section 4)
+  NetinfoCell,            # Time and address info    (section 4.5)
+  RelayEarlyCell,         # End-to-end data; limited (section 5.6)
+  Create2Cell,            # Extended CREATE cell     (section 5.1)
+  Created2Cell,           # Extended CREATED cell    (section 5.1)
+  PaddingNegotiateCell,   # Padding negotiation      (section 7.2)
+  VPaddingCell,           # Variable-length padding  (section 7.2)
+  CertsCell,              # Certificates             (section 4.2)
+  AuthChallengeCell,      # Challenge value          (section 4.3)
+  AuthenticateCell,       # Client authentication    (section 4.5)
+  AuthorizeCell,          # Client authorization     (not yet used)
 )
