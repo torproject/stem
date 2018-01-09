@@ -1110,17 +1110,47 @@ class FallbackDirectory(Directory):
     :raises: **IOError** if content is malformed
     """
 
-    lines = content.splitlines()
-    address, or_port, dir_port, fingerprint = FallbackDirectory._parse_addr(lines)
+    matches = {}
+
+    for line in content.splitlines():
+      for matcher in (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6):
+        m = matcher.match(line)
+
+        if m:
+          match_groups = m.groups()
+          matches[matcher] = match_groups if len(match_groups) > 1 else match_groups[0]
+
+    if FALLBACK_ADDR not in matches:
+      raise IOError('Malformed fallback address line:\n\n%s' % content)
+
+    address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
+    nickname = matches.get(FALLBACK_NICKNAME)
+    has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1'
+    orport_v6 = matches.get(FALLBACK_IPV6)
+
+    if not connection.is_valid_ipv4_address(address):
+      raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
+    elif not connection.is_valid_port(or_port):
+      raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
+    elif not connection.is_valid_port(dir_port):
+      raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
+    elif not tor_tools.is_valid_fingerprint(fingerprint):
+      raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+    elif nickname and not tor_tools.is_valid_nickname(nickname):
+      raise IOError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+    elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
+      raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, orport_v6[0]))
+    elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
+      raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, orport_v6[1]))
 
     return FallbackDirectory(
       address = address,
-      or_port = or_port,
-      dir_port = dir_port,
+      or_port = int(or_port),
+      dir_port = int(dir_port),
       fingerprint = fingerprint,
-      nickname = FallbackDirectory._parse_nickname(lines, fingerprint),
-      has_extrainfo = FallbackDirectory._parse_has_extrainfo(lines),
-      orport_v6 = FallbackDirectory._parse_ipv6(lines, fingerprint),
+      nickname = nickname,
+      has_extrainfo = has_extrainfo,
+      orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None,
     )
 
   @staticmethod
@@ -1142,76 +1172,6 @@ class FallbackDirectory(Directory):
         line = lines.pop(0)
 
     return section_lines
-
-  @staticmethod
-  def _parse_addr(lines):
-    """
-    Provides the mandatory address information of a fallback.
-    """
-
-    addr_match = FALLBACK_ADDR.match(lines[0])
-
-    if not addr_match:
-      raise IOError('Malformed initial fallback line:\n\n%s' % '\n'.join(lines))
-
-    address, dir_port, or_port, fingerprint = addr_match.groups()
-
-    if not connection.is_valid_ipv4_address(address):
-      raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
-    elif not connection.is_valid_port(or_port):
-      raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
-    elif not connection.is_valid_port(dir_port):
-      raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
-    elif not tor_tools.is_valid_fingerprint(fingerprint):
-      raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
-
-    return address, int(or_port), int(dir_port), fingerprint
-
-  @staticmethod
-  def _parse_nickname(lines, fingerprint):
-    """
-    Provides the nickname of the fallback.
-    """
-
-    for line in lines:
-      match = FALLBACK_NICKNAME.match(line)
-
-      if match:
-        nickname = match.group(1)
-
-        if not tor_tools.is_valid_nickname(nickname):
-          raise IOError('%s has an invalid nickname: %s' % (fingerprint, nickname))
-
-        return nickname
-
-  @staticmethod
-  def _parse_has_extrainfo(lines):
-    for line in lines:
-      match = FALLBACK_EXTRAINFO.match(line)
-
-      if match:
-        return match.group(1) == '1'
-
-    return False
-
-  @staticmethod
-  def _parse_ipv6(lines, fingerprint):
-    """
-    Provides the IPv6 ORPort for a fallback.
-    """
-
-    for line in lines:
-      match = FALLBACK_IPV6.match(line)
-
-      if match:
-        address, port = match.groups()
-
-        if not connection.is_valid_ipv6_address(address):
-          raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
-        elif not connection.is_valid_port(port):
-          raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
-
-        return (address, int(port))
 
   def __hash__(self):
     return _hash_attr(self, 'orport_v6', parent = Directory)
