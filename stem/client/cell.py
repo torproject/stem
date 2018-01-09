@@ -115,10 +115,64 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     return cell
 
 
-class VersionCell(Cell):
+class PaddingCell(Cell):
+  NAME = 'PADDING'
+  VALUE = 0
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = False
+
+
+class CreateCell(Cell):
+  NAME = 'CREATE'
+  VALUE = 1
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class CreatedCell(Cell):
+  NAME = 'CREATED'
+  VALUE = 2
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class RelayCell(Cell):
+  NAME = 'RELAY'
+  VALUE = 3
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class DestroyCell(Cell):
+  NAME = 'DESTROY'
+  VALUE = 4
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class CreateFastCell(Cell):
+  NAME = 'CREATE_FAST'
+  VALUE = 5
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class CreatedFastCell(Cell):
+  NAME = 'CREATED_FAST'
+  VALUE = 6
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class VersionsCell(Cell):
   """
   Link version negotiation cell.
   """
+
+  NAME = 'VERSIONS'
+  VALUE = 7
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
 
   @staticmethod
   def pack(versions):
@@ -141,6 +195,70 @@ class NetinfoCell(Cell):
   NAME = 'NETINFO'
   VALUE = 8
   IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = False
+
+
+class RelayEarlyCell(Cell):
+  NAME = 'RELAY_EARLY'
+  VALUE = 9
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class Create2Cell(Cell):
+  NAME = 'CREATE2'
+  VALUE = 10
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = True
+
+
+class Created2Cell(Cell):
+  NAME = 'CREATED2'
+  VALUE = 11
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = False
+
+
+class PaddingNegotiateCell(Cell):
+  NAME = 'PADDING_NEGOTIATE'
+  VALUE = 12
+  IS_FIXED_SIZE = True
+  IS_FOR_CIRCUIT = False
+
+
+class VPaddingCell(Cell):
+  NAME = 'VPADDING'
+  VALUE = 128
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
+
+
+class CertsCell(Cell):
+  NAME = 'CERTS'
+  VALUE = 129
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
+
+
+class AuthChallengeCell(Cell):
+  NAME = 'AUTH_CHALLENGE'
+  VALUE = 130
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
+
+
+class AuthenticateCell(Cell):
+  NAME = 'AUTHENTICATE'
+  VALUE = 131
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
+
+
+class AuthorizeCell(Cell):
+  NAME = 'AUTHORIZE'
+  VALUE = 132
+  IS_FIXED_SIZE = False
+  IS_FOR_CIRCUIT = False
 
 
 CELL_TYPES = (
