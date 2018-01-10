@@ -184,7 +184,7 @@ class VersionsCell(Cell):
     # since VERSION cells avoid most version dependent attributes.
 
     payload = b''.join([struct.pack(Pack.SHORT, v) for v in versions])
-    return cls._pack('VERSIONS', 3, payload)
+    return cls._pack(3, payload)
 
 
 class NetinfoCell(Cell):
