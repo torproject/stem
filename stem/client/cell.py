@@ -11,7 +11,7 @@ Messages communicated over a Tor relay's ORPort.
 ::
 
   Cell - Base class for ORPort messages.
-    |- CircuitCell - Cell concerning a tor circuit.
+    |- CircuitCell - Circuit management.
     |  |- CreateCell - Create a circuit.              (section 5.1)
     |  |- CreatedCell - Acknowledge create.           (section 5.1)
     |  |- RelayCell - End-to-end data.                (section 5.5 and 6)
@@ -37,8 +37,11 @@ Messages communicated over a Tor relay's ORPort.
 """
 
 import collections
+import inspect
 import struct
+import sys
 
+from stem import UNDEFINED
 from stem.client import ZERO, Pack
 
 
@@ -68,8 +71,8 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :raise: **ValueError** if cell type is invalid
     """
 
-    for cls in CELL_TYPES:
-      if name == cls.NAME:
+    for _, cls in inspect.getmembers(sys.modules[__name__]):
+      if name == getattr(cls, 'NAME', UNDEFINED):
         return cls
 
     raise ValueError("'%s' isn't a valid cell type" % name)
@@ -84,8 +87,8 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :raise: **ValueError** if cell type is invalid
     """
 
-    for cls in CELL_TYPES:
-      if value == cls.VALUE:
+    for _, cls in inspect.getmembers(sys.modules[__name__]):
+      if value == getattr(cls, 'VALUE', UNDEFINED):
         return cls
 
     raise ValueError("'%s' isn't a valid cell value" % value)
@@ -278,25 +281,3 @@ class AuthorizeCell(Cell):
   NAME = 'AUTHORIZE'
   VALUE = 132
   IS_FIXED_SIZE = False
-
-
-CELL_TYPES = (
-  PaddingCell,
-  CreateCell,
-  CreatedCell,
-  RelayCell,
-  DestroyCell,
-  CreateFastCell,
-  CreatedFastCell,
-  VersionsCell,
-  NetinfoCell,
-  RelayEarlyCell,
-  Create2Cell,
-  Created2Cell,
-  PaddingNegotiateCell,
-  VPaddingCell,
-  CertsCell,
-  AuthChallengeCell,
-  AuthenticateCell,
-  AuthorizeCell,
-)
