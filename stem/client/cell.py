@@ -28,7 +28,6 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
   NAME = 'UNKNOWN'
   VALUE = -1
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
   @staticmethod
   def by_name(name):
@@ -63,37 +62,21 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     raise ValueError("'%s' isn't a valid cell value" % value)
 
   @classmethod
-  def _pack(cls, link_version, payload, circ_id = None):
+  def _pack(cls, link_version, payload, circ_id = 0):
     """
     Provides bytes that can be used on the wire for these cell attributes.
 
     :param str name: cell command
     :param int link_version: link protocol version
     :param bytes payload: cell payload
-    :param int circ_id: circuit id, if for a circuit
+    :param int circ_id: circuit id, if a CircuitCell
 
     :raise: **ValueError** if...
       * cell type or circuit id is invalid
       * payload is too large
     """
 
-    circ_id_len = Pack.LONG if link_version > 3 else Pack.SHORT
-
-    if cls.IS_FOR_CIRCUIT and circ_id is None:
-      if cls.NAME.startswith('CREATE'):
-        # Since we're initiating the circuit we pick any value from a range
-        # that's determined by our link version.
-
-        circ_id = 0x80000000 if link_version > 3 else 0x01
-      else:
-        raise ValueError('%s cells require a circ_id' % cls.NAME)
-    elif not cls.IS_FOR_CIRCUIT:
-      if circ_id:
-        raise ValueError("%s cells don't concern circuits, circ_id is unused" % cls.NAME)
-
-      circ_id = 0  # field is still mandatory for all cells
-
-    packed_circ_id = struct.pack(circ_id_len, circ_id)
+    packed_circ_id = struct.pack(Pack.LONG if link_version > 3 else Pack.SHORT, circ_id)
     packed_command = struct.pack(Pack.CHAR, cls.VALUE)
     packed_size = b'' if cls.IS_FIXED_SIZE else struct.pack(Pack.SHORT, len(payload))
     cell = b''.join((packed_circ_id, packed_command, packed_size, payload))
@@ -111,53 +94,75 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     return cell
 
 
+class CircuitCell(Cell):
+  """
+  Cell concerning circuits.
+  """
+
+  @classmethod
+  def _pack(cls, link_version, payload, circ_id):
+    """
+    Provides bytes that can be used on the wire for these cell attributes.
+
+    :param str name: cell command
+    :param int link_version: link protocol version
+    :param bytes payload: cell payload
+    :param int circ_id: circuit id
+
+    :raise: **ValueError** if cell type is invalid or payload is too large
+    """
+
+    if circ_id is None and cls.NAME.startswith('CREATE'):
+      # Since we're initiating the circuit we pick any value from a range
+      # that's determined by our link version.
+
+      circ_id = 0x80000000 if link_version > 3 else 0x01
+    else:
+      raise ValueError('%s cells require a circ_id' % cls.NAME)
+
+    return Cell._pack(link_version, payload, circ_id)
+
+
 class PaddingCell(Cell):
   NAME = 'PADDING'
   VALUE = 0
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = False
 
 
-class CreateCell(Cell):
+class CreateCell(CircuitCell):
   NAME = 'CREATE'
   VALUE = 1
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class CreatedCell(Cell):
+class CreatedCell(CircuitCell):
   NAME = 'CREATED'
   VALUE = 2
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class RelayCell(Cell):
+class RelayCell(CircuitCell):
   NAME = 'RELAY'
   VALUE = 3
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class DestroyCell(Cell):
+class DestroyCell(CircuitCell):
   NAME = 'DESTROY'
   VALUE = 4
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class CreateFastCell(Cell):
+class CreateFastCell(CircuitCell):
   NAME = 'CREATE_FAST'
   VALUE = 5
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class CreatedFastCell(Cell):
+class CreatedFastCell(CircuitCell):
   NAME = 'CREATED_FAST'
   VALUE = 6
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
 class VersionsCell(Cell):
@@ -168,7 +173,6 @@ class VersionsCell(Cell):
   NAME = 'VERSIONS'
   VALUE = 7
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
   @classmethod
   def pack(cls, versions):
@@ -191,70 +195,60 @@ class NetinfoCell(Cell):
   NAME = 'NETINFO'
   VALUE = 8
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = False
 
 
-class RelayEarlyCell(Cell):
+class RelayEarlyCell(CircuitCell):
   NAME = 'RELAY_EARLY'
   VALUE = 9
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
-class Create2Cell(Cell):
+class Create2Cell(CircuitCell):
   NAME = 'CREATE2'
   VALUE = 10
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = True
 
 
 class Created2Cell(Cell):
   NAME = 'CREATED2'
   VALUE = 11
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = False
 
 
 class PaddingNegotiateCell(Cell):
   NAME = 'PADDING_NEGOTIATE'
   VALUE = 12
   IS_FIXED_SIZE = True
-  IS_FOR_CIRCUIT = False
 
 
 class VPaddingCell(Cell):
   NAME = 'VPADDING'
   VALUE = 128
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
 
 class CertsCell(Cell):
   NAME = 'CERTS'
   VALUE = 129
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
 
 class AuthChallengeCell(Cell):
   NAME = 'AUTH_CHALLENGE'
   VALUE = 130
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
 
 class AuthenticateCell(Cell):
   NAME = 'AUTHENTICATE'
   VALUE = 131
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
 
 class AuthorizeCell(Cell):
   NAME = 'AUTHORIZE'
   VALUE = 132
   IS_FIXED_SIZE = False
-  IS_FOR_CIRCUIT = False
 
 
 CELL_TYPES = (

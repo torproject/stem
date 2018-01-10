@@ -13,7 +13,6 @@ class TestCell(unittest.TestCase):
     self.assertEqual('NETINFO', cls.NAME)
     self.assertEqual(8, cls.VALUE)
     self.assertEqual(True, cls.IS_FIXED_SIZE)
-    self.assertEqual(False, cls.IS_FOR_CIRCUIT)
 
     self.assertRaises(ValueError, Cell.by_name, 'NOPE')
     self.assertRaises(ValueError, Cell.by_name, 85)
@@ -24,7 +23,6 @@ class TestCell(unittest.TestCase):
     self.assertEqual('NETINFO', cls.NAME)
     self.assertEqual(8, cls.VALUE)
     self.assertEqual(True, cls.IS_FIXED_SIZE)
-    self.assertEqual(False, cls.IS_FOR_CIRCUIT)
 
     self.assertRaises(ValueError, Cell.by_value, 'NOPE')
     self.assertRaises(ValueError, Cell.by_value, 85)
