@@ -22,15 +22,15 @@ Messages communicated over a Tor relay's ORPort.
     |  |- Create2Cell - Extended CREATE cell.         (section 5.1)
     |  +- Created2Cell - Extended CREATED cell.       (section 5.1)
     |
-    |- PaddingCell - Padding negotiation.           (section 7.2)
-    |- VersionsCell - Negotiate proto version.      (section 4)
-    |- NetinfoCell - Time and address info.         (section 4.5)
-    |- PaddingNegotiateCell - Padding negotiation.  (section 7.2)
-    |- VPaddingCell - Variable-length padding.      (section 7.2)
-    |- CertsCell - Relay certificates.              (section 4.2)
-    |- AuthChallengeCell - Challenge value.         (section 4.3)
-    |- AuthenticateCell - Client authentication.    (section 4.5)
-    |- AuthorizeCell - Client authorization.        (not yet used)
+    |- PaddingCell - Padding negotiation.             (section 7.2)
+    |- VersionsCell - Negotiate proto version.        (section 4)
+    |- NetinfoCell - Time and address info.           (section 4.5)
+    |- PaddingNegotiateCell - Padding negotiation.    (section 7.2)
+    |- VPaddingCell - Variable-length padding.        (section 7.2)
+    |- CertsCell - Relay certificates.                (section 4.2)
+    |- AuthChallengeCell - Challenge value.           (section 4.3)
+    |- AuthenticateCell - Client authentication.      (section 4.5)
+    |- AuthorizeCell - Client authorization.          (not yet used)
     |
     |- pack - Provides encoded bytes for this cell class.
     +- unpack - Decodes bytes for this cell class.
@@ -93,6 +93,22 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
+  @staticmethod
+  def unpack(content):
+    """
+    Unpacks encoded bytes into a Cell subclass.
+
+    :param bytes content: payload to decode
+
+    :returns: :class:`~stem.client.cell.Cell` subclass
+
+    :raises:
+      * ValueError if content is malformed
+      * NotImplementedError if unable to unpack this cell type
+    """
+
+    return AuthorizeCell._unpack(content)
+
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
     """
@@ -103,9 +119,9 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :param bytes payload: cell payload
     :param int circ_id: circuit id, if a CircuitCell
 
-    :raise: **ValueError** if...
-      * cell type or circuit id is invalid
-      * payload is too large
+    :return: **bytes** with the encoded payload
+
+    :raise: **ValueError** if cell type invalid or payload is too large
     """
 
     packed_circ_id = struct.pack(Pack.LONG if link_version > 3 else Pack.SHORT, circ_id)
@@ -125,6 +141,20 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
 
     return cell
 
+  @classmethod
+  def _unpack(cls, content):
+    """
+    Subclass implementation for unpacking cell content.
+
+    :param bytes content: payload to decode
+
+    :returns: instance of this cell type
+
+    :raises: **ValueError** if content is malformed
+    """
+
+    raise NotImplementedError('Unpacking not yet implemented for %s cells' % cls.NAME)
+
 
 class CircuitCell(Cell):
   """
@@ -141,7 +171,7 @@ class CircuitCell(Cell):
     :param bytes payload: cell payload
     :param int circ_id: circuit id
 
-    :raise: **ValueError** if cell type is invalid or payload is too large
+    :raise: **ValueError** if cell type invalid or payload is too large
     """
 
     if circ_id is None and cls.NAME.startswith('CREATE'):
