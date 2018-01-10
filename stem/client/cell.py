@@ -5,6 +5,35 @@
 Messages communicated over a Tor relay's ORPort.
 
 .. versionadded:: 1.7.0
+
+**Module Overview:**
+
+::
+
+  Cell - Base class for ORPort messages.
+    |- CircuitCell - Cell concerning a tor circuit.
+    |  |- CreateCell - Create a circuit.              (section 5.1)
+    |  |- CreatedCell - Acknowledge create.           (section 5.1)
+    |  |- RelayCell - End-to-end data.                (section 5.5 and 6)
+    |  |- DestroyCell - Stop using a circuit.         (section 5.4)
+    |  |- CreateFastCell - Create a circuit, no PK.   (section 5.1)
+    |  |- CreatedFastCell - Circuit created, no PK.   (section 5.1)
+    |  |- RelayEarlyCell - End-to-end data; limited.  (section 5.6)
+    |  |- Create2Cell - Extended CREATE cell.         (section 5.1)
+    |  +- Created2Cell - Extended CREATED cell.       (section 5.1)
+    |
+    |- PaddingCell - Padding negotiation.           (section 7.2)
+    |- VersionsCell - Negotiate proto version.      (section 4)
+    |- NetinfoCell - Time and address info.         (section 4.5)
+    |- PaddingNegotiateCell - Padding negotiation.  (section 7.2)
+    |- VPaddingCell - Variable-length padding.      (section 7.2)
+    |- CertsCell - Relay certificates.              (section 4.2)
+    |- AuthChallengeCell - Challenge value.         (section 4.3)
+    |- AuthenticateCell - Client authentication.    (section 4.5)
+    |- AuthorizeCell - Client authorization.        (not yet used)
+    |
+    |- pack - Provides encoded bytes for this cell class.
+    +- unpack - Decodes bytes for this cell class.
 """
 
 import collections
@@ -252,22 +281,22 @@ class AuthorizeCell(Cell):
 
 
 CELL_TYPES = (
-  PaddingCell,            # Padding                  (section 7.2)
-  CreateCell,             # Create a circuit         (section 5.1)
-  CreatedCell,            # Acknowledge create       (section 5.1)
-  RelayCell,              # End-to-end data          (section 5.5 and 6)
-  DestroyCell,            # Stop using a circuit     (section 5.4)
-  CreateFastCell,         # Create a circuit, no PK  (section 5.1)
-  CreatedFastCell,        # Circuit created, no PK   (section 5.1)
-  VersionsCell,           # Negotiate proto version  (section 4)
-  NetinfoCell,            # Time and address info    (section 4.5)
-  RelayEarlyCell,         # End-to-end data; limited (section 5.6)
-  Create2Cell,            # Extended CREATE cell     (section 5.1)
-  Created2Cell,           # Extended CREATED cell    (section 5.1)
-  PaddingNegotiateCell,   # Padding negotiation      (section 7.2)
-  VPaddingCell,           # Variable-length padding  (section 7.2)
-  CertsCell,              # Certificates             (section 4.2)
-  AuthChallengeCell,      # Challenge value          (section 4.3)
-  AuthenticateCell,       # Client authentication    (section 4.5)
-  AuthorizeCell,          # Client authorization     (not yet used)
+  PaddingCell,
+  CreateCell,
+  CreatedCell,
+  RelayCell,
+  DestroyCell,
+  CreateFastCell,
+  CreatedFastCell,
+  VersionsCell,
+  NetinfoCell,
+  RelayEarlyCell,
+  Create2Cell,
+  Created2Cell,
+  PaddingNegotiateCell,
+  VPaddingCell,
+  CertsCell,
+  AuthChallengeCell,
+  AuthenticateCell,
+  AuthorizeCell,
 )
