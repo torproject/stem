@@ -93,11 +93,12 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     raise ValueError("'%s' isn't a valid cell value" % value)
 
   @staticmethod
-  def unpack(content):
+  def unpack(content, link_version):
     """
     Unpacks encoded bytes into a Cell subclass.
 
     :param bytes content: payload to decode
+    :param int link_version: link protocol version
 
     :returns: :class:`~stem.client.cell.Cell` subclass
 
@@ -106,7 +107,9 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
       * NotImplementedError if unable to unpack this cell type
     """
 
-    return AuthorizeCell._unpack(content)
+    circ_id, content = Size.LONG.pop(content) if link_version > 3 else Size.SHORT.pop(content)
+    command, content = Size.CHAR.pop(content)
+    return Cell.by_value(command)._unpack(content, link_version, circ_id)
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
@@ -141,11 +144,13 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     return cell
 
   @classmethod
-  def _unpack(cls, content):
+  def _unpack(cls, content, circ_id, link_version):
     """
     Subclass implementation for unpacking cell content.
 
     :param bytes content: payload to decode
+    :param int link_version: link protocol version
+    :param int circ_id: circuit id cell is for
 
     :returns: instance of this cell type
 

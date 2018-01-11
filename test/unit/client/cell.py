@@ -29,7 +29,7 @@ class TestCell(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_value, None)
 
   def test_unpack_not_implemented(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.unpack, 'boom')
+    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.unpack, '\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
 
   def test_versions_pack(self):
     self.assertEqual('\x00\x00\x07\x00\x00', VersionsCell.pack([]))
