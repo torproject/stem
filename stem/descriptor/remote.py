@@ -1177,7 +1177,7 @@ class FallbackDirectory(Directory):
     return section_lines
 
   def __hash__(self):
-    return _hash_attr(self, 'orport_v6', parent = Directory)
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, FallbackDirectory) else False
