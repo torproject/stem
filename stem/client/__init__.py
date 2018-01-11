@@ -28,29 +28,77 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
 ::
 
-  Relay - Connection with a relay's ORPort.
+  Size - Packable and unpackable field size.
+    |- pack - encodes content
+    |- unpack - decodes content
+    +- pop - decodes content with remainder
 """
 
-from stem.util import enum
+import struct
 
 ZERO = '\x00'
-
 
 __all__ = [
   'cell',
 ]
 
 
-class Relay(object):
+class Size(object):
   """
-  Connection with a `Tor relay's ORPort
-  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
+  Unsigned `struct.pack format
+  <https://docs.python.org/2/library/struct.html#format-characters>` for
+  network-order fields.
   """
 
+  def __init__(self, name, size, pack_format):
+    self.name = name
+    self.size = size
+    self.format = pack_format
 
-Pack = enum.Enum(
-  ('CHAR', '!B'),       # 1 byte
-  ('SHORT', '!H'),      # 2 bytes
-  ('LONG', '!L'),       # 4 bytes
-  ('LONG_LONG', '!Q'),  # 8 bytes
-)
+  def pack(self, content):
+    """
+    Encodes bytes into a packed field.
+
+    :param bytes content: content to encode
+
+    :raises: **ValueError** if content isn't of the right size
+    """
+
+    unpacked = struct.pack(self.format, content)
+
+    if self.size != len(unpacked):
+      raise ValueError("'%s' is the wrong size for a %s field" % (unpacked, self.name))
+
+    return unpacked
+
+  def unpack(self, content):
+    """
+    Decodes packed data into bytes.
+
+    :param bytes content: content to encode
+
+    :raises: **ValueError** if packed data isn't of the right size
+    """
+
+    if self.size != len(content):
+      raise ValueError("'%s' is the wrong size for a %s field" % (content, self.name))
+
+    return struct.unpack(self.format, content)[0]
+
+  def pop(self, content):
+    """
+    Decodes the first characters as this data type, providing it and the
+    remainder.
+
+    :param bytes content: content to encode
+
+    :raises: **ValueError** if packed data isn't of the right size
+    """
+
+    return self.unpack(content[:self.size]), content[self.size:]
+
+
+setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
+setattr(Size, 'SHORT', Size('SHORT', 2, '!H'))
+setattr(Size, 'LONG', Size('LONG', 4, '!L'))
+setattr(Size, 'LONG_LONG', Size('LONG_LONG', 8, '!Q'))

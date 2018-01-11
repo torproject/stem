@@ -38,11 +38,10 @@ Messages communicated over a Tor relay's ORPort.
 
 import collections
 import inspect
-import struct
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Pack
+from stem.client import ZERO, Size
 
 
 class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_circuit'])):
@@ -124,9 +123,9 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
     :raise: **ValueError** if cell type invalid or payload is too large
     """
 
-    packed_circ_id = struct.pack(Pack.LONG if link_version > 3 else Pack.SHORT, circ_id)
-    packed_command = struct.pack(Pack.CHAR, cls.VALUE)
-    packed_size = b'' if cls.IS_FIXED_SIZE else struct.pack(Pack.SHORT, len(payload))
+    packed_circ_id = Size.LONG.pack(circ_id) if link_version > 3 else Size.SHORT.pack(circ_id)
+    packed_command = Size.CHAR.pack(cls.VALUE)
+    packed_size = b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
     cell = b''.join((packed_circ_id, packed_command, packed_size, payload))
 
     # pad fixed sized cells to the required length
@@ -249,7 +248,7 @@ class VersionsCell(Cell):
     # Used for link version negotiation so we don't have that yet. This is fine
     # since VERSION cells avoid most version dependent attributes.
 
-    payload = b''.join([struct.pack(Pack.SHORT, v) for v in versions])
+    payload = b''.join([Size.SHORT.pack(v) for v in versions])
     return cls._pack(3, payload)
 
 
