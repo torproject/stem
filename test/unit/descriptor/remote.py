@@ -91,6 +91,13 @@ URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=rela
 /* ===== */
 """
 
+FALLBACK_ENTRY = b"""\
+"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+" ipv6=[2a01:4f8:162:51e2::2]:9001"
+/* nickname=rueckgrat */
+/* extrainfo=1 */
+"""
+
 
 class TestDescriptorDownloader(unittest.TestCase):
   @patch(URL_OPEN)
@@ -225,3 +232,44 @@ class TestDescriptorDownloader(unittest.TestCase):
     }
 
     self.assertEqual(expected, fallback_directories)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_empty(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO('')
+    self.assertRaisesRegexp(IOError, 'did not have any content', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_no_header(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO('\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:]))
+    self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_malformed_header(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT.replace('version=2.0.0', 'version'))
+    self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  def test_fallback_directories_from_str(self):
+    expected = stem.descriptor.remote.FallbackDirectory(
+      address = '5.9.110.236',
+      or_port = 9001,
+      dir_port = 9030,
+      fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+      nickname = 'rueckgrat',
+      has_extrainfo = True,
+      orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+    )
+
+    self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_str(FALLBACK_ENTRY))
+
+  def test_fallback_directories_from_str_malformed(self):
+    test_values = {
+      FALLBACK_ENTRY.replace('id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', ''): 'Malformed fallback address line:',
+      FALLBACK_ENTRY.replace('5.9.110.236', '5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv4 address: 5.9.110',
+      FALLBACK_ENTRY.replace(':9030', ':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid dir_port: 7814713228',
+      FALLBACK_ENTRY.replace('orport=9001', 'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid or_port: 7814713228',
+      FALLBACK_ENTRY.replace('ipv6=[2a01', 'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv6 address: ::::4f8:162:51e2::2',
+      FALLBACK_ENTRY.replace('nickname=rueckgrat', 'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
+    }
+
+    for entry, expected in test_values.items():
+      self.assertRaisesRegexp(ValueError, expected, stem.descriptor.remote.FallbackDirectory.from_str, entry)
