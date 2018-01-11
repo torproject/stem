@@ -209,6 +209,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   def test_fallback_directories_from_remote(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+    header = {'type': 'fallback', 'version': '2.0.0', 'timestamp': '20170526090242'}
 
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
@@ -219,6 +220,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         nickname = 'rueckgrat',
         has_extrainfo = True,
         orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+        header = header,
       ),
       '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
         address = '193.171.202.146',
@@ -228,6 +230,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         nickname = None,
         has_extrainfo = False,
         orport_v6 = None,
+        header = header,
       ),
     }
 

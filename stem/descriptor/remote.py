@@ -948,8 +948,8 @@ class FallbackDirectory(Directory):
   .. versionadded:: 1.5.0
 
   .. versionchanged:: 1.7.0
-     Added the nickname and has_extrainfo attributes, which are part of the
-     `second version of the fallback directories
+     Added the nickname, has_extrainfo, and header attributes which are part of
+     the `second version of the fallback directories
      <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
 
   :var str nickname: relay nickname
@@ -957,14 +957,16 @@ class FallbackDirectory(Directory):
     extrainfo descriptors, **False** otherwise.
   :var str orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
+  :var dict header: metadata about the fallback directory file this originated from
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None):
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
     super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
 
     self.nickname = nickname
     self.has_extrainfo = has_extrainfo
     self.orport_v6 = orport_v6
+    self.header = header if header else {}
 
   @staticmethod
   def from_cache():
@@ -1086,6 +1088,7 @@ class FallbackDirectory(Directory):
       if section:
         try:
           fallback = FallbackDirectory.from_str('\n'.join(section))
+          fallback.header = header
           results[fallback.fingerprint] = fallback
         except ValueError as exc:
           raise IOError(str(exc))
@@ -1177,7 +1180,7 @@ class FallbackDirectory(Directory):
     return section_lines
 
   def __hash__(self):
-    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', parent = Directory)
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', 'header', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, FallbackDirectory) else False
