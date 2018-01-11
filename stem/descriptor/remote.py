@@ -969,7 +969,7 @@ class FallbackDirectory(Directory):
     self.header = header if header else {}
 
   @staticmethod
-  def from_cache():
+  def from_cache(path = CACHE_PATH):
     """
     Provides fallback directory information cached with Stem. Unlike
     :func:`~stem.descriptor.remote.FallbackDirectory.from_remote` this doesn't
@@ -977,12 +977,17 @@ class FallbackDirectory(Directory):
     these fallback directories are only as up to date as the Stem release we're
     using.
 
+    .. versionchanged:: 1.7.0
+       Added the path argument.
+
+    :param str path: cache file to load from
+
     :returns: **dict** of **str** fingerprints to their
       :class:`~stem.descriptor.remote.FallbackDirectory`
     """
 
     conf = stem.util.conf.Config()
-    conf.load(CACHE_PATH)
+    conf.load(path)
 
     results = {}
 
@@ -1178,6 +1183,34 @@ class FallbackDirectory(Directory):
         line = lines.pop(0)
 
     return section_lines
+
+  @staticmethod
+  def _write(fallbacks, tor_commit, stem_commit, path = CACHE_PATH):
+    """
+    Persists fallback directories to a location in a way that can be read by
+    from_cache().
+
+    :param dict fallbacks: mapping of fingerprints to their fallback directory
+    :param str tor_commit: tor commit the fallbacks came from
+    :param str stem_commit: stem commit the fallbacks came from
+    :param str path: location fallbacks will be persisted to
+    """
+
+    conf = stem.util.conf.Config()
+    conf.set('tor_commit', tor_commit)
+    conf.set('stem_commit', stem_commit)
+
+    for directory in sorted(fallbacks.values(), key = lambda x: x.fingerprint):
+      fingerprint = directory.fingerprint
+      conf.set('%s.address' % fingerprint, directory.address)
+      conf.set('%s.or_port' % fingerprint, str(directory.or_port))
+      conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+
+      if directory.orport_v6:
+        conf.set('%s.orport6_address' % fingerprint, str(directory.orport_v6[0]))
+        conf.set('%s.orport6_port' % fingerprint, str(directory.orport_v6[1]))
+
+    conf.save(path)
 
   def __hash__(self):
     return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', 'header', parent = Directory)

@@ -4,10 +4,12 @@ Unit tests for stem.descriptor.remote.
 
 import io
 import socket
+import tempfile
 import unittest
 
-import stem.prereq
 import stem.descriptor.remote
+import stem.prereq
+import stem.util.conf
 
 try:
   # added in python 3.3
@@ -235,6 +237,54 @@ class TestDescriptorDownloader(unittest.TestCase):
     }
 
     self.assertEqual(expected, fallback_directories)
+
+  def test_fallback_persistence(self):
+    header = {'type': 'fallback', 'version': '2.0.0', 'timestamp': '20170526090242'}
+
+    expected = {
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
+        address = '5.9.110.236',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+        nickname = 'rueckgrat',
+        has_extrainfo = True,
+        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+        header = header,
+      ),
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
+        address = '193.171.202.146',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
+        nickname = None,
+        has_extrainfo = False,
+        orport_v6 = None,
+        header = header,
+      ),
+    }
+
+    excepted_config = {
+      'tor_commit': ['abc'],
+      'stem_commit': ['def'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
+    }
+
+    with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
+      stem.descriptor.remote.FallbackDirectory._write(expected, 'abc', 'def', tmp.name)
+
+      conf = stem.util.conf.Config()
+      conf.load(tmp.name)
+      self.assertEqual(excepted_config, dict(conf))
+
+      #self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
 
   @patch(URL_OPEN)
   def test_fallback_directories_from_remote_empty(self, urlopen_mock):

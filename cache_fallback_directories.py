@@ -10,7 +10,6 @@ import re
 import sys
 
 import stem.descriptor.remote
-import stem.util.conf
 import stem.util.system
 
 try:
@@ -49,19 +48,4 @@ if __name__ == '__main__':
 
   print('Differences detected...\n')
   print(stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
-
-  conf = stem.util.conf.Config()
-  conf.set('tor_commit', fallback_dir_commit)
-  conf.set('stem_commit', stem_commit)
-
-  for directory in sorted(latest_fallback_directories.values(), key = lambda x: x.fingerprint):
-    fingerprint = directory.fingerprint
-    conf.set('%s.address' % fingerprint, directory.address)
-    conf.set('%s.or_port' % fingerprint, str(directory.or_port))
-    conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
-
-    if directory.orport_v6:
-      conf.set('%s.orport6_address' % fingerprint, str(directory.orport_v6[0]))
-      conf.set('%s.orport6_port' % fingerprint, str(directory.orport_v6[1]))
-
-  conf.save(stem.descriptor.remote.CACHE_PATH)
+  stem.descriptor.remote.FallbackDirectory._write(latest_fallback_directories, fallback_dir_commit, stem_commit)
