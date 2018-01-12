@@ -36,15 +36,16 @@ Messages communicated over a Tor relay's ORPort.
     +- unpack - Decodes bytes for this cell class.
 """
 
-import collections
 import inspect
 import sys
 
 from stem import UNDEFINED
 from stem.client import ZERO, Size
 
+MAX_FIXED_PAYLOAD_LEN = 509
 
-class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_circuit'])):
+
+class Cell(object):
   """
   Metadata for ORPort cells.
 
@@ -109,7 +110,14 @@ class Cell(collections.namedtuple('Cell', ['name', 'value', 'fixed_size', 'for_c
 
     circ_id, content = Size.LONG.pop(content) if link_version > 3 else Size.SHORT.pop(content)
     command, content = Size.CHAR.pop(content)
-    return Cell.by_value(command)._unpack(content, link_version, circ_id)
+    cls = Cell.by_value(command)
+
+    if cls.IS_FIXED_SIZE:
+      payload_len = MAX_FIXED_PAYLOAD_LEN
+    else:
+      payload_len, content = Size.SHORT.pop(content)
+
+    return cls._unpack(content, link_version, circ_id)
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
@@ -234,11 +242,16 @@ class CreatedFastCell(CircuitCell):
 class VersionsCell(Cell):
   """
   Link version negotiation cell.
+
+  :var list versions: link versions
   """
 
   NAME = 'VERSIONS'
   VALUE = 7
   IS_FIXED_SIZE = False
+
+  def __init__(self, versions):
+    self.versions = versions
 
   @classmethod
   def pack(cls, versions):
@@ -255,6 +268,16 @@ class VersionsCell(Cell):
 
     payload = b''.join([Size.SHORT.pack(v) for v in versions])
     return cls._pack(3, payload)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    link_versions = []
+
+    while content:
+      version, content = Size.SHORT.pop(content)
+      link_versions.append(version)
+
+    return VersionsCell(link_versions)
 
 
 class NetinfoCell(Cell):

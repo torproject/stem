@@ -35,3 +35,8 @@ class TestCell(unittest.TestCase):
     self.assertEqual('\x00\x00\x07\x00\x00', VersionsCell.pack([]))
     self.assertEqual('\x00\x00\x07\x00\x02\x00\x01', VersionsCell.pack([1]))
     self.assertEqual('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', VersionsCell.pack([1, 2, 3]))
+
+  def test_versions_unpack(self):
+    self.assertEqual([], Cell.unpack('\x00\x00\x07\x00\x00', 2).versions)
+    self.assertEqual([1], Cell.unpack('\x00\x00\x07\x00\x02\x00\x01', 2).versions)
+    self.assertEqual([1, 2, 3], Cell.unpack('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', 2).versions)
