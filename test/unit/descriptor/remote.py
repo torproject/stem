@@ -4,10 +4,18 @@ Unit tests for stem.descriptor.remote.
 
 import io
 import socket
+import tempfile
 import unittest
 
-import stem.prereq
 import stem.descriptor.remote
+import stem.prereq
+import stem.util.conf
+
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
 
 try:
   # added in python 3.3
@@ -58,19 +66,40 @@ iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 -----END SIGNATURE-----
 """
 
-FALLBACK_DIR_CONTENT_V1 = b"""\
-/* Trial fallbacks for 0.2.8.1-alpha with ADDRESS_AND_PORT_STABLE_DAYS = 30
- * This works around an issue where relays post a descriptor without a DirPort
- * when restarted. If these relays stay up, they will have been up for 120 days
- * by the 0.2.8 stable release -- teor */
-"5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
-" weight=43680",
-"62.210.124.124:9130 orport=9101 id=2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E"
-" ipv6=[2001:bc8:3f23:100::1]:9101"
-" weight=43680",
+FALLBACK_DIR_CONTENT = b"""\
+/* type=fallback */
+/* version=2.0.0 */
+/* timestamp=20170526090242 */
+/* ===== */
+/* Whitelist & blacklist excluded 1326 of 1513 candidates. */
+/* Checked IPv4 DirPorts served a consensus within 15.0s. */
+/*
+Final Count: 151 (Eligible 187, Target 392 (1963 * 0.20), Max 200)
+Excluded: 36 (Same Operator 27, Failed/Skipped Download 9, Excess 0)
+Bandwidth Range: 1.3 - 40.0 MByte/s
+*/
+/*
+Onionoo Source: details Date: 2017-05-16 07:00:00 Version: 4.0
+URL: https:onionoo.torproject.orgdetails?fields=fingerprint%2Cnickname%2Ccontact%2Clast_changed_address_or_port%2Cconsensus_weight%2Cadvertised_bandwidth%2Cor_addresses%2Cdir_address%2Crecommended_version%2Cflags%2Ceffective_family%2Cplatform&flag=V2Dir&type=relay&last_seen_days=-0&first_seen_days=30-
+*/
+/*
+Onionoo Source: uptime Date: 2017-05-16 07:00:00 Version: 4.0
+URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=relay&last_seen_days=-0
+*/
+/* ===== */
+"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+" ipv6=[2a01:4f8:162:51e2::2]:9001"
+/* nickname=rueckgrat */
+/* extrainfo=1 */
+/* ===== */
+,
+"193.171.202.146:9030 orport=9001 id=01A9258A46E97FF8B2CAC7910577862C14F2C524"
+/* nickname= */
+/* extrainfo=0 */
+/* ===== */
 """
 
-FALLBACK_DIR_CONTENT_V2 = b"""\
+FALLBACK_ENTRY = b"""\
 "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
 " ipv6=[2a01:4f8:162:51e2::2]:9001"
 /* nickname=rueckgrat */
@@ -185,32 +214,10 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
 
   @patch(URL_OPEN)
-  def test_fallback_directories_from_remote_v1(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT_V1)
+  def test_fallback_directories_from_remote(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
-
-    expected = {
-      '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33': stem.descriptor.remote.FallbackDirectory(
-        address = '5.175.233.86',
-        or_port = 443,
-        dir_port = 80,
-        fingerprint = '5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33',
-      ),
-      '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E': stem.descriptor.remote.FallbackDirectory(
-        address = '62.210.124.124',
-        or_port = 9101,
-        dir_port = 9130,
-        fingerprint = '2EBD117806EE43C3CC885A8F1E4DC60F207E7D3E',
-        orport_v6 = ('2001:bc8:3f23:100::1', 9101),
-      ),
-    }
-
-    self.assertEqual(expected, fallback_directories)
-
-  @patch(URL_OPEN)
-  def test_fallback_directories_from_remote_v2(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT_V2)
-    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
 
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
@@ -221,7 +228,113 @@ class TestDescriptorDownloader(unittest.TestCase):
         nickname = 'rueckgrat',
         has_extrainfo = True,
         orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+        header = header,
+      ),
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
+        address = '193.171.202.146',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
+        nickname = None,
+        has_extrainfo = False,
+        orport_v6 = None,
+        header = header,
       ),
     }
 
     self.assertEqual(expected, fallback_directories)
+
+  def test_fallback_persistence(self):
+    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
+
+    expected = {
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
+        address = '5.9.110.236',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+        nickname = 'rueckgrat',
+        has_extrainfo = True,
+        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+        header = header,
+      ),
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
+        address = '193.171.202.146',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
+        nickname = None,
+        has_extrainfo = False,
+        orport_v6 = None,
+        header = header,
+      ),
+    }
+
+    excepted_config = {
+      'tor_commit': ['abc'],
+      'stem_commit': ['def'],
+      'header.type': ['fallback'],
+      'header.version': ['2.0.0'],
+      'header.timestamp': ['20170526090242'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.has_extrainfo': ['false'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.nickname': ['rueckgrat'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.has_extrainfo': ['true'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
+    }
+
+    with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
+      stem.descriptor.remote.FallbackDirectory._write(expected, 'abc', 'def', header, tmp.name)
+
+      conf = stem.util.conf.Config()
+      conf.load(tmp.name)
+      self.assertEqual(excepted_config, dict(conf))
+
+      self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_empty(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO('')
+    self.assertRaisesRegexp(IOError, 'did not have any content', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_no_header(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO('\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:]))
+    self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  @patch(URL_OPEN)
+  def test_fallback_directories_from_remote_malformed_header(self, urlopen_mock):
+    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT.replace('version=2.0.0', 'version'))
+    self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.descriptor.remote.FallbackDirectory.from_remote)
+
+  def test_fallback_directories_from_str(self):
+    expected = stem.descriptor.remote.FallbackDirectory(
+      address = '5.9.110.236',
+      or_port = 9001,
+      dir_port = 9030,
+      fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+      nickname = 'rueckgrat',
+      has_extrainfo = True,
+      orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+    )
+
+    self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_str(FALLBACK_ENTRY))
+
+  def test_fallback_directories_from_str_malformed(self):
+    test_values = {
+      FALLBACK_ENTRY.replace('id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', ''): 'Malformed fallback address line:',
+      FALLBACK_ENTRY.replace('5.9.110.236', '5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv4 address: 5.9.110',
+      FALLBACK_ENTRY.replace(':9030', ':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid dir_port: 7814713228',
+      FALLBACK_ENTRY.replace('orport=9001', 'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid or_port: 7814713228',
+      FALLBACK_ENTRY.replace('ipv6=[2a01', 'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv6 address: ::::4f8:162:51e2::2',
+      FALLBACK_ENTRY.replace('nickname=rueckgrat', 'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
+    }
+
+    for entry, expected in test_values.items():
+      self.assertRaisesRegexp(ValueError, expected, stem.descriptor.remote.FallbackDirectory.from_str, entry)

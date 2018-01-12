@@ -447,6 +447,9 @@ class Config(object):
     #
     # Information for what values fail to load and why are reported to
     # 'stem.util.log'.
+
+    .. versionchanged:: 1.7.0
+       Class can now be used as a dictionary.
   """
 
   def __init__(self):
@@ -768,3 +771,7 @@ class Config(object):
         message_id = 'stem.util.conf.missing_config_key_%s' % key
         log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
         return default
+
+  def __getitem__(self, key):
+    with self._contents_lock:
+      return self._contents[key]

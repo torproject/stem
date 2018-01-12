@@ -12,7 +12,7 @@ information...
 
   for desc in stem.descriptor.remote.get_server_descriptors():
     if desc.exit_policy.is_exiting_allowed():
-      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+      print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
 More custom downloading behavior can be done through the
 :class:`~stem.descriptor.remote.DescriptorDownloader` class, which issues
@@ -30,17 +30,17 @@ content. For example...
 
   query = downloader.get_server_descriptors()
 
-  print 'Exit Relays:'
+  print('Exit Relays:')
 
   try:
     for desc in query.run():
       if desc.exit_policy.is_exiting_allowed():
-        print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+        print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
     print
-    print 'Query took %0.2f seconds' % query.runtime
+    print('Query took %0.2f seconds' % query.runtime)
   except Exception as exc:
-    print 'Unable to retrieve the server descriptors: %s' % exc
+    print('Unable to retrieve the server descriptors: %s' % exc)
 
 ::
 
@@ -92,6 +92,12 @@ import time
 import zlib
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
 except ImportError:
@@ -111,6 +117,14 @@ MAX_MICRODESCRIPTOR_HASHES = 90
 
 GITWEB_FALLBACK_DIR_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')
+
+FALLBACK_DIV = '/* ===== */'
+FALLBACK_MAPPING = re.compile('/\*\s+(\S+)=(\S*)\s+\*/')
+
+FALLBACK_ADDR = re.compile('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*')
+FALLBACK_NICKNAME = re.compile('/\* nickname=(\S+) \*/')
+FALLBACK_EXTRAINFO = re.compile('/\* extrainfo=([0-1]) \*/')
+FALLBACK_IPV6 = re.compile('" ipv6=\[([\da-f:]+)\]:(\d+)"')
 
 SINGLETON_DOWNLOADER = None
 
@@ -215,22 +229,22 @@ class Query(object):
       timeout = 30,
     )
 
-    print 'Current relays:'
+    print('Current relays:')
 
     if not query.error:
       for desc in query:
-        print desc.fingerprint
+        print(desc.fingerprint)
     else:
-      print 'Unable to retrieve the server descriptors: %s' % query.error
+      print('Unable to retrieve the server descriptors: %s' % query.error)
 
   ... while iterating fails silently...
 
   ::
 
-    print 'Current relays:'
+    print('Current relays:')
 
     for desc in Query('/tor/server/all.z', 'server-descriptor 1.0'):
-      print desc.fingerprint
+      print(desc.fingerprint)
 
   In either case exceptions are available via our 'error' attribute.
 
@@ -568,7 +582,7 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  # TODO: drop in python 2.x
+  # TODO: drop in stem 2.x
 
   def get_microdescriptors(self, hashes, **query_args):
     """
@@ -728,17 +742,22 @@ class Directory(object):
 
   .. versionadded:: 1.5.0
 
+  .. versionchanged:: 1.3.0
+     Moved nickname from subclasses to this base class.
+
   :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
+  :var str nickname: relay nickname
   """
 
-  def __init__(self, address, or_port, dir_port, fingerprint):
+  def __init__(self, address, or_port, dir_port, fingerprint, nickname):
     self.address = address
     self.or_port = or_port
     self.dir_port = dir_port
     self.fingerprint = fingerprint
+    self.nickname = nickname
 
   def __hash__(self):
     return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
@@ -781,15 +800,13 @@ class DirectoryAuthority(Directory):
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
-  :var str nickname: nickname of the authority
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   :var bool is_bandwidth_authority: **True** if this is a bandwidth authority,
     **False** otherwise
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
-    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint)
-    self.nickname = nickname
+    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
@@ -940,28 +957,26 @@ class FallbackDirectory(Directory):
   .. versionadded:: 1.5.0
 
   .. versionchanged:: 1.7.0
-     Added the nickname and has_extrainfo attributes.
-
-  .. versionchanged:: 1.7.0
-     Support for parsing `second version of the fallback directories
+     Added the nickname, has_extrainfo, and header attributes which are part of
+     the `second version of the fallback directories
      <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
 
-  :var str nickname: relay nickname
   :var bool has_extrainfo: **True** if the relay should be able to provide
     extrainfo descriptors, **False** otherwise.
   :var str orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
+  :var dict header: metadata about the fallback directory file this originated from
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None):
-    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
+    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint, nickname)
 
-    self.nickname = nickname
     self.has_extrainfo = has_extrainfo
     self.orport_v6 = orport_v6
+    self.header = header if header else OrderedDict()
 
   @staticmethod
-  def from_cache():
+  def from_cache(path = CACHE_PATH):
     """
     Provides fallback directory information cached with Stem. Unlike
     :func:`~stem.descriptor.remote.FallbackDirectory.from_remote` this doesn't
@@ -969,17 +984,23 @@ class FallbackDirectory(Directory):
     these fallback directories are only as up to date as the Stem release we're
     using.
 
+    .. versionchanged:: 1.7.0
+       Added the path argument.
+
+    :param str path: cache file to load from
+
     :returns: **dict** of **str** fingerprints to their
       :class:`~stem.descriptor.remote.FallbackDirectory`
     """
 
     conf = stem.util.conf.Config()
-    conf.load(CACHE_PATH)
+    conf.load(path)
+    headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
 
     results = {}
 
     for fingerprint in set([key.split('.')[0] for key in conf.keys()]):
-      if fingerprint in ('tor_commit', 'stem_commit'):
+      if fingerprint in ('tor_commit', 'stem_commit', 'header'):
         continue
 
       attr = {}
@@ -997,7 +1018,7 @@ class FallbackDirectory(Directory):
         raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
         raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
-      elif attr['nickname'] and not connection.is_valid_nickname(attr['nickname']):
+      elif attr['nickname'] and not tor_tools.is_valid_nickname(attr['nickname']):
         raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
       elif attr['orport6_address'] and not connection.is_valid_ipv6_address(attr['orport6_address']):
         raise IOError("'%s.orport6_address' was an invalid IPv6 address (%s)" % (fingerprint, attr['orport6_address']))
@@ -1014,7 +1035,10 @@ class FallbackDirectory(Directory):
         or_port = int(attr['or_port']),
         dir_port = int(attr['dir_port']),
         fingerprint = fingerprint,
+        nickname = attr['nickname'],
+        has_extrainfo = attr['has_extrainfo'] == 'true',
         orport_v6 = orport_v6,
+        header = headers,
       )
 
     return results
@@ -1044,143 +1068,169 @@ class FallbackDirectory(Directory):
     """
 
     try:
-      fallback_dir_page = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read())
+      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read()).splitlines()
     except:
       exc = sys.exc_info()[1]
       raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
 
-    if '/* nickname=' in fallback_dir_page:
-      return FallbackDirectory._parse_v2(fallback_dir_page)
-    else:
-      return FallbackDirectory._parse_v1(fallback_dir_page)
+    if not lines:
+      raise IOError('%s did not have any content' % GITWEB_FALLBACK_DIR_URL)
+    elif lines[0] != '/* type=fallback */':
+      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_DIR_URL)
 
-  @staticmethod
-  def _parse_v1(fallback_dir_page):
-    # Example of an entry...
-    #
-    #   "5.175.233.86:80 orport=443 id=5525D0429BFE5DC4F1B0E9DE47A4CFA169661E33"
-    #   " ipv6=[2a03:b0c0:0:1010::a4:b001]:9001"
-    #   " weight=43680",
+    # header metadata
 
-    # TODO: this method can be removed once gitweb provides a v2 formatted document
+    header = {}
 
-    results, attr = {}, {}
+    for line in FallbackDirectory._pop_section(lines):
+      mapping = FALLBACK_MAPPING.match(line)
 
-    for line in fallback_dir_page.splitlines():
-      if line.startswith('"'):
-        addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
-        ipv6_line_match = re.match('" ipv6=\[([\da-f:]+)\]:(\d+)"', line)
+      if mapping:
+        header[mapping.group(1)] = mapping.group(2)
+      else:
+        raise IOError('Malformed fallback directory header line: %s' % line)
 
-        if addr_line_match:
-          address, dir_port, or_port, fingerprint = addr_line_match.groups()
+    # human readable comments
 
-          if not connection.is_valid_ipv4_address(address):
-            raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
-          elif not connection.is_valid_port(or_port):
-            raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
-          elif not connection.is_valid_port(dir_port):
-            raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
-          elif not tor_tools.is_valid_fingerprint(fingerprint):
-            raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+    FallbackDirectory._pop_section(lines)
 
-          attr = {
-            'address': address,
-            'or_port': int(or_port),
-            'dir_port': int(dir_port),
-            'fingerprint': fingerprint,
-          }
-        elif ipv6_line_match:
-          address, port = ipv6_line_match.groups()
+    # content, everything remaining are fallback directories
 
-          if not connection.is_valid_ipv6_address(address):
-            raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
-          elif not connection.is_valid_port(port):
-            raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
+    results = {}
 
-          attr['orport_v6'] = (address, int(port))
-        elif line.startswith('" weight=') and 'fingerprint' in attr:
-          results[attr.get('fingerprint')] = FallbackDirectory(
-            address = attr.get('address'),
-            or_port = attr.get('or_port'),
-            dir_port = attr.get('dir_port'),
-            fingerprint = attr.get('fingerprint'),
-            orport_v6 = attr.get('orport_v6'),
-          )
+    while lines:
+      section = FallbackDirectory._pop_section(lines)
 
-          attr = {}
+      if section:
+        try:
+          fallback = FallbackDirectory.from_str('\n'.join(section))
+          fallback.header = header
+          results[fallback.fingerprint] = fallback
+        except ValueError as exc:
+          raise IOError(str(exc))
 
     return results
 
   @staticmethod
-  def _parse_v2(fallback_dir_page):
-    # Example of an entry...
-    #
-    #   "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-    #   " ipv6=[2a01:4f8:162:51e2::2]:9001"
-    #   /* nickname=rueckgrat */
-    #   /* extrainfo=1 */
+  def from_str(content):
+    """
+    Parses a fallback from its textual representation. For example...
 
-    results, attr = {}, {}
+    ::
 
-    for line in fallback_dir_page.splitlines():
-      addr_line_match = re.match('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*', line)
-      nickname_match = re.match('/\* nickname=(\S+) \*/', line)
-      has_extrainfo_match = re.match('/\* extrainfo=([0-1]) \*/', line)
-      ipv6_line_match = re.match('" ipv6=\[([\da-f:]+)\]:(\d+)"', line)
+      "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+      " ipv6=[2a01:4f8:162:51e2::2]:9001"
+      /* nickname=rueckgrat */
+      /* extrainfo=1 */
 
-      if addr_line_match:
-        address, dir_port, or_port, fingerprint = addr_line_match.groups()
+    .. versionadded:: 1.7.0
 
-        if not connection.is_valid_ipv4_address(address):
-          raise IOError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
-        elif not connection.is_valid_port(or_port):
-          raise IOError('%s has an invalid or_port: %s' % (fingerprint, or_port))
-        elif not connection.is_valid_port(dir_port):
-          raise IOError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
-        elif not tor_tools.is_valid_fingerprint(fingerprint):
-          raise IOError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+    :param str content: text to parse
 
-        attr = {
-          'address': address,
-          'or_port': int(or_port),
-          'dir_port': int(dir_port),
-          'fingerprint': fingerprint,
-        }
-      elif ipv6_line_match:
-        address, port = ipv6_line_match.groups()
+    :returns: :class:`~stem.descriptor.remote.FallbackDirectory` in the text
 
-        if not connection.is_valid_ipv6_address(address):
-          raise IOError('%s has an invalid IPv6 address: %s' % (fingerprint, address))
-        elif not connection.is_valid_port(port):
-          raise IOError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, port))
+    :raises: **ValueError** if content is malformed
+    """
 
-        attr['orport_v6'] = (address, int(port))
-      elif nickname_match:
-        nickname = nickname_match.group(1)
+    matches = {}
 
-        if not tor_tools.is_valid_nickname(nickname):
-          raise IOError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+    for line in content.splitlines():
+      for matcher in (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6):
+        m = matcher.match(line)
 
-        attr['nickname'] = nickname
-      elif has_extrainfo_match:
-        attr['has_extrainfo'] = has_extrainfo_match.group(1) == '1'
+        if m:
+          match_groups = m.groups()
+          matches[matcher] = match_groups if len(match_groups) > 1 else match_groups[0]
 
-        results[attr.get('fingerprint')] = FallbackDirectory(
-          address = attr.get('address'),
-          or_port = attr.get('or_port'),
-          dir_port = attr.get('dir_port'),
-          fingerprint = attr.get('fingerprint'),
-          nickname = attr.get('nickname'),
-          has_extrainfo = attr.get('has_extrainfo', False),
-          orport_v6 = attr.get('orport_v6'),
-        )
+    if FALLBACK_ADDR not in matches:
+      raise ValueError('Malformed fallback address line:\n\n%s' % content)
 
-        attr = {}
+    address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
+    nickname = matches.get(FALLBACK_NICKNAME)
+    has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1'
+    orport_v6 = matches.get(FALLBACK_IPV6)
 
-    return results
+    if not connection.is_valid_ipv4_address(address):
+      raise ValueError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
+    elif not connection.is_valid_port(or_port):
+      raise ValueError('%s has an invalid or_port: %s' % (fingerprint, or_port))
+    elif not connection.is_valid_port(dir_port):
+      raise ValueError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
+    elif not tor_tools.is_valid_fingerprint(fingerprint):
+      raise ValueError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
+    elif nickname and not tor_tools.is_valid_nickname(nickname):
+      raise ValueError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+    elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
+      raise ValueError('%s has an invalid IPv6 address: %s' % (fingerprint, orport_v6[0]))
+    elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
+      raise ValueError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, orport_v6[1]))
+
+    return FallbackDirectory(
+      address = address,
+      or_port = int(or_port),
+      dir_port = int(dir_port),
+      fingerprint = fingerprint,
+      nickname = nickname,
+      has_extrainfo = has_extrainfo,
+      orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None,
+    )
+
+  @staticmethod
+  def _pop_section(lines):
+    """
+    Provides lines up through the next divider. This excludes lines with just a
+    comma since they're an artifact of these being C strings.
+    """
+
+    section_lines = []
+
+    if lines:
+      line = lines.pop(0)
+
+      while lines and line != FALLBACK_DIV:
+        if line.strip() != ',':
+          section_lines.append(line)
+
+        line = lines.pop(0)
+
+    return section_lines
+
+  @staticmethod
+  def _write(fallbacks, tor_commit, stem_commit, headers, path = CACHE_PATH):
+    """
+    Persists fallback directories to a location in a way that can be read by
+    from_cache().
+
+    :param dict fallbacks: mapping of fingerprints to their fallback directory
+    :param str tor_commit: tor commit the fallbacks came from
+    :param str stem_commit: stem commit the fallbacks came from
+    :param dict headers: metadata about the file these came from
+    :param str path: location fallbacks will be persisted to
+    """
+
+    conf = stem.util.conf.Config()
+    conf.set('tor_commit', tor_commit)
+    conf.set('stem_commit', stem_commit)
+
+    for k, v in headers.items():
+      conf.set('header.%s' % k, v)
+
+    for directory in sorted(fallbacks.values(), key = lambda x: x.fingerprint):
+      fingerprint = directory.fingerprint
+      conf.set('%s.address' % fingerprint, directory.address)
+      conf.set('%s.or_port' % fingerprint, str(directory.or_port))
+      conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+      conf.set('%s.nickname' % fingerprint, directory.nickname)
+      conf.set('%s.has_extrainfo' % fingerprint, 'true' if directory.has_extrainfo else 'false')
+
+      if directory.orport_v6:
+        conf.set('%s.orport6_address' % fingerprint, str(directory.orport_v6[0]))
+        conf.set('%s.orport6_port' % fingerprint, str(directory.orport_v6[1]))
+
+    conf.save(path)
 
   def __hash__(self):
-    return _hash_attr(self, 'orport_v6', parent = Directory)
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', 'header', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, FallbackDirectory) else False
@@ -1208,6 +1258,8 @@ def _fallback_directory_differences(previous_directories, new_directories):
       '  address: %s' % directory.address,
       '  or_port: %s' % directory.or_port,
       '  dir_port: %s' % directory.dir_port,
+      '  nickname: %s' % directory.nickname,
+      '  has_extrainfo: %s' % directory.has_extrainfo,
       '  orport_v6: %s' % orport_v6,
       '',
     ]
