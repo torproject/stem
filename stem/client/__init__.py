@@ -9,23 +9,6 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
 .. versionadded:: 1.7.0
 
-.. data:: Pack (enum)
-
-  Unsigned `struct.pack format
-  <https://docs.python.org/2/library/struct.html#format-characters>` for
-  network-order fields.
-
-  ====================  ===========
-  Pack                  Description
-  ====================  ===========
-  CHAR                  Unsigned char (1 byte)
-  SHORT                 Unsigned short (2 bytes)
-  LONG                  Unsigned long (4 bytes)
-  LONG_LONG             Unsigned long long (8 bytes)
-  ====================  ===========
-
-**Module Overview:**
-
 ::
 
   Size - Packable and unpackable field size.
@@ -48,6 +31,15 @@ class Size(object):
   Unsigned `struct.pack format
   <https://docs.python.org/2/library/struct.html#format-characters>` for
   network-order fields.
+
+  ====================  ===========
+  Pack                  Description
+  ====================  ===========
+  CHAR                  Unsigned char (1 byte)
+  SHORT                 Unsigned short (2 bytes)
+  LONG                  Unsigned long (4 bytes)
+  LONG_LONG             Unsigned long long (8 bytes)
+  ====================  ===========
   """
 
   def __init__(self, name, size, pack_format):
