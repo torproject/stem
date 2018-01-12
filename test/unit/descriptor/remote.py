@@ -12,6 +12,12 @@ import stem.prereq
 import stem.util.conf
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # added in python 3.3
   from unittest.mock import patch
 except ImportError:
@@ -211,7 +217,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   def test_fallback_directories_from_remote(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
-    header = {'type': 'fallback', 'version': '2.0.0', 'timestamp': '20170526090242'}
+    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
 
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
@@ -239,7 +245,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(expected, fallback_directories)
 
   def test_fallback_persistence(self):
-    header = {'type': 'fallback', 'version': '2.0.0', 'timestamp': '20170526090242'}
+    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
 
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
@@ -273,9 +279,12 @@ class TestDescriptorDownloader(unittest.TestCase):
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.has_extrainfo': ['false'],
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.nickname': ['rueckgrat'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.has_extrainfo': ['true'],
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
     }
@@ -287,7 +296,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       conf.load(tmp.name)
       self.assertEqual(excepted_config, dict(conf))
 
-      #self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
+      self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
 
   @patch(URL_OPEN)
   def test_fallback_directories_from_remote_empty(self, urlopen_mock):

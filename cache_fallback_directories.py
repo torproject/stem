@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
   # all fallbacks have the same header metadata, so just picking one
 
-  headers = latest_fallback_directories.values()[0].header if latest_fallback_directories else {}
+  headers = latest_fallback_directories.values()[0].header if latest_fallback_directories else None
 
   print('Differences detected...\n')
   print(stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))

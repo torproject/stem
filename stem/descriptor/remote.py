@@ -92,6 +92,12 @@ import time
 import zlib
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
 except ImportError:
@@ -966,7 +972,7 @@ class FallbackDirectory(Directory):
     self.nickname = nickname
     self.has_extrainfo = has_extrainfo
     self.orport_v6 = orport_v6
-    self.header = header if header else {}
+    self.header = header if header else OrderedDict()
 
   @staticmethod
   def from_cache(path = CACHE_PATH):
@@ -988,6 +994,7 @@ class FallbackDirectory(Directory):
 
     conf = stem.util.conf.Config()
     conf.load(path)
+    headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
 
     results = {}
 
@@ -1010,7 +1017,7 @@ class FallbackDirectory(Directory):
         raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
       elif not connection.is_valid_port(attr['dir_port']):
         raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
-      elif attr['nickname'] and not connection.is_valid_nickname(attr['nickname']):
+      elif attr['nickname'] and not tor_tools.is_valid_nickname(attr['nickname']):
         raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
       elif attr['orport6_address'] and not connection.is_valid_ipv6_address(attr['orport6_address']):
         raise IOError("'%s.orport6_address' was an invalid IPv6 address (%s)" % (fingerprint, attr['orport6_address']))
@@ -1027,7 +1034,10 @@ class FallbackDirectory(Directory):
         or_port = int(attr['or_port']),
         dir_port = int(attr['dir_port']),
         fingerprint = fingerprint,
+        nickname = attr['nickname'],
+        has_extrainfo = attr['has_extrainfo'] == 'true',
         orport_v6 = orport_v6,
+        header = headers,
       )
 
     return results
@@ -1209,6 +1219,8 @@ class FallbackDirectory(Directory):
       conf.set('%s.address' % fingerprint, directory.address)
       conf.set('%s.or_port' % fingerprint, str(directory.or_port))
       conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+      conf.set('%s.nickname' % fingerprint, directory.nickname)
+      conf.set('%s.has_extrainfo' % fingerprint, 'true' if directory.has_extrainfo else 'false')
 
       if directory.orport_v6:
         conf.set('%s.orport6_address' % fingerprint, str(directory.orport_v6[0]))
