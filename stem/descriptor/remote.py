@@ -742,17 +742,22 @@ class Directory(object):
 
   .. versionadded:: 1.5.0
 
+  .. versionchanged:: 1.3.0
+     Moved nickname from subclasses to this base class.
+
   :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
+  :var str nickname: relay nickname
   """
 
-  def __init__(self, address, or_port, dir_port, fingerprint):
+  def __init__(self, address, or_port, dir_port, fingerprint, nickname):
     self.address = address
     self.or_port = or_port
     self.dir_port = dir_port
     self.fingerprint = fingerprint
+    self.nickname = nickname
 
   def __hash__(self):
     return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
@@ -795,15 +800,13 @@ class DirectoryAuthority(Directory):
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
-  :var str nickname: nickname of the authority
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   :var bool is_bandwidth_authority: **True** if this is a bandwidth authority,
     **False** otherwise
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
-    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint)
-    self.nickname = nickname
+    super(DirectoryAuthority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
@@ -958,7 +961,6 @@ class FallbackDirectory(Directory):
      the `second version of the fallback directories
      <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
 
-  :var str nickname: relay nickname
   :var bool has_extrainfo: **True** if the relay should be able to provide
     extrainfo descriptors, **False** otherwise.
   :var str orport_v6: **(address, port)** tuple for the directory's IPv6
@@ -967,9 +969,8 @@ class FallbackDirectory(Directory):
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
-    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint)
+    super(FallbackDirectory, self).__init__(address, or_port, dir_port, fingerprint, nickname)
 
-    self.nickname = nickname
     self.has_extrainfo = has_extrainfo
     self.orport_v6 = orport_v6
     self.header = header if header else OrderedDict()
