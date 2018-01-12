@@ -1258,6 +1258,8 @@ def _fallback_directory_differences(previous_directories, new_directories):
       '  address: %s' % directory.address,
       '  or_port: %s' % directory.or_port,
       '  dir_port: %s' % directory.dir_port,
+      '  nickname: %s' % directory.nickname,
+      '  has_extrainfo: %s' % directory.has_extrainfo,
       '  orport_v6: %s' % orport_v6,
       '',
     ]
