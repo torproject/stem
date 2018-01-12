@@ -992,7 +992,7 @@ class FallbackDirectory(Directory):
     results = {}
 
     for fingerprint in set([key.split('.')[0] for key in conf.keys()]):
-      if fingerprint in ('tor_commit', 'stem_commit'):
+      if fingerprint in ('tor_commit', 'stem_commit', 'header'):
         continue
 
       attr = {}
@@ -1185,7 +1185,7 @@ class FallbackDirectory(Directory):
     return section_lines
 
   @staticmethod
-  def _write(fallbacks, tor_commit, stem_commit, path = CACHE_PATH):
+  def _write(fallbacks, tor_commit, stem_commit, headers, path = CACHE_PATH):
     """
     Persists fallback directories to a location in a way that can be read by
     from_cache().
@@ -1193,12 +1193,16 @@ class FallbackDirectory(Directory):
     :param dict fallbacks: mapping of fingerprints to their fallback directory
     :param str tor_commit: tor commit the fallbacks came from
     :param str stem_commit: stem commit the fallbacks came from
+    :param dict headers: metadata about the file these came from
     :param str path: location fallbacks will be persisted to
     """
 
     conf = stem.util.conf.Config()
     conf.set('tor_commit', tor_commit)
     conf.set('stem_commit', stem_commit)
+
+    for k, v in headers.items():
+      conf.set('header.%s' % k, v)
 
     for directory in sorted(fallbacks.values(), key = lambda x: x.fingerprint):
       fingerprint = directory.fingerprint

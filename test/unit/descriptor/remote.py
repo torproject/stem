@@ -267,6 +267,9 @@ class TestDescriptorDownloader(unittest.TestCase):
     excepted_config = {
       'tor_commit': ['abc'],
       'stem_commit': ['def'],
+      'header.type': ['fallback'],
+      'header.version': ['2.0.0'],
+      'header.timestamp': ['20170526090242'],
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
       '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
@@ -278,7 +281,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     }
 
     with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
-      stem.descriptor.remote.FallbackDirectory._write(expected, 'abc', 'def', tmp.name)
+      stem.descriptor.remote.FallbackDirectory._write(expected, 'abc', 'def', header, tmp.name)
 
       conf = stem.util.conf.Config()
       conf.load(tmp.name)

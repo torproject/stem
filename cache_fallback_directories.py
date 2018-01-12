@@ -46,6 +46,10 @@ if __name__ == '__main__':
     print('Fallback directories are already up to date, nothing to do.')
     sys.exit(0)
 
+  # all fallbacks have the same header metadata, so just picking one
+
+  headers = latest_fallback_directories.values()[0].header if latest_fallback_directories else {}
+
   print('Differences detected...\n')
   print(stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
-  stem.descriptor.remote.FallbackDirectory._write(latest_fallback_directories, fallback_dir_commit, stem_commit)
+  stem.descriptor.remote.FallbackDirectory._write(latest_fallback_directories, fallback_dir_commit, stem_commit, headers)
