@@ -42,7 +42,7 @@ import sys
 from stem import UNDEFINED
 from stem.client import ZERO, Size
 
-MAX_FIXED_PAYLOAD_LEN = 509
+FIXED_PAYLOAD_LEN = 509
 
 
 class Cell(object):
@@ -96,28 +96,39 @@ class Cell(object):
   @staticmethod
   def unpack(content, link_version):
     """
-    Unpacks encoded bytes into a Cell subclass.
+    Unpacks encoded bytes into a series of cells.
 
     :param bytes content: payload to decode
     :param int link_version: link protocol version
 
-    :returns: :class:`~stem.client.cell.Cell` subclass
+    :returns: **list** of :class:`~stem.client.cell.Cell` subclasses
 
     :raises:
       * ValueError if content is malformed
       * NotImplementedError if unable to unpack this cell type
     """
 
-    circ_id, content = Size.LONG.pop(content) if link_version > 3 else Size.SHORT.pop(content)
-    command, content = Size.CHAR.pop(content)
-    cls = Cell.by_value(command)
+    cells = []
 
-    if cls.IS_FIXED_SIZE:
-      payload_len = MAX_FIXED_PAYLOAD_LEN
-    else:
-      payload_len, content = Size.SHORT.pop(content)
+    while content:
+      circ_id, content = Size.SHORT.pop(content) if link_version < 4 else Size.LONG.pop(content)
+      command, content = Size.CHAR.pop(content)
+      cls = Cell.by_value(command)
 
-    return cls._unpack(content, link_version, circ_id)
+      if cls.IS_FIXED_SIZE:
+        payload_len = FIXED_PAYLOAD_LEN
+      else:
+        payload_len, content = Size.SHORT.pop(content)
+
+      if len(content) < payload_len:
+        raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
+
+      payload = content[:payload_len].rstrip(ZERO)  # strip padding
+      content = content[payload_len:]
+
+      cells.append(cls._unpack(payload, link_version, circ_id))
+
+    return cells
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):

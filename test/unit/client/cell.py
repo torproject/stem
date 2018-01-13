@@ -5,6 +5,7 @@ Unit tests for the stem.client.cell.
 import unittest
 
 from stem.client.cell import Cell, VersionsCell
+from test.unit.client import test_data
 
 
 class TestCell(unittest.TestCase):
@@ -31,12 +32,16 @@ class TestCell(unittest.TestCase):
   def test_unpack_not_implemented(self):
     self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.unpack, '\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
 
+  def test_unpack_for_new_link(self):
+    # TODO: we need to support more cell types before we can test this
+    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for CERTS cells', Cell.unpack, test_data('new_link_cells'), 2)
+
   def test_versions_pack(self):
     self.assertEqual('\x00\x00\x07\x00\x00', VersionsCell.pack([]))
     self.assertEqual('\x00\x00\x07\x00\x02\x00\x01', VersionsCell.pack([1]))
     self.assertEqual('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', VersionsCell.pack([1, 2, 3]))
 
   def test_versions_unpack(self):
-    self.assertEqual([], Cell.unpack('\x00\x00\x07\x00\x00', 2).versions)
-    self.assertEqual([1], Cell.unpack('\x00\x00\x07\x00\x02\x00\x01', 2).versions)
-    self.assertEqual([1, 2, 3], Cell.unpack('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', 2).versions)
+    self.assertEqual([], Cell.unpack('\x00\x00\x07\x00\x00', 2)[0].versions)
+    self.assertEqual([1], Cell.unpack('\x00\x00\x07\x00\x02\x00\x01', 2)[0].versions)
+    self.assertEqual([1, 2, 3], Cell.unpack('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', 2)[0].versions)
