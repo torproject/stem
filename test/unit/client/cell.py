@@ -8,6 +8,12 @@ from stem.client import Certificate
 from stem.client.cell import Cell, VersionsCell
 from test.unit.client import test_data
 
+VERSIONS_CELLS = {
+  '\x00\x00\x07\x00\x00': [],
+  '\x00\x00\x07\x00\x02\x00\x01': [1],
+  '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
+}
+
 
 class TestCell(unittest.TestCase):
   def test_by_name(self):
@@ -37,20 +43,11 @@ class TestCell(unittest.TestCase):
     # TODO: we need to support more cell types before we can test this
     self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTH_CHALLENGE cells', Cell.unpack, test_data('new_link_cells'), 2)
 
-  def test_versions_pack(self):
-    self.assertEqual('\x00\x00\x07\x00\x00', VersionsCell.pack([]))
-    self.assertEqual('\x00\x00\x07\x00\x02\x00\x01', VersionsCell.pack([1]))
-    self.assertEqual('\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03', VersionsCell.pack([1, 2, 3]))
-
-  def test_versions_unpack(self):
-    test_data = {
-      '\x00\x00\x07\x00\x00': [],
-      '\x00\x00\x07\x00\x02\x00\x01': [1],
-      '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
-    }
-
-    for cell_bytes, expected in test_data.items():
-      self.assertEqual(expected, Cell.unpack(cell_bytes, 2)[0].versions)
+  def test_versions_packing(self):
+    for cell_bytes, versions in VERSIONS_CELLS.items():
+      packed = VersionsCell.pack(versions)
+      self.assertEqual(cell_bytes, packed)
+      self.assertEqual(versions, Cell.unpack(packed, 2)[0].versions)
 
   def test_certs_unpack(self):
     test_data = {
