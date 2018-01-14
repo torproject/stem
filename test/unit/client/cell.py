@@ -2,16 +2,38 @@
 Unit tests for the stem.client.cell.
 """
 
+import os
 import unittest
 
 from stem.client import Certificate
-from stem.client.cell import Cell, VersionsCell, CertsCell
 from test.unit.client import test_data
+
+from stem.client.cell import (
+  FIXED_PAYLOAD_LEN,
+  Cell,
+  PaddingCell,
+  VersionsCell,
+  VPaddingCell,
+  CertsCell,
+)
+
+RANDOM_PAYLOAD = os.urandom(FIXED_PAYLOAD_LEN)
+
+PADDING_CELLS = {
+  '\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+}
 
 VERSIONS_CELLS = {
   '\x00\x00\x07\x00\x00': [],
   '\x00\x00\x07\x00\x02\x00\x01': [1],
   '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
+}
+
+VPADDING_CELLS = {
+  '\x00\x00\x80\x00\x00': '',
+  '\x00\x00\x80\x00\x01\x08': '\x08',
+  '\x00\x00\x80\x00\x02\x08\x11': '\x08\x11',
+  '\x00\x00\x80\x01\xfd' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
 }
 
 CERTS_CELLS = {
@@ -49,14 +71,26 @@ class TestCell(unittest.TestCase):
     # TODO: we need to support more cell types before we can test this
     self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTH_CHALLENGE cells', Cell.unpack, test_data('new_link_cells'), 2)
 
+  def test_padding_packing(self):
+    for cell_bytes, payload in PADDING_CELLS.items():
+      self.assertEqual(cell_bytes, PaddingCell.pack(2, payload))
+      self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
+
   def test_versions_packing(self):
     for cell_bytes, versions in VERSIONS_CELLS.items():
       self.assertEqual(cell_bytes, VersionsCell.pack(versions))
       self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
 
+  def test_vpadding_packing(self):
+    for cell_bytes, payload in VPADDING_CELLS.items():
+      self.assertEqual(cell_bytes, VPaddingCell.pack(2, payload = payload))
+      self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
+
+    self.assertRaisesRegexp(ValueError, 'VPaddingCell.pack caller specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell.pack, 2, 5, '\x02')
+
   def test_certs_packing(self):
     for cell_bytes, certs in CERTS_CELLS.items():
-      self.assertEqual(cell_bytes, CertsCell.pack(certs, 2))
+      self.assertEqual(cell_bytes, CertsCell.pack(2, certs))
       self.assertEqual(certs, Cell.unpack(cell_bytes, 2)[0].certificates)
 
     # extra bytes after the last certificate should be ignored

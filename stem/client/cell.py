@@ -38,6 +38,8 @@ Messages communicated over a Tor relay's ORPort.
 
 import inspect
 import io
+import os
+import random
 import sys
 
 from stem import UNDEFINED
@@ -219,9 +221,35 @@ class CircuitCell(Cell):
 
 
 class PaddingCell(Cell):
+  """
+  Randomized content to either keep activity going on a circuit.
+
+  :var bytes payload: randomized payload
+  """
+
   NAME = 'PADDING'
   VALUE = 0
   IS_FIXED_SIZE = True
+
+  def __init__(self, payload):
+    self.payload = payload
+
+  @classmethod
+  def pack(cls, link_version, payload = None):
+    """
+    Provides a randomized padding payload.
+
+    :param int link_version: link protocol version
+    :param bytes payload: padding payload
+
+    :returns: **bytes** with randomized content
+    """
+
+    return cls._pack(link_version, payload if payload else os.urandom(FIXED_PAYLOAD_LEN))
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    return PaddingCell(content)
 
 
 class CreateCell(CircuitCell):
@@ -332,9 +360,45 @@ class PaddingNegotiateCell(Cell):
 
 
 class VPaddingCell(Cell):
+  """
+  Variable length randomized content to either keep activity going on a circuit.
+
+  :var bytes payload: randomized payload
+  """
+
   NAME = 'VPADDING'
   VALUE = 128
   IS_FIXED_SIZE = False
+
+  def __init__(self, payload):
+    self.payload = payload
+
+  @classmethod
+  def pack(cls, link_version, size = None, payload = None):
+    """
+    Provides a randomized padding payload. If no size or payload is provided
+    then this provides padding of an arbitrarily chosen size between 128-1024.
+
+    :param int link_version: link protocol version
+    :param int size: number of bytes to pad
+    :param bytes payload: padding payload
+
+    :returns: **bytes** with randomized content
+
+    :raises: **ValueError** if both a size and payload are provided, and they
+      mismatch
+    """
+
+    if payload is None:
+      payload = os.urandom(size) if size else os.urandom(random.randint(128, 1024))
+    elif size is not None and size != len(payload):
+      raise ValueError('VPaddingCell.pack caller specified both a size of %i bytes and payload of %i bytes' % (size, len(payload)))
+
+    return cls._pack(link_version, payload)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    return VPaddingCell(content)
 
 
 class CertsCell(Cell):
@@ -352,12 +416,12 @@ class CertsCell(Cell):
     self.certificates = certs
 
   @classmethod
-  def pack(cls, certs, link_version):
+  def pack(cls, link_version, certs):
     """
     Provides the payload for a series of certificates.
 
-    :param list certs: series of :class:`~stem.client.Certificate` for the cell
     :param int link_version: link protocol version
+    :param list certs: series of :class:`~stem.client.Certificate` for the cell
 
     :returns: **bytes** with a payload for these versions
     """
