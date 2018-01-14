@@ -51,13 +51,6 @@ FIXED_PAYLOAD_LEN = 509
 class Cell(object):
   """
   Metadata for ORPort cells.
-
-  :var str name: command of the cell
-  :var int value: integer value of the command on the wire
-  :var bool fixed_size: **True** if cells have a fixed length,
-    **False** if variable
-  :var bool for_circuit: **True** if command is for a circuit,
-    **False** otherwise
   """
 
   NAME = 'UNKNOWN'
