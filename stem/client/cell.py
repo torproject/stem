@@ -135,6 +135,13 @@ class Cell(object):
   def _pack(cls, link_version, payload, circ_id = 0):
     """
     Provides bytes that can be used on the wire for these cell attributes.
+    Format of a properly packed cell depends on if it's fixed or variable
+    sized...
+
+    ::
+
+      Fixed:    [ CircuitID ][ Command ][ Payload ][ Padding ]
+      Variable: [ CircuitID ][ Command ][ Size ][ Payload ]
 
     :param str name: cell command
     :param int link_version: link protocol version
@@ -146,22 +153,24 @@ class Cell(object):
     :raise: **ValueError** if cell type invalid or payload is too large
     """
 
-    packed_circ_id = Size.LONG.pack(circ_id) if link_version > 3 else Size.SHORT.pack(circ_id)
-    packed_command = Size.CHAR.pack(cls.VALUE)
-    packed_size = b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
-    cell = b''.join((packed_circ_id, packed_command, packed_size, payload))
+    cell = io.BytesIO()
+    cell.write(Size.LONG.pack(circ_id) if link_version > 3 else Size.SHORT.pack(circ_id))
+    cell.write(Size.CHAR.pack(cls.VALUE))
+    cell.write(b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload)))
+    cell.write(payload)
 
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
+      cell_size = cell.seek(0, io.SEEK_END)
       fixed_cell_len = 514 if link_version > 3 else 512
 
-      if len(cell) > fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), fixed_cell_len))
+      if cell_size > fixed_cell_len:
+        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, cell_size, fixed_cell_len))
 
-      cell += ZERO * (fixed_cell_len - len(cell))
+      cell.write(ZERO * (fixed_cell_len - cell_size))
 
-    return cell
+    return cell.getvalue()
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
