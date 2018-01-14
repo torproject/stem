@@ -37,6 +37,7 @@ Messages communicated over a Tor relay's ORPort.
 """
 
 import inspect
+import io
 import sys
 
 from stem import UNDEFINED
@@ -278,7 +279,7 @@ class VersionsCell(Cell):
     # since VERSION cells avoid most version dependent attributes.
 
     payload = b''.join([Size.SHORT.pack(v) for v in versions])
-    return cls._pack(3, payload)
+    return cls._pack(2, payload)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
@@ -340,6 +341,27 @@ class CertsCell(Cell):
 
   def __init__(self, certs):
     self.certificates = certs
+
+  @classmethod
+  def pack(cls, certs, link_version):
+    """
+    Provides the payload for a series of certificates.
+
+    :param list certs: series of :class:`~stem.client.Certificate` for the cell
+    :param int link_version: link protocol version
+
+    :returns: **bytes** with a payload for these versions
+    """
+
+    payload = io.BytesIO()
+    payload.write(Size.CHAR.pack(len(certs)))
+
+    for cert in certs:
+      payload.write(Size.CHAR.pack(cert.type))
+      payload.write(Size.SHORT.pack(len(cert.value)))
+      payload.write(cert.value)
+
+    return cls._pack(link_version, payload.getvalue())
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):

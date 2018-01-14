@@ -5,13 +5,19 @@ Unit tests for the stem.client.cell.
 import unittest
 
 from stem.client import Certificate
-from stem.client.cell import Cell, VersionsCell
+from stem.client.cell import Cell, VersionsCell, CertsCell
 from test.unit.client import test_data
 
 VERSIONS_CELLS = {
   '\x00\x00\x07\x00\x00': [],
   '\x00\x00\x07\x00\x02\x00\x01': [1],
   '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
+}
+
+CERTS_CELLS = {
+  '\x00\x00\x81\x00\x01\x00': [],
+  '\x00\x00\x81\x00\x04\x01\x01\x00\x00': [Certificate(type = 1, value = '')],
+  '\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': [Certificate(type = 1, value = '\x08')],
 }
 
 
@@ -45,19 +51,13 @@ class TestCell(unittest.TestCase):
 
   def test_versions_packing(self):
     for cell_bytes, versions in VERSIONS_CELLS.items():
-      packed = VersionsCell.pack(versions)
-      self.assertEqual(cell_bytes, packed)
-      self.assertEqual(versions, Cell.unpack(packed, 2)[0].versions)
+      self.assertEqual(cell_bytes, VersionsCell.pack(versions))
+      self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
 
-  def test_certs_unpack(self):
-    test_data = {
-      '\x00\x00\x81\x00\x01\x00': [],
-      '\x00\x00\x81\x00\x04\x01\x01\x00\x00': [Certificate(type = 1, value = '')],
-      '\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': [Certificate(type = 1, value = '\x08')],
-    }
-
-    for cell_bytes, expected in test_data.items():
-      self.assertEqual(expected, Cell.unpack(cell_bytes, 2)[0].certificates)
+  def test_certs_packing(self):
+    for cell_bytes, certs in CERTS_CELLS.items():
+      self.assertEqual(cell_bytes, CertsCell.pack(certs, 2))
+      self.assertEqual(certs, Cell.unpack(cell_bytes, 2)[0].certificates)
 
     # extra bytes after the last certificate should be ignored
 
