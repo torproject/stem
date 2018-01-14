@@ -40,7 +40,7 @@ import inspect
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Size
+from stem.client import ZERO, Certificate, Size
 
 FIXED_PAYLOAD_LEN = 509
 
@@ -123,7 +123,7 @@ class Cell(object):
       if len(content) < payload_len:
         raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
 
-      payload = content[:payload_len].rstrip(ZERO)  # strip padding
+      payload = content[:payload_len]
       content = content[payload_len:]
 
       cells.append(cls._unpack(payload, link_version, circ_id))
@@ -328,9 +328,39 @@ class VPaddingCell(Cell):
 
 
 class CertsCell(Cell):
+  """
+  Certificate held by the relay we're communicating with.
+
+  :var list certificates: :class:`~stem.client.Certificate` of the relay
+  """
+
   NAME = 'CERTS'
   VALUE = 129
   IS_FIXED_SIZE = False
+
+  def __init__(self, certs):
+    self.certificates = certs
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    cert_count, content = Size.CHAR.pop(content)
+    certs = []
+
+    for i in range(cert_count):
+      if not content:
+        raise ValueError('CERTS cell indicates it should have %i certificates, but only contained %i' % (cert_count, len(certs)))
+
+      cert_type, content = Size.CHAR.pop(content)
+      cert_size, content = Size.SHORT.pop(content)
+
+      if cert_size > len(content):
+        raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
+
+      cert_bytes = content[:cert_size]
+      content = content[cert_size:]
+      certs.append(Certificate(cert_type, cert_bytes))
+
+    return CertsCell(certs)
 
 
 class AuthChallengeCell(Cell):

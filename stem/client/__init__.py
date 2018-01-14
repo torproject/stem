@@ -17,6 +17,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- pop - decodes content with remainder
 """
 
+import collections
 import struct
 
 ZERO = '\x00'
@@ -24,6 +25,24 @@ ZERO = '\x00'
 __all__ = [
   'cell',
 ]
+
+
+class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
+  """
+  Relay certificate as defined in tor-spec section 4.2. Certificate types
+  are...
+
+  ====================  ===========
+  Type Value            Description
+  ====================  ===========
+  1                     Link key certificate certified by RSA1024 identity
+  2                     RSA1024 Identity certificate
+  3                     RSA1024 AUTHENTICATE cell link certificate
+  ====================  ===========
+
+  :var int type: certificate type
+  :var bytes value: certificate value
+  """
 
 
 class Size(object):
