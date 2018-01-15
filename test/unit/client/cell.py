@@ -2,10 +2,11 @@
 Unit tests for the stem.client.cell.
 """
 
+import datetime
 import os
 import unittest
 
-from stem.client import Certificate
+from stem.client import ZERO, Address, Certificate
 from test.unit.client import test_data
 
 from stem.client.cell import (
@@ -13,6 +14,7 @@ from stem.client.cell import (
   Cell,
   PaddingCell,
   VersionsCell,
+  NetinfoCell,
   VPaddingCell,
   CertsCell,
   AuthChallengeCell,
@@ -30,6 +32,8 @@ VERSIONS_CELLS = {
   '\x00\x00\x07\x00\x02\x00\x01': [1],
   '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
 }
+
+NETINFO_CELL = '\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17)
 
 VPADDING_CELLS = {
   '\x00\x00\x80\x00\x00': '',
@@ -74,8 +78,33 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.unpack, '\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
 
   def test_unpack_for_new_link(self):
-    # TODO: we need to support more cell types before we can test this
-    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for NETINFO cells', Cell.unpack, test_data('new_link_cells'), 2)
+    expected_certs = (
+      (1, '0\x82\x02F0\x82\x01\xaf'),
+      (2, '0\x82\x01\xc90\x82\x012'),
+      (4, '\x01\x04\x00\x06m\x1f'),
+      (5, '\x01\x05\x00\x06m\n\x01'),
+      (7, '\x1a\xa5\xb3\xbd\x88\xb1C'),
+    )
+
+    link_cells = Cell.unpack(test_data('new_link_cells'), 2)
+    self.assertEqual(4, len(link_cells))
+    self.assertEqual(VersionsCell([3, 4, 5]), link_cells[0])
+
+    certs_cell = link_cells[1]
+    self.assertEqual(CertsCell, type(certs_cell))
+    self.assertEqual(len(expected_certs), len(certs_cell.certificates))
+
+    for i, (cert_type, cert_prefix) in enumerate(expected_certs):
+      self.assertEqual(cert_type, certs_cell.certificates[i].type)
+      self.assertTrue(certs_cell.certificates[i].value.startswith(cert_prefix))
+
+    self.assertEqual(AuthChallengeCell('\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K', [1, 3]), link_cells[2])
+
+    netinfo_cell = link_cells[3]
+    self.assertEqual(NetinfoCell, type(netinfo_cell))
+    self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), netinfo_cell.timestamp)
+    self.assertEqual(Address(type='IPv4', type_int=4, value='127.0.0.1', value_bin='\x7f\x00\x00\x01'), netinfo_cell.receiver_address)
+    self.assertEqual([Address(type='IPv4', type_int=4, value='97.113.15.2', value_bin='aq\x0f\x02')], netinfo_cell.sender_addresses)
 
   def test_padding_packing(self):
     for cell_bytes, payload in PADDING_CELLS.items():
@@ -86,6 +115,13 @@ class TestCell(unittest.TestCase):
     for cell_bytes, versions in VERSIONS_CELLS.items():
       self.assertEqual(cell_bytes, VersionsCell.pack(versions))
       self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
+
+  def test_netinfo_packing(self):
+    cell = Cell.unpack(NETINFO_CELL, 2)[0]
+
+    self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), cell.timestamp)
+    self.assertEqual(Address(type='IPv4', type_int=4, value='127.0.0.1', value_bin='\x7f\x00\x00\x01'), cell.receiver_address)
+    self.assertEqual([Address(type='IPv4', type_int=4, value='97.113.15.2', value_bin='aq\x0f\x02')], cell.sender_addresses)
 
   def test_vpadding_packing(self):
     for cell_bytes, payload in VPADDING_CELLS.items():

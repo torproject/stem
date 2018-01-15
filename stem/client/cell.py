@@ -36,6 +36,7 @@ Messages communicated over a Tor relay's ORPort.
     +- unpack - Decodes bytes for this cell class.
 """
 
+import datetime
 import inspect
 import io
 import os
@@ -43,7 +44,8 @@ import random
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Certificate, Size
+from stem.client import ZERO, Address, Certificate, Size
+from stem.util import _hash_attr
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
@@ -184,6 +186,12 @@ class Cell(object):
 
     raise NotImplementedError('Unpacking not yet implemented for %s cells' % cls.NAME)
 
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, Cell) else False
+
+  def __ne__(self, other):
+    return not self == other
+
 
 class CircuitCell(Cell):
   """
@@ -244,6 +252,9 @@ class PaddingCell(Cell):
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
     return PaddingCell(content)
+
+  def __hash__(self):
+    return _hash_attr(self, 'payload')
 
 
 class CreateCell(CircuitCell):
@@ -322,11 +333,51 @@ class VersionsCell(Cell):
 
     return VersionsCell(link_versions)
 
+  def __hash__(self):
+    return _hash_attr(self, 'versions')
+
 
 class NetinfoCell(Cell):
+  """
+  Information relays exchange about each other.
+
+  :var datetime timestamp: current time
+  :var stem.client.Address receiver_address: receiver's OR address
+  :var list sender_addresses: sender's OR addresses
+  """
+
   NAME = 'NETINFO'
   VALUE = 8
   IS_FIXED_SIZE = True
+
+  def __init__(self, timestamp, receiver_address, sender_addresses):
+    self.timestamp = timestamp
+    self.receiver_address = receiver_address
+    self.sender_addresses = sender_addresses
+
+  @classmethod
+  def pack(cls, link_version, receiver_address, sender_addresses, timestamp = None):
+    raise NotImplementedError('Netinfo packing not yet implemented')
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    if len(content) < 4:
+      raise ValueError('NETINFO cell expected to start with a timestamp')
+
+    timestamp, content = Size.LONG.pop(content)
+    receiver_address, content = Address.pop(content)
+
+    sender_addresses = []
+    sender_addr_count, content = Size.CHAR.pop(content)
+
+    for i in range(sender_addr_count):
+      addr, content = Address.pop(content)
+      sender_addresses.append(addr)
+
+    return NetinfoCell(datetime.datetime.utcfromtimestamp(timestamp), receiver_address, sender_addresses)
+
+  def __hash__(self):
+    return _hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses')
 
 
 class RelayEarlyCell(CircuitCell):
@@ -394,6 +445,9 @@ class VPaddingCell(Cell):
   def _unpack(cls, content, circ_id, link_version):
     return VPaddingCell(content)
 
+  def __hash__(self):
+    return _hash_attr(self, 'payload')
+
 
 class CertsCell(Cell):
   """
@@ -449,6 +503,9 @@ class CertsCell(Cell):
       certs.append(Certificate(cert_type, cert_bytes))
 
     return CertsCell(certs)
+
+  def __hash__(self):
+    return _hash_attr(self, 'certificates')
 
 
 class AuthChallengeCell(Cell):
@@ -512,6 +569,9 @@ class AuthChallengeCell(Cell):
       methods.append(method)
 
     return AuthChallengeCell(challenge, methods)
+
+  def __hash__(self):
+    return _hash_attr(self, 'challenge', 'methods')
 
 
 class AuthenticateCell(Cell):
