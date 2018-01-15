@@ -79,7 +79,7 @@ class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
   """
 
 
-class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin', 'ttl'])):
+class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin'])):
   """
   Relay address.
 
@@ -87,7 +87,6 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
   :var int type_int: integer value of the address type
   :var unicode value: address value
   :var bytes value_bin: encoded address value
-  :var int ttl: seconds the record can be validly cached for
   """
 
   @staticmethod
@@ -103,20 +102,16 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
 
     if len(content) < addr_length:
       raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
-    elif len(content) < addr_length + 4:
-      raise ValueError('Address missing a TTL at its end')
-
-    address_bin, content = content[:addr_length], content[addr_length:]
-    ttl, content = Size.LONG.pop(content)
 
     # TODO: add support for other address types
 
+    address_bin, content = content[:addr_length], content[addr_length:]
     address = None
 
     if addr_type == AddrType.IPv4 and len(address_bin) == 4:
       address = '.'.join([str(Size.CHAR.unpack(address_bin[i])) for i in range(4)])
 
-    return Address(addr_type, addr_type_int, address, address_bin, ttl), content
+    return Address(addr_type, addr_type_int, address, address_bin), content
 
 
 class Size(object):
