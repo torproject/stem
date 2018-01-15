@@ -46,6 +46,7 @@ from stem import UNDEFINED
 from stem.client import ZERO, Certificate, Size
 
 FIXED_PAYLOAD_LEN = 509
+AUTH_CHALLENGE_SIZE = 32
 
 
 class Cell(object):
@@ -444,17 +445,73 @@ class CertsCell(Cell):
       if cert_size > len(content):
         raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
 
-      cert_bytes = content[:cert_size]
-      content = content[cert_size:]
+      cert_bytes, content = content[:cert_size], content[cert_size:]
       certs.append(Certificate(cert_type, cert_bytes))
 
     return CertsCell(certs)
 
 
 class AuthChallengeCell(Cell):
+  """
+  First step of the authentication handshake.
+
+  :var bytes challenge: random bytes for us to sign to authenticate
+  :var list methods: authentication methods supported by the relay we're
+    communicating with
+  """
+
   NAME = 'AUTH_CHALLENGE'
   VALUE = 130
   IS_FIXED_SIZE = False
+
+  def __init__(self, challenge, methods):
+    self.challenge = challenge
+    self.methods = methods
+
+  @classmethod
+  def pack(cls, link_version, methods, challenge = None):
+    """
+    Provides an authentication challenge.
+
+    :param int link_version: link protocol version
+    :param list methods: authentication methods we support
+    :param bytes challenge: randomized string for the receiver to sign
+
+    :returns: **bytes** with a payload for this challenge
+    """
+
+    if challenge is None:
+      challenge = os.urandom(AUTH_CHALLENGE_SIZE)
+    elif len(challenge) != AUTH_CHALLENGE_SIZE:
+      raise ValueError('AUTH_CHALLENGE must be %i bytes, but was %i' % (AUTH_CHALLENGE_SIZE, len(challenge)))
+
+    payload = io.BytesIO()
+    payload.write(challenge)
+    payload.write(Size.SHORT.pack(len(methods)))
+
+    for method in methods:
+      payload.write(Size.SHORT.pack(method))
+
+    return cls._pack(link_version, payload.getvalue())
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    if len(content) < AUTH_CHALLENGE_SIZE + 2:
+      raise ValueError('AUTH_CHALLENGE payload should be at least 34 bytes, but was %i' % len(content))
+
+    challenge, content = content[:AUTH_CHALLENGE_SIZE], content[AUTH_CHALLENGE_SIZE:]
+    method_count, content = Size.SHORT.pop(content)
+
+    if len(content) < method_count * 2:
+      raise ValueError('AUTH_CHALLENGE should have %i methods, but only had %i bytes for it' % (method_count, len(content)))
+
+    methods = []
+
+    for i in range(method_count):
+      method, content = Size.SHORT.pop(content)
+      methods.append(method)
+
+    return AuthChallengeCell(challenge, methods)
 
 
 class AuthenticateCell(Cell):
