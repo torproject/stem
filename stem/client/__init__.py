@@ -15,16 +15,50 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     |- pack - encodes content
     |- unpack - decodes content
     +- pop - decodes content with remainder
+
+.. data:: AddrType (enum)
+
+  Form an address takes.
+
+  ===================== ===========
+  AddressType           Description
+  ===================== ===========
+  **HOSTNAME**          relay hostname
+  **IPv4**              IPv4 address
+  **IPv6**              IPv6 address
+  **ERROR_TRANSIENT**   temporarily error retrieving address
+  **ERROR_PERMANENT**   permanent error retrieving address
+  **UNKNOWN**           unrecognized address type
+  ===================== ===========
 """
 
 import collections
 import struct
+
+import stem.util.enum
 
 ZERO = '\x00'
 
 __all__ = [
   'cell',
 ]
+
+AddrType = stem.util.enum.UppercaseEnum(
+  'HOSTNAME',
+  'IPv4',
+  'IPv6',
+  'ERROR_TRANSIENT',
+  'ERROR_PERMANENT',
+  'UNKNOWN',
+)
+
+ADDR_INT = {
+  0: AddrType.HOSTNAME,
+  4: AddrType.IPv4,
+  6: AddrType.IPv6,
+  16: AddrType.ERROR_TRANSIENT,
+  17: AddrType.ERROR_PERMANENT,
+}
 
 
 class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
@@ -43,6 +77,46 @@ class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
   :var int type: certificate type
   :var bytes value: certificate value
   """
+
+
+class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin', 'ttl'])):
+  """
+  Relay address.
+
+  :var stem.client.AddrType type: address type
+  :var int type_int: integer value of the address type
+  :var unicode value: address value
+  :var bytes value_bin: encoded address value
+  :var int ttl: seconds the record can be validly cached for
+  """
+
+  @staticmethod
+  def pop(content):
+    if not content:
+      raise ValueError('Payload empty where an address was expected')
+    elif len(content) < 2:
+      raise ValueError('Insuffient data for address headers')
+
+    addr_type_int, content = Size.CHAR.pop(content)
+    addr_type = ADDR_INT.get(addr_type_int, AddrType.UNKNOWN)
+    addr_length, content = Size.CHAR.pop(content)
+
+    if len(content) < addr_length:
+      raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
+    elif len(content) < addr_length + 4:
+      raise ValueError('Address missing a TTL at its end')
+
+    address_bin, content = content[:addr_length], content[addr_length:]
+    ttl, content = Size.LONG.pop(content)
+
+    # TODO: add support for other address types
+
+    address = None
+
+    if addr_type == AddrType.IPv4 and len(address_bin) == 4:
+      address = '.'.join([str(Size.CHAR.unpack(address_bin[i])) for i in range(4)])
+
+    return Address(addr_type, addr_type_int, address, address_bin, ttl), content
 
 
 class Size(object):
