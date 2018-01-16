@@ -45,7 +45,7 @@ import sys
 
 from stem import UNDEFINED
 from stem.client import ZERO, Address, Certificate, Size
-from stem.util import _hash_attr
+from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
@@ -352,7 +352,29 @@ class NetinfoCell(Cell):
 
   @classmethod
   def pack(cls, link_version, receiver_address, sender_addresses, timestamp = None):
-    raise NotImplementedError('Netinfo packing not yet implemented')
+    """
+    Payload about our timestamp and versions.
+
+    :param int link_version: link protocol version
+    :param stem.client.Address receiver_address: address of the receiver
+    :param list sender_addresses: our addresses
+    :param datetime timestamp: current time according to our clock
+
+    :returns: **bytes** with a payload for these versions
+    """
+
+    if timestamp is None:
+      timestamp = datetime.datetime.now()
+
+    payload = io.BytesIO()
+    payload.write(Size.LONG.pack(int(datetime_to_unix(timestamp))))
+    payload.write(Address.pack(receiver_address))
+    payload.write(Size.CHAR.pack(len(sender_addresses)))
+
+    for addr in sender_addresses:
+      payload.write(Address.pack(addr))
+
+    return cls._pack(link_version, payload.getvalue())
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):

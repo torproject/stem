@@ -90,6 +90,14 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
   """
 
   @staticmethod
+  def pack(addr):
+    """
+    Bytes payload for an address.
+    """
+
+    raise NotImplementedError('Not yet available')
+
+  @staticmethod
   def pop(content):
     if not content:
       raise ValueError('Payload empty where an address was expected')
