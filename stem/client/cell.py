@@ -95,39 +95,34 @@ class Cell(object):
   @staticmethod
   def unpack(content, link_version):
     """
-    Unpacks encoded bytes into a series of cells.
+    Unpacks the first cell.
 
     :param bytes content: payload to decode
     :param int link_version: link protocol version
 
-    :returns: **list** of :class:`~stem.client.cell.Cell` subclasses
+    :returns: (:class:`~stem.client.cell.Cell`, remainder) tuple
 
     :raises:
       * ValueError if content is malformed
       * NotImplementedError if unable to unpack this cell type
     """
 
-    cells = []
+    circ_id, content = Size.SHORT.pop(content) if link_version < 4 else Size.LONG.pop(content)
+    command, content = Size.CHAR.pop(content)
+    cls = Cell.by_value(command)
 
-    while content:
-      circ_id, content = Size.SHORT.pop(content) if link_version < 4 else Size.LONG.pop(content)
-      command, content = Size.CHAR.pop(content)
-      cls = Cell.by_value(command)
+    if cls.IS_FIXED_SIZE:
+      payload_len = FIXED_PAYLOAD_LEN
+    else:
+      payload_len, content = Size.SHORT.pop(content)
 
-      if cls.IS_FIXED_SIZE:
-        payload_len = FIXED_PAYLOAD_LEN
-      else:
-        payload_len, content = Size.SHORT.pop(content)
+    if len(content) < payload_len:
+      raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
 
-      if len(content) < payload_len:
-        raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
+    payload = content[:payload_len]
+    content = content[payload_len:]
 
-      payload = content[:payload_len]
-      content = content[payload_len:]
-
-      cells.append(cls._unpack(payload, link_version, circ_id))
-
-    return cells
+    return cls._unpack(payload, link_version, circ_id), content
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):

@@ -86,11 +86,12 @@ class TestCell(unittest.TestCase):
       (7, '\x1a\xa5\xb3\xbd\x88\xb1C'),
     )
 
-    link_cells = Cell.unpack(test_data('new_link_cells'), 2)
-    self.assertEqual(4, len(link_cells))
-    self.assertEqual(VersionsCell([3, 4, 5]), link_cells[0])
+    content = test_data('new_link_cells')
 
-    certs_cell = link_cells[1]
+    version_cell, content = Cell.unpack(content, 2)
+    self.assertEqual(VersionsCell([3, 4, 5]), version_cell)
+
+    certs_cell, content = Cell.unpack(content, 2)
     self.assertEqual(CertsCell, type(certs_cell))
     self.assertEqual(len(expected_certs), len(certs_cell.certificates))
 
@@ -98,13 +99,16 @@ class TestCell(unittest.TestCase):
       self.assertEqual(cert_type, certs_cell.certificates[i].type)
       self.assertTrue(certs_cell.certificates[i].value.startswith(cert_prefix))
 
-    self.assertEqual(AuthChallengeCell('\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K', [1, 3]), link_cells[2])
+    auth_challenge_cell, content = Cell.unpack(content, 2)
+    self.assertEqual(AuthChallengeCell('\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K', [1, 3]), auth_challenge_cell)
 
-    netinfo_cell = link_cells[3]
+    netinfo_cell, content = Cell.unpack(content, 2)
     self.assertEqual(NetinfoCell, type(netinfo_cell))
     self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), netinfo_cell.timestamp)
     self.assertEqual(Address(type='IPv4', type_int=4, value='127.0.0.1', value_bin='\x7f\x00\x00\x01'), netinfo_cell.receiver_address)
     self.assertEqual([Address(type='IPv4', type_int=4, value='97.113.15.2', value_bin='aq\x0f\x02')], netinfo_cell.sender_addresses)
+
+    self.assertEqual('', content)  # check that we've consumed all of the bytes
 
   def test_padding_packing(self):
     for cell_bytes, payload in PADDING_CELLS.items():
