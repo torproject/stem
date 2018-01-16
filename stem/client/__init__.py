@@ -61,67 +61,6 @@ ADDR_INT = {
 }
 
 
-class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
-  """
-  Relay certificate as defined in tor-spec section 4.2. Certificate types
-  are...
-
-  ====================  ===========
-  Type Value            Description
-  ====================  ===========
-  1                     Link key certificate certified by RSA1024 identity
-  2                     RSA1024 Identity certificate
-  3                     RSA1024 AUTHENTICATE cell link certificate
-  ====================  ===========
-
-  :var int type: certificate type
-  :var bytes value: certificate value
-  """
-
-
-class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin'])):
-  """
-  Relay address.
-
-  :var stem.client.AddrType type: address type
-  :var int type_int: integer value of the address type
-  :var unicode value: address value
-  :var bytes value_bin: encoded address value
-  """
-
-  @staticmethod
-  def pack(addr):
-    """
-    Bytes payload for an address.
-    """
-
-    raise NotImplementedError('Not yet available')
-
-  @staticmethod
-  def pop(content):
-    if not content:
-      raise ValueError('Payload empty where an address was expected')
-    elif len(content) < 2:
-      raise ValueError('Insuffient data for address headers')
-
-    addr_type_int, content = Size.CHAR.pop(content)
-    addr_type = ADDR_INT.get(addr_type_int, AddrType.UNKNOWN)
-    addr_length, content = Size.CHAR.pop(content)
-
-    if len(content) < addr_length:
-      raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
-
-    # TODO: add support for other address types
-
-    address_bin, content = content[:addr_length], content[addr_length:]
-    address = None
-
-    if addr_type == AddrType.IPv4 and len(address_bin) == 4:
-      address = '.'.join([str(Size.CHAR.unpack(address_bin[i])) for i in range(4)])
-
-    return Address(addr_type, addr_type_int, address, address_bin), content
-
-
 class Size(object):
   """
   Unsigned `struct.pack format
@@ -187,6 +126,67 @@ class Size(object):
     """
 
     return self.unpack(content[:self.size]), content[self.size:]
+
+
+class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
+  """
+  Relay certificate as defined in tor-spec section 4.2. Certificate types
+  are...
+
+  ====================  ===========
+  Type Value            Description
+  ====================  ===========
+  1                     Link key certificate certified by RSA1024 identity
+  2                     RSA1024 Identity certificate
+  3                     RSA1024 AUTHENTICATE cell link certificate
+  ====================  ===========
+
+  :var int type: certificate type
+  :var bytes value: certificate value
+  """
+
+
+class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin'])):
+  """
+  Relay address.
+
+  :var stem.client.AddrType type: address type
+  :var int type_int: integer value of the address type
+  :var unicode value: address value
+  :var bytes value_bin: encoded address value
+  """
+
+  @staticmethod
+  def pack(addr):
+    """
+    Bytes payload for an address.
+    """
+
+    raise NotImplementedError('Not yet available')
+
+  @staticmethod
+  def pop(content):
+    if not content:
+      raise ValueError('Payload empty where an address was expected')
+    elif len(content) < 2:
+      raise ValueError('Insuffient data for address headers')
+
+    addr_type_int, content = Size.CHAR.pop(content)
+    addr_type = ADDR_INT.get(addr_type_int, AddrType.UNKNOWN)
+    addr_length, content = Size.CHAR.pop(content)
+
+    if len(content) < addr_length:
+      raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
+
+    # TODO: add support for other address types
+
+    address_bin, content = content[:addr_length], content[addr_length:]
+    address = None
+
+    if addr_type == AddrType.IPv4 and len(address_bin) == 4:
+      address = '.'.join([str(Size.CHAR.unpack(address_bin[i])) for i in range(4)])
+
+    return Address(addr_type, addr_type_int, address, address_bin), content
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
