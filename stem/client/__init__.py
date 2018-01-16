@@ -147,17 +147,20 @@ class Size(object):
     """
     Encodes bytes into a packed field.
 
-    :param bytes content: content to encode
+    :param int content: content to encode
 
-    :raises: **ValueError** if content isn't of the right size
+    :raises: **ValueError** if incorrect type or size
     """
 
-    unpacked = struct.pack(self.format, content)
+    if not isinstance(content, int):
+      raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
 
-    if self.size != len(unpacked):
-      raise ValueError("'%s' is the wrong size for a %s field" % (unpacked, self.name))
+    packed = struct.pack(self.format, content)
 
-    return unpacked
+    if self.size != len(packed):
+      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
+
+    return packed
 
   def unpack(self, content):
     """
@@ -169,7 +172,7 @@ class Size(object):
     """
 
     if self.size != len(content):
-      raise ValueError("'%s' is the wrong size for a %s field" % (content, self.name))
+      raise ValueError('%s is the wrong size for a %s field' % (repr(content), self.name))
 
     return struct.unpack(self.format, content)[0]
 
