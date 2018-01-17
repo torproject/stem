@@ -50,6 +50,12 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual(['hello'], str_tools._split_by_length('hello', 5))
     self.assertEqual(['hello'], str_tools._split_by_length('hello', 6))
 
+  def test_int_string(self):
+    s = str_tools.IntString('me', 5)
+    self.assertEqual('me', s)
+    self.assertEqual(5, int(s))
+    self.assertEqual('hi me, the number is 5', 'hi %s, the number is %i' % (s, s))
+
   def test_crop(self):
     # test the pydoc examples
     self.assertEqual('This is a looo...', str_tools.crop('This is a looooong message', 17))

@@ -56,6 +56,10 @@ The following are only available within Stem's `git repository
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)
 
+ * **Utilities**
+
+  * Added :class:`~stem.util.str_tools.IntString`
+
  * **Website**
 
   * Added `terminal styling <tutorials/east_of_the_sun.html#terminal-styling>`_ to our utilities tutorial

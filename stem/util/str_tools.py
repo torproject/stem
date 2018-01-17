@@ -12,6 +12,8 @@ Toolkit for various string activity.
 
 ::
 
+  IntString - string that can also be used as an integer
+
   crop - shortens string to a given length
 
   size_label - human readable label for a number of bytes
@@ -183,6 +185,30 @@ def _split_by_length(msg, size):
 # dependency with the enum module.
 
 Ending = stem.util.enum.Enum('ELLIPSE', 'HYPHEN')
+
+
+class IntString(str):
+  """
+  String that can be used as an integer as well...
+
+  ::
+
+    >>> s = IntString('me', 5)
+    >>> print('hi %s, the number is %i' % (s, s))
+    hi me, the number is 5
+
+  .. versionadded:: 1.7.0
+  """
+
+  def __new__(self, str_value, int_value):
+    return str.__new__(self, str_value)
+
+  def __init__(self, str_value, int_value):
+    self._str_value = str_value
+    self._int_value = int_value
+
+  def __int__(self):
+    return self._int_value
 
 
 def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, get_remainder = False):
