@@ -44,7 +44,7 @@ import random
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Certificate, Size
+from stem.client import ZERO, Address, Certificate, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
@@ -119,9 +119,7 @@ class Cell(object):
     if len(content) < payload_len:
       raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
 
-    payload = content[:payload_len]
-    content = content[payload_len:]
-
+    payload, content = split(content, payload_len)
     return cls._unpack(payload, link_version, circ_id), content
 
   @classmethod
@@ -516,7 +514,7 @@ class CertsCell(Cell):
       if cert_size > len(content):
         raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
 
-      cert_bytes, content = content[:cert_size], content[cert_size:]
+      cert_bytes, content = split(content, cert_size)
       certs.append(Certificate(cert_type, cert_bytes))
 
     return CertsCell(certs)
@@ -573,7 +571,7 @@ class AuthChallengeCell(Cell):
     if len(content) < AUTH_CHALLENGE_SIZE + 2:
       raise ValueError('AUTH_CHALLENGE payload should be at least 34 bytes, but was %i' % len(content))
 
-    challenge, content = content[:AUTH_CHALLENGE_SIZE], content[AUTH_CHALLENGE_SIZE:]
+    challenge, content = split(content, AUTH_CHALLENGE_SIZE)
     method_count, content = Size.SHORT.pop(content)
 
     if len(content) < method_count * 2:

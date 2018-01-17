@@ -61,6 +61,19 @@ ADDR_INT = {
 }
 
 
+def split(content, size):
+  """
+  Simple split of bytes into two substrings.
+
+  :param bytes content: string to split
+  :param int size: index to split the string on
+
+  :returns: two value tuple with the split bytes
+  """
+
+  return content[:size], content[size:]
+
+
 class Size(object):
   """
   Unsigned `struct.pack format
@@ -107,6 +120,8 @@ class Size(object):
 
     :param bytes content: content to encode
 
+    :returns: **int** with the unpacked value
+
     :raises: **ValueError** if packed data isn't of the right size
     """
 
@@ -121,6 +136,8 @@ class Size(object):
     remainder.
 
     :param bytes content: content to encode
+
+    :returns: tuple of the form (unpacked, remainder)
 
     :raises: **ValueError** if packed data isn't of the right size
     """
@@ -180,7 +197,7 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
 
     # TODO: add support for other address types
 
-    address_bin, content = content[:addr_length], content[addr_length:]
+    address_bin, content = split(content, addr_length)
     address = None
 
     if addr_type == AddrType.IPv4 and len(address_bin) == 4:
