@@ -1,5 +1,5 @@
 """
-Unit tests for the types in stem.client.
+Unit tests for stem.client.Address.
 """
 
 import unittest
@@ -7,8 +7,8 @@ import unittest
 from stem.client import Address
 
 
-class TestClientTypes(unittest.TestCase):
-  def test_address_ipv4(self):
+class TestAddress(unittest.TestCase):
+  def test_ipv4(self):
     addr, content = Address.pop('\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02\x00\x00\x00\x00')
     self.assertEqual('\x01\x04\x04aq\x0f\x02\x00\x00\x00\x00', content)
 
