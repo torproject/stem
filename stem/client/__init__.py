@@ -11,7 +11,13 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
 ::
 
-  Size - Packable and unpackable field size.
+  split - splits bytes into substrings
+
+  Field - Packable and unpackable datatype.
+    |- Size - Field of a static size.
+    |- Address - Relay address.
+    |- Certificate - Relay certificate.
+    |
     |- pack - encodes content
     |- unpack - decodes content
     +- pop - decodes content with remainder
@@ -29,6 +35,19 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   **ERROR_TRANSIENT**   temporarily error retrieving address
   **ERROR_PERMANENT**   permanent error retrieving address
   **UNKNOWN**           unrecognized address type
+  ===================== ===========
+
+.. data:: CertType (enum)
+
+  Relay certificate type.
+
+  ===================== ===========
+  CertType              Description
+  ===================== ===========
+  **LINK**              link key certificate certified by RSA1024 identity
+  **IDENTITY**          RSA1024 Identity certificate
+  **AUTHENTICATE**      RSA1024 AUTHENTICATE cell link certificate
+  **UNKNOWN**           unrecognized certificate type
   ===================== ===========
 """
 
