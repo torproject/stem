@@ -71,6 +71,13 @@ AddrType = stem.util.enum.UppercaseEnum(
   'UNKNOWN',
 )
 
+CertType = stem.util.enum.UppercaseEnum(
+  'LINK',
+  'IDENTITY',
+  'AUTHENTICATE',
+  'UNKNOWN',
+)
+
 ADDR_INT = {
   0: AddrType.HOSTNAME,
   4: AddrType.IPv4,
@@ -93,7 +100,57 @@ def split(content, size):
   return content[:size], content[size:]
 
 
-class Size(object):
+class Field(object):
+  """
+  Packable and unpackable datatype.
+  """
+
+  def pack(self):
+    """
+    Encodes field into bytes.
+
+    :returns: **bytes** that can be communicated over Tor's ORPort
+
+    :raises: **ValueError** if incorrect type or size
+    """
+
+    raise NotImplementedError('Not yet available')
+
+  @classmethod
+  def unpack(cls, packed):
+    """
+    Decodes bytes into a field of this type.
+
+    :param bytes packed: content to decode
+
+    :returns: instance of this class
+
+    :raises: **ValueError** if packed data is malformed
+    """
+
+    unpacked, remainder = cls.pop(packed)
+
+    if remainder:
+      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), cls.__name__))
+
+    return unpacked
+
+  @staticmethod
+  def pop(packed):
+    """
+    Decodes bytes as this field type, providing it and the remainder.
+
+    :param bytes packed: content to decode
+
+    :returns: tuple of the form (unpacked, remainder)
+
+    :raises: **ValueError** if packed data is malformed
+    """
+
+    raise NotImplementedError('Not yet available')
+
+
+class Size(Field):
   """
   Unsigned `struct.pack format
   <https://docs.python.org/2/library/struct.html#format-characters>` for
@@ -114,15 +171,11 @@ class Size(object):
     self.size = size
     self.format = pack_format
 
+  @staticmethod
+  def pop(packed):
+    raise NotImplementedError("Use our constant's unpack() and pop() instead")
+
   def pack(self, content):
-    """
-    Encodes bytes into a packed field.
-
-    :param int content: content to encode
-
-    :raises: **ValueError** if incorrect type or size
-    """
-
     if not isinstance(content, int):
       raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
 
@@ -133,35 +186,14 @@ class Size(object):
 
     return packed
 
-  def unpack(self, content):
-    """
-    Decodes packed data into bytes.
+  def unpack(self, packed):
+    if self.size != len(packed):
+      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
 
-    :param bytes content: content to encode
+    return struct.unpack(self.format, packed)[0]
 
-    :returns: **int** with the unpacked value
-
-    :raises: **ValueError** if packed data isn't of the right size
-    """
-
-    if self.size != len(content):
-      raise ValueError('%s is the wrong size for a %s field' % (repr(content), self.name))
-
-    return struct.unpack(self.format, content)[0]
-
-  def pop(self, content):
-    """
-    Decodes the first characters as this data type, providing it and the
-    remainder.
-
-    :param bytes content: content to encode
-
-    :returns: tuple of the form (unpacked, remainder)
-
-    :raises: **ValueError** if packed data isn't of the right size
-    """
-
-    return self.unpack(content[:self.size]), content[self.size:]
+  def pop(self, packed):
+    return self.unpack(packed[:self.size]), packed[self.size:]
 
 
 class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
