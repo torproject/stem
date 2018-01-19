@@ -54,7 +54,10 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 import collections
 import struct
 
+import stem.util.connection
 import stem.util.enum
+
+from stem.util import _hash_attr
 
 ZERO = '\x00'
 
@@ -77,14 +80,6 @@ CertType = stem.util.enum.UppercaseEnum(
   'AUTHENTICATE',
   'UNKNOWN',
 )
-
-ADDR_INT = {
-  0: AddrType.HOSTNAME,
-  4: AddrType.IPv4,
-  6: AddrType.IPv6,
-  16: AddrType.ERROR_TRANSIENT,
-  17: AddrType.ERROR_PERMANENT,
-}
 
 
 def split(content, size):
@@ -148,6 +143,12 @@ class Field(object):
     """
 
     raise NotImplementedError('Not yet available')
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, Field) else False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 class Size(Field):
@@ -214,7 +215,7 @@ class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
   """
 
 
-class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'value_bin'])):
+class Address(Field):
   """
   Relay address.
 
@@ -224,13 +225,40 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
   :var bytes value_bin: encoded address value
   """
 
-  @staticmethod
-  def pack(addr):
-    """
-    Bytes payload for an address.
-    """
+  TYPE_FOR_INT = {
+    0: AddrType.HOSTNAME,
+    4: AddrType.IPv4,
+    6: AddrType.IPv6,
+    16: AddrType.ERROR_TRANSIENT,
+    17: AddrType.ERROR_PERMANENT,
+  }
 
-    raise NotImplementedError('Not yet available')
+  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
+
+  def __init__(self, addr_type, value):
+    if isinstance(addr_type, int):
+      self.type = Address.TYPE_FOR_INT.get(addr_type, AddrType.UNKNOWN)
+      self.type_int = addr_type
+    elif addr_type in AddrType:
+      self.type = addr_type
+      self.type_int = Address.INT_FOR_TYPE.get(addr_type, -1)
+    else:
+      raise ValueError('Invalid address type: %s' % addr_type)
+
+    if self.type == AddrType.IPv4:
+      if stem.util.connection.is_valid_ipv4_address(value):
+        self.value = value
+        self.value_bin = ''.join([Size.CHAR.pack(int(v)) for v in value.split('.')])
+      else:
+        if len(value) != 4:
+          raise ValueError('Packed IPv4 addresses should be four bytes, but was: %s' % repr(value))
+
+        self.value = '.'.join([str(Size.CHAR.unpack(value[i])) for i in range(4)])
+        self.value_bin = value
+    elif self.type == AddrType.IPv6:
+      self.value, self.value_bin = None, None  # TODO: implement
+    else:
+      self.value, self.value_bin = None, None  # TODO: implement
 
   @staticmethod
   def pop(content):
@@ -239,22 +267,19 @@ class Address(collections.namedtuple('Address', ['type', 'type_int', 'value', 'v
     elif len(content) < 2:
       raise ValueError('Insuffient data for address headers')
 
-    addr_type_int, content = Size.CHAR.pop(content)
-    addr_type = ADDR_INT.get(addr_type_int, AddrType.UNKNOWN)
+    addr_type, content = Size.CHAR.pop(content)
     addr_length, content = Size.CHAR.pop(content)
 
     if len(content) < addr_length:
       raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
 
-    # TODO: add support for other address types
+    addr_value, content = split(content, addr_length)
 
-    address_bin, content = split(content, addr_length)
-    address = None
+    return Address(addr_type, addr_value), content
 
-    if addr_type == AddrType.IPv4 and len(address_bin) == 4:
-      address = '.'.join([str(Size.CHAR.unpack(address_bin[i])) for i in range(4)])
-
-    return Address(addr_type, addr_type_int, address, address_bin), content
+  def __hash__(self):
+    # no need to include value or type since they're derived from these
+    return _hash_attr(self, 'type_int', 'value_bin')
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
