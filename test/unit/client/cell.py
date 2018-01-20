@@ -33,7 +33,9 @@ VERSIONS_CELLS = {
   '\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
 }
 
-NETINFO_CELL = '\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17)
+NETINFO_CELLS = {
+  '\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address(AddrType.IPv4, '127.0.0.1'), [Address(AddrType.IPv4, '97.113.15.2')]),
+}
 
 VPADDING_CELLS = {
   '\x00\x00\x80\x00\x00': '',
@@ -122,11 +124,13 @@ class TestCell(unittest.TestCase):
       self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
 
   def test_netinfo_packing(self):
-    cell = Cell.unpack(NETINFO_CELL, 2)[0]
+    for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
+      self.assertEqual(cell_bytes, NetinfoCell.pack(2, receiver_address, sender_addresses, timestamp))
 
-    self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), cell.timestamp)
-    self.assertEqual(Address(AddrType.IPv4, '127.0.0.1'), cell.receiver_address)
-    self.assertEqual([Address(AddrType.IPv4, '97.113.15.2')], cell.sender_addresses)
+      cell = Cell.unpack(cell_bytes, 2)[0]
+      self.assertEqual(timestamp, cell.timestamp)
+      self.assertEqual(receiver_address, cell.receiver_address)
+      self.assertEqual(sender_addresses, cell.sender_addresses)
 
   def test_vpadding_packing(self):
     for cell_bytes, payload in VPADDING_CELLS.items():

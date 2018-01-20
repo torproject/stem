@@ -366,11 +366,11 @@ class NetinfoCell(Cell):
 
     payload = io.BytesIO()
     payload.write(Size.LONG.pack(int(datetime_to_unix(timestamp))))
-    payload.write(Address.pack(receiver_address))
+    payload.write(receiver_address.pack())
     payload.write(Size.CHAR.pack(len(sender_addresses)))
 
     for addr in sender_addresses:
-      payload.write(Address.pack(addr))
+      payload.write(addr.pack())
 
     return cls._pack(link_version, payload.getvalue())
 
