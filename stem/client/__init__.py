@@ -256,7 +256,15 @@ class Address(Field):
         self.value = '.'.join([str(Size.CHAR.unpack(value[i])) for i in range(4)])
         self.value_bin = value
     elif self.type == AddrType.IPv6:
-      self.value, self.value_bin = None, None  # TODO: implement
+      if stem.util.connection.is_valid_ipv6_address(value):
+        self.value = stem.util.connection.expand_ipv6_address(value).lower()
+        self.value_bin = ''.join([Size.SHORT.pack(int(v, 16)) for v in self.value.split(':')])
+      else:
+        if len(value) != 16:
+          raise ValueError('Packed IPv6 addresses should be sixteen bytes, but was: %s' % repr(value))
+
+        self.value = ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
+        self.value_bin = value
     else:
       self.value, self.value_bin = None, None  # TODO: implement
 
