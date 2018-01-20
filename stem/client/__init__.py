@@ -266,7 +266,12 @@ class Address(Field):
         self.value = ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
         self.value_bin = value
     else:
-      self.value, self.value_bin = None, None  # TODO: implement
+      # The spec doesn't really tell us what form to expect errors to be. For
+      # now just leaving the value unset so we can fill it in later when we
+      # know what would be most useful.
+
+      self.value = None
+      self.value_bin = value
 
   @staticmethod
   def pop(content):
