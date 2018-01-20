@@ -51,7 +51,6 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   ===================== ===========
 """
 
-import collections
 import io
 import struct
 
@@ -198,24 +197,6 @@ class Size(Field):
     return self.unpack(packed[:self.size]), packed[self.size:]
 
 
-class Certificate(collections.namedtuple('Certificate', ['type', 'value'])):
-  """
-  Relay certificate as defined in tor-spec section 4.2. Certificate types
-  are...
-
-  ====================  ===========
-  Type Value            Description
-  ====================  ===========
-  1                     Link key certificate certified by RSA1024 identity
-  2                     RSA1024 Identity certificate
-  3                     RSA1024 AUTHENTICATE cell link certificate
-  ====================  ===========
-
-  :var int type: certificate type
-  :var bytes value: certificate value
-  """
-
-
 class Address(Field):
   """
   Relay address.
@@ -299,8 +280,58 @@ class Address(Field):
     return Address(addr_type, addr_value), content
 
   def __hash__(self):
-    # no need to include value or type since they're derived from these
     return _hash_attr(self, 'type_int', 'value_bin')
+
+
+class Certificate(Field):
+  """
+  Relay certificate as defined in tor-spec section 4.2.
+
+  :var stem.client.CertType type: certificate type
+  :var int type_int: integer value of the certificate type
+  :var bytes value: certificate value
+  """
+
+  TYPE_FOR_INT = {
+    1: CertType.LINK,
+    2: CertType.IDENTITY,
+    3: CertType.AUTHENTICATE,
+  }
+
+  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
+
+  def __init__(self, cert_type, value):
+    if isinstance(cert_type, int):
+      self.type = Certificate.TYPE_FOR_INT.get(cert_type, CertType.UNKNOWN)
+      self.type_int = cert_type
+    elif cert_type in CertType:
+      self.type = cert_type
+      self.type_int = Certificate.INT_FOR_TYPE.get(cert_type, -1)
+    else:
+      raise ValueError('Invalid certificate type: %s' % cert_type)
+
+    self.value = value
+
+  def pack(self):
+    cell = io.BytesIO()
+    cell.write(Size.CHAR.pack(self.type_int))
+    cell.write(Size.SHORT.pack(len(self.value)))
+    cell.write(self.value)
+    return cell.getvalue()
+
+  @staticmethod
+  def pop(content):
+    cert_type, content = Size.CHAR.pop(content)
+    cert_size, content = Size.SHORT.pop(content)
+
+    if cert_size > len(content):
+      raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
+
+    cert_bytes, content = split(content, cert_size)
+    return Certificate(cert_type, cert_bytes), content
+
+  def __hash__(self):
+    return _hash_attr(self, 'type_int', 'value')
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))

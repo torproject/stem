@@ -5,6 +5,7 @@ Unit tests for stem.client.* contents.
 __all__ = [
   'address',
   'cell',
+  'certificate',
   'size',
 ]
 

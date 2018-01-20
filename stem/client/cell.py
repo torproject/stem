@@ -489,15 +489,7 @@ class CertsCell(Cell):
     :returns: **bytes** with a payload for these versions
     """
 
-    payload = io.BytesIO()
-    payload.write(Size.CHAR.pack(len(certs)))
-
-    for cert in certs:
-      payload.write(Size.CHAR.pack(cert.type))
-      payload.write(Size.SHORT.pack(len(cert.value)))
-      payload.write(cert.value)
-
-    return cls._pack(link_version, payload.getvalue())
+    return cls._pack(link_version, Size.CHAR.pack(len(certs)) + ''.join([cert.pack() for cert in certs]))
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
@@ -508,14 +500,8 @@ class CertsCell(Cell):
       if not content:
         raise ValueError('CERTS cell indicates it should have %i certificates, but only contained %i' % (cert_count, len(certs)))
 
-      cert_type, content = Size.CHAR.pop(content)
-      cert_size, content = Size.SHORT.pop(content)
-
-      if cert_size > len(content):
-        raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
-
-      cert_bytes, content = split(content, cert_size)
-      certs.append(Certificate(cert_type, cert_bytes))
+      cert, content = Certificate.pop(content)
+      certs.append(cert)
 
     return CertsCell(certs)
 

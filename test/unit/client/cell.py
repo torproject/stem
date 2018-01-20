@@ -6,7 +6,7 @@ import datetime
 import os
 import unittest
 
-from stem.client import ZERO, AddrType, Address, Certificate
+from stem.client import ZERO, AddrType, CertType, Address, Certificate
 from test.unit.client import test_data
 
 from stem.client.cell import (
@@ -44,8 +44,8 @@ VPADDING_CELLS = {
 
 CERTS_CELLS = {
   '\x00\x00\x81\x00\x01\x00': [],
-  '\x00\x00\x81\x00\x04\x01\x01\x00\x00': [Certificate(type = 1, value = '')],
-  '\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': [Certificate(type = 1, value = '\x08')],
+  '\x00\x00\x81\x00\x04\x01\x01\x00\x00': [Certificate(1, '')],
+  '\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': [Certificate(1, '\x08')],
 }
 
 AUTH_CHALLENGE_CELLS = {
@@ -79,11 +79,11 @@ class TestCell(unittest.TestCase):
 
   def test_unpack_for_new_link(self):
     expected_certs = (
-      (1, '0\x82\x02F0\x82\x01\xaf'),
-      (2, '0\x82\x01\xc90\x82\x012'),
-      (4, '\x01\x04\x00\x06m\x1f'),
-      (5, '\x01\x05\x00\x06m\n\x01'),
-      (7, '\x1a\xa5\xb3\xbd\x88\xb1C'),
+      (CertType.LINK, 1, '0\x82\x02F0\x82\x01\xaf'),
+      (CertType.IDENTITY, 2, '0\x82\x01\xc90\x82\x012'),
+      (CertType.UNKNOWN, 4, '\x01\x04\x00\x06m\x1f'),
+      (CertType.UNKNOWN, 5, '\x01\x05\x00\x06m\n\x01'),
+      (CertType.UNKNOWN, 7, '\x1a\xa5\xb3\xbd\x88\xb1C'),
     )
 
     content = test_data('new_link_cells')
@@ -95,8 +95,9 @@ class TestCell(unittest.TestCase):
     self.assertEqual(CertsCell, type(certs_cell))
     self.assertEqual(len(expected_certs), len(certs_cell.certificates))
 
-    for i, (cert_type, cert_prefix) in enumerate(expected_certs):
+    for i, (cert_type, cert_type_int, cert_prefix) in enumerate(expected_certs):
       self.assertEqual(cert_type, certs_cell.certificates[i].type)
+      self.assertEqual(cert_type_int, certs_cell.certificates[i].type_int)
       self.assertTrue(certs_cell.certificates[i].value.startswith(cert_prefix))
 
     auth_challenge_cell, content = Cell.unpack(content, 2)
@@ -141,7 +142,7 @@ class TestCell(unittest.TestCase):
 
     # extra bytes after the last certificate should be ignored
 
-    self.assertEqual([Certificate(type = 1, value = '\x08')], Cell.unpack('\x00\x00\x81\x00\x07\x01\x01\x00\x01\x08\x06\x04', 2)[0].certificates)
+    self.assertEqual([Certificate(1, '\x08')], Cell.unpack('\x00\x00\x81\x00\x07\x01\x01\x00\x01\x08\x06\x04', 2)[0].certificates)
 
     # ... but truncated or missing certificates should error
 
