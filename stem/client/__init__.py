@@ -52,6 +52,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 """
 
 import collections
+import io
 import struct
 
 import stem.util.connection
@@ -272,6 +273,13 @@ class Address(Field):
 
       self.value = None
       self.value_bin = value
+
+  def pack(self):
+    cell = io.BytesIO()
+    cell.write(Size.CHAR.pack(self.type_int))
+    cell.write(Size.CHAR.pack(len(self.value_bin)))
+    cell.write(self.value_bin)
+    return cell.getvalue()
 
   @staticmethod
   def pop(content):

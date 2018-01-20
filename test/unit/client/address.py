@@ -33,7 +33,23 @@ class TestAddress(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, re.escape("Packed IPv4 addresses should be four bytes, but was: '\\x7f\\x00'"), Address, 4, '\x7f\x00')
     self.assertRaisesRegexp(ValueError, re.escape("Packed IPv6 addresses should be sixteen bytes, but was: '\\x7f\\x00'"), Address, 6, '\x7f\x00')
 
-  def test_pop_ipv4(self):
+  def test_unknown_type(self):
+    addr = Address(12, 'hello')
+    self.assertEqual(AddrType.UNKNOWN, addr.type)
+    self.assertEqual(12, addr.type_int)
+    self.assertEqual(None, addr.value)
+    self.assertEqual('hello', addr.value_bin)
+
+  def test_packing(self):
+    test_data = {
+      '\x04\x04\x7f\x00\x00\x01': Address(AddrType.IPv4, '127.0.0.1'),
+      '\x06\x10 \x01\r\xb8\x00\x00\x00\x00\x00\x00\xff\x00\x00B\x83)': Address(AddrType.IPv6, '2001:0db8:0000:0000:0000:ff00:0042:8329'),
+    }
+
+    for cell_bytes, address in test_data.items():
+      self.assertEqual(cell_bytes, address.pack())
+      self.assertEqual(address, Address.unpack(cell_bytes))
+
     addr, content = Address.pop('\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02\x00\x00\x00\x00')
     self.assertEqual('\x01\x04\x04aq\x0f\x02\x00\x00\x00\x00', content)
 
