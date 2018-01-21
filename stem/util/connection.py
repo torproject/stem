@@ -558,7 +558,7 @@ def address_to_int(address):
   # TODO: Could be neat to also use this for serialization if we also had an
   # int_to_address() function.
 
-  return int(_get_address_binary(address), 2)
+  return int(_address_to_binary(address), 2)
 
 
 def expand_ipv6_address(address):
@@ -597,7 +597,7 @@ def expand_ipv6_address(address):
     #
     #   '5.9.158.75' => '0509:9e4b'
 
-    ipv4_bin = _get_address_binary(address[ipv4_start:ipv4_end])
+    ipv4_bin = _address_to_binary(address[ipv4_start:ipv4_end])
     groupings = [ipv4_bin[16 * i:16 * (i + 1)] for i in range(2)]
     ipv6_snippet = ':'.join(['%04x' % int(group, 2) for group in groupings])
 
@@ -691,7 +691,7 @@ def _get_masked_bits(mask):
     raise ValueError("'%s' is an invalid subnet mask" % mask)
 
   # converts octets to binary representation
-  mask_bin = _get_address_binary(mask)
+  mask_bin = _address_to_binary(mask)
   mask_match = re.match('^(1*)(0*)$', mask_bin)
 
   if mask_match:
@@ -713,7 +713,7 @@ def _get_binary(value, bits):
   return ''.join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
 
 
-def _get_address_binary(address):
+def _address_to_binary(address):
   """
   Provides the binary value for an IPv4 or IPv6 address.
 

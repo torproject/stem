@@ -1606,9 +1606,9 @@ class Controller(BaseController):
         control_socket = self.get_socket()
 
         if isinstance(control_socket, stem.socket.ControlPort):
-          pid = stem.util.system.pid_by_port(control_socket.get_port())
+          pid = stem.util.system.pid_by_port(control_socket.port)
         elif isinstance(control_socket, stem.socket.ControlSocketFile):
-          pid = stem.util.system.pid_by_open_file(control_socket.get_socket_path())
+          pid = stem.util.system.pid_by_open_file(control_socket.path)
 
     if pid:
       self._set_cache({'pid': pid})

@@ -602,9 +602,9 @@ class TestConnection(unittest.TestCase):
     self.assertRaises(ValueError, stem.util.connection._get_masked_bits, 'blarg')
     self.assertRaises(ValueError, stem.util.connection._get_masked_bits, '255.255.0.255')
 
-  def test_get_address_binary(self):
+  def test_address_to_binary(self):
     """
-    Checks the _get_address_binary function.
+    Checks the _address_to_binary function.
     """
 
     test_values = {
@@ -619,7 +619,7 @@ class TestConnection(unittest.TestCase):
     }
 
     for test_arg, expected in test_values.items():
-      self.assertEqual(expected, stem.util.connection._get_address_binary(test_arg))
+      self.assertEqual(expected, stem.util.connection._address_to_binary(test_arg))
 
-    self.assertRaises(ValueError, stem.util.connection._get_address_binary, '')
-    self.assertRaises(ValueError, stem.util.connection._get_address_binary, 'blarg')
+    self.assertRaises(ValueError, stem.util.connection._address_to_binary, '')
+    self.assertRaises(ValueError, stem.util.connection._address_to_binary, 'blarg')

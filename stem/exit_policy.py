@@ -910,7 +910,7 @@ class ExitPolicyRule(object):
   def _get_mask_bin(self):
     # provides an integer representation of our mask
 
-    return int(stem.util.connection._get_address_binary(self.get_mask(False)), 2)
+    return int(stem.util.connection._address_to_binary(self.get_mask(False)), 2)
 
   @lru_cache()
   def _get_address_bin(self):

@@ -2,7 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Supports communication with sockets speaking the Tor control protocol. This
+Supports communication with sockets speaking Tor protocols. This
 allows us to send messages as basic strings, and receive responses as
 :class:`~stem.response.ControlMessage` instances.
 
@@ -46,16 +46,18 @@ Tor...
 
 ::
 
-  ControlSocket - Socket wrapper that speaks the tor control protocol.
-    |- ControlPort - Control connection via a port.
-    |  |- get_address - provides the ip address of our socket
-    |  +- get_port - provides the port of our socket
+  BaseSocket - Thread safe socket.
+    |- RelaySocket - Socket for a relay's ORPort.
+    |  |- send - sends a message to the socket
+    |  +- recv - receives a response from the socket
     |
-    |- ControlSocketFile - Control connection via a local file socket.
-    |  +- get_socket_path - provides the path of the socket we connect to
+    |- ControlSocket - Socket wrapper that speaks the tor control protocol.
+    |  |- ControlPort - Control connection via a port.
+    |  |- ControlSocketFile - Control connection via a local file socket.
+    |  |
+    |  |- send - sends a message to the socket
+    |  +- recv - receives a ControlMessage from the socket
     |
-    |- send - sends a message to the socket
-    |- recv - receives a ControlMessage from the socket
     |- is_alive - reports if the socket is known to be closed
     |- is_localhost - returns if the socket is for the local system or not
     |- connect - connects a new socket
@@ -72,6 +74,7 @@ from __future__ import absolute_import
 import io
 import re
 import socket
+import ssl
 import threading
 import time
 
@@ -88,15 +91,14 @@ ERROR_MSG = 'Error while receiving a control message (%s): %s'
 
 TRUNCATE_LOGS = 10
 
+# maximum number of bytes to read at a time from a relay socket
 
-class ControlSocket(object):
+MAX_READ_BUFFER_LEN = 10 * 1024 * 1024
+
+
+class BaseSocket(object):
   """
-  Wrapper for a socket connection that speaks the Tor control protocol. To the
-  better part this transparently handles the formatting for sending and
-  receiving complete messages. All methods are thread safe.
-
-  Callers should not instantiate this class directly, but rather use subclasses
-  which are expected to implement the **_make_socket()** method.
+  Thread safe socket, providing common socket functionality.
   """
 
   def __init__(self):
@@ -111,95 +113,21 @@ class ControlSocket(object):
     self._send_lock = threading.RLock()
     self._recv_lock = threading.RLock()
 
-  def send(self, message, raw = False):
-    """
-    Formats and sends a message to the control socket. For more information see
-    the :func:`~stem.socket.send_message` function.
-
-    :param str message: message to be formatted and sent to the socket
-    :param bool raw: leaves the message formatting untouched, passing it to the socket as-is
-
-    :raises:
-      * :class:`stem.SocketError` if a problem arises in using the socket
-      * :class:`stem.SocketClosed` if the socket is known to be shut down
-    """
-
-    with self._send_lock:
-      try:
-        if not self.is_alive():
-          raise stem.SocketClosed()
-
-        send_message(self._socket_file, message, raw)
-      except stem.SocketClosed:
-        # if send_message raises a SocketClosed then we should properly shut
-        # everything down
-
-        if self.is_alive():
-          self.close()
-
-        raise
-
-  def recv(self):
-    """
-    Receives a message from the control socket, blocking until we've received
-    one. For more information see the :func:`~stem.socket.recv_message` function.
-
-    :returns: :class:`~stem.response.ControlMessage` for the message received
-
-    :raises:
-      * :class:`stem.ProtocolError` the content from the socket is malformed
-      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
-    """
-
-    with self._recv_lock:
-      try:
-        # makes a temporary reference to the _socket_file because connect()
-        # and close() may set or unset it
-
-        socket_file = self._socket_file
-
-        if not socket_file:
-          raise stem.SocketClosed()
-
-        return recv_message(socket_file)
-      except stem.SocketClosed:
-        # If recv_message raises a SocketClosed then we should properly shut
-        # everything down. However, there's a couple cases where this will
-        # cause deadlock...
-        #
-        # * This SocketClosed was *caused by* a close() call, which is joining
-        #   on our thread.
-        #
-        # * A send() call that's currently in flight is about to call close(),
-        #   also attempting to join on us.
-        #
-        # To resolve this we make a non-blocking call to acquire the send lock.
-        # If we get it then great, we can close safely. If not then one of the
-        # above are in progress and we leave the close to them.
-
-        if self.is_alive():
-          if self._send_lock.acquire(False):
-            self.close()
-            self._send_lock.release()
-
-        raise
-
   def is_alive(self):
     """
     Checks if the socket is known to be closed. We won't be aware if it is
     until we either use it or have explicitily shut it down.
 
     In practice a socket derived from a port knows about its disconnection
-    after a failed :func:`~stem.socket.ControlSocket.recv` call. Socket file
-    derived connections know after either a
-    :func:`~stem.socket.ControlSocket.send` or
-    :func:`~stem.socket.ControlSocket.recv`.
+    after failing to receive data, whereas socket file derived connections
+    know after either sending or receiving data.
 
     This means that to have reliable detection for when we're disconnected
     you need to continually pull from the socket (which is part of what the
     :class:`~stem.control.BaseController` does).
 
-    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    :returns: **bool** that's **True** if our socket is connected and **False**
+      otherwise
     """
 
     return self._is_alive
@@ -208,7 +136,8 @@ class ControlSocket(object):
     """
     Returns if the connection is for the local system or not.
 
-    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    :returns: **bool** that's **True** if the connection is for the local host
+      and **False** otherwise
     """
 
     return False
@@ -303,12 +232,78 @@ class ControlSocket(object):
       if is_change:
         self._close()
 
+  def _send(self, message, handler):
+    """
+    Send message in a thread safe manner. Handler is expected to be of the form...
+
+    ::
+
+      my_handler(socket, socket_file, message)
+    """
+
+    with self._send_lock:
+      try:
+        if not self.is_alive():
+          raise stem.SocketClosed()
+
+        handler(self._socket, self._socket_file, message)
+      except stem.SocketClosed:
+        # if send_message raises a SocketClosed then we should properly shut
+        # everything down
+
+        if self.is_alive():
+          self.close()
+
+        raise
+
+  def _recv(self, handler):
+    """
+    Receives a message in a thread safe manner. Handler is expected to be of the form...
+
+    ::
+
+      my_handler(socket, socket_file)
+    """
+
+    with self._recv_lock:
+      try:
+        # makes a temporary reference to the _socket_file because connect()
+        # and close() may set or unset it
+
+        my_socket, my_socket_file = self._socket, self._socket_file
+
+        if not my_socket or not my_socket_file:
+          raise stem.SocketClosed()
+
+        return handler(my_socket, my_socket_file)
+      except stem.SocketClosed:
+        # If recv_message raises a SocketClosed then we should properly shut
+        # everything down. However, there's a couple cases where this will
+        # cause deadlock...
+        #
+        # * This SocketClosed was *caused by* a close() call, which is joining
+        #   on our thread.
+        #
+        # * A send() call that's currently in flight is about to call close(),
+        #   also attempting to join on us.
+        #
+        # To resolve this we make a non-blocking call to acquire the send lock.
+        # If we get it then great, we can close safely. If not then one of the
+        # above are in progress and we leave the close to them.
+
+        if self.is_alive():
+          if self._send_lock.acquire(False):
+            self.close()
+            self._send_lock.release()
+
+        raise
+
   def _get_send_lock(self):
     """
     The send lock is useful to classes that interact with us at a deep level
     because it's used to lock :func:`stem.socket.ControlSocket.connect` /
-    :func:`stem.socket.ControlSocket.close`, and by extension our
-    :func:`stem.socket.ControlSocket.is_alive` state changes.
+    :func:`stem.socket.BaseSocket.close`, and by extension our
+    :func:`stem.socket.BaseSocket.is_alive` state changes.
 
     :returns: **threading.RLock** that governs sending messages to our socket
       and state changes
@@ -347,13 +342,135 @@ class ControlSocket(object):
       * **NotImplementedError** if not implemented by a subclass
     """
 
-    raise NotImplementedError('Unsupported Operation: this should be implemented by the ControlSocket subclass')
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the BaseSocket subclass')
+
+
+class RelaySocket(BaseSocket):
+  """
+  `Link-level connection
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_ to a Tor
+  relay.
+
+  .. versionadded:: 1.7.0
+
+  :var str address: address our socket connects to
+  :var int port: ORPort our socket connects to
+  """
+
+  def __init__(self, address = '127.0.0.1', port = 9050, connect = True):
+    """
+    RelaySocket constructor.
+
+    :param str address: ip address of the relay
+    :param int port: orport of the relay
+    :param bool connect: connects to the socket if True, leaves it unconnected otherwise
+
+    :raises: :class:`stem.SocketError` if connect is **True** and we're
+      unable to establish a connection
+    """
+
+    super(RelaySocket, self).__init__()
+    self.address = address
+    self.port = port
+
+    if connect:
+      self.connect()
+
+  def send(self, message):
+    """
+    Sends a message to the relay's ORPort.
+
+    :param str message: message to be formatted and sent to the socket
+
+    :raises:
+      * :class:`stem.SocketError` if a problem arises in using the socket
+      * :class:`stem.SocketClosed` if the socket is known to be shut down
+    """
+
+    self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
+
+  def recv(self):
+    """
+    Receives a message from the relay.
+
+    :returns: bytes for the message received
+
+    :raises:
+      * :class:`stem.ProtocolError` the content from the socket is malformed
+      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
+    """
+
+    # TODO: Is MAX_READ_BUFFER_LEN defined in the spec? Not sure where it came
+    # from.
+
+    return self._recv(lambda s, sf: s.recv(MAX_READ_BUFFER_LEN))
+
+  def is_localhost(self):
+    return self.address == '127.0.0.1'
+
+  def _make_socket(self):
+    try:
+      relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+      relay_socket.connect((self.address, self.port))
+      return ssl.wrap_socket(relay_socket)
+    except socket.error as exc:
+      raise stem.SocketError(exc)
+
+
+class ControlSocket(BaseSocket):
+  """
+  Wrapper for a socket connection that speaks the Tor control protocol. To the
+  better part this transparently handles the formatting for sending and
+  receiving complete messages.
+
+  Callers should not instantiate this class directly, but rather use subclasses
+  which are expected to implement the **_make_socket()** method.
+  """
+
+  def __init__(self):
+    super(ControlSocket, self).__init__()
+
+  def send(self, message):
+    """
+    Formats and sends a message to the control socket. For more information see
+    the :func:`~stem.socket.send_message` function.
+
+    .. deprecated:: 1.7.0
+       The **raw** argument was unhelpful and be removed. Use
+       :func:`stem.socket.send_message` if you need this level of control
+       instead.
+
+    :param str message: message to be formatted and sent to the socket
+
+    :raises:
+      * :class:`stem.SocketError` if a problem arises in using the socket
+      * :class:`stem.SocketClosed` if the socket is known to be shut down
+    """
+
+    self._send(message, lambda s, sf, msg: send_message(sf, msg))
+
+  def recv(self):
+    """
+    Receives a message from the control socket, blocking until we've received
+    one. For more information see the :func:`~stem.socket.recv_message` function.
+
+    :returns: :class:`~stem.response.ControlMessage` for the message received
+
+    :raises:
+      * :class:`stem.ProtocolError` the content from the socket is malformed
+      * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
+    """
+
+    return self._recv(lambda s, sf: recv_message(sf))
 
 
 class ControlPort(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlPort torrc
   option.
+
+  :var str address: address our socket connects to
+  :var int port: ControlPort our socket connects to
   """
 
   def __init__(self, address = '127.0.0.1', port = 9051, connect = True):
@@ -369,8 +486,8 @@ class ControlPort(ControlSocket):
     """
 
     super(ControlPort, self).__init__()
-    self._control_addr = address
-    self._control_port = port
+    self.address = address
+    self.port = port
 
     if connect:
       self.connect()
@@ -379,27 +496,33 @@ class ControlPort(ControlSocket):
     """
     Provides the ip address our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **address** attribute instead.
+
     :returns: str with the ip address of our socket
     """
 
-    return self._control_addr
+    return self.address
 
   def get_port(self):
     """
     Provides the port our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **port** attribute instead.
+
     :returns: int with the port of our socket
     """
 
-    return self._control_port
+    return self.port
 
   def is_localhost(self):
-    return self._control_addr == '127.0.0.1'
+    return self.address == '127.0.0.1'
 
   def _make_socket(self):
     try:
       control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      control_socket.connect((self._control_addr, self._control_port))
+      control_socket.connect((self.address, self.port))
       return control_socket
     except socket.error as exc:
       raise stem.SocketError(exc)
@@ -409,6 +532,8 @@ class ControlSocketFile(ControlSocket):
   """
   Control connection to tor. For more information see tor's ControlSocket torrc
   option.
+
+  :var str path: filesystem path of the socket we connect to
   """
 
   def __init__(self, path = '/var/run/tor/control', connect = True):
@@ -423,7 +548,7 @@ class ControlSocketFile(ControlSocket):
     """
 
     super(ControlSocketFile, self).__init__()
-    self._socket_path = path
+    self.path = path
 
     if connect:
       self.connect()
@@ -432,10 +557,13 @@ class ControlSocketFile(ControlSocket):
     """
     Provides the path our socket connects to.
 
+    .. deprecated:: 1.7.0
+       Use the **path** attribute instead.
+
     :returns: str with the path for our control socket
     """
 
-    return self._socket_path
+    return self.path
 
   def is_localhost(self):
     return True
@@ -443,7 +571,7 @@ class ControlSocketFile(ControlSocket):
   def _make_socket(self):
     try:
       control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-      control_socket.connect(self._socket_path)
+      control_socket.connect(self.path)
       return control_socket
     except socket.error as exc:
       raise stem.SocketError(exc)
@@ -484,16 +612,20 @@ def send_message(control_file, message, raw = False):
   if not raw:
     message = send_formatting(message)
 
-  try:
-    control_file.write(stem.util.str_tools._to_bytes(message))
-    control_file.flush()
+  _write_to_socket(control_file, message)
 
-    if log.is_tracing():
-      log_message = message.replace('\r\n', '\n').rstrip()
-      msg_div = '\n' if '\n' in log_message else ' '
-      log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+  if log.is_tracing():
+    log_message = message.replace('\r\n', '\n').rstrip()
+    msg_div = '\n' if '\n' in log_message else ' '
+    log.trace('Sent to tor:%s%s' % (msg_div, log_message))
+
+
+def _write_to_socket(socket_file, message):
+  try:
+    socket_file.write(stem.util.str_tools._to_bytes(message))
+    socket_file.flush()
   except socket.error as exc:
-    log.info('Failed to send message: %s' % exc)
+    log.info('Failed to send: %s' % exc)
 
     # When sending there doesn't seem to be a reliable method for
     # distinguishing between failures from a disconnect verses other things.
@@ -507,7 +639,7 @@ def send_message(control_file, message, raw = False):
     # if the control_file has been closed then flush will receive:
     # AttributeError: 'NoneType' object has no attribute 'sendall'
 
-    log.info('Failed to send message: file has been closed')
+    log.info('Failed to send: file has been closed')
     raise stem.SocketClosed('file has been closed')
 
 

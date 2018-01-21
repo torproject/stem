@@ -69,6 +69,9 @@ def _hash_attr(obj, *attributes, **kwargs):
       if isinstance(attr_value, dict):
         for k in sorted(attr_value.keys()):
           my_hash = (my_hash + hash(k)) * 1024 + hash(attr_value[k])
+      elif isinstance(attr_value, (list, tuple)):
+        for entry in attr_value:
+          my_hash = (my_hash + hash(entry)) * 1024
       else:
         my_hash += hash(attr_value)
 

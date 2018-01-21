@@ -6,6 +6,7 @@ import os
 import test
 
 __all__ = [
+  'client',
   'connection',
   'control',
   'descriptor',
