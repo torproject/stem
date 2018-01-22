@@ -167,6 +167,7 @@ DEFAULT_PARAMS = {
   'try-diff-for-consensus-newer-than': 72,
   'onion-key-rotation-days': 28,
   'onion-key-grace-period-days': 7,
+  'hs_service_max_rdv_failures': 2,
 }
 
 # KeyCertificate fields, tuple is of the form...
@@ -218,6 +219,7 @@ PARAM_RANGE = {
   'try-diff-for-consensus-newer-than': (0, 8192),
   'onion-key-rotation-days': (1, 90),
   'onion-key-grace-period-days': (1, 90),  # max is the highest onion-key-rotation-days
+  'hs_service_max_rdv_failures': (1, 10),
 }
 
 
