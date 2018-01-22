@@ -13,6 +13,8 @@ from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
   PaddingCell,
+  CreateFastCell,
+  CreatedFastCell,
   VersionsCell,
   NetinfoCell,
   VPaddingCell,
@@ -25,6 +27,14 @@ CHALLENGE = '\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xf
 
 PADDING_CELLS = {
   '\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+}
+
+CREATE_FAST_CELLS = {
+  ('\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce' + ZERO * 489): (2147483648, '\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce'),
+}
+
+CREATED_FAST_CELLS = {
+  ('\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2' + ZERO * 469): (2147483648, '\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', '\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2'),
 }
 
 VERSIONS_CELLS = {
@@ -117,6 +127,27 @@ class TestCell(unittest.TestCase):
     for cell_bytes, payload in PADDING_CELLS.items():
       self.assertEqual(cell_bytes, PaddingCell.pack(2, payload))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
+
+  def test_create_fast(self):
+    for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
+      self.assertEqual(cell_bytes, CreateFastCell.pack(5, circ_id, key_material))
+
+      cell = Cell.unpack(cell_bytes, 5)[0]
+      self.assertEqual(circ_id, cell.circ_id)
+      self.assertEqual(key_material, cell.key_material)
+
+    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
+
+  def test_created_fast(self):
+    for cell_bytes, (circ_id, key_material, derivative_key) in CREATED_FAST_CELLS.items():
+      self.assertEqual(cell_bytes, CreatedFastCell.pack(5, circ_id, derivative_key, key_material))
+
+      cell = Cell.unpack(cell_bytes, 5)[0]
+      self.assertEqual(circ_id, cell.circ_id)
+      self.assertEqual(key_material, cell.key_material)
+      self.assertEqual(derivative_key, cell.derivative_key)
+
+    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
 
   def test_versions_packing(self):
     for cell_bytes, versions in VERSIONS_CELLS.items():

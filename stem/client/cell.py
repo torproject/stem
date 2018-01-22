@@ -49,6 +49,7 @@ from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
+HASH_LEN = 20
 
 
 class Cell(object):
@@ -120,7 +121,7 @@ class Cell(object):
       raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
 
     payload, content = split(content, payload_len)
-    return cls._unpack(payload, link_version, circ_id), content
+    return cls._unpack(payload, circ_id, link_version), content
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
@@ -143,6 +144,15 @@ class Cell(object):
 
     :raise: **ValueError** if cell type invalid or payload is too large
     """
+
+    if isinstance(cls, CircuitCell) and circ_id is None:
+      if cls.NAME.startswith('CREATE'):
+        # Since we're initiating the circuit we pick any value from a range
+        # that's determined by our link version.
+
+        circ_id = 0x80000000 if link_version > 3 else 0x01
+      else:
+        raise ValueError('%s cells require a circ_id' % cls.NAME)
 
     cell = io.BytesIO()
     cell.write(Size.LONG.pack(circ_id) if link_version > 3 else Size.SHORT.pack(circ_id))
@@ -189,30 +199,12 @@ class Cell(object):
 class CircuitCell(Cell):
   """
   Cell concerning circuits.
+
+  :var int circ_id: circuit id
   """
 
-  @classmethod
-  def _pack(cls, link_version, payload, circ_id):
-    """
-    Provides bytes that can be used on the wire for these cell attributes.
-
-    :param str name: cell command
-    :param int link_version: link protocol version
-    :param bytes payload: cell payload
-    :param int circ_id: circuit id
-
-    :raise: **ValueError** if cell type invalid or payload is too large
-    """
-
-    if circ_id is None and cls.NAME.startswith('CREATE'):
-      # Since we're initiating the circuit we pick any value from a range
-      # that's determined by our link version.
-
-      circ_id = 0x80000000 if link_version > 3 else 0x01
-    else:
-      raise ValueError('%s cells require a circ_id' % cls.NAME)
-
-    return Cell._pack(link_version, payload, circ_id)
+  def __init__(self, circ_id):
+    self.circ_id = circ_id
 
 
 class PaddingCell(Cell):
@@ -275,15 +267,102 @@ class DestroyCell(CircuitCell):
 
 
 class CreateFastCell(CircuitCell):
+  """
+  Create a circuit with our first hop. This is lighter weight than further hops
+  because we've already established the relay's identity and secret key.
+
+  :var bytes key_material: randomized key material
+  """
+
   NAME = 'CREATE_FAST'
   VALUE = 5
   IS_FIXED_SIZE = True
 
+  def __init__(self, circ_id, key_material):
+    super(CreateFastCell, self).__init__(circ_id)
+    self.key_material = key_material
+
+  @classmethod
+  def pack(cls, link_version, circ_id, key_material = None):
+    """
+    Provides a randomized circuit construction payload.
+
+    :param int link_version: link protocol version
+    :param int circ_id: circuit id
+    :param bytes key_material: randomized key material
+
+    :returns: **bytes** with our randomized key material
+    """
+
+    if key_material and len(key_material) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
+
+    return cls._pack(link_version, key_material if key_material else os.urandom(HASH_LEN), circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    content = content.rstrip(ZERO)
+
+    if len(content) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(content)))
+
+    return CreateFastCell(circ_id, content)
+
+  def __hash__(self):
+    return _hash_attr(self, 'key_material')
+
 
 class CreatedFastCell(CircuitCell):
+  """
+  CREATE_FAST reply.
+
+  :var bytes key_material: randomized key material
+  :var bytes derivative_key: hash proving the relay knows our shared key
+  """
+
   NAME = 'CREATED_FAST'
   VALUE = 6
   IS_FIXED_SIZE = True
+
+  def __init__(self, circ_id, key_material, derivative_key):
+    super(CreatedFastCell, self).__init__(circ_id)
+    self.key_material = key_material
+    self.derivative_key = derivative_key
+
+  @classmethod
+  def pack(cls, link_version, circ_id, derivative_key, key_material = None):
+    """
+    Provides a randomized circuit construction payload.
+
+    :param int link_version: link protocol version
+    :param int circ_id: circuit id
+    :param bytes derivative_key: hash proving the relay knows our shared key
+    :param bytes key_material: randomized key material
+
+    :returns: **bytes** with our randomized key material
+    """
+
+    if key_material and len(key_material) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
+    elif len(derivative_key) != HASH_LEN:
+      raise ValueError('Derivatived key should be %i bytes, but was %i' % (HASH_LEN, len(derivative_key)))
+
+    if not key_material:
+      key_material = os.urandom(HASH_LEN)
+
+    return cls._pack(link_version, key_material + derivative_key, circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    content = content.rstrip(ZERO)
+
+    if len(content) != HASH_LEN * 2:
+      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
+
+    return CreatedFastCell(circ_id, content[:HASH_LEN], content[HASH_LEN:])
+
+  def __hash__(self):
+    return _hash_attr(self, 'derivative_key', 'key_material')
 
 
 class VersionsCell(Cell):
