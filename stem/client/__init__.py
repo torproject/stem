@@ -49,6 +49,29 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   **AUTHENTICATE**      RSA1024 AUTHENTICATE cell link certificate
   **UNKNOWN**           unrecognized certificate type
   ===================== ===========
+
+.. data:: CloseReason (enum)
+
+  Reason a relay is closed.
+
+  ===================== ===========
+  CloseReason           Description
+  ===================== ===========
+  **NONE**              no reason given
+  **PROTOCOL**          tor protocol violation
+  **INTERNAL**          internal error
+  **REQUESTED**         client sent a TRUNCATE command
+  **HIBERNATING**       relay suspended, trying to save bandwidth
+  **RESOURCELIMIT**     out of memory, sockets, or circuit IDs
+  **CONNECTFAILED**     unable to reach relay
+  **OR_IDENTITY**       connected, but its OR identity was not as expected
+  **OR_CONN_CLOSED**    connection that was carrying this circuit died
+  **FINISHED**          circuit has expired for being dirty or old
+  **TIMEOUT**           circuit construction took too long
+  **DESTROYED**         circuit was destroyed without a client TRUNCATE
+  **NOSUCHSERVICE**     request was for an unknown hidden service
+  **UNKNOWN**           unrecognized reason
+  ===================== ===========
 """
 
 import io
@@ -78,6 +101,23 @@ CertType = stem.util.enum.UppercaseEnum(
   'LINK',
   'IDENTITY',
   'AUTHENTICATE',
+  'UNKNOWN',
+)
+
+CloseReason = stem.util.enum.UppercaseEnum(
+  'NONE',
+  'PROTOCOL',
+  'INTERNAL',
+  'REQUESTED',
+  'HIBERNATING',
+  'RESOURCELIMIT',
+  'CONNECTFAILED',
+  'OR_IDENTITY',
+  'OR_CONN_CLOSED',
+  'FINISHED',
+  'TIMEOUT',
+  'DESTROYED',
+  'NOSUCHSERVICE',
   'UNKNOWN',
 )
 

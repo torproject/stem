@@ -6,13 +6,14 @@ import datetime
 import os
 import unittest
 
-from stem.client import ZERO, AddrType, CertType, Address, Certificate
+from stem.client import ZERO, AddrType, CertType, CloseReason, Address, Certificate
 from test.unit.client import test_data
 
 from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
   PaddingCell,
+  DestroyCell,
   CreateFastCell,
   CreatedFastCell,
   VersionsCell,
@@ -27,6 +28,11 @@ CHALLENGE = '\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xf
 
 PADDING_CELLS = {
   '\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+}
+
+DESTROY_CELLS = {
+  '\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0),
+  '\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3),
 }
 
 CREATE_FAST_CELLS = {
@@ -127,6 +133,18 @@ class TestCell(unittest.TestCase):
     for cell_bytes, payload in PADDING_CELLS.items():
       self.assertEqual(cell_bytes, PaddingCell.pack(2, payload))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
+
+  def test_destroy_packing(self):
+    for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():
+      self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason))
+      self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason_int))
+
+      cell = Cell.unpack(cell_bytes, 5)[0]
+      self.assertEqual(circ_id, cell.circ_id)
+      self.assertEqual(reason, cell.reason)
+      self.assertEqual(reason_int, cell.reason_int)
+
+    self.assertRaisesRegexp(ValueError, 'Circuit closure reason should be a single byte, but was 2', Cell.unpack, '\x80\x00\x00\x00\x04\x01\x01' + ZERO * 507, 5)
 
   def test_create_fast(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():

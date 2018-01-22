@@ -44,7 +44,7 @@ import random
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Certificate, Size, split
+from stem.client import ZERO, Address, Certificate, CloseReason, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
@@ -261,9 +261,79 @@ class RelayCell(CircuitCell):
 
 
 class DestroyCell(CircuitCell):
+  """
+  Closes the given circuit.
+
+  :var stem.client.CloseReason reason: reason the circuit is being closed
+  :var int reason_int: integer value of our closure reason
+  """
+
   NAME = 'DESTROY'
   VALUE = 4
   IS_FIXED_SIZE = True
+
+  REASON_FOR_INT = {
+    0: CloseReason.NONE,
+    1: CloseReason.PROTOCOL,
+    2: CloseReason.INTERNAL,
+    3: CloseReason.REQUESTED,
+    4: CloseReason.HIBERNATING,
+    5: CloseReason.RESOURCELIMIT,
+    6: CloseReason.CONNECTFAILED,
+    7: CloseReason.OR_IDENTITY,
+    8: CloseReason.OR_CONN_CLOSED,
+    9: CloseReason.FINISHED,
+    10: CloseReason.TIMEOUT,
+    11: CloseReason.DESTROYED,
+    12: CloseReason.NOSUCHSERVICE,
+  }
+
+  INT_FOR_REASON = dict((v, k) for k, v in REASON_FOR_INT.items())
+
+  def __init__(self, circ_id, reason):
+    super(DestroyCell, self).__init__(circ_id)
+
+    if isinstance(reason, int):
+      self.reason = DestroyCell.REASON_FOR_INT.get(reason, CloseReason.UNKNOWN)
+      self.reason_int = reason
+    elif reason in CloseReason:
+      self.reason = reason
+      self.reason_int = DestroyCell.INT_FOR_REASON.get(reason, -1)
+    else:
+      raise ValueError('Invalid closure reason: %s' % reason)
+
+  @classmethod
+  def pack(cls, link_version, circ_id, reason = CloseReason.NONE):
+    """
+    Provides payload to close the given circuit.
+
+    :param int link_version: link protocol version
+    :param int circ_id: circuit id
+    :param stem.client.CloseReason reason: reason to close the circuit
+
+    :returns: **bytes** to close the circuit
+    """
+
+    reason = DestroyCell.INT_FOR_REASON.get(reason, reason)
+
+    if not isinstance(reason, int):
+      raise ValueError('Invalid closure reason: %s' % reason)
+
+    return cls._pack(link_version, Size.CHAR.pack(reason), circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    content = content.rstrip(ZERO)
+
+    if not content:
+      content = ZERO
+    elif len(content) > 1:
+      raise ValueError('Circuit closure reason should be a single byte, but was %i' % len(content))
+
+    return DestroyCell(circ_id, Size.CHAR.unpack(content))
+
+  def __hash__(self):
+    return _hash_attr(self, 'circ_id', 'reason_int')
 
 
 class CreateFastCell(CircuitCell):
@@ -309,7 +379,7 @@ class CreateFastCell(CircuitCell):
     return CreateFastCell(circ_id, content)
 
   def __hash__(self):
-    return _hash_attr(self, 'key_material')
+    return _hash_attr(self, 'circ_id', 'key_material')
 
 
 class CreatedFastCell(CircuitCell):
@@ -362,7 +432,7 @@ class CreatedFastCell(CircuitCell):
     return CreatedFastCell(circ_id, content[:HASH_LEN], content[HASH_LEN:])
 
   def __hash__(self):
-    return _hash_attr(self, 'derivative_key', 'key_material')
+    return _hash_attr(self, 'circ_id', 'derivative_key', 'key_material')
 
 
 class VersionsCell(Cell):
