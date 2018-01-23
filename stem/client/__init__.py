@@ -37,6 +37,38 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   **UNKNOWN**           unrecognized address type
   ===================== ===========
 
+.. data:: RelayCommand (enum)
+
+  Command concerning streams and circuits we've established with a relay.
+  Commands have two characteristics...
+
+  * **forward/backward**: **forward** commands are issued from the orgin,
+    whereas **backward** come from the relay
+
+  * **stream/circuit**: **steam** commands concern an individual steam, whereas
+    **circuit** concern the entire circuit we've established with a relay
+
+  ===================== ===========
+  RelayCommand          Description
+  ===================== ===========
+  **BEGIN**             begin a stream (**forward**, **stream**)
+  **DATA**              transmit data (**forward/backward**, **stream**)
+  **END**               end a stream (**forward/backward**, **stream**)
+  **CONNECTED**         BEGIN reply (**backward**, **stream**)
+  **SENDME**            ready to accept more cells (**forward/backward**, **stream/circuit**)
+  **EXTEND**            extend the circuit through another relay (**forward**, **circuit**)
+  **EXTENDED**          EXTEND reply (**backward**, **circuit**)
+  **TRUNCATE**          remove last circuit hop (**forward**, **circuit**)
+  **TRUNCATED**         TRUNCATE reply (**backward**, **circuit**)
+  **DROP**              ignorable no-op (**forward/backward**, **circuit**)
+  **RESOLVE**           request DNS resolution (**forward**, **stream**)
+  **RESOLVED**          RESOLVE reply (**backward**, **stream**)
+  **BEGIN_DIR**         request descriptor (**forward**, **steam**)
+  **EXTEND2**           ntor EXTEND request (**forward**, **circuit**)
+  **EXTENDED2**         EXTEND2 reply (**backward**, **circuit**)
+  **UNKNOWN**           unrecognized command
+  ===================== ===========
+
 .. data:: CertType (enum)
 
   Relay certificate type.
@@ -95,6 +127,25 @@ AddrType = stem.util.enum.UppercaseEnum(
   'ERROR_TRANSIENT',
   'ERROR_PERMANENT',
   'UNKNOWN',
+)
+
+RelayCommand = stem.util.enum.Enum(
+  ('BEGIN', 'RELAY_BEGIN'),
+  ('DATA', 'RELAY_DATA'),
+  ('END', 'RELAY_END'),
+  ('CONNECTED', 'RELAY_CONNECTED'),
+  ('SENDME', 'RELAY_SENDME'),
+  ('EXTEND', 'RELAY_EXTEND'),
+  ('EXTENDED', 'RELAY_EXTENDED'),
+  ('TRUNCATE', 'RELAY_TRUNCATE'),
+  ('TRUNCATED', 'RELAY_TRUNCATED'),
+  ('DROP', 'RELAY_DROP'),
+  ('RESOLVE', 'RELAY_RESOLVE'),
+  ('RESOLVED', 'RELAY_RESOLVED'),
+  ('BEGIN_DIR', 'RELAY_BEGIN_DIR'),
+  ('EXTEND2', 'RELAY_EXTEND2'),
+  ('EXTENDED2', 'RELAY_EXTENDED2'),
+  ('UNKNOWN', 'UNKNOWN'),
 )
 
 CertType = stem.util.enum.UppercaseEnum(

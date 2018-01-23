@@ -14,7 +14,7 @@ Messages communicated over a Tor relay's ORPort.
     |- CircuitCell - Circuit management.
     |  |- CreateCell - Create a circuit.              (section 5.1)
     |  |- CreatedCell - Acknowledge create.           (section 5.1)
-    |  |- RelayCell - End-to-end data.                (section 5.5 and 6)
+    |  |- RelayCell - End-to-end data.                (section 6.1)
     |  |- DestroyCell - Stop using a circuit.         (section 5.4)
     |  |- CreateFastCell - Create a circuit, no PK.   (section 5.1)
     |  |- CreatedFastCell - Circuit created, no PK.   (section 5.1)
@@ -44,7 +44,7 @@ import random
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Certificate, CloseReason, Size, split
+from stem.client import ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
@@ -255,9 +255,35 @@ class CreatedCell(CircuitCell):
 
 
 class RelayCell(CircuitCell):
+  """
+  Command concerning a relay circuit.
+
+  :var stem.client.RelayCommand command: reason the circuit is being closed
+  """
+
   NAME = 'RELAY'
   VALUE = 3
   IS_FIXED_SIZE = True
+
+  COMMAND_FOR_INT = {
+    1: RelayCommand.BEGIN,
+    2: RelayCommand.DATA,
+    3: RelayCommand.END,
+    4: RelayCommand.CONNECTED,
+    5: RelayCommand.SENDME,
+    6: RelayCommand.EXTEND,
+    7: RelayCommand.EXTENDED,
+    8: RelayCommand.TRUNCATE,
+    9: RelayCommand.TRUNCATED,
+    10: RelayCommand.DROP,
+    11: RelayCommand.RESOLVE,
+    12: RelayCommand.RESOLVED,
+    13: RelayCommand.BEGIN_DIR,
+    14: RelayCommand.EXTEND2,
+    15: RelayCommand.EXTENDED2,
+  }
+
+  INT_FOR_COMMANDS = dict((v, k) for k, v in COMMAND_FOR_INT.items())
 
 
 class DestroyCell(CircuitCell):
