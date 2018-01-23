@@ -44,7 +44,7 @@ import random
 import sys
 
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
+from stem.client import ZERO, Address, Certificate, CloseReason, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
@@ -265,26 +265,6 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  COMMAND_FOR_INT = {
-    1: RelayCommand.BEGIN,
-    2: RelayCommand.DATA,
-    3: RelayCommand.END,
-    4: RelayCommand.CONNECTED,
-    5: RelayCommand.SENDME,
-    6: RelayCommand.EXTEND,
-    7: RelayCommand.EXTENDED,
-    8: RelayCommand.TRUNCATE,
-    9: RelayCommand.TRUNCATED,
-    10: RelayCommand.DROP,
-    11: RelayCommand.RESOLVE,
-    12: RelayCommand.RESOLVED,
-    13: RelayCommand.BEGIN_DIR,
-    14: RelayCommand.EXTEND2,
-    15: RelayCommand.EXTENDED2,
-  }
-
-  INT_FOR_COMMANDS = dict((v, k) for k, v in COMMAND_FOR_INT.items())
-
 
 class DestroyCell(CircuitCell):
   """
@@ -298,35 +278,9 @@ class DestroyCell(CircuitCell):
   VALUE = 4
   IS_FIXED_SIZE = True
 
-  REASON_FOR_INT = {
-    0: CloseReason.NONE,
-    1: CloseReason.PROTOCOL,
-    2: CloseReason.INTERNAL,
-    3: CloseReason.REQUESTED,
-    4: CloseReason.HIBERNATING,
-    5: CloseReason.RESOURCELIMIT,
-    6: CloseReason.CONNECTFAILED,
-    7: CloseReason.OR_IDENTITY,
-    8: CloseReason.OR_CONN_CLOSED,
-    9: CloseReason.FINISHED,
-    10: CloseReason.TIMEOUT,
-    11: CloseReason.DESTROYED,
-    12: CloseReason.NOSUCHSERVICE,
-  }
-
-  INT_FOR_REASON = dict((v, k) for k, v in REASON_FOR_INT.items())
-
   def __init__(self, circ_id, reason):
     super(DestroyCell, self).__init__(circ_id)
-
-    if isinstance(reason, int):
-      self.reason = DestroyCell.REASON_FOR_INT.get(reason, CloseReason.UNKNOWN)
-      self.reason_int = reason
-    elif reason in CloseReason:
-      self.reason = reason
-      self.reason_int = DestroyCell.INT_FOR_REASON.get(reason, -1)
-    else:
-      raise ValueError('Invalid closure reason: %s' % reason)
+    self.reason, self.reason_int = CloseReason.get(reason)
 
   @classmethod
   def pack(cls, link_version, circ_id, reason = CloseReason.NONE):
@@ -340,12 +294,7 @@ class DestroyCell(CircuitCell):
     :returns: **bytes** to close the circuit
     """
 
-    reason = DestroyCell.INT_FOR_REASON.get(reason, reason)
-
-    if not isinstance(reason, int):
-      raise ValueError('Invalid closure reason: %s' % reason)
-
-    return cls._pack(link_version, Size.CHAR.pack(reason), circ_id)
+    return cls._pack(link_version, Size.CHAR.pack(CloseReason.get(reason)[1]), circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):

@@ -120,56 +120,93 @@ __all__ = [
   'cell',
 ]
 
-AddrType = stem.util.enum.UppercaseEnum(
-  'HOSTNAME',
-  'IPv4',
-  'IPv6',
-  'ERROR_TRANSIENT',
-  'ERROR_PERMANENT',
-  'UNKNOWN',
+
+class _IntegerEnum(stem.util.enum.Enum):
+  """
+  Integer backed enumeration. Enumerations of this type always have an implicit
+  **UNKNOWN** value for integer values that lack a mapping.
+  """
+
+  def __init__(self, *args):
+    self._enum_to_int = {}
+    self._int_to_enum = {}
+    parent_args = []
+
+    for entry in args:
+      if len(entry) == 2:
+        enum, int_val = entry
+        str_val = enum
+      elif len(entry) == 3:
+        enum, str_val, int_val = entry
+      else:
+        raise ValueError('IntegerEnums can only be constructed with two or three value tuples: %s' % repr(entry))
+
+      self._enum_to_int[enum] = int_val
+      self._int_to_enum[int_val] = enum
+      parent_args.append((enum, str_val))
+
+    parent_args.append(('UNKNOWN', 'UNKNOWN'))
+    super(_IntegerEnum, self).__init__(*parent_args)
+
+  def get(self, val):
+    """
+    Privides the (enum, int_value) tuple for a given value.
+    """
+
+    if isinstance(val, int):
+      return self._int_to_enum.get(val, self.UNKNOWN), val
+    elif val in self:
+      return val, self._enum_to_int.get(val, val)
+    else:
+      raise ValueError('Invalid %s type: %s' % (self.__name__, val))
+
+
+AddrType = _IntegerEnum(
+  ('HOSTNAME', 0),
+  ('IPv4', 4),
+  ('IPv6', 6),
+  ('ERROR_TRANSIENT', 16),
+  ('ERROR_PERMANENT', 17),
 )
 
-RelayCommand = stem.util.enum.Enum(
-  ('BEGIN', 'RELAY_BEGIN'),
-  ('DATA', 'RELAY_DATA'),
-  ('END', 'RELAY_END'),
-  ('CONNECTED', 'RELAY_CONNECTED'),
-  ('SENDME', 'RELAY_SENDME'),
-  ('EXTEND', 'RELAY_EXTEND'),
-  ('EXTENDED', 'RELAY_EXTENDED'),
-  ('TRUNCATE', 'RELAY_TRUNCATE'),
-  ('TRUNCATED', 'RELAY_TRUNCATED'),
-  ('DROP', 'RELAY_DROP'),
-  ('RESOLVE', 'RELAY_RESOLVE'),
-  ('RESOLVED', 'RELAY_RESOLVED'),
-  ('BEGIN_DIR', 'RELAY_BEGIN_DIR'),
-  ('EXTEND2', 'RELAY_EXTEND2'),
-  ('EXTENDED2', 'RELAY_EXTENDED2'),
-  ('UNKNOWN', 'UNKNOWN'),
+RelayCommand = _IntegerEnum(
+  ('BEGIN', 'RELAY_BEGIN', 1),
+  ('DATA', 'RELAY_DATA', 2),
+  ('END', 'RELAY_END', 3),
+  ('CONNECTED', 'RELAY_CONNECTED', 4),
+  ('SENDME', 'RELAY_SENDME', 5),
+  ('EXTEND', 'RELAY_EXTEND', 6),
+  ('EXTENDED', 'RELAY_EXTENDED', 7),
+  ('TRUNCATE', 'RELAY_TRUNCATE', 8),
+  ('TRUNCATED', 'RELAY_TRUNCATED', 9),
+  ('DROP', 'RELAY_DROP', 10),
+  ('RESOLVE', 'RELAY_RESOLVE', 11),
+  ('RESOLVED', 'RELAY_RESOLVED', 12),
+  ('BEGIN_DIR', 'RELAY_BEGIN_DIR', 13),
+  ('EXTEND2', 'RELAY_EXTEND2', 14),
+  ('EXTENDED2', 'RELAY_EXTENDED2', 15),
 )
 
-CertType = stem.util.enum.UppercaseEnum(
-  'LINK',
-  'IDENTITY',
-  'AUTHENTICATE',
-  'UNKNOWN',
+CertType = _IntegerEnum(
+  ('LINK', 1),
+  ('IDENTITY', 2),
+  ('AUTHENTICATE', 3),
 )
 
-CloseReason = stem.util.enum.UppercaseEnum(
-  'NONE',
-  'PROTOCOL',
-  'INTERNAL',
-  'REQUESTED',
-  'HIBERNATING',
-  'RESOURCELIMIT',
-  'CONNECTFAILED',
-  'OR_IDENTITY',
-  'OR_CONN_CLOSED',
-  'FINISHED',
-  'TIMEOUT',
-  'DESTROYED',
-  'NOSUCHSERVICE',
-  'UNKNOWN',
+CloseReason = _IntegerEnum(
+  ('NONE', 0),
+  ('PROTOCOL', 1),
+  ('INTERNAL', 2),
+  ('REQUESTED', 3),
+  ('HIBERNATING', 4),
+  ('RESOURCELIMIT', 5),
+  ('CONNECTFAILED', 6),
+  ('OR_IDENTITY', 7),
+  ('OR_CONN_CLOSED', 8),
+  ('FINISHED', 9),
+  ('TIMEOUT', 10),
+  ('DESTROYED', 11),
+  ('NOSUCHSERVICE', 12),
 )
 
 
@@ -298,25 +335,8 @@ class Address(Field):
   :var bytes value_bin: encoded address value
   """
 
-  TYPE_FOR_INT = {
-    0: AddrType.HOSTNAME,
-    4: AddrType.IPv4,
-    6: AddrType.IPv6,
-    16: AddrType.ERROR_TRANSIENT,
-    17: AddrType.ERROR_PERMANENT,
-  }
-
-  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
-
   def __init__(self, addr_type, value):
-    if isinstance(addr_type, int):
-      self.type = Address.TYPE_FOR_INT.get(addr_type, AddrType.UNKNOWN)
-      self.type_int = addr_type
-    elif addr_type in AddrType:
-      self.type = addr_type
-      self.type_int = Address.INT_FOR_TYPE.get(addr_type, -1)
-    else:
-      raise ValueError('Invalid address type: %s' % addr_type)
+    self.type, self.type_int = AddrType.get(addr_type)
 
     if self.type == AddrType.IPv4:
       if stem.util.connection.is_valid_ipv4_address(value):
@@ -383,24 +403,8 @@ class Certificate(Field):
   :var bytes value: certificate value
   """
 
-  TYPE_FOR_INT = {
-    1: CertType.LINK,
-    2: CertType.IDENTITY,
-    3: CertType.AUTHENTICATE,
-  }
-
-  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
-
   def __init__(self, cert_type, value):
-    if isinstance(cert_type, int):
-      self.type = Certificate.TYPE_FOR_INT.get(cert_type, CertType.UNKNOWN)
-      self.type_int = cert_type
-    elif cert_type in CertType:
-      self.type = cert_type
-      self.type_int = Certificate.INT_FOR_TYPE.get(cert_type, -1)
-    else:
-      raise ValueError('Invalid certificate type: %s' % cert_type)
-
+    self.type, self.type_int = CertType.get(cert_type)
     self.value = value
 
   def pack(self):
