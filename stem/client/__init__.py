@@ -209,6 +209,26 @@ CloseReason = _IntegerEnum(
   ('NOSUCHSERVICE', 12),
 )
 
+STREAM_ID_REQUIRED = (
+  RelayCommand.BEGIN,
+  RelayCommand.DATA,
+  RelayCommand.END,
+  RelayCommand.CONNECTED,
+  RelayCommand.RESOLVE,
+  RelayCommand.RESOLVED,
+  RelayCommand.BEGIN_DIR,
+)
+
+STREAM_ID_DISALLOWED = (
+  RelayCommand.EXTEND,
+  RelayCommand.EXTENDED,
+  RelayCommand.TRUNCATE,
+  RelayCommand.TRUNCATED,
+  RelayCommand.DROP,
+  RelayCommand.EXTEND2,
+  RelayCommand.EXTENDED2,
+)
+
 
 def split(content, size):
   """

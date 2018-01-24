@@ -43,8 +43,10 @@ import os
 import random
 import sys
 
+import stem.client
+
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Certificate, CloseReason, Size, split
+from stem.client import ZERO, Address, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
@@ -259,11 +261,76 @@ class RelayCell(CircuitCell):
   Command concerning a relay circuit.
 
   :var stem.client.RelayCommand command: reason the circuit is being closed
+  :var int command_int: integer value of our command
+  :var bytes data: payload of the cell
+  :var int digest: running digest held with the relay
+  :var int stream_id: specific stream this concerns
   """
+
+  # TODO: Relay cells also have a 'recognized' field but from the spec I really
+  # haven't a clue what the heck it is. The spec makes multiple mentions to
+  # "when the 'recognized' field of a RELAY cell is zero" but no mention to if
+  # it's non-zero or what the field actually is. :/
+  #
+  # For now just leaving it out. I'll file a ticket to ask about it later.
 
   NAME = 'RELAY'
   VALUE = 3
   IS_FIXED_SIZE = True
+
+  def __init__(self, circ_id, command, data, digest, stream_id = 0):
+    super(RelayCell, self).__init__(circ_id)
+    self.command, self.command_int = stem.client.RelayCommand.get(command)
+    self.data = data
+    self.digest = digest
+    self.stream_id = stream_id
+
+    if not stream_id and self.command in stem.client.STREAM_ID_REQUIRED:
+      raise ValueError('%s relay cells require a stream id' % self.command)
+    elif stream_id and self.command in stem.client.STREAM_ID_DISALLOWED:
+      raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+
+  @classmethod
+  def pack(cls, link_version, circ_id, command, data, digest, stream_id = 0):
+    """
+    Provides payload of a relay cell.
+
+    :param int link_version: link protocol version
+    :param int circ_id: circuit id
+    :param stem.client.RelayCommand command: reason the circuit is being closed
+    :param int command_int: integer value of our command
+    :param bytes data: payload of the cell
+    :param int digest: running digest held with the relay
+    :param int stream_id: specific stream this concerns
+
+    :returns: **bytes** to close the circuit
+    """
+
+    cell = RelayCell(circ_id, command, data, digest, stream_id)
+
+    payload = io.BytesIO()
+    payload.write(Size.CHAR.pack(cell.command))
+    payload.write(Size.SHORT.pack(0))  # 'recognized' field
+    payload.write(Size.SHORT.pack(cell.stream_id))
+    payload.write(Size.LONG.pack(cell.digest))
+    payload.write(Size.SHORT.pack(len(cell.data)))
+    payload.write(cell.data)
+
+    return cls._pack(link_version, payload.getvalue(), circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_version):
+    command, content = Size.CHAR.pop(content)
+    _, content = Size.SHORT.pop(content)  # 'recognized' field
+    stream_id, content = Size.SHORT.pop(content)
+    digest, content = Size.LONG.pop(content)
+    data_len, content = Size.SHORT.pop(content)
+    data, content = split(content, data_len)
+
+    return RelayCell(circ_id, command, data, digest, stream_id)
+
+  def __hash__(self):
+    return _hash_attr(self, 'command_int', 'stream_id', 'digest', 'data')
 
 
 class DestroyCell(CircuitCell):
@@ -280,10 +347,10 @@ class DestroyCell(CircuitCell):
 
   def __init__(self, circ_id, reason):
     super(DestroyCell, self).__init__(circ_id)
-    self.reason, self.reason_int = CloseReason.get(reason)
+    self.reason, self.reason_int = stem.client.CloseReason.get(reason)
 
   @classmethod
-  def pack(cls, link_version, circ_id, reason = CloseReason.NONE):
+  def pack(cls, link_version, circ_id, reason = stem.client.CloseReason.NONE):
     """
     Provides payload to close the given circuit.
 
@@ -294,7 +361,7 @@ class DestroyCell(CircuitCell):
     :returns: **bytes** to close the circuit
     """
 
-    return cls._pack(link_version, Size.CHAR.pack(CloseReason.get(reason)[1]), circ_id)
+    return cls._pack(link_version, Size.CHAR.pack(stem.client.CloseReason.get(reason)[1]), circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
@@ -624,7 +691,7 @@ class CertsCell(Cell):
       if not content:
         raise ValueError('CERTS cell indicates it should have %i certificates, but only contained %i' % (cert_count, len(certs)))
 
-      cert, content = Certificate.pop(content)
+      cert, content = stem.client.Certificate.pop(content)
       certs.append(cert)
 
     return CertsCell(certs)
