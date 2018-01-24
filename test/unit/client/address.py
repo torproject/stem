@@ -12,6 +12,13 @@ ExpectedAddress = collections.namedtuple('ExpectedAddress', ['type', 'type_int',
 
 
 class TestAddress(unittest.TestCase):
+  def test_enum(self):
+    self.assertEqual(('IPv4', 4), AddrType.get(AddrType.IPv4))
+    self.assertEqual(('IPv4', 4), AddrType.get(4))
+
+    self.assertEqual(('UNKNOWN', 25), AddrType.get(25))
+    self.assertRaisesRegexp(ValueError, "Invalid enumeration 'boom', options are HOSTNAME, IPv4, IPv6, ERROR_TRANSIENT, ERROR_PERMANENT, UNKNOWN", AddrType.get, 'boom')
+
   def test_constructor(self):
     test_data = (
       ((4, '\x7f\x00\x00\x01'), ExpectedAddress(AddrType.IPv4, 4, '127.0.0.1', '\x7f\x00\x00\x01')),

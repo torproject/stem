@@ -158,7 +158,7 @@ class _IntegerEnum(stem.util.enum.Enum):
     elif val in self:
       return val, self._enum_to_int.get(val, val)
     else:
-      raise ValueError('Invalid %s type: %s' % (self.__name__, val))
+      raise ValueError("Invalid enumeration '%s', options are %s" % (val, ', '.join(self)))
 
 
 AddrType = _IntegerEnum(
