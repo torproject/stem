@@ -298,7 +298,6 @@ class RelayCell(CircuitCell):
     :param int link_version: link protocol version
     :param int circ_id: circuit id
     :param stem.client.RelayCommand command: reason the circuit is being closed
-    :param int command_int: integer value of our command
     :param bytes data: payload of the cell
     :param int digest: running digest held with the relay
     :param int stream_id: specific stream this concerns
@@ -309,7 +308,7 @@ class RelayCell(CircuitCell):
     cell = RelayCell(circ_id, command, data, digest, stream_id)
 
     payload = io.BytesIO()
-    payload.write(Size.CHAR.pack(cell.command))
+    payload.write(Size.CHAR.pack(cell.command_int))
     payload.write(Size.SHORT.pack(0))  # 'recognized' field
     payload.write(Size.SHORT.pack(cell.stream_id))
     payload.write(Size.LONG.pack(cell.digest))

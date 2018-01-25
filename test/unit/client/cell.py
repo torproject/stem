@@ -13,6 +13,7 @@ from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
   PaddingCell,
+  RelayCell,
   DestroyCell,
   CreateFastCell,
   CreatedFastCell,
@@ -28,6 +29,11 @@ CHALLENGE = '\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xf
 
 PADDING_CELLS = {
   '\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+}
+
+RELAY_CELLS = {
+  '\x00\x01\x03\r\x00\x00\x00\x01!\xa3?\xec' + ZERO * 500: ('RELAY_BEGIN_DIR', 13, 1, 1, '', 564346860),
+  '\x00\x01\x03\x02\x00\x00\x00\x01\x15:m\xe0\x00&GET /tor/server/authority HTTP/1.0\r\n\r\n' + ZERO * 460: ('RELAY_DATA', 2, 1, 1, 'GET /tor/server/authority HTTP/1.0\r\n\r\n', 356150752),
 }
 
 DESTROY_CELLS = {
@@ -129,12 +135,25 @@ class TestCell(unittest.TestCase):
 
     self.assertEqual('', content)  # check that we've consumed all of the bytes
 
-  def test_padding_packing(self):
+  def test_padding_cell(self):
     for cell_bytes, payload in PADDING_CELLS.items():
       self.assertEqual(cell_bytes, PaddingCell.pack(2, payload))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
 
-  def test_destroy_packing(self):
+  def test_relay_cell(self):
+    for cell_bytes, (command, command_int, circ_id, stream_id, data, digest) in RELAY_CELLS.items():
+      self.assertEqual(cell_bytes, RelayCell.pack(2, circ_id, command, data, digest, stream_id))
+      self.assertEqual(cell_bytes, RelayCell.pack(2, circ_id, command_int, data, digest, stream_id))
+
+      cell = Cell.unpack(cell_bytes, 2)[0]
+      self.assertEqual(circ_id, cell.circ_id)
+      self.assertEqual(command, cell.command)
+      self.assertEqual(command_int, cell.command_int)
+      self.assertEqual(data, cell.data)
+      self.assertEqual(digest, cell.digest)
+      self.assertEqual(stream_id, cell.stream_id)
+
+  def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():
       self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason))
       self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason_int))
@@ -146,7 +165,7 @@ class TestCell(unittest.TestCase):
 
     self.assertRaisesRegexp(ValueError, 'Circuit closure reason should be a single byte, but was 2', Cell.unpack, '\x80\x00\x00\x00\x04\x01\x01' + ZERO * 507, 5)
 
-  def test_create_fast(self):
+  def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
       self.assertEqual(cell_bytes, CreateFastCell.pack(5, circ_id, key_material))
 
@@ -156,7 +175,7 @@ class TestCell(unittest.TestCase):
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
 
-  def test_created_fast(self):
+  def test_created_fast_cell(self):
     for cell_bytes, (circ_id, key_material, derivative_key) in CREATED_FAST_CELLS.items():
       self.assertEqual(cell_bytes, CreatedFastCell.pack(5, circ_id, derivative_key, key_material))
 
@@ -167,12 +186,12 @@ class TestCell(unittest.TestCase):
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
 
-  def test_versions_packing(self):
+  def test_versions_cell(self):
     for cell_bytes, versions in VERSIONS_CELLS.items():
       self.assertEqual(cell_bytes, VersionsCell.pack(versions))
       self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
 
-  def test_netinfo_packing(self):
+  def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
       self.assertEqual(cell_bytes, NetinfoCell.pack(2, receiver_address, sender_addresses, timestamp))
 
@@ -181,14 +200,14 @@ class TestCell(unittest.TestCase):
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
 
-  def test_vpadding_packing(self):
+  def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
       self.assertEqual(cell_bytes, VPaddingCell.pack(2, payload = payload))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
 
     self.assertRaisesRegexp(ValueError, 'VPaddingCell.pack caller specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell.pack, 2, 5, '\x02')
 
-  def test_certs_packing(self):
+  def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():
       self.assertEqual(cell_bytes, CertsCell.pack(2, certs))
       self.assertEqual(certs, Cell.unpack(cell_bytes, 2)[0].certificates)
@@ -202,7 +221,7 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, 'CERTS cell should have a certificate with 3 bytes, but only had 1 remaining', Cell.unpack, '\x00\x00\x81\x00\x05\x01\x01\x00\x03\x08', 2)
     self.assertRaisesRegexp(ValueError, 'CERTS cell indicates it should have 2 certificates, but only contained 1', Cell.unpack, '\x00\x00\x81\x00\x05\x02\x01\x00\x01\x08', 2)
 
-  def test_auth_challenge_packing(self):
+  def test_auth_challenge_cell(self):
     for cell_bytes, (challenge, methods) in AUTH_CHALLENGE_CELLS.items():
       self.assertEqual(cell_bytes, AuthChallengeCell.pack(2, methods, challenge))
 

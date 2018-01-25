@@ -141,8 +141,8 @@ class _IntegerEnum(stem.util.enum.Enum):
       else:
         raise ValueError('IntegerEnums can only be constructed with two or three value tuples: %s' % repr(entry))
 
-      self._enum_to_int[enum] = int_val
-      self._int_to_enum[int_val] = enum
+      self._enum_to_int[str_val] = int_val
+      self._int_to_enum[int_val] = str_val
       parent_args.append((enum, str_val))
 
     parent_args.append(('UNKNOWN', 'UNKNOWN'))
