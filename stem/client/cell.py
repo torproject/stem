@@ -394,7 +394,7 @@ class CreateFastCell(CircuitCell):
     self.key_material = key_material
 
   @classmethod
-  def pack(cls, link_version, circ_id, key_material = None):
+  def pack(cls, link_version, circ_id = None, key_material = None):
     """
     Provides a randomized circuit construction payload.
 
@@ -404,6 +404,12 @@ class CreateFastCell(CircuitCell):
 
     :returns: **bytes** with our randomized key material
     """
+
+    if circ_id is None:
+      # When initiating a circuit the v4 link protocol requires us to set the
+      # most significant bit. Otherwise any id will do.
+
+      circ_id = 0x80000000 if link_version >= 4 else 0x01
 
     if key_material and len(key_material) != HASH_LEN:
       raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
