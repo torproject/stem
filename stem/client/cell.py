@@ -125,6 +125,9 @@ class Cell(object):
     payload, content = split(content, payload_len)
     return cls._unpack(payload, circ_id, link_version), content
 
+  def pack(self, link_version):
+    raise NotImplementedError('Unpacking not yet implemented for %s cells' % cls.NAME)
+
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
     """
@@ -223,6 +226,9 @@ class PaddingCell(Cell):
   def __init__(self, payload):
     self.payload = payload
 
+  def pack(self, link_version):
+    return PaddingCell.pack(link_version, self.payload)
+
   @classmethod
   def pack(cls, link_version, payload = None):
     """
@@ -290,6 +296,9 @@ class RelayCell(CircuitCell):
     elif stream_id and self.command in stem.client.STREAM_ID_DISALLOWED:
       raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
+  def pack(self, link_version):
+    return RelayCell.pack(link_version, self.circ_id, self.command_int, self.data, self.digest, self.stream_id)
+
   @classmethod
   def pack(cls, link_version, circ_id, command, data, digest, stream_id = 0):
     """
@@ -348,6 +357,9 @@ class DestroyCell(CircuitCell):
     super(DestroyCell, self).__init__(circ_id)
     self.reason, self.reason_int = stem.client.CloseReason.get(reason)
 
+  def pack(self, link_version):
+    return DestroyCell.pack(link_version, self.circ_id, self.reason_int)
+
   @classmethod
   def pack(cls, link_version, circ_id, reason = stem.client.CloseReason.NONE):
     """
@@ -389,9 +401,17 @@ class CreateFastCell(CircuitCell):
   VALUE = 5
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, key_material):
+  def __init__(self, circ_id = None, key_material = None):
+    if not key_material:
+      key_material = os.urandom(HASH_LEN)
+    elif len(key_material) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
+
     super(CreateFastCell, self).__init__(circ_id)
     self.key_material = key_material
+
+  def pack(self, link_version):
+    return CreateFastCell.pack(link_version, self.circ_id, self.key_material)
 
   @classmethod
   def pack(cls, link_version, circ_id = None, key_material = None):
@@ -405,16 +425,16 @@ class CreateFastCell(CircuitCell):
     :returns: **bytes** with our randomized key material
     """
 
-    if circ_id is None:
+    cell = CreateFastCell(circ_id, key_material)
+    circ_id = cell.circ_id
+
+    if not circ_id:
       # When initiating a circuit the v4 link protocol requires us to set the
       # most significant bit. Otherwise any id will do.
 
       circ_id = 0x80000000 if link_version >= 4 else 0x01
 
-    if key_material and len(key_material) != HASH_LEN:
-      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
-
-    return cls._pack(link_version, key_material if key_material else os.urandom(HASH_LEN), circ_id)
+    return cls._pack(link_version, cell.key_material, circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_version):
@@ -445,6 +465,9 @@ class CreatedFastCell(CircuitCell):
     super(CreatedFastCell, self).__init__(circ_id)
     self.key_material = key_material
     self.derivative_key = derivative_key
+
+  def pack(self, link_version):
+    return CreatedFastCell.pack(link_version, self.circ_id, delf.derived_key, self.key_material)
 
   @classmethod
   def pack(cls, link_version, circ_id, derivative_key, key_material = None):
@@ -496,6 +519,9 @@ class VersionsCell(Cell):
   def __init__(self, versions):
     self.versions = versions
 
+  def pack(self, link_version):
+    return VersionsCell.pack(self.versions)
+
   @classmethod
   def pack(cls, versions):
     """
@@ -543,6 +569,9 @@ class NetinfoCell(Cell):
     self.timestamp = timestamp
     self.receiver_address = receiver_address
     self.sender_addresses = sender_addresses
+
+  def pack(self, link_version):
+    return NetinfoCell.pack(link_version, self.receiver_address, self.sender_address, self.timestamp)
 
   @classmethod
   def pack(cls, link_version, receiver_address, sender_addresses, timestamp = None):
@@ -629,6 +658,9 @@ class VPaddingCell(Cell):
   def __init__(self, payload):
     self.payload = payload
 
+  def pack(self, link_version):
+    return VPaddingCell.pack(link_version, payload = self.payload)
+
   @classmethod
   def pack(cls, link_version, size = None, payload = None):
     """
@@ -673,6 +705,9 @@ class CertsCell(Cell):
 
   def __init__(self, certs):
     self.certificates = certs
+
+  def pack(self, link_version):
+    return CertsCell.pack(link_version, self.certificates)
 
   @classmethod
   def pack(cls, link_version, certs):
@@ -721,6 +756,9 @@ class AuthChallengeCell(Cell):
   def __init__(self, challenge, methods):
     self.challenge = challenge
     self.methods = methods
+
+  def pack(self, link_version):
+    return AuthChallengeCell.pack(link_version, self.methods, self.challenge)
 
   @classmethod
   def pack(cls, link_version, methods, challenge = None):
