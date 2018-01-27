@@ -826,8 +826,13 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var int consensus_method: method version used to generate this consensus
   :var dict bandwidth_weights: dict of weight(str) => value(int) mappings
 
+  :var int shared_randomness_current_reveal_count: number of commitments
+    used to generate the current shared random value
   :var str shared_randomness_current_value: base64 encoded current shared
     random value
+
+  :var int shared_randomness_previous_reveal_count: number of commitments
+    used to generate the last shared random value
   :var str shared_randomness_previous_value: base64 encoded last shared random
     value
 
@@ -860,8 +865,15 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      required_client_protocols, and required_relay_protocols.
 
   .. versionchanged:: 1.6.0
-     The shared randomness attributes were misdocumented in the tor spec and as
-     such never set. They're now an attribute of **directory_authorities**.
+     The is_shared_randomness_participate and shared_randomness_commitments
+     were misdocumented in the tor spec and as such never set. They're now an
+     attribute of votes in the **directory_authorities**.
+
+  .. versionchanged:: 1.7.0
+     The shared_randomness_current_reveal_count and
+     shared_randomness_previous_reveal_count attributes were undocumented and
+     not provided properly if retrieved before their shred_randomness_*_value
+     counterpart.
   """
 
   ATTRIBUTES = {
@@ -888,7 +900,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'required_client_protocols': ({}, _parse_required_client_protocols_line),
     'required_relay_protocols': ({}, _parse_required_relay_protocols_line),
     'params': ({}, _parse_header_parameters_line),
+    'shared_randomness_previous_reveal_count': (None, _parse_shared_rand_previous_value),
     'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
+    'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
 
     'signatures': ([], _parse_footer_directory_signature_line),
@@ -1025,8 +1039,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     self.is_shared_randomness_participate = False
     self.shared_randomness_commitments = []
-    self.shared_randomness_previous_reveal_count = None
-    self.shared_randomness_current_reveal_count = None
 
     self._default_params = default_params
     self._header(document_file, validate)
