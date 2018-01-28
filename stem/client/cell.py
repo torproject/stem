@@ -32,8 +32,9 @@ Messages communicated over a Tor relay's ORPort.
     |- AuthenticateCell - Client authentication.      (section 4.5)
     |- AuthorizeCell - Client authorization.          (not yet used)
     |
-    |- pack - Provides encoded bytes for this cell class.
-    +- unpack - Decodes bytes for this cell class.
+    |- pack - encodes cell into bytes
+    |- unpack - decodes series of cells
+    +- pop - decodes cell with remainder
 """
 
 import datetime
@@ -95,8 +96,30 @@ class Cell(object):
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
+  def pack(self, link_version):
+    raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
+
   @staticmethod
   def unpack(content, link_version):
+    """
+    Unpacks all cells from a response.
+
+    :param bytes content: payload to decode
+    :param int link_version: link protocol version
+
+    :returns: :class:`~stem.client.cell.Cell` generator
+
+    :raises:
+      * ValueError if content is malformed
+      * NotImplementedError if unable to unpack any of the cell types
+    """
+
+    while content:
+      cell, content = Cell.pop(content, link_version)
+      yield cell
+
+  @staticmethod
+  def pop(content, link_version):
     """
     Unpacks the first cell.
 
@@ -124,9 +147,6 @@ class Cell(object):
 
     payload, content = split(content, payload_len)
     return cls._unpack(payload, circ_id, link_version), content
-
-  def pack(self, link_version):
-    raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
 
   @classmethod
   def _pack(cls, link_version, payload, circ_id = 0):
