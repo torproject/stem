@@ -6,7 +6,7 @@ import datetime
 import os
 import unittest
 
-from stem.client import ZERO, AddrType, CertType, CloseReason, Address, Certificate
+from stem.client import ZERO, CertType, CloseReason, Address, Certificate
 from test.unit.client import test_data
 
 from stem.client.cell import (
@@ -56,7 +56,7 @@ VERSIONS_CELLS = {
 }
 
 NETINFO_CELLS = {
-  '\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address(AddrType.IPv4, '127.0.0.1'), [Address(AddrType.IPv4, '97.113.15.2')]),
+  '\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')]),
 }
 
 VPADDING_CELLS = {
@@ -130,8 +130,8 @@ class TestCell(unittest.TestCase):
     netinfo_cell, content = Cell.unpack(content, 2)
     self.assertEqual(NetinfoCell, type(netinfo_cell))
     self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), netinfo_cell.timestamp)
-    self.assertEqual(Address(AddrType.IPv4, '127.0.0.1'), netinfo_cell.receiver_address)
-    self.assertEqual([Address(AddrType.IPv4, '97.113.15.2')], netinfo_cell.sender_addresses)
+    self.assertEqual(Address('127.0.0.1'), netinfo_cell.receiver_address)
+    self.assertEqual([Address('97.113.15.2')], netinfo_cell.sender_addresses)
 
     self.assertEqual('', content)  # check that we've consumed all of the bytes
 

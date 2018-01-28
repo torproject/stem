@@ -355,7 +355,15 @@ class Address(Field):
   :var bytes value_bin: encoded address value
   """
 
-  def __init__(self, addr_type, value):
+  def __init__(self, value, addr_type = None):
+    if addr_type is None:
+      if stem.util.connection.is_valid_ipv4_address(value):
+        addr_type = AddrType.IPv4
+      elif stem.util.connection.is_valid_ipv6_address(value):
+        addr_type = AddrType.IPv6
+      else:
+        raise ValueError('Address type is required unless an IPv4 or IPv6 address')
+
     self.type, self.type_int = AddrType.get(addr_type)
 
     if self.type == AddrType.IPv4:
@@ -408,7 +416,7 @@ class Address(Field):
 
     addr_value, content = split(content, addr_length)
 
-    return Address(addr_type, addr_value), content
+    return Address(addr_value, addr_type), content
 
   def __hash__(self):
     return _hash_attr(self, 'type_int', 'value_bin')
