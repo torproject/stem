@@ -125,7 +125,7 @@ class TestCell(unittest.TestCase):
       self.assertTrue(certs_cell.certificates[i].value.startswith(cert_prefix))
 
     auth_challenge_cell, content = Cell.unpack(content, 2)
-    self.assertEqual(AuthChallengeCell('\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K', [1, 3]), auth_challenge_cell)
+    self.assertEqual(AuthChallengeCell([1, 3], '\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K'), auth_challenge_cell)
 
     netinfo_cell, content = Cell.unpack(content, 2)
     self.assertEqual(NetinfoCell, type(netinfo_cell))
@@ -137,13 +137,13 @@ class TestCell(unittest.TestCase):
 
   def test_padding_cell(self):
     for cell_bytes, payload in PADDING_CELLS.items():
-      self.assertEqual(cell_bytes, PaddingCell.pack(2, payload))
+      self.assertEqual(cell_bytes, PaddingCell(payload).pack(2))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
 
   def test_relay_cell(self):
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest) in RELAY_CELLS.items():
-      self.assertEqual(cell_bytes, RelayCell.pack(2, circ_id, command, data, digest, stream_id))
-      self.assertEqual(cell_bytes, RelayCell.pack(2, circ_id, command_int, data, digest, stream_id))
+      self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(2))
+      self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id).pack(2))
 
       cell = Cell.unpack(cell_bytes, 2)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -155,8 +155,8 @@ class TestCell(unittest.TestCase):
 
   def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():
-      self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason))
-      self.assertEqual(cell_bytes, DestroyCell.pack(5, circ_id, reason_int))
+      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
+      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
 
       cell = Cell.unpack(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -167,33 +167,33 @@ class TestCell(unittest.TestCase):
 
   def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
-      self.assertEqual(cell_bytes, CreateFastCell.pack(5, circ_id, key_material))
+      self.assertEqual(cell_bytes, CreateFastCell(circ_id, key_material).pack(5))
 
       cell = Cell.unpack(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
 
-    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
+    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_created_fast_cell(self):
     for cell_bytes, (circ_id, key_material, derivative_key) in CREATED_FAST_CELLS.items():
-      self.assertEqual(cell_bytes, CreatedFastCell.pack(5, circ_id, derivative_key, key_material))
+      self.assertEqual(cell_bytes, CreatedFastCell(circ_id, derivative_key, key_material).pack(5))
 
       cell = Cell.unpack(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
 
-    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell.pack, 2, 5, 'boo')
+    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_versions_cell(self):
     for cell_bytes, versions in VERSIONS_CELLS.items():
-      self.assertEqual(cell_bytes, VersionsCell.pack(versions))
+      self.assertEqual(cell_bytes, VersionsCell(versions).pack())
       self.assertEqual(versions, Cell.unpack(cell_bytes, 2)[0].versions)
 
   def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
-      self.assertEqual(cell_bytes, NetinfoCell.pack(2, receiver_address, sender_addresses, timestamp))
+      self.assertEqual(cell_bytes, NetinfoCell(receiver_address, sender_addresses, timestamp).pack(2))
 
       cell = Cell.unpack(cell_bytes, 2)[0]
       self.assertEqual(timestamp, cell.timestamp)
@@ -202,14 +202,14 @@ class TestCell(unittest.TestCase):
 
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
-      self.assertEqual(cell_bytes, VPaddingCell.pack(2, payload = payload))
+      self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
       self.assertEqual(payload, Cell.unpack(cell_bytes, 2)[0].payload)
 
-    self.assertRaisesRegexp(ValueError, 'VPaddingCell.pack caller specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell.pack, 2, 5, '\x02')
+    self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
 
   def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():
-      self.assertEqual(cell_bytes, CertsCell.pack(2, certs))
+      self.assertEqual(cell_bytes, CertsCell(certs).pack(2))
       self.assertEqual(certs, Cell.unpack(cell_bytes, 2)[0].certificates)
 
     # extra bytes after the last certificate should be ignored
@@ -223,7 +223,7 @@ class TestCell(unittest.TestCase):
 
   def test_auth_challenge_cell(self):
     for cell_bytes, (challenge, methods) in AUTH_CHALLENGE_CELLS.items():
-      self.assertEqual(cell_bytes, AuthChallengeCell.pack(2, methods, challenge))
+      self.assertEqual(cell_bytes, AuthChallengeCell(methods, challenge).pack(2))
 
       cell = Cell.unpack(cell_bytes, 2)[0]
       self.assertEqual(challenge, cell.challenge)
