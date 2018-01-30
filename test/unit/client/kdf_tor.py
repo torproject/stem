@@ -14,6 +14,21 @@ DERIVED_2 = '\xbc0\xf99\x8e;Te\xbb+\xdb\xabR3l\xb9f?\x07KZC8\xe7\xa15\xd1IS\xd9\
 
 
 class TestKdfTor(unittest.TestCase):
-  def test_kdf_tor(self):
-    self.assertEqual(DERIVED_1, stem.client.kdf_tor(KEY_1))
-    self.assertEqual(DERIVED_2, stem.client.kdf_tor(KEY_2))
+  def test_kdf_value(self):
+    self.assertEqual(DERIVED_1, stem.client.KDF._value(KEY_1))
+    self.assertEqual(DERIVED_2, stem.client.KDF._value(KEY_2))
+
+  def test_kdf_attributes(self):
+    k1 = stem.client.KDF(KEY_1)
+    self.assertEqual('\xca+\x81\x05\x14\x9d)o\xa6\x82\xe9B\xa8?\xf2\xaf\x85\x1b]6', k1.key_hash)
+    self.assertEqual('\xac\xcc\xbc\x91\xb1\xaf\xd7\xe0\xe9\x9dF#\xd8\xdbz\xe8\xe6\xca\x83,', k1.forward_digest)
+    self.assertEqual('*\xe5scX\xbb+\xca \xcb\xa4\xbc\xad\x0f\x95\x0cO\xcc\xac\xf1', k1.backward_digest)
+    self.assertEqual('\xc3\xbe\xc9\xe1\xf4\x90f\xdai\xf3\xf3\xf5\x14\xb5\xb9\x03', k1.forward_key)
+    self.assertEqual('U\xaf\x1e\x1b\xb1q||\x86A<_\xf7\xa0%\x86', k1.backward_key)
+
+    k2 = stem.client.KDF(KEY_1)
+    self.assertEqual('\xca+\x81\x05\x14\x9d)o\xa6\x82\xe9B\xa8?\xf2\xaf\x85\x1b]6', k2.key_hash)
+    self.assertEqual('\xac\xcc\xbc\x91\xb1\xaf\xd7\xe0\xe9\x9dF#\xd8\xdbz\xe8\xe6\xca\x83,', k2.forward_digest)
+    self.assertEqual('*\xe5scX\xbb+\xca \xcb\xa4\xbc\xad\x0f\x95\x0cO\xcc\xac\xf1', k2.backward_digest)
+    self.assertEqual('\xc3\xbe\xc9\xe1\xf4\x90f\xdai\xf3\xf3\xf5\x14\xb5\xb9\x03', k2.forward_key)
+    self.assertEqual('U\xaf\x1e\x1b\xb1q||\x86A<_\xf7\xa0%\x86', k2.backward_key)

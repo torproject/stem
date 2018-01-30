@@ -12,7 +12,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 ::
 
   split - splits bytes into substrings
-  kdf_tor - calculates the derived key using the KDF-TOR protocol
+  KDF - KDF-TOR key derivative for TAP, CREATE_FAST handshakes, and hidden serivces
 
   Field - Packable and unpackable datatype.
     |- Size - Field of a static size.
@@ -461,24 +461,45 @@ class Certificate(Field):
     return _hash_attr(self, 'type_int', 'value')
 
 
-def kdf_tor(key):
+class KDF(object):
   """
-  Tor's key derivation function used by TAP, CREATE_FAST handshakes, and hidden
-  service protocols as defined in section 5.2.1 of the tor spec.
+  Tor's derived key for TAP, CREATE_FAST handshakes, and hidden service
+  protocols as defined tor-spec section 5.2.1.
 
-  :param bytes key: shared key with endpoint (K0 in the spec)
-
-  :returns: **bytes** with the KDF-TOR of the key
+  :var bytes key_hash: expected derived key that proves knowledge of our shared
+    computed key
+  :var bytes forward_digest: forward digest hash seed
+  :var bytes backward_digest: backward digest hash seed
+  :var bytes forward_key: forward encryption key
+  :var bytes backward_key: backward encryption key
   """
 
-  derived_key_len = KEY_LEN * 2 + HASH_LEN * 3
-  derived_key, counter = '', 0
+  def __init__(self, key_material):
+    value = KDF._value(key_material)
 
-  while len(derived_key) < derived_key_len:
-    derived_key += hashlib.sha1(key + Size.CHAR.pack(counter)).digest()
-    counter += 1
+    self.key_hash, value = split(value, HASH_LEN)
+    self.forward_digest, value = split(value, HASH_LEN)
+    self.backward_digest, value = split(value, HASH_LEN)
+    self.forward_key, value = split(value, KEY_LEN)
+    self.backward_key, value = split(value, KEY_LEN)
 
-  return derived_key[:derived_key_len]
+  @staticmethod
+  def _value(key):
+    """
+    Computes the KDF-TOR value...
+
+      K = H(K0 | [00]) | H(K0 | [01]) | H(K0 | [02]) | ...
+    """
+
+    derived_key = ''
+    derived_key_len = KEY_LEN * 2 + HASH_LEN * 3
+    counter = 0
+
+    while len(derived_key) < derived_key_len:
+      derived_key += hashlib.sha1(key + Size.CHAR.pack(counter)).digest()
+      counter += 1
+
+    return derived_key[:derived_key_len]
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
