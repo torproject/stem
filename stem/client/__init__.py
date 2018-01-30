@@ -12,6 +12,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 ::
 
   split - splits bytes into substrings
+  kdf_tor - calculates the derived key using the KDF-TOR protocol
 
   Field - Packable and unpackable datatype.
     |- Size - Field of a static size.
@@ -106,6 +107,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   ===================== ===========
 """
 
+import hashlib
 import io
 import struct
 
@@ -115,6 +117,8 @@ import stem.util.enum
 from stem.util import _hash_attr
 
 ZERO = '\x00'
+HASH_LEN = 20
+KEY_LEN = 16
 
 __all__ = [
   'cell',
@@ -455,6 +459,26 @@ class Certificate(Field):
 
   def __hash__(self):
     return _hash_attr(self, 'type_int', 'value')
+
+
+def kdf_tor(key):
+  """
+  Tor's key derivation function used by TAP, CREATE_FAST handshakes, and hidden
+  service protocols as defined in section 5.2.1 of the tor spec.
+
+  :param bytes key: shared key with endpoint (K0 in the spec)
+
+  :returns: **bytes** with the KDF-TOR of the key
+  """
+
+  derived_key_len = KEY_LEN * 2 + HASH_LEN * 3
+  derived_key, counter = '', 0
+
+  while len(derived_key) < derived_key_len:
+    derived_key += hashlib.sha1(key + Size.CHAR.pack(counter)).digest()
+    counter += 1
+
+  return derived_key[:derived_key_len]
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))

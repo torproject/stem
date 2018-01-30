@@ -47,12 +47,11 @@ import sys
 import stem.client
 
 from stem import UNDEFINED
-from stem.client import ZERO, Address, Size, split
+from stem.client import HASH_LEN, ZERO, Address, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
-HASH_LEN = 20
 
 
 class Cell(object):
