@@ -13,9 +13,6 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
   split - splits bytes into substrings
 
-  KDF - KDF-TOR derivatived attributes
-    +- from_value - parses key material
-
   Field - Packable and unpackable datatype.
     |- Size - Field of a static size.
     |- Address - Relay address.
@@ -24,6 +21,9 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     |- pack - encodes content
     |- unpack - decodes content
     +- pop - decodes content with remainder
+
+  KDF - KDF-TOR derivatived attributes
+    +- from_value - parses key material
 
 .. data:: AddrType (enum)
 
@@ -114,6 +114,7 @@ import hashlib
 import io
 import struct
 
+import stem.prereq
 import stem.util.connection
 import stem.util.enum
 
@@ -496,6 +497,37 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     backward_key, derived_key = split(derived_key, KEY_LEN)
 
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
+
+
+class Circuit(collections.namedtuple('Circuit', ['id', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
+  """
+  Circuit through which requests can be made of a `Tor relay's ORPort
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
+
+  :var int id: circuit id
+  :var hashlib.sha1 forward_digest: digest for forward integrity check
+  :var hashlib.sha1 backward_digest: digest for backward integrity check
+  :var bytes forward_key: forward encryption key
+  :var bytes backward_key: backward encryption key
+  """
+
+  @staticmethod
+  def from_kdf(circ_id, kdf):
+    if not stem.prereq.is_crypto_available():
+      raise ImportError('Circuit construction requires the cryptography module')
+
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+
+    ctr = modes.CTR(ZERO * (algorithms.AES.block_size / 8))
+
+    return Circuit(
+      circ_id,
+      hashlib.sha1(kdf.forward_digest),
+      hashlib.sha1(kdf.backward_digest),
+      Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor(),
+      Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor(),
+    )
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
