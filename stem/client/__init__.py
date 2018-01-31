@@ -12,7 +12,9 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 ::
 
   split - splits bytes into substrings
-  KDF - KDF-TOR key derivative for TAP, CREATE_FAST handshakes, and hidden serivces
+
+  KDF - KDF-TOR derivatived attributes
+    +- from_value - parses key material
 
   Field - Packable and unpackable datatype.
     |- Size - Field of a static size.
@@ -107,6 +109,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
   ===================== ===========
 """
 
+import collections
 import hashlib
 import io
 import struct
@@ -461,45 +464,38 @@ class Certificate(Field):
     return _hash_attr(self, 'type_int', 'value')
 
 
-class KDF(object):
+class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
   """
-  Tor's derived key for TAP, CREATE_FAST handshakes, and hidden service
-  protocols as defined tor-spec section 5.2.1.
+  Computed KDF-TOR derived values for TAP, CREATE_FAST handshakes, and hidden
+  service protocols as defined tor-spec section 5.2.1.
 
-  :var bytes key_hash: expected derived key that proves knowledge of our shared
-    computed key
+  :var bytes key_hash: hash that proves knowledge of our shared key
   :var bytes forward_digest: forward digest hash seed
   :var bytes backward_digest: backward digest hash seed
   :var bytes forward_key: forward encryption key
   :var bytes backward_key: backward encryption key
   """
 
-  def __init__(self, key_material):
-    value = KDF._value(key_material)
-
-    self.key_hash, value = split(value, HASH_LEN)
-    self.forward_digest, value = split(value, HASH_LEN)
-    self.backward_digest, value = split(value, HASH_LEN)
-    self.forward_key, value = split(value, KEY_LEN)
-    self.backward_key, value = split(value, KEY_LEN)
-
   @staticmethod
-  def _value(key):
-    """
-    Computes the KDF-TOR value...
-
-      K = H(K0 | [00]) | H(K0 | [01]) | H(K0 | [02]) | ...
-    """
+  def from_value(key_material):
+    # Derived key material, as per...
+    #
+    #   K = H(K0 | [00]) | H(K0 | [01]) | H(K0 | [02]) | ...
 
     derived_key = ''
-    derived_key_len = KEY_LEN * 2 + HASH_LEN * 3
     counter = 0
 
-    while len(derived_key) < derived_key_len:
-      derived_key += hashlib.sha1(key + Size.CHAR.pack(counter)).digest()
+    while len(derived_key) < KEY_LEN * 2 + HASH_LEN * 3:
+      derived_key += hashlib.sha1(key_material + Size.CHAR.pack(counter)).digest()
       counter += 1
 
-    return derived_key[:derived_key_len]
+    key_hash, derived_key = split(derived_key, HASH_LEN)
+    forward_digest, derived_key = split(derived_key, HASH_LEN)
+    backward_digest, derived_key = split(derived_key, HASH_LEN)
+    forward_key, derived_key = split(derived_key, KEY_LEN)
+    backward_key, derived_key = split(derived_key, KEY_LEN)
+
+    return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
