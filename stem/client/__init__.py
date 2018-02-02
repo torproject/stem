@@ -499,11 +499,12 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
 
 
-class Circuit(collections.namedtuple('Circuit', ['id', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
+class Circuit(collections.namedtuple('Circuit', ['socket', 'id', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
   """
   Circuit through which requests can be made of a `Tor relay's ORPort
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
 
+  :var stem.socket.RelaySocket socket: socket through which this circuit has been established
   :var int id: circuit id
   :var hashlib.sha1 forward_digest: digest for forward integrity check
   :var hashlib.sha1 backward_digest: digest for backward integrity check
@@ -512,16 +513,35 @@ class Circuit(collections.namedtuple('Circuit', ['id', 'forward_digest', 'backwa
   """
 
   @staticmethod
-  def from_kdf(circ_id, kdf):
+  def create(relay_socket, circ_id, link_version):
+    """
+    Constructs a new circuit over the given ORPort.
+    """
+
     if not stem.prereq.is_crypto_available():
       raise ImportError('Circuit construction requires the cryptography module')
 
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
 
+    create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
+    relay_socket.send(create_fast_cell.pack(link_version))
+
+    response = stem.client.cell.Cell.unpack(relay_socket.recv(), link_version)
+    created_fast_cells = filter(lambda cell: isinstance(cell, stem.client.cell.CreatedFastCell), response)
+
+    if not created_fast_cells:
+      raise ValueError('We should get a CREATED_FAST response from a CREATE_FAST request')
+
+    created_fast_cell = created_fast_cells[0]
+    kdf = KDF.from_value(create_fast_cell.key_material + created_fast_cell.key_material)
     ctr = modes.CTR(ZERO * (algorithms.AES.block_size / 8))
 
+    if created_fast_cell.derivative_key != kdf.key_hash:
+      raise ValueError('Remote failed to prove that it knows our shared key')
+
     return Circuit(
+      relay_socket,
       circ_id,
       hashlib.sha1(kdf.forward_digest),
       hashlib.sha1(kdf.backward_digest),

@@ -277,7 +277,7 @@ class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
-  :var stem.client.RelayCommand command: reason the circuit is being closed
+  :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
   :var int digest: running digest held with the relay
@@ -295,7 +295,7 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, command, data, digest, stream_id = 0):
+  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0):
     super(RelayCell, self).__init__(circ_id)
     self.command, self.command_int = stem.client.RelayCommand.get(command)
     self.data = data
