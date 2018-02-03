@@ -2,10 +2,11 @@
 # See LICENSE for licensing information
 
 """
-Interaction with a Tor relay's ORPort. :class:`~stem.client.Relay` is
-a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
-:class:`~stem.control.Controller` provides higher level functions for
-:class:`~stem.socket.ControlSocket`.
+Support for `Tor's ORPort protocol
+<https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
+
+**This module only consists of low level components, and is not intended for
+users.** See our :class:`~stem.relay.Relay` the API you probably want.
 
 .. versionadded:: 1.7.0
 

@@ -989,7 +989,7 @@ class BaseController(object):
 
 class Controller(BaseController):
   """
-  Communicates with a control socket. This is built on top of the
+  Connection with Tor's control socket. This is built on top of the
   BaseController and provides a more user friendly API for library users.
   """
 
