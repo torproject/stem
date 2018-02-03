@@ -15,30 +15,34 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     | +- connect - Establishes a connection with a relay.
 """
 
+import stem
 import stem.client
 import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-DEFAULT_LINK_VERSIONS = (3, 4, 5)
+DEFAULT_LINK_PROTOCOLS = (3, 4, 5)
 
 
 class Relay(object):
   """
   Connection with a Tor relay's ORPort.
+
+  :var int link_protocol: link protocol version we established
   """
 
-  def __init__(self, orport):
+  def __init__(self, orport, link_protocol):
+    self.link_protocol = link_protocol
     self._orport = orport
 
   @staticmethod
-  def connect(address, port, link_versions = DEFAULT_LINK_VERSIONS):
+  def connect(address, port, link_protocols = DEFAULT_LINK_PROTOCOLS):
     """
     Establishes a connection with the given ORPort.
 
     :param str address: ip address of the relay
     :param int port: ORPort of the relay
-    :param tuple link_versions: acceptable link protocol versions
+    :param tuple link_protocols: acceptable link protocol versions
 
     :raises:
       * **ValueError** if address or port are invalid
@@ -52,20 +56,42 @@ class Relay(object):
     else:
       raise ValueError("'%s' isn't an IPv4 or IPv6 address" % address)
 
-    if not stem.util.connection.is_port(port):
+    if not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
+    elif not link_protocols:
+      raise ValueError("Connection can't be established without a link protocol.")
 
-    conn = stem.socket.RelaySocket(address, port)
-    conn.send(stem.client.cell.VersionsCell(link_versions).pack())
-    versions_reply = stem.client.cell.Cell.pop(conn.recv(), 2)[0]
+    try:
+      conn = stem.socket.RelaySocket(address, port)
+    except stem.SocketError as exc:
+      if 'Connection refused' in str(exc):
+        raise stem.SocketError("Failed to connect to %s:%i. Maybe it isn't an ORPort?" % (address, port))
+      elif 'SSL: UNKNOWN_PROTOCOL' in str(exc):
+        raise stem.SocketError("Failed to SSL authenticate to %s:%i. Maybe it isn't an ORPort?" % (address, port))
+      else:
+        raise
 
-    # TODO: determine the highest common link versions
+    conn.send(stem.client.cell.VersionsCell(link_protocols).pack())
+    response = conn.recv()
+
+    # Link negotiation ends right away if we lack a common protocol
+    # version. (#25139)
+
+    if not response:
+      conn.close()
+      raise stem.SocketError('Unable to establish a common link protocol with %s:%i' % (address, port))
+
+    versions_reply = stem.client.cell.Cell.pop(response, 2)[0]
+    common_protocols = set(link_protocols).intersection(versions_reply.versions)
+
+    if not common_protocols:
+      conn.close()
+      raise stem.SocketError('Unable to find a common link protocol. We support %s but %s:%i supports %s.' % (', '.join(link_protocols), address, port, ', '.join(versions_reply.versions)))
+
     # TODO: we should fill in our address, right?
     # TODO: what happens if we skip the NETINFO?
 
-    link_version = 3
-    conn.send(stem.client.cell.NetinfoCell(stem.client.Address(address, addr_type), []).pack(link_version))
+    link_protocol = max(common_protocols)
+    conn.send(stem.client.cell.NetinfoCell(stem.client.Address(address, addr_type), []).pack(link_protocol))
 
-    # TODO: what if no link protocol versions are acceptable?
-
-    return Relay(conn)
+    return Relay(conn, link_protocol)
