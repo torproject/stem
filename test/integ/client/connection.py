@@ -8,7 +8,7 @@ import unittest
 import stem
 import test.runner
 
-from stem.relay import Relay
+from stem.client import Relay
 
 
 class TestConnection(unittest.TestCase):

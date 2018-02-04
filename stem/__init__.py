@@ -494,7 +494,6 @@ __all__ = [
   'exit_policy',
   'prereq',
   'process',
-  'relay',
   'socket',
   'version',
   'ControllerError',

@@ -6,7 +6,7 @@ import collections
 import re
 import unittest
 
-from stem.client import AddrType, Address
+from stem.client.datatype import AddrType, Address
 
 ExpectedAddress = collections.namedtuple('ExpectedAddress', ['type', 'type_int', 'value', 'value_bin'])
 

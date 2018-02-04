@@ -44,14 +44,32 @@ import os
 import random
 import sys
 
-import stem.client
-
 from stem import UNDEFINED
-from stem.client import HASH_LEN, ZERO, Address, Size, split
+from stem.client.datatype import HASH_LEN, ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import _hash_attr, datetime_to_unix
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
+
+STREAM_ID_REQUIRED = (
+  RelayCommand.BEGIN,
+  RelayCommand.DATA,
+  RelayCommand.END,
+  RelayCommand.CONNECTED,
+  RelayCommand.RESOLVE,
+  RelayCommand.RESOLVED,
+  RelayCommand.BEGIN_DIR,
+)
+
+STREAM_ID_DISALLOWED = (
+  RelayCommand.EXTEND,
+  RelayCommand.EXTENDED,
+  RelayCommand.TRUNCATE,
+  RelayCommand.TRUNCATED,
+  RelayCommand.DROP,
+  RelayCommand.EXTEND2,
+  RelayCommand.EXTENDED2,
+)
 
 
 class Cell(object):
@@ -297,14 +315,14 @@ class RelayCell(CircuitCell):
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0):
     super(RelayCell, self).__init__(circ_id)
-    self.command, self.command_int = stem.client.RelayCommand.get(command)
+    self.command, self.command_int = RelayCommand.get(command)
     self.data = data
     self.digest = digest
     self.stream_id = stream_id
 
-    if not stream_id and self.command in stem.client.STREAM_ID_REQUIRED:
+    if not stream_id and self.command in STREAM_ID_REQUIRED:
       raise ValueError('%s relay cells require a stream id' % self.command)
-    elif stream_id and self.command in stem.client.STREAM_ID_DISALLOWED:
+    elif stream_id and self.command in STREAM_ID_DISALLOWED:
       raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
   def pack(self, link_version):
@@ -345,9 +363,9 @@ class DestroyCell(CircuitCell):
   VALUE = 4
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, reason = stem.client.CloseReason.NONE):
+  def __init__(self, circ_id, reason = CloseReason.NONE):
     super(DestroyCell, self).__init__(circ_id)
-    self.reason, self.reason_int = stem.client.CloseReason.get(reason)
+    self.reason, self.reason_int = CloseReason.get(reason)
 
   def pack(self, link_version):
     return DestroyCell._pack(link_version, Size.CHAR.pack(self.reason_int), self.circ_id)
@@ -610,7 +628,7 @@ class CertsCell(Cell):
       if not content:
         raise ValueError('CERTS cell indicates it should have %i certificates, but only contained %i' % (cert_count, len(certs)))
 
-      cert, content = stem.client.Certificate.pop(content)
+      cert, content = Certificate.pop(content)
       certs.append(cert)
 
     return CertsCell(certs)

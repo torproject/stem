@@ -4,7 +4,7 @@ Unit tests for stem.client.Certificate.
 
 import unittest
 
-from stem.client import CertType, Certificate
+from stem.client.datatype import CertType, Certificate
 
 
 class TestCertificate(unittest.TestCase):

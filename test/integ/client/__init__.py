@@ -1,5 +1,5 @@
 """
-Integration tests for tor's ORPort (stem.relay and stem.client).
+Integration tests for stem.client.
 """
 
 __all__ = [

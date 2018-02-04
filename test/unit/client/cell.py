@@ -6,7 +6,7 @@ import datetime
 import os
 import unittest
 
-from stem.client import ZERO, CertType, CloseReason, Address, Certificate
+from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
 from test.unit.client import test_data
 
 from stem.client.cell import (
