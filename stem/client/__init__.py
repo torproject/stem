@@ -19,12 +19,14 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- close - shuts down our connection
 """
 
+import hashlib
+
 import stem
 import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import AddrType, Address
+from stem.client.datatype import ZERO, AddrType, Address, KDF
 
 __all__ = [
   'cell',
@@ -44,6 +46,7 @@ class Relay(object):
   def __init__(self, orport, link_protocol):
     self.link_protocol = link_protocol
     self._orport = orport
+    self._circuits = {}
 
   @staticmethod
   def connect(address, port, link_protocols = DEFAULT_LINK_PROTOCOLS):
@@ -136,8 +139,71 @@ class Relay(object):
 
     return self._orport.close()
 
+  def create_circuit(self):
+    """
+    Establishes a new circuit.
+    """
+
+    # Find an unused circuit id. Since we're initiating the circuit we pick any
+    # value from a range that's determined by our link protocol.
+
+    circ_id = 0x80000000 if self.link_protocol > 3 else 0x01
+
+    while circ_id in self._circuits:
+      circ_id += 1
+
+    create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
+    self._orport.send(create_fast_cell.pack(self.link_protocol))
+
+    response = stem.client.cell.Cell.unpack(self._orport.recv(), self.link_protocol)
+    created_fast_cells = filter(lambda cell: isinstance(cell, stem.client.cell.CreatedFastCell), response)
+
+    if not created_fast_cells:
+      raise ValueError('We should get a CREATED_FAST response from a CREATE_FAST request')
+
+    created_fast_cell = created_fast_cells[0]
+    kdf = KDF.from_value(create_fast_cell.key_material + created_fast_cell.key_material)
+
+    if created_fast_cell.derivative_key != kdf.key_hash:
+      raise ValueError('Remote failed to prove that it knows our shared key')
+
+    circ = Circuit(self, circ_id, kdf)
+    self._circuits[circ.id] = circ
+
+    return circ
+
   def __enter__(self):
     return self
 
   def __exit__(self, exit_type, value, traceback):
     self.close()
+
+
+class Circuit(object):
+  """
+  Circuit through which requests can be made of a `Tor relay's ORPort
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
+
+  :var stem.client.Relay relay: relay through which this circuit has been established
+  :var int id: circuit id
+  :var hashlib.sha1 forward_digest: digest for forward integrity check
+  :var hashlib.sha1 backward_digest: digest for backward integrity check
+  :var bytes forward_key: forward encryption key
+  :var bytes backward_key: backward encryption key
+  """
+
+  def __init__(self, relay, circ_id, kdf):
+    if not stem.prereq.is_crypto_available():
+      raise ImportError('Circuit construction requires the cryptography module')
+
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+
+    ctr = modes.CTR(ZERO * (algorithms.AES.block_size / 8))
+
+    self.relay = relay
+    self.id = circ_id
+    self.forward_digest = hashlib.sha1(kdf.forward_digest)
+    self.backward_digest = hashlib.sha1(kdf.backward_digest)
+    self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
+    self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
