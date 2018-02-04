@@ -153,8 +153,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_socket - provides the socket used for control communication
     |- get_latest_heartbeat - timestamp for when we last heard from tor
     |- add_status_listener - notifies a callback of changes in our status
-    |- remove_status_listener - prevents further notification of status changes
-    +- __enter__ / __exit__ - manages socket connection
+    +- remove_status_listener - prevents further notification of status changes
 
 .. data:: State (enum)
 
@@ -674,7 +673,7 @@ class BaseController(object):
   def is_alive(self):
     """
     Checks if our socket is currently connected. This is a pass-through for our
-    socket's :func:`~stem.socket.ControlSocket.is_alive` method.
+    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
 
     :returns: **bool** that's **True** if our socket is connected and **False** otherwise
     """
@@ -729,7 +728,7 @@ class BaseController(object):
   def close(self):
     """
     Closes our socket connection. This is a pass-through for our socket's
-    :func:`~stem.socket.ControlSocket.close` method.
+    :func:`~stem.socket.BaseSocket.close` method.
     """
 
     self._socket.close()

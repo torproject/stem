@@ -13,6 +13,10 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
   Relay - Connection with a tor relay's ORPort.
     | +- connect - Establishes a connection with a relay.
+    |
+    |- is_alive - reports if our connection is open or closed
+    |- connection_time - time when we last connected or disconnected
+    +- close - shuts down our connection
 """
 
 import stem
@@ -95,3 +99,39 @@ class Relay(object):
     conn.send(stem.client.cell.NetinfoCell(stem.client.Address(address, addr_type), []).pack(link_protocol))
 
     return Relay(conn, link_protocol)
+
+  def is_alive(self):
+    """
+    Checks if our socket is currently connected. This is a pass-through for our
+    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
+
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    """
+
+    return self._orport.is_alive()
+
+  def connection_time(self):
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're currently
+    connected and the time we disconnected if we're not connected.
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._orport.connection_time()
+
+  def close(self):
+    """
+    Closes our socket connection. This is a pass-through for our socket's
+    :func:`~stem.socket.BaseSocket.close` method.
+    """
+
+    return self._orport.close()
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exit_type, value, traceback):
+    self.close()

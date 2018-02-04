@@ -2,6 +2,7 @@
 Integration tests for establishing a connection with tor's ORPort.
 """
 
+import time
 import unittest
 
 import stem
@@ -39,6 +40,22 @@ class TestConnection(unittest.TestCase):
 
     for link_protocol in (1, 2, 6, 20):
       self.assertRaisesRegexp(stem.SocketError, 'Unable to establish a common link protocol with 127.0.0.1:1113', Relay.connect, '127.0.0.1', test.runner.ORPORT, [link_protocol])
+
+  def test_connection_time(self):
+    """
+    Checks duration we've been connected.
+    """
+
+    before = time.time()
+
+    with Relay.connect('127.0.0.1', test.runner.ORPORT) as conn:
+      connection_time = conn.connection_time()
+      self.assertTrue(time.time() >= connection_time >= before)
+      time.sleep(0.02)
+      self.assertTrue(conn.is_alive())
+
+    self.assertFalse(conn.is_alive())
+    self.assertTrue(conn.connection_time() >= connection_time + 0.02)
 
   def test_established(self):
     """

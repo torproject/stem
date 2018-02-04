@@ -60,6 +60,7 @@ Tor...
     |
     |- is_alive - reports if the socket is known to be closed
     |- is_localhost - returns if the socket is for the local system or not
+    |- connection_time - timestamp when socket last connected or disconnected
     |- connect - connects a new socket
     |- close - shuts down the socket
     +- __enter__ / __exit__ - manages socket connection
