@@ -307,7 +307,7 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0):
+  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, raw_content = None):
     if 'hashlib.HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option.
@@ -325,6 +325,7 @@ class RelayCell(CircuitCell):
     self.data = data
     self.digest = digest
     self.stream_id = stream_id
+    self._raw_content = raw_content
 
     if not stream_id and self.command in STREAM_ID_REQUIRED:
       raise ValueError('%s relay cells require a stream id' % self.command)
@@ -342,8 +343,20 @@ class RelayCell(CircuitCell):
 
     return RelayCell._pack(link_protocol, payload.getvalue(), self.circ_id)
 
+  def decrypt(self, circ):
+    # TODO: clearly funky, just a spot to start...
+
+    if not self._raw_content:
+      raise ValueError('Only received cells can be decrypted')
+
+    decrypted = circ.backward_key.update(self._raw_content)
+    return RelayCell._unpack(decrypted, self.circ_id, 3)
+
+
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
+    orig_content = content
+
     command, content = Size.CHAR.pop(content)
     _, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)
@@ -351,7 +364,7 @@ class RelayCell(CircuitCell):
     data_len, content = Size.SHORT.pop(content)
     data, content = split(content, data_len)
 
-    return RelayCell(circ_id, command, data, digest, stream_id)
+    return RelayCell(circ_id, command, data, digest, stream_id, orig_content)
 
   def __hash__(self):
     return _hash_attr(self, 'command_int', 'stream_id', 'digest', 'data')

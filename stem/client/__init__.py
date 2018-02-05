@@ -19,6 +19,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- close - shuts down our connection
 """
 
+import copy
 import hashlib
 
 import stem
@@ -26,7 +27,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, AddrType, Address, KDF
+from stem.client.datatype import ZERO, AddrType, Address, KDF, split
 
 __all__ = [
   'cell',
@@ -207,3 +208,37 @@ class Circuit(object):
     self.backward_digest = hashlib.sha1(kdf.backward_digest)
     self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
     self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
+
+  def send(self, command, data, stream_id = 0):
+    """
+    Sends a message over the circuit.
+
+    :param stem.client.RelayCommand command: command to be issued
+    :param bytes data: message payload
+    :param int stream_id: specific stream this concerns
+    """
+
+    # TODO: move RelayCommand to this base module?
+    # TODO: add lock
+
+    orig_digest = self.forward_digest.copy()
+    orig_key = copy.copy(self.forward_key)
+
+    try:
+      cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
+      payload_without_digest = cell.pack(self.relay.link_protocol)[3:]
+      self.forward_digest.update(payload_without_digest)
+
+      cell = stem.client.cell.RelayCell(self.id, command, data, self.forward_digest, stream_id)
+      header, payload = split(cell.pack(self.relay.link_protocol), 3)
+      encrypted_payload = header + self.forward_key.update(payload)
+
+      self.relay._orport.send(encrypted_payload)
+    except:
+      self.forward_digest = orig_digest
+      self.forward_key = orig_key
+      raise
+
+  def close(self):
+    self.relay._orport.send(stem.client.cell.DestroyCell(self.id).pack(self.relay.link_protocol))
+    del self.relay._circuits[self.id]
