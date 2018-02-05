@@ -3,6 +3,7 @@ Unit tests for the stem.client.cell.
 """
 
 import datetime
+import hashlib
 import os
 import unittest
 
@@ -152,6 +153,13 @@ class TestCell(unittest.TestCase):
       self.assertEqual(data, cell.data)
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
+
+    digest = hashlib.sha1('hi')
+    self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
+    self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest.digest(), 564346860).digest)
+    self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', 3257622417, 564346860).digest)
+    self.assertRaisesRegexp(ValueError, 'RELAY cell digest must be a hash, string, or int but was a list', RelayCell, 5, 'RELAY_BEGIN_DIR', '', [], 564346860)
+    self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
   def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():

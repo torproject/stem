@@ -308,6 +308,18 @@ class RelayCell(CircuitCell):
   IS_FIXED_SIZE = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0):
+    if 'hashlib.HASH' in str(type(digest)):
+      # Unfortunately hashlib generates from a dynamic private class so
+      # isinstance() isn't such a great option.
+
+      digest = Size.LONG.unpack(digest.digest()[:4])
+    elif isinstance(digest, str):
+      digest = Size.LONG.unpack(digest[:4])
+    elif isinstance(digest, int):
+      pass
+    else:
+      raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)
+
     super(RelayCell, self).__init__(circ_id)
     self.command, self.command_int = RelayCommand.get(command)
     self.data = data
