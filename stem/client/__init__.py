@@ -103,7 +103,9 @@ class Relay(object):
       conn.close()
       raise stem.SocketError('Unable to find a common link protocol. We support %s but %s:%i supports %s.' % (', '.join(link_protocols), address, port, ', '.join(versions_reply.versions)))
 
-    # TODO: we should fill in our address, right?
+    # Establishing connections requires sending a NETINFO, but including our
+    # address is optional. We can revisit including it when we have a usecase
+    # where it would help.
 
     link_protocol = max(common_protocols)
     conn.send(stem.client.cell.NetinfoCell(Address(address), []).pack(link_protocol))
