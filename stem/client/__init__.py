@@ -183,6 +183,11 @@ class Relay(object):
 
       return circ
 
+  def __iter__(self):
+    with self._orport_lock:
+      for circ in self._circuits.values():
+        yield circ
+
   def __enter__(self):
     return self
 
