@@ -34,7 +34,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, AddrType, Address, KDF, split
+from stem.client.datatype import ZERO, Address, KDF, split
 
 __all__ = [
   'cell',
@@ -71,13 +71,6 @@ class Relay(object):
       * :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    if stem.util.connection.is_valid_ipv4_address(address):
-      addr_type = AddrType.IPv4
-    elif stem.util.connection.is_valid_ipv6_address(address):
-      addr_type = AddrType.IPv6
-    else:
-      raise ValueError("'%s' isn't an IPv4 or IPv6 address" % address)
-
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
     elif not link_protocols:
@@ -111,10 +104,9 @@ class Relay(object):
       raise stem.SocketError('Unable to find a common link protocol. We support %s but %s:%i supports %s.' % (', '.join(link_protocols), address, port, ', '.join(versions_reply.versions)))
 
     # TODO: we should fill in our address, right?
-    # TODO: what happens if we skip the NETINFO?
 
     link_protocol = max(common_protocols)
-    conn.send(stem.client.cell.NetinfoCell(Address(address, addr_type), []).pack(link_protocol))
+    conn.send(stem.client.cell.NetinfoCell(Address(address), []).pack(link_protocol))
 
     return Relay(conn, link_protocol)
 

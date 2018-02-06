@@ -44,7 +44,7 @@ class TestAddress(unittest.TestCase):
 
     self.assertRaisesRegexp(ValueError, re.escape("Packed IPv4 addresses should be four bytes, but was: '\\x7f\\x00'"), Address, '\x7f\x00', 4)
     self.assertRaisesRegexp(ValueError, re.escape("Packed IPv6 addresses should be sixteen bytes, but was: '\\x7f\\x00'"), Address, '\x7f\x00', 6)
-    self.assertRaisesRegexp(ValueError, re.escape('Address type is required unless an IPv4 or IPv6 address'), Address, 'nope')
+    self.assertRaisesRegexp(ValueError, re.escape("'nope' isn't an IPv4 or IPv6 address"), Address, 'nope')
 
   def test_unknown_type(self):
     addr = Address('hello', 12)

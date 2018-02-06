@@ -346,8 +346,6 @@ class RelayCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    orig_content = content
-
     command, content = Size.CHAR.pop(content)
     recognized, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)

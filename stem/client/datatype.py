@@ -347,7 +347,7 @@ class Address(Field):
       elif stem.util.connection.is_valid_ipv6_address(value):
         addr_type = AddrType.IPv6
       else:
-        raise ValueError('Address type is required unless an IPv4 or IPv6 address')
+        raise ValueError("'%s' isn't an IPv4 or IPv6 address" % value)
 
     self.type, self.type_int = AddrType.get(addr_type)
 
