@@ -292,6 +292,7 @@ class RelayCell(CircuitCell):
   :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
+  :var int recognized: zero if endpoint is this hop, non-zero otherwise
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
@@ -307,7 +308,7 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, raw_content = None):
+  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0):
     if 'hashlib.HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option.
@@ -323,9 +324,9 @@ class RelayCell(CircuitCell):
     super(RelayCell, self).__init__(circ_id)
     self.command, self.command_int = RelayCommand.get(command)
     self.data = data
+    self.recognized = recognized
     self.digest = digest
     self.stream_id = stream_id
-    self._raw_content = raw_content
 
     if not stream_id and self.command in STREAM_ID_REQUIRED:
       raise ValueError('%s relay cells require a stream id' % self.command)
@@ -335,7 +336,7 @@ class RelayCell(CircuitCell):
   def pack(self, link_protocol):
     payload = io.BytesIO()
     payload.write(Size.CHAR.pack(self.command_int))
-    payload.write(Size.SHORT.pack(0))  # 'recognized' field
+    payload.write(Size.SHORT.pack(self.recognized))
     payload.write(Size.SHORT.pack(self.stream_id))
     payload.write(Size.LONG.pack(self.digest))
     payload.write(Size.SHORT.pack(len(self.data)))
@@ -343,28 +344,18 @@ class RelayCell(CircuitCell):
 
     return RelayCell._pack(link_protocol, payload.getvalue(), self.circ_id)
 
-  def decrypt(self, circ):
-    # TODO: clearly funky, just a spot to start...
-
-    if not self._raw_content:
-      raise ValueError('Only received cells can be decrypted')
-
-    decrypted = circ.backward_key.update(self._raw_content)
-    return RelayCell._unpack(decrypted, self.circ_id, 3)
-
-
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
     orig_content = content
 
     command, content = Size.CHAR.pop(content)
-    _, content = Size.SHORT.pop(content)  # 'recognized' field
+    recognized, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)
     digest, content = Size.LONG.pop(content)
     data_len, content = Size.SHORT.pop(content)
     data, content = split(content, data_len)
 
-    return RelayCell(circ_id, command, data, digest, stream_id, orig_content)
+    return RelayCell(circ_id, command, data, digest, stream_id, recognized)
 
   def __hash__(self):
     return _hash_attr(self, 'command_int', 'stream_id', 'digest', 'data')
