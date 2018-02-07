@@ -321,10 +321,11 @@ class RelayCell(CircuitCell):
     self.digest = digest
     self.stream_id = stream_id
 
-    if not stream_id and self.command in STREAM_ID_REQUIRED:
-      raise ValueError('%s relay cells require a stream id' % self.command)
-    elif stream_id and self.command in STREAM_ID_DISALLOWED:
-      raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+    if digest == 0:
+      if not stream_id and self.command in STREAM_ID_REQUIRED:
+        raise ValueError('%s relay cells require a stream id' % self.command)
+      elif stream_id and self.command in STREAM_ID_DISALLOWED:
+        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
   def pack(self, link_protocol):
     payload = io.BytesIO()

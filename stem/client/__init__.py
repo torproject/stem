@@ -218,7 +218,7 @@ class Circuit(object):
     self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
     self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
 
-  def send(self, command, data, stream_id = 0):
+  def send(self, command, data = '', stream_id = 0):
     """
     Sends a message over the circuit.
 
@@ -226,8 +226,6 @@ class Circuit(object):
     :param bytes data: message payload
     :param int stream_id: specific stream this concerns
     """
-
-    # TODO: move RelayCommand to this base module?
 
     with self.relay._orport_lock:
       orig_digest = self.forward_digest.copy()
