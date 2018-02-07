@@ -11,330 +11,246 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
 
 ::
 
-  split - splits bytes into substrings
-
-  Field - Packable and unpackable datatype.
-    |- Size - Field of a static size.
-    |- Address - Relay address.
-    |- Certificate - Relay certificate.
+  Relay - Connection with a tor relay's ORPort.
+    | +- connect - Establishes a connection with a relay.
     |
-    |- pack - encodes content
-    |- unpack - decodes content
-    +- pop - decodes content with remainder
+    |- is_alive - reports if our connection is open or closed
+    |- connection_time - time when we last connected or disconnected
+    |- close - shuts down our connection
+    |
+    +- create_circuit - establishes a new circuit
 
-.. data:: AddrType (enum)
-
-  Form an address takes.
-
-  ===================== ===========
-  AddressType           Description
-  ===================== ===========
-  **HOSTNAME**          relay hostname
-  **IPv4**              IPv4 address
-  **IPv6**              IPv6 address
-  **ERROR_TRANSIENT**   temporarily error retrieving address
-  **ERROR_PERMANENT**   permanent error retrieving address
-  **UNKNOWN**           unrecognized address type
-  ===================== ===========
-
-.. data:: CertType (enum)
-
-  Relay certificate type.
-
-  ===================== ===========
-  CertType              Description
-  ===================== ===========
-  **LINK**              link key certificate certified by RSA1024 identity
-  **IDENTITY**          RSA1024 Identity certificate
-  **AUTHENTICATE**      RSA1024 AUTHENTICATE cell link certificate
-  **UNKNOWN**           unrecognized certificate type
-  ===================== ===========
+  Circuit - Circuit we've established through a relay.
+    |- send - sends a message through this circuit
+    +- close - closes this circuit
 """
 
-import io
-import struct
+import copy
+import hashlib
+import threading
 
+import stem
+import stem.client.cell
+import stem.socket
 import stem.util.connection
-import stem.util.enum
 
-from stem.util import _hash_attr
-
-ZERO = '\x00'
+from stem.client.datatype import ZERO, Address, KDF, split
 
 __all__ = [
   'cell',
+  'datatype',
 ]
 
-AddrType = stem.util.enum.UppercaseEnum(
-  'HOSTNAME',
-  'IPv4',
-  'IPv6',
-  'ERROR_TRANSIENT',
-  'ERROR_PERMANENT',
-  'UNKNOWN',
-)
-
-CertType = stem.util.enum.UppercaseEnum(
-  'LINK',
-  'IDENTITY',
-  'AUTHENTICATE',
-  'UNKNOWN',
-)
+DEFAULT_LINK_PROTOCOLS = (3, 4, 5)
 
 
-def split(content, size):
+class Relay(object):
   """
-  Simple split of bytes into two substrings.
+  Connection with a Tor relay's ORPort.
 
-  :param bytes content: string to split
-  :param int size: index to split the string on
-
-  :returns: two value tuple with the split bytes
+  :var int link_protocol: link protocol version we established
   """
 
-  return content[:size], content[size:]
-
-
-class Field(object):
-  """
-  Packable and unpackable datatype.
-  """
-
-  def pack(self):
-    """
-    Encodes field into bytes.
-
-    :returns: **bytes** that can be communicated over Tor's ORPort
-
-    :raises: **ValueError** if incorrect type or size
-    """
-
-    raise NotImplementedError('Not yet available')
-
-  @classmethod
-  def unpack(cls, packed):
-    """
-    Decodes bytes into a field of this type.
-
-    :param bytes packed: content to decode
-
-    :returns: instance of this class
-
-    :raises: **ValueError** if packed data is malformed
-    """
-
-    unpacked, remainder = cls.pop(packed)
-
-    if remainder:
-      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), cls.__name__))
-
-    return unpacked
+  def __init__(self, orport, link_protocol):
+    self.link_protocol = link_protocol
+    self._orport = orport
+    self._orport_lock = threading.RLock()
+    self._circuits = {}
 
   @staticmethod
-  def pop(packed):
+  def connect(address, port, link_protocols = DEFAULT_LINK_PROTOCOLS):
     """
-    Decodes bytes as this field type, providing it and the remainder.
+    Establishes a connection with the given ORPort.
 
-    :param bytes packed: content to decode
+    :param str address: ip address of the relay
+    :param int port: ORPort of the relay
+    :param tuple link_protocols: acceptable link protocol versions
 
-    :returns: tuple of the form (unpacked, remainder)
-
-    :raises: **ValueError** if packed data is malformed
+    :raises:
+      * **ValueError** if address or port are invalid
+      * :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    raise NotImplementedError('Not yet available')
+    if not stem.util.connection.is_valid_port(port):
+      raise ValueError("'%s' isn't a valid port" % port)
+    elif not link_protocols:
+      raise ValueError("Connection can't be established without a link protocol.")
 
-  def __eq__(self, other):
-    return hash(self) == hash(other) if isinstance(other, Field) else False
-
-  def __ne__(self, other):
-    return not self == other
-
-
-class Size(Field):
-  """
-  Unsigned `struct.pack format
-  <https://docs.python.org/2/library/struct.html#format-characters>` for
-  network-order fields.
-
-  ====================  ===========
-  Pack                  Description
-  ====================  ===========
-  CHAR                  Unsigned char (1 byte)
-  SHORT                 Unsigned short (2 bytes)
-  LONG                  Unsigned long (4 bytes)
-  LONG_LONG             Unsigned long long (8 bytes)
-  ====================  ===========
-  """
-
-  def __init__(self, name, size, pack_format):
-    self.name = name
-    self.size = size
-    self.format = pack_format
-
-  @staticmethod
-  def pop(packed):
-    raise NotImplementedError("Use our constant's unpack() and pop() instead")
-
-  def pack(self, content):
-    if not isinstance(content, int):
-      raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
-
-    packed = struct.pack(self.format, content)
-
-    if self.size != len(packed):
-      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
-
-    return packed
-
-  def unpack(self, packed):
-    if self.size != len(packed):
-      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
-
-    return struct.unpack(self.format, packed)[0]
-
-  def pop(self, packed):
-    return self.unpack(packed[:self.size]), packed[self.size:]
-
-
-class Address(Field):
-  """
-  Relay address.
-
-  :var stem.client.AddrType type: address type
-  :var int type_int: integer value of the address type
-  :var unicode value: address value
-  :var bytes value_bin: encoded address value
-  """
-
-  TYPE_FOR_INT = {
-    0: AddrType.HOSTNAME,
-    4: AddrType.IPv4,
-    6: AddrType.IPv6,
-    16: AddrType.ERROR_TRANSIENT,
-    17: AddrType.ERROR_PERMANENT,
-  }
-
-  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
-
-  def __init__(self, addr_type, value):
-    if isinstance(addr_type, int):
-      self.type = Address.TYPE_FOR_INT.get(addr_type, AddrType.UNKNOWN)
-      self.type_int = addr_type
-    elif addr_type in AddrType:
-      self.type = addr_type
-      self.type_int = Address.INT_FOR_TYPE.get(addr_type, -1)
-    else:
-      raise ValueError('Invalid address type: %s' % addr_type)
-
-    if self.type == AddrType.IPv4:
-      if stem.util.connection.is_valid_ipv4_address(value):
-        self.value = value
-        self.value_bin = ''.join([Size.CHAR.pack(int(v)) for v in value.split('.')])
+    try:
+      conn = stem.socket.RelaySocket(address, port)
+    except stem.SocketError as exc:
+      if 'Connection refused' in str(exc):
+        raise stem.SocketError("Failed to connect to %s:%i. Maybe it isn't an ORPort?" % (address, port))
+      elif 'SSL: UNKNOWN_PROTOCOL' in str(exc):
+        raise stem.SocketError("Failed to SSL authenticate to %s:%i. Maybe it isn't an ORPort?" % (address, port))
       else:
-        if len(value) != 4:
-          raise ValueError('Packed IPv4 addresses should be four bytes, but was: %s' % repr(value))
+        raise
 
-        self.value = '.'.join([str(Size.CHAR.unpack(value[i])) for i in range(4)])
-        self.value_bin = value
-    elif self.type == AddrType.IPv6:
-      if stem.util.connection.is_valid_ipv6_address(value):
-        self.value = stem.util.connection.expand_ipv6_address(value).lower()
-        self.value_bin = ''.join([Size.SHORT.pack(int(v, 16)) for v in self.value.split(':')])
-      else:
-        if len(value) != 16:
-          raise ValueError('Packed IPv6 addresses should be sixteen bytes, but was: %s' % repr(value))
+    conn.send(stem.client.cell.VersionsCell(link_protocols).pack())
+    response = conn.recv()
 
-        self.value = ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
-        self.value_bin = value
-    else:
-      # The spec doesn't really tell us what form to expect errors to be. For
-      # now just leaving the value unset so we can fill it in later when we
-      # know what would be most useful.
+    # Link negotiation ends right away if we lack a common protocol
+    # version. (#25139)
 
-      self.value = None
-      self.value_bin = value
+    if not response:
+      conn.close()
+      raise stem.SocketError('Unable to establish a common link protocol with %s:%i' % (address, port))
 
-  def pack(self):
-    cell = io.BytesIO()
-    cell.write(Size.CHAR.pack(self.type_int))
-    cell.write(Size.CHAR.pack(len(self.value_bin)))
-    cell.write(self.value_bin)
-    return cell.getvalue()
+    versions_reply = stem.client.cell.Cell.pop(response, 2)[0]
+    common_protocols = set(link_protocols).intersection(versions_reply.versions)
 
-  @staticmethod
-  def pop(content):
-    if not content:
-      raise ValueError('Payload empty where an address was expected')
-    elif len(content) < 2:
-      raise ValueError('Insuffient data for address headers')
+    if not common_protocols:
+      conn.close()
+      raise stem.SocketError('Unable to find a common link protocol. We support %s but %s:%i supports %s.' % (', '.join(link_protocols), address, port, ', '.join(versions_reply.versions)))
 
-    addr_type, content = Size.CHAR.pop(content)
-    addr_length, content = Size.CHAR.pop(content)
+    # Establishing connections requires sending a NETINFO, but including our
+    # address is optional. We can revisit including it when we have a usecase
+    # where it would help.
 
-    if len(content) < addr_length:
-      raise ValueError('Address specified a payload of %i bytes, but only had %i' % (addr_length, len(content)))
+    link_protocol = max(common_protocols)
+    conn.send(stem.client.cell.NetinfoCell(Address(address), []).pack(link_protocol))
 
-    addr_value, content = split(content, addr_length)
+    return Relay(conn, link_protocol)
 
-    return Address(addr_type, addr_value), content
+  def is_alive(self):
+    """
+    Checks if our socket is currently connected. This is a pass-through for our
+    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
 
-  def __hash__(self):
-    return _hash_attr(self, 'type_int', 'value_bin')
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    """
+
+    return self._orport.is_alive()
+
+  def connection_time(self):
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're currently
+    connected and the time we disconnected if we're not connected.
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._orport.connection_time()
+
+  def close(self):
+    """
+    Closes our socket connection. This is a pass-through for our socket's
+    :func:`~stem.socket.BaseSocket.close` method.
+    """
+
+    with self._orport_lock:
+      return self._orport.close()
+
+  def create_circuit(self):
+    """
+    Establishes a new circuit.
+    """
+
+    with self._orport_lock:
+      # Find an unused circuit id. Since we're initiating the circuit we pick any
+      # value from a range that's determined by our link protocol.
+
+      circ_id = 0x80000000 if self.link_protocol > 3 else 0x01
+
+      while circ_id in self._circuits:
+        circ_id += 1
+
+      create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
+      self._orport.send(create_fast_cell.pack(self.link_protocol))
+
+      response = stem.client.cell.Cell.unpack(self._orport.recv(), self.link_protocol)
+      created_fast_cells = filter(lambda cell: isinstance(cell, stem.client.cell.CreatedFastCell), response)
+
+      if not created_fast_cells:
+        raise ValueError('We should get a CREATED_FAST response from a CREATE_FAST request')
+
+      created_fast_cell = created_fast_cells[0]
+      kdf = KDF.from_value(create_fast_cell.key_material + created_fast_cell.key_material)
+
+      if created_fast_cell.derivative_key != kdf.key_hash:
+        raise ValueError('Remote failed to prove that it knows our shared key')
+
+      circ = Circuit(self, circ_id, kdf)
+      self._circuits[circ.id] = circ
+
+      return circ
+
+  def __iter__(self):
+    with self._orport_lock:
+      for circ in self._circuits.values():
+        yield circ
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exit_type, value, traceback):
+    self.close()
 
 
-class Certificate(Field):
+class Circuit(object):
   """
-  Relay certificate as defined in tor-spec section 4.2.
+  Circuit through which requests can be made of a `Tor relay's ORPort
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_.
 
-  :var stem.client.CertType type: certificate type
-  :var int type_int: integer value of the certificate type
-  :var bytes value: certificate value
+  :var stem.client.Relay relay: relay through which this circuit has been established
+  :var int id: circuit id
+  :var hashlib.sha1 forward_digest: digest for forward integrity check
+  :var hashlib.sha1 backward_digest: digest for backward integrity check
+  :var bytes forward_key: forward encryption key
+  :var bytes backward_key: backward encryption key
   """
 
-  TYPE_FOR_INT = {
-    1: CertType.LINK,
-    2: CertType.IDENTITY,
-    3: CertType.AUTHENTICATE,
-  }
+  def __init__(self, relay, circ_id, kdf):
+    if not stem.prereq.is_crypto_available():
+      raise ImportError('Circuit construction requires the cryptography module')
 
-  INT_FOR_TYPE = dict((v, k) for k, v in TYPE_FOR_INT.items())
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
 
-  def __init__(self, cert_type, value):
-    if isinstance(cert_type, int):
-      self.type = Certificate.TYPE_FOR_INT.get(cert_type, CertType.UNKNOWN)
-      self.type_int = cert_type
-    elif cert_type in CertType:
-      self.type = cert_type
-      self.type_int = Certificate.INT_FOR_TYPE.get(cert_type, -1)
-    else:
-      raise ValueError('Invalid certificate type: %s' % cert_type)
+    ctr = modes.CTR(ZERO * (algorithms.AES.block_size / 8))
 
-    self.value = value
+    self.relay = relay
+    self.id = circ_id
+    self.forward_digest = hashlib.sha1(kdf.forward_digest)
+    self.backward_digest = hashlib.sha1(kdf.backward_digest)
+    self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
+    self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
 
-  def pack(self):
-    cell = io.BytesIO()
-    cell.write(Size.CHAR.pack(self.type_int))
-    cell.write(Size.SHORT.pack(len(self.value)))
-    cell.write(self.value)
-    return cell.getvalue()
+  def send(self, command, data = '', stream_id = 0):
+    """
+    Sends a message over the circuit.
 
-  @staticmethod
-  def pop(content):
-    cert_type, content = Size.CHAR.pop(content)
-    cert_size, content = Size.SHORT.pop(content)
+    :param stem.client.RelayCommand command: command to be issued
+    :param bytes data: message payload
+    :param int stream_id: specific stream this concerns
+    """
 
-    if cert_size > len(content):
-      raise ValueError('CERTS cell should have a certificate with %i bytes, but only had %i remaining' % (cert_size, len(content)))
+    with self.relay._orport_lock:
+      orig_digest = self.forward_digest.copy()
+      orig_key = copy.copy(self.forward_key)
 
-    cert_bytes, content = split(content, cert_size)
-    return Certificate(cert_type, cert_bytes), content
+      try:
+        cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
+        payload_without_digest = cell.pack(self.relay.link_protocol)[3:]
+        self.forward_digest.update(payload_without_digest)
 
-  def __hash__(self):
-    return _hash_attr(self, 'type_int', 'value')
+        cell = stem.client.cell.RelayCell(self.id, command, data, self.forward_digest, stream_id)
+        header, payload = split(cell.pack(self.relay.link_protocol), 3)
+        encrypted_payload = header + self.forward_key.update(payload)
 
+        self.relay._orport.send(encrypted_payload)
+        reply = next(stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol))
 
-setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
-setattr(Size, 'SHORT', Size('SHORT', 2, '!H'))
-setattr(Size, 'LONG', Size('LONG', 4, '!L'))
-setattr(Size, 'LONG_LONG', Size('LONG_LONG', 8, '!Q'))
+        decrypted = self.backward_key.update(reply.pack(3)[3:])
+        return stem.client.cell.RelayCell._unpack(decrypted, self.id, 3)
+      except:
+        self.forward_digest = orig_digest
+        self.forward_key = orig_key
+        raise
+
+  def close(self):
+    with self.relay._orport_lock:
+      self.relay._orport.send(stem.client.cell.DestroyCell(self.id).pack(self.relay.link_protocol))
+      del self.relay._circuits[self.id]

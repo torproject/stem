@@ -5,7 +5,7 @@ Unit tests for stem.client.Size.
 import re
 import unittest
 
-from stem.client import Size
+from stem.client.datatype import Size
 
 
 class TestSize(unittest.TestCase):

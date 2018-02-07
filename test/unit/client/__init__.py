@@ -6,6 +6,7 @@ __all__ = [
   'address',
   'cell',
   'certificate',
+  'kdf',
   'size',
 ]
 

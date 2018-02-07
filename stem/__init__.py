@@ -485,6 +485,7 @@ __url__ = 'https://stem.torproject.org/'
 __license__ = 'LGPLv3'
 
 __all__ = [
+  'client',
   'descriptor',
   'response',
   'util',
