@@ -292,17 +292,10 @@ class RelayCell(CircuitCell):
   :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if endpoint is this hop, non-zero otherwise
+  :var int recognized: zero if cell is decrypted, non-zero otherwise
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
-
-  # TODO: Relay cells also have a 'recognized' field but from the spec I really
-  # haven't a clue what the heck it is. The spec makes multiple mentions to
-  # "when the 'recognized' field of a RELAY cell is zero" but no mention to if
-  # it's non-zero or what the field actually is. :/
-  #
-  # For now just leaving it out. I'll file a ticket to ask about it later.
 
   NAME = 'RELAY'
   VALUE = 3
