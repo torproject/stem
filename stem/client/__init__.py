@@ -71,6 +71,8 @@ class Relay(object):
       * :class:`stem.SocketError` if we're unable to establish a connection
     """
 
+    relay_addr = Address(address)
+
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' isn't a valid port" % port)
     elif not link_protocols:
@@ -108,7 +110,7 @@ class Relay(object):
     # where it would help.
 
     link_protocol = max(common_protocols)
-    conn.send(stem.client.cell.NetinfoCell(Address(address), []).pack(link_protocol))
+    conn.send(stem.client.cell.NetinfoCell(relay_addr, []).pack(link_protocol))
 
     return Relay(conn, link_protocol)
 
