@@ -83,7 +83,7 @@ class Relay(object):
     except stem.SocketError as exc:
       if 'Connection refused' in str(exc):
         raise stem.SocketError("Failed to connect to %s:%i. Maybe it isn't an ORPort?" % (address, port))
-      elif 'SSL: UNKNOWN_PROTOCOL' in str(exc):
+      elif 'SSL: ' in str(exc):
         raise stem.SocketError("Failed to SSL authenticate to %s:%i. Maybe it isn't an ORPort?" % (address, port))
       else:
         raise
