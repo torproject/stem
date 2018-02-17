@@ -8,7 +8,7 @@ import stem.control
 # Static exit for us to make 2-hop circuits through. Picking aurora, a
 # particularly beefy one...
 #
-#   https://atlas.torproject.org/#details/379FB450010D17078B3766C2273303C358C3A442
+#   https://metrics.torproject.org/rs.html#details/379FB450010D17078B3766C2273303C358C3A442
 
 EXIT_FINGERPRINT = '379FB450010D17078B3766C2273303C358C3A442'
 
