@@ -520,6 +520,9 @@ def _parse_protocol_line(keyword, attribute):
       k, v = entry.split('=', 1)
       versions = []
 
+      if not v:
+        continue
+
       for subentry in v.split(','):
         if '-' in subentry:
           min_value, max_value = subentry.split('-', 1)
