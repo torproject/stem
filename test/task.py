@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import time
+import traceback
 
 import stem
 import stem.prereq
@@ -92,7 +93,10 @@ def _import_tests():
     return
 
   for module in (CONFIG['test.unit_tests'].splitlines() + CONFIG['test.integ_tests'].splitlines()):
-    importlib.import_module(module.rsplit('.', 1)[0])
+    try:
+      importlib.import_module(module.rsplit('.', 1)[0])
+    except Exception as exc:
+      raise ImportError(traceback.format_exc())
 
 
 def _check_for_unused_tests(paths):
