@@ -95,7 +95,7 @@ def _import_tests():
   for module in (CONFIG['test.unit_tests'].splitlines() + CONFIG['test.integ_tests'].splitlines()):
     try:
       importlib.import_module(module.rsplit('.', 1)[0])
-    except Exception as exc:
+    except:
       raise ImportError(traceback.format_exc())
 
 

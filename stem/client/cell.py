@@ -46,7 +46,7 @@ import sys
 
 from stem import UNDEFINED
 from stem.client.datatype import HASH_LEN, ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
-from stem.util import _hash_attr, datetime_to_unix
+from stem.util import _hash_attr, datetime_to_unix, str_type, str_tools
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
@@ -307,7 +307,7 @@ class RelayCell(CircuitCell):
       # isinstance() isn't such a great option.
 
       digest = Size.LONG.unpack(digest.digest()[:4])
-    elif isinstance(digest, str):
+    elif isinstance(digest, (bytes, str_type)):
       digest = Size.LONG.unpack(digest[:4])
     elif isinstance(digest, int):
       pass
@@ -316,7 +316,7 @@ class RelayCell(CircuitCell):
 
     super(RelayCell, self).__init__(circ_id)
     self.command, self.command_int = RelayCommand.get(command)
-    self.data = data
+    self.data = str_tools._to_bytes(data)
     self.recognized = recognized
     self.digest = digest
     self.stream_id = stream_id
@@ -619,7 +619,7 @@ class CertsCell(Cell):
     self.certificates = certs
 
   def pack(self, link_protocol):
-    return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + ''.join([cert.pack() for cert in self.certificates]))
+    return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + b''.join([cert.pack() for cert in self.certificates]))
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):

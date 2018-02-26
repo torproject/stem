@@ -121,7 +121,7 @@ import stem.util.enum
 
 from stem.util import _hash_attr
 
-ZERO = '\x00'
+ZERO = b'\x00'
 HASH_LEN = 20
 KEY_LEN = 16
 
@@ -354,17 +354,17 @@ class Address(Field):
     if self.type == AddrType.IPv4:
       if stem.util.connection.is_valid_ipv4_address(value):
         self.value = value
-        self.value_bin = ''.join([Size.CHAR.pack(int(v)) for v in value.split('.')])
+        self.value_bin = b''.join([Size.CHAR.pack(int(v)) for v in value.split('.')])
       else:
         if len(value) != 4:
           raise ValueError('Packed IPv4 addresses should be four bytes, but was: %s' % repr(value))
 
-        self.value = '.'.join([str(Size.CHAR.unpack(value[i])) for i in range(4)])
+        self.value = '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
         self.value_bin = value
     elif self.type == AddrType.IPv6:
       if stem.util.connection.is_valid_ipv6_address(value):
         self.value = stem.util.connection.expand_ipv6_address(value).lower()
-        self.value_bin = ''.join([Size.SHORT.pack(int(v, 16)) for v in self.value.split(':')])
+        self.value_bin = b''.join([Size.SHORT.pack(int(v, 16)) for v in self.value.split(':')])
       else:
         if len(value) != 16:
           raise ValueError('Packed IPv6 addresses should be sixteen bytes, but was: %s' % repr(value))
@@ -460,7 +460,7 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     #
     #   K = H(K0 | [00]) | H(K0 | [01]) | H(K0 | [02]) | ...
 
-    derived_key = ''
+    derived_key = b''
     counter = 0
 
     while len(derived_key) < KEY_LEN * 2 + HASH_LEN * 3:

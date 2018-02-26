@@ -1132,6 +1132,9 @@ class FallbackDirectory(Directory):
     :raises: **ValueError** if content is malformed
     """
 
+    if isinstance(content, bytes):
+      content = str_tools._to_unicode(content)
+
     matches = {}
 
     for line in content.splitlines():
