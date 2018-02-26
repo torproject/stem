@@ -64,7 +64,7 @@ import re
 import stem.util.proc
 import stem.util.system
 
-from stem.util import str_type, conf, enum, log
+from stem.util import str_type, conf, enum, log, str_tools
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -407,7 +407,9 @@ def is_valid_ipv4_address(address):
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
 
-  if not isinstance(address, (bytes, str_type)):
+  if isinstance(address, bytes):
+    address = str_tools._to_unicode(address)
+  elif not isinstance(address, str_type):
     return False
 
   # checks if theres four period separated values
@@ -434,6 +436,9 @@ def is_valid_ipv6_address(address, allow_brackets = False):
 
   :returns: **True** if input is a valid IPv6 address, **False** otherwise
   """
+
+  if isinstance(address, bytes):
+    address = str_tools._to_unicode(address)
 
   if allow_brackets:
     if address.startswith('[') and address.endswith(']'):

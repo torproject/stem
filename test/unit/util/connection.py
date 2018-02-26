@@ -444,8 +444,10 @@ class TestConnection(unittest.TestCase):
     valid_addresses = (
       '0.0.0.0',
       '1.2.3.4',
+      '1.2.3.4',
       '192.168.0.1',
       '255.255.255.255',
+      b'255.255.255.255',
     )
 
     invalid_addresses = (
@@ -455,6 +457,7 @@ class TestConnection(unittest.TestCase):
       '1.2.3.-1',
       '0.0.0.a',
       'a.b.c.d',
+      b'a.b.c.d',
     )
 
     for address in valid_addresses:
