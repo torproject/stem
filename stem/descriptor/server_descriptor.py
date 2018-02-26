@@ -829,7 +829,7 @@ class RelayDescriptor(ServerDescriptor):
         if signed_digest != self.digest():
           raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
-        if self.onion_key_crosscert:
+        if self.onion_key_crosscert and stem.prereq.is_crypto_available():
           onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
 
           if onion_key_crosscert_digest != self._onion_key_crosscert_digest():
