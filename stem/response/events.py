@@ -652,6 +652,9 @@ class HSDescEvent(Event):
   .. versionchanged:: 1.5.0
      Added the replica attribute.
 
+  .. versionchanged:: 1.7.0
+     Added the index attribute.
+
   :var stem.HSDescAction action: what is happening with the descriptor
   :var str address: hidden service address
   :var stem.HSAuth authentication: service's authentication method
@@ -661,11 +664,12 @@ class HSDescEvent(Event):
   :var str descriptor_id: descriptor identifier
   :var stem.HSDescReason reason: reason the descriptor failed to be fetched
   :var int replica: replica number the descriptor involves
+  :var str index: computed index of the HSDir the descriptor was uploaded to or fetched from
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
   _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
-  _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica'}
+  _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica', 'HSDIR_INDEX': 'index'}
 
   def _parse(self):
     self.directory_fingerprint = None

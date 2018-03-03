@@ -1987,6 +1987,8 @@ class Controller(BaseController):
     If **await_result** is **True** then this blocks until we either receive
     the descriptor or the request fails. If **False** this returns right away.
 
+    **This method only supports v2 hidden services, not v3.** (:trac:`25417`)
+
     .. versionadded:: 1.4.0
 
     :param str address: address of the hidden service descriptor, the '.onion' suffix is optional
@@ -2853,6 +2855,11 @@ class Controller(BaseController):
         'bob': 'vGnNRpWYiMBFTWD2gbBlcA',
       })
 
+    To create a **version 3** service simply specify **ED25519-V3** as the
+    key_type, and to create a **version 2** service use **RSA1024**. The
+    default version of newly created hidden services is based on the
+    **HiddenServiceVersion** value in your torrc.
+
     .. versionadded:: 1.4.0
 
     .. versionchanged:: 1.5.0
@@ -2869,10 +2876,10 @@ class Controller(BaseController):
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
     :param str key_type: type of key being provided, generates a new key if
-      'NEW' (options are: **NEW** and **RSA1024**)
+      'NEW' (options are: **NEW**, **RSA1024**, and **ED25519-V3**)
     :param str key_content: key for the service to use or type of key to be
-      generated (options when **key_type** is **NEW** are **BEST** and
-      **RSA1024**)
+      generated (options when **key_type** is **NEW** are **BEST**,
+      **RSA1024**, and **ED25519-V3**)
     :param bool discard_key: avoid providing the key back in our response
     :param bool detached: continue this hidden service even after this control
       connection is closed if **True**

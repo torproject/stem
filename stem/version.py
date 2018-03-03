@@ -61,6 +61,7 @@ easily parsed and compared, for instance...
   **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
   **GETINFO_GEOIP_AVAILABLE**           'GETINFO ip-to-country/ipv4-available' query and its ipv6 counterpart
+  **HIDDEN_SERVICE_V3**                 Support for v3 hidden services
   **HSFETCH**                           HSFETCH requests
   **HSPOST**                            HSPOST requests
   **ADD_ONION**                         ADD_ONION and DEL_ONION requests
@@ -378,6 +379,7 @@ Requirement = stem.util.enum.Enum(
   ('FEATURE_VERBOSE_NAMES', Version('0.2.2.1-alpha')),
   ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
   ('GETINFO_GEOIP_AVAILABLE', Version('0.3.2.1-alpha')),
+  ('HIDDEN_SERVICE_V3', Version('0.3.3.1-alpha')),
   ('HSFETCH', Version('0.2.7.1-alpha')),
   ('HSPOST', Version('0.2.7.1-alpha')),
   ('ADD_ONION', Version('0.2.7.1-alpha')),

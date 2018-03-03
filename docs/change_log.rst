@@ -46,6 +46,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * Documented v3 hidden service support (:trac:`25124`, :spec:`6bd0a69`)
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Stacktrace if :func:`stem.connection.connect` had a string port argument
   * Replaced socket's :func:`~stem.socket.ControlPort.get_address`, :func:`~stem.socket.ControlPort.get_port`, and :func:`~stem.socket.ControlSocketFile.get_socket_path` with attributes

@@ -563,24 +563,26 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION)
-  def test_with_ephemeral_hidden_services(self):
+  def test_with_invalid_ephemeral_hidden_service_port(self):
+    with test.runner.get_runner().get_tor_controller() as controller:
+      for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
+        exc_msg = "ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET"
+        self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
+
+  @test.require.controller
+  @test.require.version(Requirement.ADD_ONION)
+  def test_ephemeral_hidden_services_v2(self):
     """
-    Exercises creating ephemeral hidden services and methods when they're
-    present.
+    Exercises creating v2 ephemeral hidden services.
     """
 
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      # try creating a service with an invalid ports
-
-      for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
-        exc_msg = "ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET"
-        self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
-
-      response = controller.create_ephemeral_hidden_service(4567)
+      response = controller.create_ephemeral_hidden_service(4567, key_content = 'RSA1024')
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
-      self.assertTrue(response.private_key is not None)
+      self.assertEqual(812, len(response.private_key))
+      self.assertEqual('RSA1024', response.private_key_type)
       self.assertEqual({}, response.client_auth)
 
       # drop the service
@@ -601,7 +603,52 @@ class TestController(unittest.TestCase):
 
       # create a service where we never see the private key
 
-      response = controller.create_ephemeral_hidden_service(4568, discard_key = True)
+      response = controller.create_ephemeral_hidden_service(4568, key_content = 'RSA1024', discard_key = True)
+      self.assertTrue(response.service_id in controller.list_ephemeral_hidden_services())
+      self.assertEqual(None, response.private_key)
+      self.assertEqual(None, response.private_key_type)
+
+      # other controllers shouldn't be able to see these hidden services
+
+      with runner.get_tor_controller() as second_controller:
+        self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
+        self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
+
+  @test.require.controller
+  @test.require.version(Requirement.HIDDEN_SERVICE_V3)
+  def test_ephemeral_hidden_services_v3(self):
+    """
+    Exercises creating v3 ephemeral hidden services.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      response = controller.create_ephemeral_hidden_service(4567, key_content = 'ED25519-V3')
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertEqual(88, len(response.private_key))
+      self.assertEqual('ED25519-V3', response.private_key_type)
+      self.assertEqual({}, response.client_auth)
+
+      # drop the service
+
+      self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
+
+      # recreate the service with the same private key
+
+      recreate_response = controller.create_ephemeral_hidden_service(4567, key_type = response.private_key_type, key_content = response.private_key)
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertEqual(response.service_id, recreate_response.service_id)
+
+      # the response only includes the private key when making a new one
+
+      self.assertEqual(None, recreate_response.private_key)
+      self.assertEqual(None, recreate_response.private_key_type)
+
+      # create a service where we never see the private key
+
+      response = controller.create_ephemeral_hidden_service(4568, key_content = 'ED25519-V3', discard_key = True)
       self.assertTrue(response.service_id in controller.list_ephemeral_hidden_services())
       self.assertEqual(None, response.private_key)
       self.assertEqual(None, response.private_key_type)
