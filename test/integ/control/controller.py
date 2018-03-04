@@ -581,7 +581,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, key_content = 'RSA1024')
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
-      self.assertEqual(812, len(response.private_key))
+      self.assertTrue(response.private_key is not None)
       self.assertEqual('RSA1024', response.private_key_type)
       self.assertEqual({}, response.client_auth)
 
@@ -626,7 +626,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, key_content = 'ED25519-V3')
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
-      self.assertEqual(88, len(response.private_key))
+      self.assertTrue(response.private_key is not None)
       self.assertEqual('ED25519-V3', response.private_key_type)
       self.assertEqual({}, response.client_auth)
 
