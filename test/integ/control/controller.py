@@ -1395,16 +1395,20 @@ class TestController(unittest.TestCase):
     """
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      self.assertEqual(None, controller.get_conf('OrPort'))
+      try:
+        controller.reset_conf('OrPort', 'DisableNetwork')
+        self.assertEqual(None, controller.get_conf('OrPort'))
 
-      # DisableNetwork ensures no port is actually opened
-      controller.set_options({'OrPort': '9090', 'DisableNetwork': '1'})
+        # DisableNetwork ensures no port is actually opened
+        controller.set_options({'OrPort': '9090', 'DisableNetwork': '1'})
 
-      # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
+        # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
 
-      self.assertEqual('9090', controller.get_conf('OrPort'))
-      controller.reset_conf('OrPort', 'DisableNetwork')
-      self.assertEqual(None, controller.get_conf('OrPort'))
+        self.assertEqual('9090', controller.get_conf('OrPort'))
+        controller.reset_conf('OrPort', 'DisableNetwork')
+        self.assertEqual(None, controller.get_conf('OrPort'))
+      finally:
+        controller.set_conf('OrPort', test.runner.ORPORT)
 
   def _get_router_status_entry(self, controller):
     """

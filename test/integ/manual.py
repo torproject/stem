@@ -27,6 +27,7 @@ EXPECTED_CATEGORIES = set([
   'DIRECTORY SERVER OPTIONS',
   'DIRECTORY AUTHORITY SERVER OPTIONS',
   'HIDDEN SERVICE OPTIONS',
+  'DENIAL OF SERVICE MITIGATION OPTIONS',
   'TESTING NETWORK OPTIONS',
   'NON-PERSISTENT OPTIONS',
   'SIGNALS',
@@ -66,7 +67,11 @@ Private addresses are rejected by default (at the beginning of your exit policy)
 
 This directive can be specified multiple times so you don't have to put it all on one line.
 
-Policies are considered first to last, and the first match wins. If you want to allow the same ports on IPv4 and IPv6, write your rules using accept/reject *. If you want to allow different ports on IPv4 and IPv6, write your IPv6 rules using accept6/reject6 *6, and your IPv4 rules using accept/reject *4. If you want to _replace_ the default exit policy, end your exit policy with either a reject *:* or an accept *:*. Otherwise, you're _augmenting_ (prepending to) the default exit policy. The default exit policy is:
+Policies are considered first to last, and the first match wins. If you want to allow the same ports on IPv4 and IPv6, write your rules using accept/reject *. If you want to allow different ports on IPv4 and IPv6, write your IPv6 rules using accept6/reject6 *6, and your IPv4 rules using accept/reject *4. If you want to _replace_ the default exit policy, end your exit policy with either a reject *:* or an accept *:*. Otherwise, you're _augmenting_ (prepending to) the default exit policy.
+
+If you want to use a reduced exit policy rather than the default exit policy, set "ReducedExitPolicy 1". If you want to replace the default exit policy with your custom exit policy, end your exit policy with either a reject : or an accept :. Otherwise, you're augmenting (prepending to) the default or reduced exit policy.
+
+The default exit policy is:
 
     reject *:25
     reject *:119
@@ -79,8 +84,6 @@ Policies are considered first to last, and the first match wins. If you want to 
     reject *:6699
     reject *:6881-6999
     accept *:*
-
-Since the default exit policy uses accept/reject *, it applies to both IPv4 and IPv6 addresses.
 """.strip()
 
 
@@ -203,7 +206,7 @@ class TestManual(unittest.TestCase):
     assert_equal('signals', EXPECTED_SIGNALS, set(manual.signals.keys()))
     assert_equal('sighup description', 'Tor will catch this, clean up and sync to disk if necessary, and exit.', manual.signals['SIGTERM'])
 
-    assert_equal('number of files', 50, len(manual.files))
+    assert_equal('number of files', 48, len(manual.files))
     assert_equal('lib path description', 'The tor process stores keys and other data here.', manual.files['@LOCALSTATEDIR@/lib/tor/'])
 
     for category in Category:
@@ -213,7 +216,7 @@ class TestManual(unittest.TestCase):
     unknown_options = [entry for entry in manual.config_options.values() if entry.category == Category.UNKNOWN]
 
     if unknown_options:
-      self.fail("We don't recognize the category for the %s options. Maybe a new man page section? If so then please update the Category enum in stem/manual.py." % ', '.join(unknown_options))
+      self.fail("We don't recognize the category for the %s options. Maybe a new man page section? If so then please update the Category enum in stem/manual.py." % ', '.join([option.name for option in unknown_options]))
 
     option = manual.config_options['BandwidthRate']
     self.assertEqual(Category.GENERAL, option.category)
