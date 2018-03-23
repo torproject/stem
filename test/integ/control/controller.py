@@ -1134,7 +1134,7 @@ class TestController(unittest.TestCase):
           s.settimeout(30)
           s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
           test.network.negotiate_socks(s, '1.2.1.2', 80)
-          s.sendall(stem.util.str_tools._to_bytes(test.network.ip_request))  # make the http request for the ip address
+          s.sendall(stem.util.str_tools._to_bytes(test.network.IP_REQUEST))  # make the http request for the ip address
           response = s.recv(1000)
 
           if response:

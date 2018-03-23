@@ -34,14 +34,14 @@ SOCKS5_CONN_BY_IPV4 = (0x05, 0x01, 0x00, 0x01)
 SOCKS5_CONN_BY_NAME = (0x05, 0x01, 0x00, 0x03)
 
 
-error_msgs = {
+ERROR_MSG = {
   0x5a: 'SOCKS4A request granted',
   0x5b: 'SOCKS4A request rejected or failed',
   0x5c: 'SOCKS4A request failed because client is not running identd (or not reachable from the server)',
   0x5d: "SOCKS4A request failed because client's identd could not confirm the user ID string in the request",
 }
 
-ip_request = """GET /ip HTTP/1.0
+IP_REQUEST = """GET /ip HTTP/1.0
 Host: ifconfig.me
 Accept-Encoding: identity
 
@@ -300,7 +300,7 @@ def external_ip(host, port):
 
   try:
     negotiate_socks(sock, 'ifconfig.me', 80)
-    sock.sendall(ip_request)
+    sock.sendall(IP_REQUEST)
     response = sock.recv(1000)
 
     # everything after the blank line is the 'data' in a HTTP response
@@ -332,6 +332,6 @@ def negotiate_socks(sock, host, port):
 
   if len(response) != 8 or response[0:2] != b'\x00\x5a':
     sock.close()
-    raise ProtocolError(error_msgs.get(response[1], 'SOCKS server returned unrecognized error code'))
+    raise ProtocolError(ERROR_MSG.get(response[1], 'SOCKS server returned unrecognized error code'))
 
   return [socket.inet_ntoa(response[4:]), struct.unpack('!H', response[2:4])[0]]
