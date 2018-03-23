@@ -2391,10 +2391,12 @@ class Controller(BaseController):
     for param, value in params:
       if isinstance(value, str):
         query_comp.append('%s="%s"' % (param, value.strip()))
-      elif value:
+      elif isinstance(value, collections.Iterable):
         query_comp.extend(['%s="%s"' % (param, val.strip()) for val in value])
-      else:
+      elif not value:
         query_comp.append(param)
+      else:
+        raise ValueError('Cannot set %s to %s since the value was a %s but we only accept strings' % (param, value, type(value).__name__))
 
     query = ' '.join(query_comp)
     response = self.msg(query)

@@ -1408,7 +1408,7 @@ class TestController(unittest.TestCase):
         controller.reset_conf('OrPort', 'DisableNetwork')
         self.assertEqual(None, controller.get_conf('OrPort'))
       finally:
-        controller.set_conf('OrPort', test.runner.ORPORT)
+        controller.set_conf('OrPort', str(test.runner.ORPORT))
 
   def _get_router_status_entry(self, controller):
     """
