@@ -79,7 +79,7 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'TESTING', 'UNKNOWN')
+Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_tor_manual.sqlite')
 DATABASE = None  # cache database connections
@@ -104,6 +104,7 @@ CATEGORY_SECTIONS = OrderedDict((
   ('DIRECTORY SERVER OPTIONS', Category.DIRECTORY),
   ('DIRECTORY AUTHORITY SERVER OPTIONS', Category.AUTHORITY),
   ('HIDDEN SERVICE OPTIONS', Category.HIDDEN_SERVICE),
+  ('DENIAL OF SERVICE MITIGATION OPTIONS', Category.DENIAL_OF_SERVICE),
   ('TESTING NETWORK OPTIONS', Category.TESTING),
 ))
 

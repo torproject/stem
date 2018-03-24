@@ -1118,6 +1118,7 @@ class TestController(unittest.TestCase):
   @test.require.controller
   @test.require.online
   def test_mapaddress(self):
+    self.skipTest('(https://trac.torproject.org/projects/tor/ticket/25611)')
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
@@ -1134,7 +1135,7 @@ class TestController(unittest.TestCase):
           s.settimeout(30)
           s.connect(('127.0.0.1', int(controller.get_conf('SocksPort'))))
           test.network.negotiate_socks(s, '1.2.1.2', 80)
-          s.sendall(stem.util.str_tools._to_bytes(test.network.ip_request))  # make the http request for the ip address
+          s.sendall(stem.util.str_tools._to_bytes(test.network.IP_REQUEST))  # make the http request for the ip address
           response = s.recv(1000)
 
           if response:
@@ -1395,16 +1396,20 @@ class TestController(unittest.TestCase):
     """
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      self.assertEqual(None, controller.get_conf('OrPort'))
+      try:
+        controller.reset_conf('OrPort', 'DisableNetwork')
+        self.assertEqual(None, controller.get_conf('OrPort'))
 
-      # DisableNetwork ensures no port is actually opened
-      controller.set_options({'OrPort': '9090', 'DisableNetwork': '1'})
+        # DisableNetwork ensures no port is actually opened
+        controller.set_options({'OrPort': '9090', 'DisableNetwork': '1'})
 
-      # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
+        # TODO once tor 0.2.7.x exists, test that we can generate a descriptor on demand.
 
-      self.assertEqual('9090', controller.get_conf('OrPort'))
-      controller.reset_conf('OrPort', 'DisableNetwork')
-      self.assertEqual(None, controller.get_conf('OrPort'))
+        self.assertEqual('9090', controller.get_conf('OrPort'))
+        controller.reset_conf('OrPort', 'DisableNetwork')
+        self.assertEqual(None, controller.get_conf('OrPort'))
+      finally:
+        controller.set_conf('OrPort', str(test.runner.ORPORT))
 
   def _get_router_status_entry(self, controller):
     """
