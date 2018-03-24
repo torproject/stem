@@ -64,6 +64,8 @@ BASE_TORRC = """# configuration for stem integration tests
 DataDirectory %%s
 SocksPort %i
 ORPort %i
+ExitRelay 0
+PublishServerDescriptor 0
 DownloadExtraInfo 1
 Log notice stdout
 Log notice file %%s/tor_log
