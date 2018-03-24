@@ -1118,6 +1118,7 @@ class TestController(unittest.TestCase):
   @test.require.controller
   @test.require.online
   def test_mapaddress(self):
+    self.skipTest('(https://trac.torproject.org/projects/tor/ticket/25611)')
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
