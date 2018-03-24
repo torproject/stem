@@ -11,18 +11,14 @@ the tor network.
     +- SocksError - Reports problems returned by the SOCKS proxy.
 
   Socks - Communicate through a SOCKS5 proxy with a socket interface
-
-  SocksPatch - Force socket-using code to use test.network.Socks
 """
 
-import functools
 import socket
 import struct
 
+import stem
 import stem.util.connection
 import stem.util.str_tools
-
-from stem import ProtocolError, SocketError
 
 # Store a reference to the original class so we can find it after
 # monkey patching.
@@ -247,70 +243,6 @@ class Socks(_socket_socket):
     raise NotImplementedError
 
 
-class SocksPatch(object):
-  """
-  Monkey-patch **socket.socket** to use :class:`~test.network.Socks`, instead.
-  Classes in the patched context (e.g. urllib.urlopen in the example below)
-  do not use the SOCKS5 proxy for domain name resolution and such information
-  may be leaked.
-
-  ::
-
-    import urllib
-    from test.network import SocksPatch
-
-    with SocksPatch(('127.0.0.1', 9050)):
-      with urllib.urlopen('https://www.torproject.org') as f:
-        for line in f.readline():
-          print line
-  """
-
-  def __init__(self, *args, **kwargs):
-    self._partial = functools.partial(Socks, *args, **kwargs)
-
-  def __enter__(self):
-    socket.socket = self._partial
-    return self
-
-  def __exit__(self, exit_type, value, traceback):
-    socket.socket = _socket_socket
-
-
-def external_ip(host, port):
-  """
-  Returns the externally visible IP address when using a SOCKS4a proxy.
-  Negotiates the socks connection, connects to ipconfig.me and requests
-  http://ifconfig.me/ip to find out the externally visible IP.
-
-  Supports only SOCKS4a proxies.
-
-  :param str host: hostname/IP of the proxy server
-  :param int port: port on which the proxy server is listening
-
-  :returns: externally visible IP address, or None if it isn't able to
-
-  :raises: :class:`stem.socket.SocketError`: unable to connect a socket to the socks server
-  """
-
-  try:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect((host, int(port)))
-  except Exception as exc:
-    raise SocketError('Failed to connect to the socks server: ' + str(exc))
-
-  try:
-    negotiate_socks(sock, 'ifconfig.me', 80)
-    sock.sendall(IP_REQUEST)
-    response = sock.recv(1000)
-
-    # everything after the blank line is the 'data' in a HTTP response
-    # The response data for our request for request should be an IP address + '\n'
-
-    return response[response.find('\r\n\r\n'):].strip()
-  except Exception as exc:
-    return None
-
-
 def negotiate_socks(sock, host, port):
   """
   Negotiate with a socks4a server. Closes the socket and raises an exception on
@@ -332,6 +264,6 @@ def negotiate_socks(sock, host, port):
 
   if len(response) != 8 or response[0:2] != b'\x00\x5a':
     sock.close()
-    raise ProtocolError(ERROR_MSG.get(response[1], 'SOCKS server returned unrecognized error code'))
+    raise stem.ProtocolError(ERROR_MSG.get(response[1], 'SOCKS server returned unrecognized error code'))
 
   return [socket.inet_ntoa(response[4:]), struct.unpack('!H', response[2:4])[0]]
