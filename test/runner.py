@@ -66,6 +66,7 @@ SocksPort %i
 ORPort %i
 ExitRelay 0
 PublishServerDescriptor 0
+AssumeReachable 1
 DownloadExtraInfo 1
 Log notice stdout
 Log notice file %%s/tor_log
