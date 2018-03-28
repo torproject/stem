@@ -80,6 +80,21 @@ content. For example...
 
   Maximum number of microdescriptors that can requested at a time by their
   hashes.
+
+.. data:: Compression (enum)
+
+  Compression when downloading descriptors.
+
+  .. versionadded:: 1.7.0
+
+  =============== ===========
+  Compression     Description
+  =============== ===========
+  **PLAINTEXT**   Uncompressed data.
+  **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_
+  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_.
+  =============== ===========
 """
 
 import io
@@ -90,6 +105,13 @@ import sys
 import threading
 import time
 import zlib
+
+import stem.descriptor
+import stem.prereq
+import stem.util.enum
+
+from stem import Flag
+from stem.util import _hash_attr, connection, log, str_tools, tor_tools
 
 try:
   # added in python 2.7
@@ -103,11 +125,24 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-import stem.descriptor
-import stem.prereq
+try:
+  # added in python 3.3
+  import lzma
+  LZMA_SUPPORTED = True
+except ImportError:
+  LZMA_SUPPORTED = False
 
-from stem import Flag
-from stem.util import _hash_attr, connection, log, str_tools, tor_tools
+ZSTD_SUPPORTED = False
+
+Compression = stem.util.enum.Enum(
+  ('PLAINTEXT', 'identity'),
+  ('GZIP', 'gzip'),  # can also be 'deflate'
+  ('ZSTD', 'x-zstd'),
+  ('LZMA', 'x-tor-lzma'),
+)
+
+ZSTD_UNAVAILABLE_MSG = 'ZSTD is not yet supported'
+LZMA_UNAVAILABLE_MSG = 'LZMA compression was requested but requires the lzma module, which was added in python 3.3'
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -224,7 +259,7 @@ class Query(object):
     from stem.descriptor.remote import Query
 
     query = Query(
-      '/tor/server/all.z',
+      '/tor/server/all',
       block = True,
       timeout = 30,
     )
@@ -243,7 +278,7 @@ class Query(object):
 
     print('Current relays:')
 
-    for desc in Query('/tor/server/all.z', 'server-descriptor 1.0'):
+    for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
       print(desc.fingerprint)
 
   In either case exceptions are available via our 'error' attribute.
@@ -256,28 +291,37 @@ class Query(object):
   =============================================== ===========
   Resource                                        Description
   =============================================== ===========
-  /tor/server/all.z                               all present server descriptors
-  /tor/server/fp/<fp1>+<fp2>+<fp3>.z              server descriptors with the given fingerprints
-  /tor/extra/all.z                                all present extrainfo descriptors
-  /tor/extra/fp/<fp1>+<fp2>+<fp3>.z               extrainfo descriptors with the given fingerprints
-  /tor/micro/d/<hash1>-<hash2>.z                  microdescriptors with the given hashes
-  /tor/status-vote/current/consensus.z            present consensus
-  /tor/status-vote/current/consensus-microdesc.z  present microdescriptor consensus
-  /tor/keys/all.z                                 key certificates for the authorities
-  /tor/keys/fp/<v3ident1>+<v3ident2>.z            key certificates for specific authorities
+  /tor/server/all                                 all present server descriptors
+  /tor/server/fp/<fp1>+<fp2>+<fp3>                server descriptors with the given fingerprints
+  /tor/extra/all                                  all present extrainfo descriptors
+  /tor/extra/fp/<fp1>+<fp2>+<fp3>                 extrainfo descriptors with the given fingerprints
+  /tor/micro/d/<hash1>-<hash2>                    microdescriptors with the given hashes
+  /tor/status-vote/current/consensus              present consensus
+  /tor/status-vote/current/consensus-microdesc    present microdescriptor consensus
+  /tor/keys/all                                   key certificates for the authorities
+  /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
   =============================================== ===========
 
-  The '.z' suffix can be excluded to get a plaintext rather than compressed
-  response. Compression is handled transparently, so this shouldn't matter to
-  the caller.
+  **LZMA** compression requires the `lzma module
+  <https://docs.python.org/3/library/lzma.html>`_ which was added in Python
+  3.3.
 
-  :var str resource: resource being fetched, such as '/tor/server/all.z'
+  For legacy reasons if our resource has a '.z' suffix then our **compression**
+  argument is overwritten with Compression.GZIP.
+
+  .. versionchanged:: 1.7.0
+     Added the compression argument.
+
+  :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
     resource if **None**
 
   :var list endpoints: (address, dirport) tuples of the authority or mirror
     we're querying, this uses authorities if undefined
+  :var list compression: list of :data:`stem.descriptor.remote.Compression`
+    we're willing to accept, when none are mutually supported downloads fall
+    back to Compression.PLAINTEXT
   :var int retries: number of times to attempt the request if downloading it
     fails
   :var bool fall_back_to_authority: when retrying request issues the last
@@ -305,17 +349,37 @@ class Query(object):
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, compression = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
-    self.resource = resource
+    if resource.endswith('.z'):
+      compression = [Compression.GZIP]
+      resource = resource[:-2]
+    elif compression is None:
+      compression = [Compression.PLAINTEXT]
+    else:
+      if isinstance(compression, str):
+        compression = [compression]  # caller provided only a single option
+
+      if Compression.LZMA in compression and not LZMA_SUPPORTED:
+        log.log_once('stem.descriptor.remote.lzma_unavailable', log.INFO, LZMA_UNAVAILABLE_MSG)
+        compression.remove(Compression.LZMA)
+
+      if Compression.ZSTD in compression and not ZSTD_SUPPORTED:
+        log.log_once('stem.descriptor.remote.zstd_unavailable', log.INFO, ZSTD_UNAVAILABLE_MSG)
+        compression.remove(Compression.ZSTD)
+
+      if not compression:
+        compression = [Compression.PLAINTEXT]
 
     if descriptor_type:
       self.descriptor_type = descriptor_type
     else:
       self.descriptor_type = _guess_descriptor_type(resource)
 
+    self.resource = resource
+    self.compression = compression
     self.endpoints = endpoints if endpoints else []
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
@@ -352,7 +416,7 @@ class Query(object):
         self._downloader_thread = threading.Thread(
           name = 'Descriptor Query',
           target = self._download_descriptors,
-          args = (self.retries,)
+          args = (self.compression, self.retries,)
         )
 
         self._downloader_thread.setDaemon(True)
@@ -435,26 +499,41 @@ class Query(object):
     if use_authority or not self.endpoints:
       directories = get_authorities().values()
 
-      picked = random.choice(directories)
+      picked = random.choice(list(directories))
       address, dirport = picked.address, picked.dir_port
     else:
       address, dirport = random.choice(self.endpoints)
 
     return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
 
-  def _download_descriptors(self, retries):
+  def _download_descriptors(self, compression, retries):
     try:
       use_authority = retries == 0 and self.fall_back_to_authority
       self.download_url = self._pick_url(use_authority)
-
       self.start_time = time.time()
-      response = urllib.urlopen(self.download_url, timeout = self.timeout).read()
 
-      if self.download_url.endswith('.z'):
-        response = zlib.decompress(response)
+      response = urllib.urlopen(
+        urllib.Request(
+          self.download_url,
+          headers = {'Accept-Encoding': ', '.join(compression)},
+        ),
+        timeout = self.timeout,
+      )
 
-      self.content = response.strip()
+      data = response.read()
+      encoding = response.info().getheader('Content-Encoding')
 
+      if encoding in (Compression.GZIP, 'deflate'):
+        # The '32' is for automatic header detection...
+        # https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+
+        data = zlib.decompress(data, zlib.MAX_WBITS | 32)
+      elif encoding == Compression.ZSTD:
+        pass  # TODO: implement
+      elif encoding == Compression.LZMA and LZMA_SUPPORTED:
+        data = lzma.decompress(data)
+
+      self.content = data.strip()
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
@@ -462,7 +541,7 @@ class Query(object):
 
       if retries > 0:
         log.debug("Unable to download descriptors from '%s' (%i retries remaining): %s" % (self.download_url, retries, exc))
-        return self._download_descriptors(retries - 1)
+        return self._download_descriptors(compression, retries - 1)
       else:
         log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
         self.error = exc
@@ -539,7 +618,7 @@ class DescriptorDownloader(object):
       fingerprints (this is due to a limit on the url length by squid proxies).
     """
 
-    resource = '/tor/server/all.z'
+    resource = '/tor/server/all'
 
     if isinstance(fingerprints, str):
       fingerprints = [fingerprints]
@@ -548,7 +627,7 @@ class DescriptorDownloader(object):
       if len(fingerprints) > MAX_FINGERPRINTS:
         raise ValueError('Unable to request more than %i descriptors at a time by their fingerprints' % MAX_FINGERPRINTS)
 
-      resource = '/tor/server/fp/%s.z' % '+'.join(fingerprints)
+      resource = '/tor/server/fp/%s' % '+'.join(fingerprints)
 
     return self.query(resource, **query_args)
 
@@ -569,7 +648,7 @@ class DescriptorDownloader(object):
       fingerprints (this is due to a limit on the url length by squid proxies).
     """
 
-    resource = '/tor/extra/all.z'
+    resource = '/tor/extra/all'
 
     if isinstance(fingerprints, str):
       fingerprints = [fingerprints]
@@ -578,7 +657,7 @@ class DescriptorDownloader(object):
       if len(fingerprints) > MAX_FINGERPRINTS:
         raise ValueError('Unable to request more than %i descriptors at a time by their fingerprints' % MAX_FINGERPRINTS)
 
-      resource = '/tor/extra/fp/%s.z' % '+'.join(fingerprints)
+      resource = '/tor/extra/fp/%s' % '+'.join(fingerprints)
 
     return self.query(resource, **query_args)
 
@@ -613,7 +692,7 @@ class DescriptorDownloader(object):
     if len(hashes) > MAX_MICRODESCRIPTOR_HASHES:
       raise ValueError('Unable to request more than %i microdescriptors at a time by their hashes' % MAX_MICRODESCRIPTOR_HASHES)
 
-    return self.query('/tor/micro/d/%s.z' % '-'.join(hashes), **query_args)
+    return self.query('/tor/micro/d/%s' % '-'.join(hashes), **query_args)
 
   def get_consensus(self, authority_v3ident = None, microdescriptor = False, **query_args):
     """
@@ -643,7 +722,7 @@ class DescriptorDownloader(object):
     if authority_v3ident:
       resource += '/%s' % authority_v3ident
 
-    consensus_query = self.query(resource + '.z', **query_args)
+    consensus_query = self.query(resource, **query_args)
 
     # if we're performing validation then check that it's signed by the
     # authority key certificates
@@ -672,7 +751,7 @@ class DescriptorDownloader(object):
     if 'endpoint' not in query_args:
       query_args['endpoints'] = [(authority.address, authority.dir_port)]
 
-    return self.query(resource + '.z', **query_args)
+    return self.query(resource, **query_args)
 
   def get_key_certificates(self, authority_v3idents = None, **query_args):
     """
@@ -694,7 +773,7 @@ class DescriptorDownloader(object):
       squid proxies).
     """
 
-    resource = '/tor/keys/all.z'
+    resource = '/tor/keys/all'
 
     if isinstance(authority_v3idents, str):
       authority_v3idents = [authority_v3idents]
@@ -703,7 +782,7 @@ class DescriptorDownloader(object):
       if len(authority_v3idents) > MAX_FINGERPRINTS:
         raise ValueError('Unable to request more than %i key certificates at a time by their identity fingerprints' % MAX_FINGERPRINTS)
 
-      resource = '/tor/keys/fp/%s.z' % '+'.join(authority_v3idents)
+      resource = '/tor/keys/fp/%s' % '+'.join(authority_v3idents)
 
     return self.query(resource, **query_args)
 
@@ -711,7 +790,7 @@ class DescriptorDownloader(object):
     """
     Issues a request for the given resource.
 
-    :param str resource: resource being fetched, such as '/tor/server/all.z'
+    :param str resource: resource being fetched, such as '/tor/server/all'
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 

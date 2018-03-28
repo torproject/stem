@@ -11,6 +11,8 @@ import stem.descriptor.remote
 import stem.prereq
 import stem.util.conf
 
+from stem.descriptor.remote import Compression
+
 try:
   # added in python 2.7
   from collections import OrderedDict
@@ -28,6 +30,8 @@ except ImportError:
 # mock annotations.
 
 URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
+
+TEST_RESOURCE = '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
 
 # Output from requesting moria1's descriptor from itself...
 # % curl http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31
@@ -108,6 +112,33 @@ FALLBACK_ENTRY = b"""\
 
 
 class TestDescriptorDownloader(unittest.TestCase):
+  def test_gzip_url_override(self):
+    query = stem.descriptor.remote.Query(TEST_RESOURCE, start = False)
+    self.assertEqual([Compression.PLAINTEXT], query.compression)
+    self.assertEqual(TEST_RESOURCE, query.resource)
+
+    query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
+    self.assertEqual([Compression.GZIP], query.compression)
+    self.assertEqual(TEST_RESOURCE, query.resource)
+
+  def test_zstd_support_check(self):
+    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', True):
+      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
+      self.assertEqual([Compression.ZSTD], query.compression)
+
+    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', False):
+      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
+      self.assertEqual([Compression.PLAINTEXT], query.compression)
+
+  def test_lzma_support_check(self):
+    with patch('stem.descriptor.remote.LZMA_SUPPORTED', True):
+      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
+      self.assertEqual([Compression.LZMA], query.compression)
+
+    with patch('stem.descriptor.remote.LZMA_SUPPORTED', False):
+      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
+      self.assertEqual([Compression.PLAINTEXT], query.compression)
+
   @patch(URL_OPEN)
   def test_query_download(self, urlopen_mock):
     """
@@ -117,13 +148,14 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
 
     query = stem.descriptor.remote.Query(
-      '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      TEST_RESOURCE,
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      compression = Compression.PLAINTEXT,
       validate = True,
     )
 
-    expeced_url = 'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
+    expeced_url = 'http://128.31.0.39:9131' + TEST_RESOURCE
     self.assertEqual(expeced_url, query._pick_url())
 
     descriptors = list(query)
@@ -135,7 +167,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR.strip(), desc.get_bytes())
 
-    urlopen_mock.assert_called_once_with(expeced_url, timeout = None)
+    self.assertEqual(1, urlopen_mock.call_count)
 
   @patch(URL_OPEN)
   def test_query_with_malformed_content(self, urlopen_mock):
@@ -147,9 +179,10 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(descriptor_content)
 
     query = stem.descriptor.remote.Query(
-      '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      TEST_RESOURCE,
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      compression = Compression.PLAINTEXT,
       validate = True,
     )
 
@@ -171,7 +204,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.side_effect = socket.timeout('connection timed out')
 
     query = stem.descriptor.remote.Query(
-      '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      TEST_RESOURCE,
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
       fall_back_to_authority = False,
@@ -180,10 +213,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     self.assertRaises(socket.timeout, query.run)
-    urlopen_mock.assert_called_with(
-      'http://128.31.0.39:9131/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
-      timeout = 5,
-    )
     self.assertEqual(3, urlopen_mock.call_count)
 
   @patch(URL_OPEN)
@@ -191,9 +220,10 @@ class TestDescriptorDownloader(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
 
     query = stem.descriptor.remote.Query(
-      '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      TEST_RESOURCE,
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
+      compression = Compression.PLAINTEXT,
       validate = True,
     )
 
