@@ -2,7 +2,6 @@
 Unit tests for stem.descriptor.remote.
 """
 
-import io
 import socket
 import tempfile
 import unittest
@@ -21,9 +20,9 @@ except ImportError:
 
 try:
   # added in python 3.3
-  from unittest.mock import patch
+  from unittest.mock import patch, Mock
 except ImportError:
-  from mock import patch
+  from mock import patch, Mock
 
 # The urlopen() method is in a different location depending on if we're using
 # python 2.x or 3.x. The 2to3 converter accounts for this in imports, but not
@@ -111,6 +110,13 @@ FALLBACK_ENTRY = b"""\
 """
 
 
+def _urlopen_mock(data):
+  urlopen_mock = Mock()
+  urlopen_mock().read.return_value = data
+  urlopen_mock().info().getheader.return_value = 'identity'
+  return urlopen_mock
+
+
 class TestDescriptorDownloader(unittest.TestCase):
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE, start = False)
@@ -139,13 +145,11 @@ class TestDescriptorDownloader(unittest.TestCase):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
 
-  @patch(URL_OPEN)
-  def test_query_download(self, urlopen_mock):
+  @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
+  def test_query_download(self):
     """
     Check Query functionality when we successfully download a descriptor.
     """
-
-    urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
 
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
@@ -167,16 +171,11 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR.strip(), desc.get_bytes())
 
-    self.assertEqual(1, urlopen_mock.call_count)
-
-  @patch(URL_OPEN)
-  def test_query_with_malformed_content(self, urlopen_mock):
+  @patch(URL_OPEN, _urlopen_mock(b'some malformed stuff'))
+  def test_query_with_malformed_content(self):
     """
     Query with malformed descriptor content.
     """
-
-    descriptor_content = b'some malformed stuff'
-    urlopen_mock.return_value = io.BytesIO(descriptor_content)
 
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
@@ -215,10 +214,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertRaises(socket.timeout, query.run)
     self.assertEqual(3, urlopen_mock.call_count)
 
-  @patch(URL_OPEN)
-  def test_can_iterate_multiple_times(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(TEST_DESCRIPTOR)
-
+  @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
+  def test_can_iterate_multiple_times(self):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
@@ -243,9 +240,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(len(fallback_directories) > 10)
     self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
 
-  @patch(URL_OPEN)
-  def test_fallback_directories_from_remote(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT)
+  @patch(URL_OPEN, _urlopen_mock(FALLBACK_DIR_CONTENT))
+  def test_fallback_directories_from_remote(self):
     fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
     header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
 
@@ -328,19 +324,16 @@ class TestDescriptorDownloader(unittest.TestCase):
 
       self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
 
-  @patch(URL_OPEN)
-  def test_fallback_directories_from_remote_empty(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(b'')
+  @patch(URL_OPEN, _urlopen_mock(b''))
+  def test_fallback_directories_from_remote_empty(self):
     self.assertRaisesRegexp(IOError, 'did not have any content', stem.descriptor.remote.FallbackDirectory.from_remote)
 
-  @patch(URL_OPEN)
-  def test_fallback_directories_from_remote_no_header(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(b'\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:]))
+  @patch(URL_OPEN, _urlopen_mock(b'\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:])))
+  def test_fallback_directories_from_remote_no_header(self):
     self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.descriptor.remote.FallbackDirectory.from_remote)
 
-  @patch(URL_OPEN)
-  def test_fallback_directories_from_remote_malformed_header(self, urlopen_mock):
-    urlopen_mock.return_value = io.BytesIO(FALLBACK_DIR_CONTENT.replace(b'version=2.0.0', b'version'))
+  @patch(URL_OPEN, _urlopen_mock(FALLBACK_DIR_CONTENT.replace(b'version=2.0.0', b'version')))
+  def test_fallback_directories_from_remote_malformed_header(self):
     self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.descriptor.remote.FallbackDirectory.from_remote)
 
   def test_fallback_directories_from_str(self):
