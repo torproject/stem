@@ -11,6 +11,7 @@ import stem.prereq
 import stem.util.conf
 
 from stem.descriptor.remote import Compression
+from test.unit.descriptor import read_resource
 
 try:
   # added in python 2.7
@@ -110,14 +111,18 @@ FALLBACK_ENTRY = b"""\
 """
 
 
-def _urlopen_mock(data):
+def _urlopen_mock(data, encoding = 'identity'):
   urlopen_mock = Mock()
   urlopen_mock().read.return_value = data
-  urlopen_mock().info().getheader.return_value = 'identity'
+  urlopen_mock().info().getheader.return_value = encoding
   return urlopen_mock
 
 
 class TestDescriptorDownloader(unittest.TestCase):
+  def tearDown(self):
+    # prevent our mocks from impacting other tests
+    stem.descriptor.remote.SINGLETON_DOWNLOADER = None
+
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE, start = False)
     self.assertEqual([Compression.PLAINTEXT], query.compression)
@@ -144,6 +149,74 @@ class TestDescriptorDownloader(unittest.TestCase):
     with patch('stem.descriptor.remote.LZMA_SUPPORTED', False):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
+
+  @patch(URL_OPEN, _urlopen_mock(read_resource('compressed_identity'), encoding = 'identity'))
+  def test_compression_plaintext(self):
+    """
+    Download a plaintext descriptor.
+    """
+
+    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+      '9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      compression = Compression.PLAINTEXT,
+      validate = True,
+    ))
+
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
+
+  @patch(URL_OPEN, _urlopen_mock(read_resource('compressed_gzip'), encoding = 'gzip'))
+  def test_compression_gzip(self):
+    """
+    Download a gip compressed descriptor.
+    """
+
+    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+      '9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      compression = Compression.GZIP,
+      validate = True,
+    ))
+
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
+
+  @patch(URL_OPEN, _urlopen_mock(read_resource('compressed_zstd'), encoding = 'x-zstd'))
+  def test_compression_zstd(self):
+    """
+    Download a zstd compressed descriptor.
+    """
+
+    if not stem.descriptor.remote.ZSTD_SUPPORTED:
+      self.skipTest('(requires zstd module)')
+      return
+
+    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+      '9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      compression = Compression.ZSTD,
+      validate = True,
+    ))
+
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
+
+  @patch(URL_OPEN, _urlopen_mock(read_resource('compressed_lzma'), encoding = 'x-tor-lzma'))
+  def test_compression_lzma(self):
+    """
+    Download a lzma compressed descriptor.
+    """
+
+    if not stem.descriptor.remote.LZMA_SUPPORTED:
+      self.skipTest('(requires lzma module)')
+      return
+
+    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+      '9695DFC35FFEB861329B9F1AB04C46397020CE31',
+      compression = Compression.LZMA,
+      validate = True,
+    ))
+
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
 
   @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
   def test_query_download(self):

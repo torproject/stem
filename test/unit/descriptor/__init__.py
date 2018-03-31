@@ -25,6 +25,15 @@ def get_resource(filename):
   return os.path.join(DESCRIPTOR_TEST_DATA, filename)
 
 
+def read_resource(filename):
+  """
+  Provides test data.
+  """
+
+  with open(get_resource(filename), 'rb') as resource_file:
+    return resource_file.read()
+
+
 def base_expect_invalid_attr(cls, default_attr, default_value, test, desc_attrs, attr = None, expected_value = None):
   return base_expect_invalid_attr_for_text(cls, default_attr, default_value, test, cls.content(desc_attrs), attr, expected_value)
 
