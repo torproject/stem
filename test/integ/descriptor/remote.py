@@ -16,26 +16,6 @@ import test.require
 class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
-  def test_compression(self):
-    """
-    Issue a request for a plaintext descriptor.
-    """
-
-    moria1 = stem.descriptor.remote.get_authorities()['moria1']
-
-    descriptors = list(stem.descriptor.remote.Query(
-      '/tor/server/fp/%s' % moria1.fingerprint,
-      'server-descriptor 1.0',
-      endpoints = [(moria1.address, moria1.dir_port)],
-      timeout = 30,
-      validate = True,
-    ).run())
-
-    self.assertEqual(1, len(descriptors))
-    self.assertEqual('moria1', descriptors[0].nickname)
-
-  @test.require.only_run_once
-  @test.require.online
   def test_shorthand_aliases(self):
     """
     Quick sanity test that we can call our shorthand aliases for getting
