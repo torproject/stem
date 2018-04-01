@@ -35,6 +35,7 @@ easily parsed and compared, for instance...
   Requirement                           Description
   ===================================== ===========
   **AUTH_SAFECOOKIE**                   SAFECOOKIE authentication method
+  **DESCRIPTOR_COMPRESSION**            `Expanded compression support for ZSTD and LZMA <https://gitweb.torproject.org/torspec.git/commit/?id=1cb56afdc1e55e303e3e6b69e90d983ee217d93f>`_
   **DROPGUARDS**                        DROPGUARDS requests
   **EVENT_AUTHDIR_NEWDESCS**            AUTHDIR_NEWDESC events
   **EVENT_BUILDTIMEOUT_SET**            BUILDTIMEOUT_SET events
@@ -353,6 +354,7 @@ safecookie_req.greater_than(Version('0.2.3.13'))
 
 Requirement = stem.util.enum.Enum(
   ('AUTH_SAFECOOKIE', safecookie_req),
+  ('DESCRIPTOR_COMPRESSION', Version('0.3.1.1-alpha')),
   ('DROPGUARDS', Version('0.2.5.1-alpha')),
   ('EVENT_AUTHDIR_NEWDESCS', Version('0.1.1.10-alpha')),
   ('EVENT_BUILDTIMEOUT_SET', Version('0.2.2.7-alpha')),
