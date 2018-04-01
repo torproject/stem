@@ -92,8 +92,8 @@ content. For example...
   =============== ===========
   **PLAINTEXT**   Uncompressed data.
   **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
-  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_.
-  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_.
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.python.org/pypi/zstandard>`_.
+  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
   =============== ===========
 """
 
@@ -133,9 +133,18 @@ except ImportError:
   LZMA_SUPPORTED = False
 
 try:
-  # https://pypi.python.org/pypi/zstd
+  # We use the suggested python zstd library...
+  #
+  #   https://pypi.python.org/pypi/zstandard
+  #
+  # Unfortunately this installs as a zstd module which can be confused with...
+  #
+  #   https://pypi.python.org/pypi/zstd
+  #
+  # As such checking for the specific decompression class we'll need.
+
   import zstd
-  ZSTD_SUPPORTED = True
+  ZSTD_SUPPORTED = hasattr(zstd, 'ZstdDecompressor')
 except ImportError:
   ZSTD_SUPPORTED = False
 
@@ -146,8 +155,8 @@ Compression = stem.util.enum.Enum(
   ('LZMA', 'x-tor-lzma'),
 )
 
-ZSTD_UNAVAILABLE_MSG = 'ZSTD is not yet supported'
-LZMA_UNAVAILABLE_MSG = 'LZMA compression was requested but requires the lzma module, which was added in python 3.3'
+ZSTD_UNAVAILABLE_MSG = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
+LZMA_UNAVAILABLE_MSG = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -307,9 +316,9 @@ class Query(object):
   /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
   =============================================== ===========
 
-  **LZMA** compression requires the `lzma module
-  <https://docs.python.org/3/library/lzma.html>`_ which was added in Python
-  3.3.
+  **ZSTD** compression requires `zstandard
+  <https://pypi.python.org/pypi/zstandard>`_, and **LZMA** requires the `lzma
+  module <https://docs.python.org/3/library/lzma.html>`_.
 
   For legacy reasons if our resource has a '.z' suffix then our **compression**
   argument is overwritten with Compression.GZIP.
@@ -367,13 +376,13 @@ class Query(object):
       if isinstance(compression, str):
         compression = [compression]  # caller provided only a single option
 
-      if Compression.LZMA in compression and not LZMA_SUPPORTED:
-        log.log_once('stem.descriptor.remote.lzma_unavailable', log.INFO, LZMA_UNAVAILABLE_MSG)
-        compression.remove(Compression.LZMA)
-
       if Compression.ZSTD in compression and not ZSTD_SUPPORTED:
         log.log_once('stem.descriptor.remote.zstd_unavailable', log.INFO, ZSTD_UNAVAILABLE_MSG)
         compression.remove(Compression.ZSTD)
+
+      if Compression.LZMA in compression and not LZMA_SUPPORTED:
+        log.log_once('stem.descriptor.remote.lzma_unavailable', log.INFO, LZMA_UNAVAILABLE_MSG)
+        compression.remove(Compression.LZMA)
 
       if not compression:
         compression = [Compression.PLAINTEXT]
@@ -528,13 +537,22 @@ class Query(object):
       data = response.read()
       encoding = response.info().getheader('Content-Encoding')
 
-      if encoding in (Compression.GZIP, 'deflate'):
-        # The '32' is for automatic header detection...
-        # https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+      # Tor doesn't include compression headers. As such when using gzip we
+      # need to include '32' for automatic header detection...
+      #
+      #   https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+      #
+      # ... and with zstd we need to use the streaming API.
 
+      if encoding in (Compression.GZIP, 'deflate'):
         data = zlib.decompress(data, zlib.MAX_WBITS | 32)
       elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
-        data = zstd.decompress(data)
+        output_buffer = io.BytesIO()
+
+        with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
+          decompressor.write(data)
+
+        data = output_buffer.getvalue()
       elif encoding == Compression.LZMA and LZMA_SUPPORTED:
         data = lzma.decompress(data)
 
