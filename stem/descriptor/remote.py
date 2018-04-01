@@ -92,7 +92,7 @@ content. For example...
   =============== ===========
   **PLAINTEXT**   Uncompressed data.
   **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
-  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_.
   **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_.
   =============== ===========
 """
@@ -132,7 +132,12 @@ try:
 except ImportError:
   LZMA_SUPPORTED = False
 
-ZSTD_SUPPORTED = False
+try:
+  # https://pypi.python.org/pypi/zstd
+  import zstd
+  ZSTD_SUPPORTED = True
+except ImportError:
+  ZSTD_SUPPORTED = False
 
 Compression = stem.util.enum.Enum(
   ('PLAINTEXT', 'identity'),
@@ -528,8 +533,8 @@ class Query(object):
         # https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
 
         data = zlib.decompress(data, zlib.MAX_WBITS | 32)
-      elif encoding == Compression.ZSTD:
-        pass  # TODO: implement
+      elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
+        data = zstd.decompress(data)
       elif encoding == Compression.LZMA and LZMA_SUPPORTED:
         data = lzma.decompress(data)
 
