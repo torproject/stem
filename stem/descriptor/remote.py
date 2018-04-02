@@ -430,7 +430,7 @@ class Query(object):
         self._downloader_thread = threading.Thread(
           name = 'Descriptor Query',
           target = self._download_descriptors,
-          args = (self.compression, self.retries,)
+          args = (self.retries,)
         )
 
         self._downloader_thread.setDaemon(True)
@@ -520,7 +520,7 @@ class Query(object):
 
     return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
 
-  def _download_descriptors(self, compression, retries):
+  def _download_descriptors(self, retries):
     try:
       use_authority = retries == 0 and self.fall_back_to_authority
       self.download_url = self._pick_url(use_authority)
@@ -529,7 +529,7 @@ class Query(object):
       response = urllib.urlopen(
         urllib.Request(
           self.download_url,
-          headers = {'Accept-Encoding': ', '.join(compression)},
+          headers = {'Accept-Encoding': ', '.join(self.compression)},
         ),
         timeout = self.timeout,
       )
@@ -564,7 +564,7 @@ class Query(object):
 
       if retries > 0:
         log.debug("Unable to download descriptors from '%s' (%i retries remaining): %s" % (self.download_url, retries, exc))
-        return self._download_descriptors(compression, retries - 1)
+        return self._download_descriptors(retries - 1)
       else:
         log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
         self.error = exc
