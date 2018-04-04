@@ -341,10 +341,11 @@ def _parse_hibernating_line(descriptor, entries):
 def _parse_hidden_service_dir_line(descriptor, entries):
   value = _value('hidden-service-dir', entries)
 
-  if value:
-    descriptor.hidden_service_dir = value.split(' ')
-  else:
-    descriptor.hidden_service_dir = ['2']
+  # TODO: Remove the following field in Stem 2.0. It has never been populated...
+  #
+  #   https://gitweb.torproject.org/torspec.git/commit/?id=43c2f78
+
+  descriptor.hidden_service_dir = ['2']
 
 
 def _parse_uptime_line(descriptor, entries):
@@ -527,6 +528,10 @@ class ServerDescriptor(Descriptor):
   .. versionchanged:: 1.6.0
      Added the extra_info_sha256_digest, protocols, and bridge_distribution
      attributes.
+
+  .. versionchanged:: 1.7.0
+     Deprecated the hidden_service_dir field, it's never been populated
+     (:spec:`43c2f78`). This field will be removed in Stem 2.0.
   """
 
   ATTRIBUTES = {
