@@ -338,16 +338,6 @@ def _parse_hibernating_line(descriptor, entries):
   descriptor.hibernating = value == '1'
 
 
-def _parse_hidden_service_dir_line(descriptor, entries):
-  value = _value('hidden-service-dir', entries)
-
-  # TODO: Remove the following field in Stem 2.0. It has never been populated...
-  #
-  #   https://gitweb.torproject.org/torspec.git/commit/?id=43c2f78
-
-  descriptor.hidden_service_dir = ['2']
-
-
 def _parse_uptime_line(descriptor, entries):
   # We need to be tolerant of negative uptimes to accommodate a past tor
   # bug...
@@ -450,6 +440,7 @@ _parse_ipv6_policy_line = _parse_simple_line('ipv6-policy', 'exit_policy_v6', fu
 _parse_allow_single_hop_exits_line = _parse_if_present('allow-single-hop-exits', 'allow_single_hop_exits')
 _parse_tunneled_dir_server_line = _parse_if_present('tunnelled-dir-server', 'allow_tunneled_dir_requests')
 _parse_proto_line = _parse_protocol_line('proto', 'protocols')
+_parse_hidden_service_dir_line = _parse_if_present('hidden-service-dir', 'is_hidden_service_dir')
 _parse_caches_extra_info_line = _parse_if_present('caches-extra-info', 'extra_info_cache')
 _parse_bridge_distribution_request_line = _parse_simple_line('bridge-distribution-request', 'bridge_distribution')
 _parse_family_line = _parse_simple_line('family', 'family', func = lambda v: set(v.split(' ')))
@@ -495,6 +486,8 @@ class ServerDescriptor(Descriptor):
 
   :var list link_protocols: link protocols supported by the relay
   :var list circuit_protocols: circuit protocols supported by the relay
+  :var bool is_hidden_service_dir: **\*** indicates if the relay serves hidden
+    service descriptors
   :var bool hibernating: **\*** hibernating when published
   :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
   :var bool allow_tunneled_dir_requests: **\*** flag if tunneled directory
@@ -530,6 +523,9 @@ class ServerDescriptor(Descriptor):
      attributes.
 
   .. versionchanged:: 1.7.0
+     Added the is_hidden_service_dir attribute.
+
+  .. versionchanged:: 1.7.0
      Deprecated the hidden_service_dir field, it's never been populated
      (:spec:`43c2f78`). This field will be removed in Stem 2.0.
   """
@@ -560,6 +556,7 @@ class ServerDescriptor(Descriptor):
 
     'link_protocols': (None, _parse_protocols_line),
     'circuit_protocols': (None, _parse_protocols_line),
+    'is_hidden_service_dir': (False, _parse_hidden_service_dir_line),
     'hibernating': (False, _parse_hibernating_line),
     'allow_single_hop_exits': (False, _parse_allow_single_hop_exits_line),
     'allow_tunneled_dir_requests': (False, _parse_tunneled_dir_server_line),
@@ -567,7 +564,6 @@ class ServerDescriptor(Descriptor):
     'extra_info_cache': (False, _parse_caches_extra_info_line),
     'extra_info_digest': (None, _parse_extrainfo_digest_line),
     'extra_info_sha256_digest': (None, _parse_extrainfo_digest_line),
-    'hidden_service_dir': (None, _parse_hidden_service_dir_line),
     'eventdns': (None, _parse_eventdns_line),
     'ntor_onion_key': (None, _parse_ntor_onion_key_line),
     'or_addresses': ([], _parse_or_address_line),
@@ -637,6 +633,12 @@ class ServerDescriptor(Descriptor):
     # does not matter so breaking it into key / value pairs.
 
     entries, self._unparsed_exit_policy = _descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
+
+    # TODO: Remove the following field in Stem 2.0. It has never been populated...
+    #
+    #   https://gitweb.torproject.org/torspec.git/commit/?id=43c2f78
+
+    self.hidden_service_dir = ['2']
 
     if validate:
       self._parse(entries, validate)
