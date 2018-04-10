@@ -4,6 +4,7 @@ Unit tests for stem.descriptor.remote.
 
 import socket
 import tempfile
+import time
 import unittest
 
 import stem.descriptor.remote
@@ -273,19 +274,26 @@ class TestDescriptorDownloader(unittest.TestCase):
 
   @patch(URL_OPEN)
   def test_query_with_timeout(self, urlopen_mock):
-    urlopen_mock.side_effect = socket.timeout('connection timed out')
+    def urlopen_call(*args, **kwargs):
+      time.sleep(0.06)
+      raise socket.timeout('connection timed out')
+
+    urlopen_mock.side_effect = urlopen_call
 
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
       endpoints = [('128.31.0.39', 9131)],
       fall_back_to_authority = False,
-      timeout = 5,
+      timeout = 0.1,
       validate = True,
     )
 
+    # After two requests we'll have reached our total permissable timeout.
+    # Check that we don't make a third.
+
     self.assertRaises(socket.timeout, query.run)
-    self.assertEqual(3, urlopen_mock.call_count)
+    self.assertEqual(2, urlopen_mock.call_count)
 
   @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
   def test_can_iterate_multiple_times(self):

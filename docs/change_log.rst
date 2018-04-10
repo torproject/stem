@@ -57,6 +57,7 @@ The following are only available within Stem's `git repository
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Added zstd and lzma compression support (:spec:`1cb56af`)
   * Added server descriptor's new is_hidden_service_dir attribute
+  * Don't retry downloading descriptors when we've timed out
   * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)
   * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute (:trac:`25046`)
   * Allow 'proto' line to have blank values (:spec:`a8455f4`)
