@@ -608,7 +608,7 @@ class Runner(object):
       self._tor_process = stem.process.launch_tor(
         tor_cmd = tor_cmd,
         torrc_path = os.path.join(self._test_dir, 'torrc'),
-        completion_percent = 100 if test.Target.ONLINE in self.attribute_targets else 5,
+        completion_percent = 100 if test.Target.ONLINE in self.attribute_targets else 0,
         init_msg_handler = lambda line: println('  %s' % line, SUBSTATUS),
         take_ownership = True,
       )
