@@ -535,7 +535,7 @@ class Query(object):
       )
 
       data = response.read()
-      encoding = response.info().getheader('Content-Encoding')
+      encoding = response.info().get('Content-Encoding')
 
       # Tor doesn't include compression headers. As such when using gzip we
       # need to include '32' for automatic header detection...
