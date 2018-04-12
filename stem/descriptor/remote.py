@@ -106,11 +106,11 @@ import threading
 import time
 import zlib
 
+import stem
 import stem.descriptor
 import stem.prereq
 import stem.util.enum
 
-from stem import Flag
 from stem.util import _hash_attr, connection, log, str_tools, tor_tools
 
 try:
@@ -529,7 +529,10 @@ class Query(object):
       response = urllib.urlopen(
         urllib.Request(
           self.download_url,
-          headers = {'Accept-Encoding': ', '.join(self.compression)},
+          headers = {
+            'Accept-Encoding': ', '.join(self.compression),
+            'User-Agent': 'Stem/%s' % stem.__version__,
+          }
         ),
         timeout = timeout,
       )
@@ -618,7 +621,7 @@ class DescriptorDownloader(object):
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
     for desc in consensus.routers.values():
-      if Flag.V2DIR in desc.flags:
+      if stem.Flag.V2DIR in desc.flags:
         new_endpoints.add((desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
