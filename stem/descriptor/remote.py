@@ -326,6 +326,13 @@ class Query(object):
   .. versionchanged:: 1.7.0
      Added the compression argument.
 
+  .. versionchanged:: 1.7.0
+     Added the reply_headers attribute.
+
+     The class this provides changed between Python versions. In python2
+     this was called httplib.HTTPMessage, whereas in python3 the class was
+     renamed to http.client.HTTPMessage.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -356,6 +363,8 @@ class Query(object):
     **True**, skips these checks otherwise
   :var stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :var http.client.HTTPMessage reply_headers: headers provided in the response,
+    **None** if we haven't yet made our request
   :var dict kwargs: additional arguments for the descriptor constructor
 
   :param bool start: start making the request when constructed (default is **True**)
@@ -409,6 +418,7 @@ class Query(object):
 
     self.validate = validate
     self.document_handler = document_handler
+    self.reply_headers = None
     self.kwargs = kwargs
 
     self._downloader_thread = None
@@ -538,7 +548,7 @@ class Query(object):
       )
 
       data = response.read()
-      encoding = response.info().get('Content-Encoding')
+      encoding = response.headers.get('Content-Encoding')
 
       # Tor doesn't include compression headers. As such when using gzip we
       # need to include '32' for automatic header detection...
@@ -560,6 +570,7 @@ class Query(object):
         data = lzma.decompress(data)
 
       self.content = data.strip()
+      self.reply_headers = response.headers
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:

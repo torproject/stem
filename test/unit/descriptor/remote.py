@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.remote.
 """
 
+import io
 import socket
 import tempfile
 import time
@@ -13,6 +14,11 @@ import stem.util.conf
 
 from stem.descriptor.remote import Compression
 from test.unit.descriptor import read_resource
+
+try:
+  from http.client import HTTPMessage  # python3
+except ImportError:
+  from httplib import HTTPMessage  # python2
 
 try:
   # added in python 2.7
@@ -111,11 +117,30 @@ FALLBACK_ENTRY = b"""\
 /* extrainfo=1 */
 """
 
+HEADER = '\r\n'.join([
+  'Date: Fri, 13 Apr 2018 16:35:50 GMT',
+  'Content-Type: application/octet-stream',
+  'X-Your-Address-Is: 97.103.17.56',
+  'Pragma: no-cache',
+  'Content-Encoding: %s',
+])
+
 
 def _urlopen_mock(data, encoding = 'identity'):
   urlopen_mock = Mock()
   urlopen_mock().read.return_value = data
-  urlopen_mock().info().get.return_value = encoding
+
+  if stem.prereq.is_python_3():
+    headers = HTTPMessage()
+
+    for line in HEADER.splitlines():
+      key, value = line.split(': ', 1)
+      headers.add_header(key, encoding if key == 'Content-Encoding' else value)
+
+    urlopen_mock().headers = headers
+  else:
+    urlopen_mock().headers = HTTPMessage(io.BytesIO(HEADER % encoding))
+
   return urlopen_mock
 
 
@@ -216,6 +241,29 @@ class TestDescriptorDownloader(unittest.TestCase):
       validate = True,
     ))
 
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
+
+  @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
+  def test_reply_headers(self):
+    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
+    self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
+    query.run()
+
+    self.assertEqual('Fri, 13 Apr 2018 16:35:50 GMT', query.reply_headers.get('date'))
+    self.assertEqual('application/octet-stream', query.reply_headers.get('content-type'))
+    self.assertEqual('97.103.17.56', query.reply_headers.get('x-your-address-is'))
+    self.assertEqual('no-cache', query.reply_headers.get('pragma'))
+    self.assertEqual('identity', query.reply_headers.get('content-encoding'))
+
+    # getting headers should be case insensitive
+    self.assertEqual('identity', query.reply_headers.get('CoNtEnT-ENCODING'))
+
+    # request a header that isn't present
+    self.assertEqual(None, query.reply_headers.get('no-such-header'))
+    self.assertEqual('default', query.reply_headers.get('no-such-header', 'default'))
+
+    descriptors = list(query)
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
