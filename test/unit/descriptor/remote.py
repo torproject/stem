@@ -115,7 +115,7 @@ FALLBACK_ENTRY = b"""\
 def _urlopen_mock(data, encoding = 'identity'):
   urlopen_mock = Mock()
   urlopen_mock().read.return_value = data
-  urlopen_mock().info().getheader.return_value = encoding
+  urlopen_mock().info().get.return_value = encoding
   return urlopen_mock
 
 
