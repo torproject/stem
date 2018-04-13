@@ -161,7 +161,7 @@ class Runner(object):
     self._tor_cmd = None
     self._tor_cwd = ''
     self._torrc_contents = ''
-    self._custom_opts = None
+    self._custom_opts = []
     self._tor_process = None
     self._chroot_path = None
 
@@ -308,7 +308,7 @@ class Runner(object):
       self._tor_cmd = None
       self._tor_cwd = ''
       self._torrc_contents = ''
-      self._custom_opts = None
+      self._custom_opts = []
       self._tor_process = None
 
       println('done', STATUS)
