@@ -270,45 +270,12 @@ class TestController(unittest.TestCase):
   @test.require.controller
   def test_get_exit_policy(self):
     """
-    Sanity test for get_exit_policy(). We have the default policy (no
-    ExitPolicy set) which is a little... long due to the boilerplate.
+    Sanity test for get_exit_policy(). Our 'ExitRelay 0' torrc entry causes us
+    to have a simple reject-all policy.
     """
 
-    expected = ExitPolicy(
-      'reject 0.0.0.0/8:*',
-      'reject 169.254.0.0/16:*',
-      'reject 127.0.0.0/8:*',
-      'reject 192.168.0.0/16:*',
-      'reject 10.0.0.0/8:*',
-      'reject 172.16.0.0/12:*',
-      # this is where 'reject [public_addr]:*' may or may not be
-      'reject *:25',
-      'reject *:119',
-      'reject *:135-139',
-      'reject *:445',
-      'reject *:563',
-      'reject *:1214',
-      'reject *:4661-4666',
-      'reject *:6346-6429',
-      'reject *:6699',
-      'reject *:6881-6999',
-      'accept *:*',
-    )
-
-    runner = test.runner.get_runner()
-
-    with runner.get_tor_controller() as controller:
-      # We can't simply compare the policies because the tor policy may or may
-      # not have a reject entry for our public address. Hence, stripping it
-      # from the policy's string, then comparing those.
-
-      policy_str = str(controller.get_exit_policy())
-
-      public_addr_start = policy_str.find('reject 172.16.0.0/12:*') + 22
-      public_addr_end = policy_str.find(', reject *:25')
-
-      policy_str = policy_str[:public_addr_start] + policy_str[public_addr_end:]
-      self.assertEqual(str(expected), policy_str)
+    with test.runner.get_runner().get_tor_controller() as controller:
+      self.assertEqual(ExitPolicy('reject *:*'), controller.get_exit_policy())
 
   @test.require.controller
   def test_authenticate(self):

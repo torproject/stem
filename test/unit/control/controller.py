@@ -164,23 +164,11 @@ class TestControl(unittest.TestCase):
     }[param]
 
     get_info_mock.side_effect = lambda param, default = None: {
-      'address': '123.45.67.89',
-      'exit-policy/default': 'reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*',
+      'exit-policy/full': 'reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*',
     }[param]
 
     expected = ExitPolicy(
-      'reject 0.0.0.0/8:*',  # private entries
-      'reject 169.254.0.0/16:*',
-      'reject 127.0.0.0/8:*',
-      'reject 192.168.0.0/16:*',
-      'reject 10.0.0.0/8:*',
-      'reject 172.16.0.0/12:*',
-      'reject 123.45.67.89:*',  # relay's public address
-      'accept *:80',  # finally we get to our ExitPolicy
-      'accept *:443',
-      'accept 43.5.5.5:*',
-      'reject *:22',
-      'reject *:25',  # default policy
+      'reject *:25',
       'reject *:119',
       'reject *:135-139',
       'reject *:445',
