@@ -170,6 +170,7 @@ DEFAULT_PARAMS = {
   'onion-key-rotation-days': 28,
   'onion-key-grace-period-days': 7,
   'hs_service_max_rdv_failures': 2,
+  'circ_max_cell_queue_size': 50000,
 }
 
 # KeyCertificate fields, tuple is of the form...
@@ -224,6 +225,7 @@ PARAM_RANGE = {
   'onion-key-rotation-days': (1, 90),
   'onion-key-grace-period-days': (1, 90),  # max is the highest onion-key-rotation-days
   'hs_service_max_rdv_failures': (1, 10),
+  'circ_max_cell_queue_size': (1000, 4294967295),
 }
 
 
