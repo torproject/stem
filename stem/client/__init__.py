@@ -256,3 +256,9 @@ class Circuit(object):
     with self.relay._orport_lock:
       self.relay._orport.send(stem.client.cell.DestroyCell(self.id).pack(self.relay.link_protocol))
       del self.relay._circuits[self.id]
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exit_type, value, traceback):
+    self.close()
