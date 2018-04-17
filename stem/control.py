@@ -1073,7 +1073,7 @@ class Controller(BaseController):
         self._set_cache(dict((k, None) for k in event.config), 'getconf')
 
         if 'exitpolicy' in event.config.keys():
-          self._set_cache({'exitpolicy': None})
+          self._set_cache({'exit_policy': None})
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -2411,7 +2411,7 @@ class Controller(BaseController):
           to_cache[param] = value
 
           if param == 'exitpolicy':
-            self._set_cache({'exitpolicy': None})
+            self._set_cache({'exit_policy': None})
           elif 'hidden' in param:
             self._set_cache({'hidden_service_conf': None})
 
