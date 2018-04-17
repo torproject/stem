@@ -110,6 +110,12 @@ def get_config_policy(rules, ip_address = None):
   * ports being optional
   * the 'private' keyword
 
+  .. deprecated:: 1.7.0
+
+     Tor's torrc parameters lack a formal spec, making it difficult for this
+     method to be reliable. Callers are encouraged to move to
+     :func:`~stem.control.Controller.get_exit_policy` instead.
+
   :param str,list rules: comma separated rules or list to be converted
   :param str ip_address: this relay's IP address for the 'private' policy if
     it's present, this defaults to the local address
