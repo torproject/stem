@@ -1283,14 +1283,13 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    with self._msg_lock:
-      policy = self._get_cache('exit_policy')
+    policy = self._get_cache('exit_policy')
 
-      if not policy:
-        policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
-        self._set_cache({'exit_policy': policy})
+    if not policy:
+      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      self._set_cache({'exit_policy': policy})
 
-      return policy
+    return policy
 
   @with_default()
   def get_ports(self, listener_type, default = UNDEFINED):
