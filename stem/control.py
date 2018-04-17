@@ -1072,8 +1072,7 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         self._set_cache(dict((k, None) for k in event.config), 'getconf')
 
-        if 'exitpolicy' in event.config.keys():
-          self._set_cache({'exitpolicy': None})
+        self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -1284,14 +1283,13 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    with self._msg_lock:
-      policy = self._get_cache('exit_policy')
+    policy = self._get_cache('exit_policy')
 
-      if not policy:
-        policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
-        self._set_cache({'exit_policy': policy})
+    if not policy:
+      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      self._set_cache({'exit_policy': policy})
 
-      return policy
+    return policy
 
   @with_default()
   def get_ports(self, listener_type, default = UNDEFINED):
@@ -2410,9 +2408,7 @@ class Controller(BaseController):
 
           to_cache[param] = value
 
-          if param == 'exitpolicy':
-            self._set_cache({'exitpolicy': None})
-          elif 'hidden' in param:
+          if 'hidden' in param:
             self._set_cache({'hidden_service_conf': None})
 
         # reset any getinfo parameters that can be changed by a SETCONF
@@ -2422,6 +2418,8 @@ class Controller(BaseController):
 
         self._set_cache(to_cache, 'getconf')
         self._set_cache({'get_custom_options': None})
+
+        self._set_cache({'exit_policy': None})  # numerous options can change our policy
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
       immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
