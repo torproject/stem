@@ -1072,8 +1072,7 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         self._set_cache(dict((k, None) for k in event.config), 'getconf')
 
-        if 'exitpolicy' in event.config.keys():
-          self._set_cache({'exit_policy': None})
+        self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -2410,9 +2409,7 @@ class Controller(BaseController):
 
           to_cache[param] = value
 
-          if param == 'exitpolicy':
-            self._set_cache({'exit_policy': None})
-          elif 'hidden' in param:
+          if 'hidden' in param:
             self._set_cache({'hidden_service_conf': None})
 
         # reset any getinfo parameters that can be changed by a SETCONF
@@ -2422,6 +2419,8 @@ class Controller(BaseController):
 
         self._set_cache(to_cache, 'getconf')
         self._set_cache({'get_custom_options': None})
+
+        self._set_cache({'exit_policy': None})  # numerous options can change our policy
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
       immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
