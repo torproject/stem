@@ -1286,7 +1286,33 @@ class Controller(BaseController):
     policy = self._get_cache('exit_policy')
 
     if not policy:
-      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      try:
+        policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      except stem.ProtocolError:
+        # When tor is unable to determine our address 'GETINFO
+        # exit-policy/full' fails with...
+        #
+        #   ProtocolError: GETINFO response didn't have an OK status:
+        #     router_get_my_routerinfo returned NULL
+        #
+        # Failing back to the legacy method we used for getting our exit
+        # policy.
+
+        rules = []
+
+        if self.get_conf('ExitRelay') == '0':
+          rules.append('reject *:*')
+
+        if self.get_conf('ExitPolicyRejectPrivate') == '1':
+          rules.append('reject private:*')
+
+        for policy_line in self.get_conf('ExitPolicy', multiple = True):
+          rules += policy_line.split(',')
+
+        rules += self.get_info('exit-policy/default').split(',')
+
+        policy = stem.exit_policy.get_config_policy(rules, self.get_info('address', None))
+
       self._set_cache({'exit_policy': policy})
 
     return policy
