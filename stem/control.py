@@ -1295,6 +1295,8 @@ class Controller(BaseController):
         #   ProtocolError: GETINFO response didn't have an OK status:
         #     router_get_my_routerinfo returned NULL
         #
+        #   https://trac.torproject.org/projects/tor/ticket/25842
+        #
         # Failing back to the legacy method we used for getting our exit
         # policy.
 
