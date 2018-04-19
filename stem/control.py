@@ -389,12 +389,6 @@ CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF = (
   'accounting/enabled',
 )
 
-# 'GETINFO address' isn't technically cachable, but it's also both highly
-# requested and highly static. As such fetching it at a fixed rate. If
-# you'd like you can set this global to zero to disable caching.
-
-CACHE_ADDRESS_FOR = 1.0
-
 # GETCONF parameters we shouldn't cache. This includes hidden service
 # perameters due to the funky way they're set and retrieved (for instance,
 # 'SETCONF HiddenServiceDir' effects 'GETCONF HiddenServiceOptions').
@@ -1055,7 +1049,6 @@ class Controller(BaseController):
     self._enabled_features = []
     self._is_geoip_unavailable = None
 
-    self._address_cached_at = 0
     self._last_address_exc = None
     self._last_fingerprint_exc = None
 
@@ -1075,6 +1068,14 @@ class Controller(BaseController):
         self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
+
+    def _address_changed_listener(event):
+      if event.action == 'EXTERNAL_ADDRESS':
+        self._set_cache({'exit_policy': None})
+        self._set_cache({'address': None}, 'getinfo')
+        self._last_address_exc = None
+
+    self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER)
 
   def close(self):
     self.clear_cache()
@@ -1153,7 +1154,7 @@ class Controller(BaseController):
     for param in params:
       if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
         raise stem.ProtocolError('Tor geoip database is unavailable')
-      elif param == 'address' and self._last_address_exc and (time.time() - self._address_cached_at) < CACHE_ADDRESS_FOR:
+      elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
       elif param == 'fingerprint' and self._last_fingerprint_exc and self.get_conf('ORPort', None) is None:
         raise self._last_fingerprint_exc  # we already know we're not a relay
@@ -1164,9 +1165,6 @@ class Controller(BaseController):
     cached_results = self._get_cache_map(from_cache, 'getinfo')
 
     for key in cached_results:
-      if key == 'address' and (time.time() - self._address_cached_at) > CACHE_ADDRESS_FOR:
-        continue  # cached address is too old
-
       user_expected_key = _case_insensitive_lookup(params, key)
       reply[user_expected_key] = cached_results[key]
       params.remove(user_expected_key)
@@ -1207,7 +1205,6 @@ class Controller(BaseController):
         self._set_cache(to_cache, 'getinfo')
 
       if 'address' in params:
-        self._address_cached_at = time.time()
         self._last_address_exc = None
 
       if 'fingerprint' in params:
@@ -1221,7 +1218,6 @@ class Controller(BaseController):
         return list(reply.values())[0]
     except stem.ControllerError as exc:
       if 'address' in params:
-        self._address_cached_at = time.time()
         self._last_address_exc = exc
 
       if 'fingerprint' in params:

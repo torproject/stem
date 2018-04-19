@@ -5,7 +5,6 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import datetime
 import io
-import time
 import unittest
 
 import stem.descriptor.router_status_entry
@@ -32,7 +31,10 @@ class TestControl(unittest.TestCase):
   def setUp(self):
     socket = stem.socket.ControlSocket()
 
-    with patch('stem.control.Controller.add_event_listener', Mock()):
+    # When initially constructing a controller we need to suppress msg, so our
+    # constructor's SETEVENTS requests pass.
+
+    with patch('stem.control.BaseController.msg', Mock()):
       self.controller = Controller(socket)
 
   def test_event_description(self):
@@ -53,13 +55,10 @@ class TestControl(unittest.TestCase):
 
   @patch('stem.control.Controller.msg')
   def test_get_info_address_caching(self, msg_mock):
-    test_start = time.time()
     msg_mock.return_value = ControlMessage.from_str('551 Address unknown\r\n')
 
-    self.assertEqual(0, self.controller._address_cached_at)
     self.assertEqual(None, self.controller._last_address_exc)
     self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
-    self.assertTrue(test_start <= self.controller._address_cached_at <= time.time())
     self.assertEqual("GETINFO response didn't have an OK status:\nAddress unknown", str(self.controller._last_address_exc))
     self.assertEqual(1, msg_mock.call_count)
 
@@ -68,12 +67,19 @@ class TestControl(unittest.TestCase):
     self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
     self.assertEqual(1, msg_mock.call_count)
 
-    # pretend it's a minute later and try again, now with an address
+    # invalidates the cache, transitioning from no address to having one
 
     msg_mock.return_value = ControlMessage.from_str('250-address=17.2.89.80\r\n250 OK\r\n', 'GETINFO')
     self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
-    self.controller._address_cached_at -= 60
+    self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=17.2.89.80 METHOD=DIRSERV\r\n'))
     self.assertEqual('17.2.89.80', self.controller.get_info('address'))
+
+    # invalidates the cache, transitioning from one address to another
+
+    msg_mock.return_value = ControlMessage.from_str('250-address=80.89.2.17\r\n250 OK\r\n', 'GETINFO')
+    self.assertEqual('17.2.89.80', self.controller.get_info('address'))
+    self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=80.89.2.17 METHOD=DIRSERV\r\n'))
+    self.assertEqual('80.89.2.17', self.controller.get_info('address'))
 
   @patch('stem.control.Controller.msg')
   @patch('stem.control.Controller.get_conf')
