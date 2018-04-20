@@ -644,8 +644,8 @@ class DescriptorDownloader(object):
   def get_server_descriptors(self, fingerprints = None, **query_args):
     """
     Provides the server descriptors with the given fingerprints. If no
-    fingerprints are provided then this returns all descriptors in the present
-    consensus.
+    fingerprints are provided then this returns all descriptors known
+    by the relay.
 
     :param str,list fingerprints: fingerprint or list of fingerprints to be
       retrieved, gets all descriptors if **None**
