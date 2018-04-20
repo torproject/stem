@@ -439,6 +439,8 @@ def is_valid_ipv6_address(address, allow_brackets = False):
 
   if isinstance(address, bytes):
     address = str_tools._to_unicode(address)
+  elif not isinstance(address, str_type):
+    return False
 
   if allow_brackets:
     if address.startswith('[') and address.endswith(']'):
