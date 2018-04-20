@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.remote.
 """
 
 import io
+import re
 import socket
 import tempfile
 import time
@@ -342,6 +343,18 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(socket.timeout, query.run)
     self.assertEqual(2, urlopen_mock.call_count)
+
+  def test_query_with_invalid_endpoints(self):
+    invalid_endpoints = {
+      'hello': "'h' is a str.",
+      ('hello',): "'hello' is a str.",
+      (15,): "'15' is a int.",
+      (('12.34.56.78', 15, 'third arg'),): "'('12.34.56.78', 15, 'third arg')' is a tuple.",
+    }
+
+    for endpoints, error_suffix in invalid_endpoints.items():
+      expected_error = re.escape('Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. ' + error_suffix)
+      self.assertRaisesRegexp(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
 
   @patch(URL_OPEN, _urlopen_mock(TEST_DESCRIPTOR))
   def test_can_iterate_multiple_times(self):

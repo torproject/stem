@@ -333,13 +333,18 @@ class Query(object):
      this was called httplib.HTTPMessage, whereas in python3 the class was
      renamed to http.client.HTTPMessage.
 
+  .. versionchanged:: 1.7.0
+     Endpoints are now expected to be :class:`~stem.DirPort` or
+     :class:`~stem.ORPort` instances. Usage of tuples for this
+     argument is deprecated and will be removed in the future.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
     resource if **None**
 
-  :var list endpoints: (address, dirport) tuples of the authority or mirror
-    we're querying, this uses authorities if undefined
+  :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
+    authority or mirror we're querying, this uses authorities if undefined
   :var list compression: list of :data:`stem.descriptor.remote.Compression`
     we're willing to accept, when none are mutually supported downloads fall
     back to Compression.PLAINTEXT
@@ -401,9 +406,19 @@ class Query(object):
     else:
       self.descriptor_type = _guess_descriptor_type(resource)
 
+    self.endpoints = []
+
+    if endpoints:
+      for endpoint in endpoints:
+        if isinstance(endpoint, tuple) and len(endpoint) == 2:
+          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))
+        elif isinstance(endpoint, (stem.ORPort, stem.DirPort)):
+          self.endpoints.append(endpoint)
+        else:
+          raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
+
     self.resource = resource
     self.compression = compression
-    self.endpoints = endpoints if endpoints else []
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
@@ -526,7 +541,8 @@ class Query(object):
       picked = random.choice(list(directories))
       address, dirport = picked.address, picked.dir_port
     else:
-      address, dirport = random.choice(self.endpoints)
+      picked = random.choice(self.endpoints)
+      address, dirport = picked.address, picked.port
 
     return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
 
