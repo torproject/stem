@@ -758,8 +758,19 @@ def _add_config_options(config_options, category, lines):
 
   last_option, usage, description = None, None, []
 
-  if lines and lines[0].startswith('The following options'):
-    lines = lines[lines.index(''):]  # drop the initial description
+  # Drop the section description. Each ends with a paragraph saying 'The
+  # following options...'.
+
+  desc_paragraph_index = None
+
+  for i, line in enumerate(lines):
+    if 'The following options' in line:
+      desc_paragraph_index = i
+      break
+
+  if desc_paragraph_index is not None:
+    lines = lines[desc_paragraph_index:]  # trim to the description paragrah
+    lines = lines[lines.index(''):]  # drop the paragraph
 
   for line in lines:
     if line and not line.startswith(' '):
