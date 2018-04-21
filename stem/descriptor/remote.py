@@ -107,6 +107,7 @@ import time
 import zlib
 
 import stem
+import stem.client
 import stem.descriptor
 import stem.prereq
 import stem.util.enum
@@ -234,6 +235,24 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   """
 
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
+
+
+def _download_from_orport(endpoint, resource):
+  """
+  Downloads descriptors from the given orport.
+
+  :param stem.ORPort endpoint: endpoint to download from
+  :param str resource: descriptor resource to download
+
+  :returns: **str** with the descirptor data
+
+  :raises:
+  """
+
+  with stem.client.Relay.connect(endpoint.address, endpoint.port, endpoint.link_protocols) as relay:
+    with relay.create_circuit() as circ:
+      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
+      return circ.send('RELAY_DATA', resource, stream_id = 1).data
 
 
 def _download_from_dirport(url, compression, timeout):
@@ -587,21 +606,24 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      directories = get_authorities().values()
-
-      picked = random.choice(list(directories))
+      picked = random.choice(list(get_authorities().values()))
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
 
   def _download_descriptors(self, retries, timeout):
     try:
-      use_authority = retries == 0 and self.fall_back_to_authority
-      endpoint = self._pick_endpoint(use_authority)
-      self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
-
       self.start_time = time.time()
-      self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
+      endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
+
+      if isinstance(endpoint, stem.ORPort):
+        self.content = _download_from_orport(endpoint, self.resource)
+      elif isinstance(endpoint, stem.DirPort):
+        self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
+        self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
+      else:
+        raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
+
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
