@@ -282,8 +282,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       validate = True,
     )
 
-    expeced_url = 'http://128.31.0.39:9131' + TEST_RESOURCE
-    self.assertEqual(expeced_url, query._pick_url())
+    self.assertEqual(stem.DirPort('128.31.0.39', 9131), query._pick_endpoint())
 
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))

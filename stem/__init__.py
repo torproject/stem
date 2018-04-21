@@ -476,6 +476,7 @@ Library for working with the tor process.
   ================= ===========
 """
 
+import stem.util
 import stem.util.enum
 
 __version__ = '1.6.0-dev'
@@ -637,6 +638,15 @@ class Endpoint(object):
     self.address = address
     self.port = int(port)
 
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'address', 'port')
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, Endpoint) else False
+
+  def __ne__(self, other):
+    return not self == other
+
 
 class ORPort(Endpoint):
   """
@@ -648,6 +658,9 @@ class ORPort(Endpoint):
   def __init__(self, address, port, link_protocols = None):
     super(ORPort, self).__init__(address, port)
     self.link_protocols = link_protocols
+
+  def __hash__(self):
+    return super(ORPort, self).__hash__() + stem.util._hash_attr(self, 'link_protocols', 'port') * 10
 
 
 class DirPort(Endpoint):

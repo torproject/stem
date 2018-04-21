@@ -236,6 +236,57 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
+def _download_from_dirport(url, compression, timeout):
+  """
+  Downloads descriptors from the given url.
+
+  :param str url: dirport url from which to download from
+  :param list compression: compression methods for the request
+  :param float timeout: duration before we'll time out our request
+
+  :returns: two value tuple of the form (data, reply_headers)
+
+  :raises:
+    * **socket.timeout** if our request timed out
+    * **urllib2.URLError** for most request failures
+  """
+
+  response = urllib.urlopen(
+    urllib.Request(
+      url,
+      headers = {
+        'Accept-Encoding': ', '.join(compression),
+        'User-Agent': 'Stem/%s' % stem.__version__,
+      }
+    ),
+    timeout = timeout,
+  )
+
+  data = response.read()
+  encoding = response.headers.get('Content-Encoding')
+
+  # Tor doesn't include compression headers. As such when using gzip we
+  # need to include '32' for automatic header detection...
+  #
+  #   https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+  #
+  # ... and with zstd we need to use the streaming API.
+
+  if encoding in (Compression.GZIP, 'deflate'):
+    data = zlib.decompress(data, zlib.MAX_WBITS | 32)
+  elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
+    output_buffer = io.BytesIO()
+
+    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
+      decompressor.write(data)
+
+    data = output_buffer.getvalue()
+  elif encoding == Compression.LZMA and LZMA_SUPPORTED:
+    data = lzma.decompress(data)
+
+  return data.strip(), response.headers
+
+
 def _guess_descriptor_type(resource):
   # Attempts to determine the descriptor type based on the resource url. This
   # raises a ValueError if the resource isn't recognized.
@@ -411,7 +462,7 @@ class Query(object):
     if endpoints:
       for endpoint in endpoints:
         if isinstance(endpoint, tuple) and len(endpoint) == 2:
-          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))
+          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))  # TODO: remove this in stem 2.0
         elif isinstance(endpoint, (stem.ORPort, stem.DirPort)):
           self.endpoints.append(endpoint)
         else:
@@ -524,10 +575,10 @@ class Query(object):
     for desc in self._run(True):
       yield desc
 
-  def _pick_url(self, use_authority = False):
+  def _pick_endpoint(self, use_authority = False):
     """
-    Provides a url that can be queried. If we have multiple endpoints then one
-    will be picked randomly.
+    Provides an endpoint to query. If we have multiple endpoints then one
+    is picked at random.
 
     :param bool use_authority: ignores our endpoints and uses a directory
       authority instead
@@ -539,54 +590,18 @@ class Query(object):
       directories = get_authorities().values()
 
       picked = random.choice(list(directories))
-      address, dirport = picked.address, picked.dir_port
+      return stem.DirPort(picked.address, picked.dir_port)
     else:
-      picked = random.choice(self.endpoints)
-      address, dirport = picked.address, picked.port
-
-    return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
+      return random.choice(self.endpoints)
 
   def _download_descriptors(self, retries, timeout):
     try:
       use_authority = retries == 0 and self.fall_back_to_authority
-      self.download_url = self._pick_url(use_authority)
+      endpoint = self._pick_endpoint(use_authority)
+      self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
+
       self.start_time = time.time()
-
-      response = urllib.urlopen(
-        urllib.Request(
-          self.download_url,
-          headers = {
-            'Accept-Encoding': ', '.join(self.compression),
-            'User-Agent': 'Stem/%s' % stem.__version__,
-          }
-        ),
-        timeout = timeout,
-      )
-
-      data = response.read()
-      encoding = response.headers.get('Content-Encoding')
-
-      # Tor doesn't include compression headers. As such when using gzip we
-      # need to include '32' for automatic header detection...
-      #
-      #   https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
-      #
-      # ... and with zstd we need to use the streaming API.
-
-      if encoding in (Compression.GZIP, 'deflate'):
-        data = zlib.decompress(data, zlib.MAX_WBITS | 32)
-      elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
-        output_buffer = io.BytesIO()
-
-        with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
-          decompressor.write(data)
-
-        data = output_buffer.getvalue()
-      elif encoding == Compression.LZMA and LZMA_SUPPORTED:
-        data = lzma.decompress(data)
-
-      self.content = data.strip()
-      self.reply_headers = response.headers
+      self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
