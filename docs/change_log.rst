@@ -59,6 +59,7 @@ The following are only available within Stem's `git repository
   * Added zstd and lzma compression support (:spec:`1cb56af`)
   * Added server descriptor's new is_hidden_service_dir attribute
   * Don't retry downloading descriptors when we've timed out
+  * Added :func:`~stem.descriptor.remote.their_server_descriptor`
   * Added the reply_headers attribute to :class:`~stem.descriptor.remote.Query`
   * Supplying a User-Agent when downloading descriptors.
   * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)

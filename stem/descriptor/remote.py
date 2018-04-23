@@ -45,6 +45,7 @@ content. For example...
 ::
 
   get_instance - Provides a singleton DescriptorDownloader used for...
+    |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     +- get_consensus - provides the present consensus or router status entries
@@ -63,6 +64,7 @@ content. For example...
 
   DescriptorDownloader - Configurable class for issuing queries
     |- use_directory_mirrors - use directory mirrors to download future descriptors
+    |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     |- get_consensus - provides the present consensus or router status entries
@@ -201,6 +203,21 @@ def get_instance():
   return SINGLETON_DOWNLOADER
 
 
+def their_server_descriptor(**query_args):
+  """
+  Provides the server descriptor of the relay we're downloading from.
+
+  .. versionadded:: 1.7.0
+
+  :param query_args: additional arguments for the
+    :class:`~stem.descriptor.remote.Query` constructor
+
+  :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+  """
+
+  return get_instance().their_server_descriptor(**query_args)
+
+
 def get_server_descriptors(fingerprints = None, **query_args):
   """
   Shorthand for
@@ -247,9 +264,12 @@ def _download_from_orport(endpoint, resource):
   :returns: **str** with the descirptor data
 
   :raises:
+    * :class:`stem.SocketError` if unable to establish a connection
   """
 
-  with stem.client.Relay.connect(endpoint.address, endpoint.port, endpoint.link_protocols) as relay:
+  link_protocol = endpoint.link_protocols if endpoint.link_protocols else [3]
+
+  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocol) as relay:
     with relay.create_circuit() as circ:
       circ.send('RELAY_BEGIN_DIR', stream_id = 1)
       return circ.send('RELAY_DATA', resource, stream_id = 1).data
@@ -693,6 +713,20 @@ class DescriptorDownloader(object):
     self._endpoints = list(new_endpoints)
 
     return consensus
+
+  def their_server_descriptor(self, **query_args):
+    """
+    Provides the server descriptor of the relay we're downloading from.
+
+    .. versionadded:: 1.7.0
+
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+    """
+
+    return self.query('/tor/server/authority', **query_args)
 
   def get_server_descriptors(self, fingerprints = None, **query_args):
     """
