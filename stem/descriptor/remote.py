@@ -435,9 +435,6 @@ class Query(object):
 
   :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
     authority or mirror we're querying, this uses authorities if undefined
-  :var list compression: list of :data:`stem.descriptor.remote.Compression`
-    we're willing to accept, when none are mutually supported downloads fall
-    back to Compression.PLAINTEXT
   :var int retries: number of times to attempt the request if downloading it
     fails
   :var bool fall_back_to_authority: when retrying request issues the last
@@ -446,11 +443,8 @@ class Query(object):
   :var str content: downloaded descriptor content
   :var Exception error: exception if a problem occured
   :var bool is_done: flag that indicates if our request has finished
-  :var str download_url: last url used to download the descriptor, this is
-    unset until we've actually made a download attempt
 
   :var float start_time: unix timestamp when we first started running
-  :var float timeout: duration before we'll time out our request
   :var float runtime: time our query took, this is **None** if it's not yet
     finished
 
@@ -458,9 +452,20 @@ class Query(object):
     **True**, skips these checks otherwise
   :var stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :var dict kwargs: additional arguments for the descriptor constructor
+
+  Following are only applicable when downloading from a
+  :class:`~stem.DirPort`...
+
+  :var list compression: list of :data:`stem.descriptor.remote.Compression`
+    we're willing to accept, when none are mutually supported downloads fall
+    back to Compression.PLAINTEXT
+  :var float timeout: duration before we'll time out our request
+
+  :var str download_url: last url used to download the descriptor, this is
+    unset until we've actually made a download attempt
   :var http.client.HTTPMessage reply_headers: headers provided in the response,
     **None** if we haven't yet made our request
-  :var dict kwargs: additional arguments for the descriptor constructor
 
   :param bool start: start making the request when constructed (default is **True**)
   :param bool block: only return after the request has been completed, this is
