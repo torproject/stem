@@ -464,6 +464,11 @@ class Query(object):
      :class:`~stem.ORPort` instances. Usage of tuples for this
      argument is deprecated and will be removed in the future.
 
+  .. versionchanged:: 1.7.0
+     Avoid downloading from tor26. This directory authority throttles its
+     DirPort to such an extent that requests either time out or take on the
+     order of minutes.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -667,7 +672,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice(list(get_authorities().values()))
+      picked = random.choice([auth for auth in get_authorities().values() if auth.nickname != 'tor26'])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
