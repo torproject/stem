@@ -256,14 +256,29 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
 
 def _download_from_orport(endpoint, resource):
   """
-  Downloads descriptors from the given orport.
+  Downloads descriptors from the given orport. Payload is just like an http
+  response (headers and all)...
+
+  ::
+
+    HTTP/1.0 200 OK
+    Date: Mon, 23 Apr 2018 18:43:47 GMT
+    Content-Type: text/plain
+    X-Your-Address-Is: 216.161.254.25
+    Content-Encoding: identity
+    Expires: Wed, 25 Apr 2018 18:43:47 GMT
+
+    router dannenberg 193.23.244.244 443 0 80
+    identity-ed25519
+    ... rest of the descriptor content...
 
   :param stem.ORPort endpoint: endpoint to download from
   :param str resource: descriptor resource to download
 
-  :returns: **str** with the descirptor data
+  :returns: two value tuple of the form (data, reply_headers)
 
   :raises:
+    * :class:`stem.ProtocolError` if not a valid descriptor response
     * :class:`stem.SocketError` if unable to establish a connection
   """
 
@@ -272,7 +287,25 @@ def _download_from_orport(endpoint, resource):
   with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocol) as relay:
     with relay.create_circuit() as circ:
       circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      return circ.send('RELAY_DATA', resource, stream_id = 1).data
+      lines = circ.send('RELAY_DATA', resource, stream_id = 1).data.splitlines()
+      first_line = lines.pop(0)
+
+      if first_line != 'HTTP/1.0 200 OK':
+        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
+
+      headers = {}
+      next_line = lines.pop(0)
+
+      while next_line:
+        if ': ' not in next_line:
+          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % next_line)
+
+        key, value = next_line.split(': ', 1)
+        headers[key] = value
+
+        next_line = lines.pop(0)
+
+      return '\n'.join(lines), headers
 
 
 def _download_from_dirport(url, compression, timeout):
@@ -445,6 +478,8 @@ class Query(object):
   :var bool is_done: flag that indicates if our request has finished
 
   :var float start_time: unix timestamp when we first started running
+  :var http.client.HTTPMessage reply_headers: headers provided in the response,
+    **None** if we haven't yet made our request
   :var float runtime: time our query took, this is **None** if it's not yet
     finished
 
@@ -464,8 +499,6 @@ class Query(object):
 
   :var str download_url: last url used to download the descriptor, this is
     unset until we've actually made a download attempt
-  :var http.client.HTTPMessage reply_headers: headers provided in the response,
-    **None** if we haven't yet made our request
 
   :param bool start: start making the request when constructed (default is **True**)
   :param bool block: only return after the request has been completed, this is
@@ -642,7 +675,7 @@ class Query(object):
       endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
 
       if isinstance(endpoint, stem.ORPort):
-        self.content = _download_from_orport(endpoint, self.resource)
+        self.content, self.reply_headers = _download_from_orport(endpoint, self.resource)
       elif isinstance(endpoint, stem.DirPort):
         self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
         self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
