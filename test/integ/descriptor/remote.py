@@ -4,6 +4,7 @@ Integration tests for stem.descriptor.remote.
 
 import unittest
 
+import stem
 import stem.descriptor
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.networkstatus
@@ -14,6 +15,32 @@ import test.require
 
 
 class TestDescriptorDownloader(unittest.TestCase):
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_via_orport(self):
+    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+
+    desc = list(stem.descriptor.remote.their_server_descriptor(
+      endpoints = [stem.ORPort(moria1.address, moria1.or_port)],
+      fall_back_to_authority = False,
+    ).run())[0]
+
+    self.assertEqual('moria1', desc.nickname)
+    self.assertTrue(isinstance(desc, stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor))
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_via_dirport(self):
+    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+
+    desc = list(stem.descriptor.remote.their_server_descriptor(
+      endpoints = [stem.DirPort(moria1.address, moria1.dir_port)],
+      fall_back_to_authority = False,
+    ).run())[0]
+
+    self.assertEqual('moria1', desc.nickname)
+    self.assertTrue(isinstance(desc, stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor))
+
   @test.require.only_run_once
   @test.require.online
   def test_shorthand_aliases(self):

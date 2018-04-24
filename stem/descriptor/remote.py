@@ -282,12 +282,12 @@ def _download_from_orport(endpoint, resource):
     * :class:`stem.SocketError` if unable to establish a connection
   """
 
-  link_protocol = endpoint.link_protocols if endpoint.link_protocols else [3]
+  link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
 
-  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocol) as relay:
+  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
     with relay.create_circuit() as circ:
       circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      lines = b''.join([cell.data for cell in circ.send('RELAY_DATA', resource, stream_id = 1)]).splitlines()
+      lines = b''.join([cell.data for cell in circ.send('RELAY_DATA', 'GET %s HTTP/1.0\r\n\r\n' % resource, stream_id = 1)]).splitlines()
       first_line = lines.pop(0)
 
       if first_line != 'HTTP/1.0 200 OK':
@@ -445,6 +445,9 @@ class Query(object):
 
   For legacy reasons if our resource has a '.z' suffix then our **compression**
   argument is overwritten with Compression.GZIP.
+
+  .. versionchanged:: 1.7.0
+     Added support for downloading from ORPorts.
 
   .. versionchanged:: 1.7.0
      Added the compression argument.

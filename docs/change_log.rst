@@ -55,8 +55,9 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * `stem.descriptor.remote <api/descriptor/remote.html>`_ can now download from relay ORPorts
+  * Zstd and lzma compression support (:spec:`1cb56af`)
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
-  * Added zstd and lzma compression support (:spec:`1cb56af`)
   * Added server descriptor's new is_hidden_service_dir attribute
   * Don't retry downloading descriptors when we've timed out
   * Added :func:`~stem.descriptor.remote.their_server_descriptor`
