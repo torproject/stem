@@ -45,6 +45,7 @@ content. For example...
 ::
 
   get_instance - Provides a singleton DescriptorDownloader used for...
+    |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     +- get_consensus - provides the present consensus or router status entries
@@ -63,6 +64,7 @@ content. For example...
 
   DescriptorDownloader - Configurable class for issuing queries
     |- use_directory_mirrors - use directory mirrors to download future descriptors
+    |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     |- get_consensus - provides the present consensus or router status entries
@@ -107,6 +109,7 @@ import time
 import zlib
 
 import stem
+import stem.client
 import stem.descriptor
 import stem.prereq
 import stem.util.enum
@@ -200,6 +203,21 @@ def get_instance():
   return SINGLETON_DOWNLOADER
 
 
+def their_server_descriptor(**query_args):
+  """
+  Provides the server descriptor of the relay we're downloading from.
+
+  .. versionadded:: 1.7.0
+
+  :param query_args: additional arguments for the
+    :class:`~stem.descriptor.remote.Query` constructor
+
+  :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+  """
+
+  return get_instance().their_server_descriptor(**query_args)
+
+
 def get_server_descriptors(fingerprints = None, **query_args):
   """
   Shorthand for
@@ -234,6 +252,111 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   """
 
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
+
+
+def _download_from_orport(endpoint, resource):
+  """
+  Downloads descriptors from the given orport. Payload is just like an http
+  response (headers and all)...
+
+  ::
+
+    HTTP/1.0 200 OK
+    Date: Mon, 23 Apr 2018 18:43:47 GMT
+    Content-Type: text/plain
+    X-Your-Address-Is: 216.161.254.25
+    Content-Encoding: identity
+    Expires: Wed, 25 Apr 2018 18:43:47 GMT
+
+    router dannenberg 193.23.244.244 443 0 80
+    identity-ed25519
+    ... rest of the descriptor content...
+
+  :param stem.ORPort endpoint: endpoint to download from
+  :param str resource: descriptor resource to download
+
+  :returns: two value tuple of the form (data, reply_headers)
+
+  :raises:
+    * :class:`stem.ProtocolError` if not a valid descriptor response
+    * :class:`stem.SocketError` if unable to establish a connection
+  """
+
+  link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
+
+  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
+    with relay.create_circuit() as circ:
+      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
+      lines = b''.join([cell.data for cell in circ.send('RELAY_DATA', 'GET %s HTTP/1.0\r\n\r\n' % resource, stream_id = 1)]).splitlines()
+      first_line = lines.pop(0)
+
+      if first_line != 'HTTP/1.0 200 OK':
+        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
+
+      headers = {}
+      next_line = lines.pop(0)
+
+      while next_line:
+        if ': ' not in next_line:
+          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % next_line)
+
+        key, value = next_line.split(': ', 1)
+        headers[key] = value
+
+        next_line = lines.pop(0)
+
+      return '\n'.join(lines), headers
+
+
+def _download_from_dirport(url, compression, timeout):
+  """
+  Downloads descriptors from the given url.
+
+  :param str url: dirport url from which to download from
+  :param list compression: compression methods for the request
+  :param float timeout: duration before we'll time out our request
+
+  :returns: two value tuple of the form (data, reply_headers)
+
+  :raises:
+    * **socket.timeout** if our request timed out
+    * **urllib2.URLError** for most request failures
+  """
+
+  response = urllib.urlopen(
+    urllib.Request(
+      url,
+      headers = {
+        'Accept-Encoding': ', '.join(compression),
+        'User-Agent': 'Stem/%s' % stem.__version__,
+      }
+    ),
+    timeout = timeout,
+  )
+
+  data = response.read()
+  encoding = response.headers.get('Content-Encoding')
+
+  # Tor doesn't include compression headers. As such when using gzip we
+  # need to include '32' for automatic header detection...
+  #
+  #   https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+  #
+  # ... and with zstd we need to use the streaming API.
+
+  if encoding in (Compression.GZIP, 'deflate'):
+    data = zlib.decompress(data, zlib.MAX_WBITS | 32)
+  elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
+    output_buffer = io.BytesIO()
+
+    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
+      decompressor.write(data)
+
+    data = output_buffer.getvalue()
+  elif encoding == Compression.LZMA and LZMA_SUPPORTED:
+    data = lzma.decompress(data)
+
+  return data.strip(), response.headers
 
 
 def _guess_descriptor_type(resource):
@@ -324,6 +447,9 @@ class Query(object):
   argument is overwritten with Compression.GZIP.
 
   .. versionchanged:: 1.7.0
+     Added support for downloading from ORPorts.
+
+  .. versionchanged:: 1.7.0
      Added the compression argument.
 
   .. versionchanged:: 1.7.0
@@ -333,16 +459,23 @@ class Query(object):
      this was called httplib.HTTPMessage, whereas in python3 the class was
      renamed to http.client.HTTPMessage.
 
+  .. versionchanged:: 1.7.0
+     Endpoints are now expected to be :class:`~stem.DirPort` or
+     :class:`~stem.ORPort` instances. Usage of tuples for this
+     argument is deprecated and will be removed in the future.
+
+  .. versionchanged:: 1.7.0
+     Avoid downloading from tor26. This directory authority throttles its
+     DirPort to such an extent that requests either time out or take on the
+     order of minutes.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
     resource if **None**
 
-  :var list endpoints: (address, dirport) tuples of the authority or mirror
-    we're querying, this uses authorities if undefined
-  :var list compression: list of :data:`stem.descriptor.remote.Compression`
-    we're willing to accept, when none are mutually supported downloads fall
-    back to Compression.PLAINTEXT
+  :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
+    authority or mirror we're querying, this uses authorities if undefined
   :var int retries: number of times to attempt the request if downloading it
     fails
   :var bool fall_back_to_authority: when retrying request issues the last
@@ -351,11 +484,10 @@ class Query(object):
   :var str content: downloaded descriptor content
   :var Exception error: exception if a problem occured
   :var bool is_done: flag that indicates if our request has finished
-  :var str download_url: last url used to download the descriptor, this is
-    unset until we've actually made a download attempt
 
   :var float start_time: unix timestamp when we first started running
-  :var float timeout: duration before we'll time out our request
+  :var http.client.HTTPMessage reply_headers: headers provided in the response,
+    **None** if we haven't yet made our request
   :var float runtime: time our query took, this is **None** if it's not yet
     finished
 
@@ -363,9 +495,18 @@ class Query(object):
     **True**, skips these checks otherwise
   :var stem.descriptor.__init__.DocumentHandler document_handler: method in
     which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
-  :var http.client.HTTPMessage reply_headers: headers provided in the response,
-    **None** if we haven't yet made our request
   :var dict kwargs: additional arguments for the descriptor constructor
+
+  Following are only applicable when downloading from a
+  :class:`~stem.DirPort`...
+
+  :var list compression: list of :data:`stem.descriptor.remote.Compression`
+    we're willing to accept, when none are mutually supported downloads fall
+    back to Compression.PLAINTEXT
+  :var float timeout: duration before we'll time out our request
+
+  :var str download_url: last url used to download the descriptor, this is
+    unset until we've actually made a download attempt
 
   :param bool start: start making the request when constructed (default is **True**)
   :param bool block: only return after the request has been completed, this is
@@ -401,9 +542,19 @@ class Query(object):
     else:
       self.descriptor_type = _guess_descriptor_type(resource)
 
+    self.endpoints = []
+
+    if endpoints:
+      for endpoint in endpoints:
+        if isinstance(endpoint, tuple) and len(endpoint) == 2:
+          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))  # TODO: remove this in stem 2.0
+        elif isinstance(endpoint, (stem.ORPort, stem.DirPort)):
+          self.endpoints.append(endpoint)
+        else:
+          raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
+
     self.resource = resource
     self.compression = compression
-    self.endpoints = endpoints if endpoints else []
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
@@ -509,10 +660,10 @@ class Query(object):
     for desc in self._run(True):
       yield desc
 
-  def _pick_url(self, use_authority = False):
+  def _pick_endpoint(self, use_authority = False):
     """
-    Provides a url that can be queried. If we have multiple endpoints then one
-    will be picked randomly.
+    Provides an endpoint to query. If we have multiple endpoints then one
+    is picked at random.
 
     :param bool use_authority: ignores our endpoints and uses a directory
       authority instead
@@ -521,56 +672,24 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      directories = get_authorities().values()
-
-      picked = random.choice(list(directories))
-      address, dirport = picked.address, picked.dir_port
+      picked = random.choice([auth for auth in get_authorities().values() if auth.nickname != 'tor26'])
+      return stem.DirPort(picked.address, picked.dir_port)
     else:
-      address, dirport = random.choice(self.endpoints)
-
-    return 'http://%s:%i/%s' % (address, dirport, self.resource.lstrip('/'))
+      return random.choice(self.endpoints)
 
   def _download_descriptors(self, retries, timeout):
     try:
-      use_authority = retries == 0 and self.fall_back_to_authority
-      self.download_url = self._pick_url(use_authority)
       self.start_time = time.time()
+      endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
 
-      response = urllib.urlopen(
-        urllib.Request(
-          self.download_url,
-          headers = {
-            'Accept-Encoding': ', '.join(self.compression),
-            'User-Agent': 'Stem/%s' % stem.__version__,
-          }
-        ),
-        timeout = timeout,
-      )
+      if isinstance(endpoint, stem.ORPort):
+        self.content, self.reply_headers = _download_from_orport(endpoint, self.resource)
+      elif isinstance(endpoint, stem.DirPort):
+        self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
+        self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
+      else:
+        raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
 
-      data = response.read()
-      encoding = response.headers.get('Content-Encoding')
-
-      # Tor doesn't include compression headers. As such when using gzip we
-      # need to include '32' for automatic header detection...
-      #
-      #   https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
-      #
-      # ... and with zstd we need to use the streaming API.
-
-      if encoding in (Compression.GZIP, 'deflate'):
-        data = zlib.decompress(data, zlib.MAX_WBITS | 32)
-      elif encoding == Compression.ZSTD and ZSTD_SUPPORTED:
-        output_buffer = io.BytesIO()
-
-        with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
-          decompressor.write(data)
-
-        data = output_buffer.getvalue()
-      elif encoding == Compression.LZMA and LZMA_SUPPORTED:
-        data = lzma.decompress(data)
-
-      self.content = data.strip()
-      self.reply_headers = response.headers
       self.runtime = time.time() - self.start_time
       log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
     except:
@@ -640,6 +759,20 @@ class DescriptorDownloader(object):
     self._endpoints = list(new_endpoints)
 
     return consensus
+
+  def their_server_descriptor(self, **query_args):
+    """
+    Provides the server descriptor of the relay we're downloading from.
+
+    .. versionadded:: 1.7.0
+
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the server descriptors
+    """
+
+    return self.query('/tor/server/authority', **query_args)
 
   def get_server_descriptors(self, fingerprints = None, **query_args):
     """

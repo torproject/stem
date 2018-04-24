@@ -52,39 +52,8 @@ EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further
 
 EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nNote that this option, and other bandwidth-limiting options, apply to TCP data only: They do not count TCP headers or DNS traffic.\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
 
-EXPECTED_EXIT_POLICY_DESCRIPTION = """
-Set an exit policy for this server. Each policy is of the form "accept[6]|reject[6] ADDR[/MASK][:PORT]". If /MASK is omitted then this policy just applies to the host given. Instead of giving a host or network you can also use "*" to denote the universe (0.0.0.0/0 and ::/128), or *4 to denote all IPv4 addresses, and *6 to denote all IPv6 addresses.  PORT can be a single port number, an interval of ports "FROM_PORT-TO_PORT", or "*". If PORT is omitted, that means "*".
-
-For example, "accept 18.7.22.69:*,reject 18.0.0.0/8:*,accept *:*" would reject any IPv4 traffic destined for MIT except for web.mit.edu, and accept any other IPv4 or IPv6 traffic.
-
-Tor also allows IPv6 exit policy entries. For instance, "reject6 [FC00::]/7:*" rejects all destinations that share 7 most significant bit prefix with address FC00::. Respectively, "accept6 [C000::]/3:*" accepts all destinations that share 3 most significant bit prefix with address C000::.
-
-accept6 and reject6 only produce IPv6 exit policy entries. Using an IPv4 address with accept6 or reject6 is ignored and generates a warning. accept/reject allows either IPv4 or IPv6 addresses. Use *4 as an IPv4 wildcard address, and *6 as an IPv6 wildcard address. accept/reject * expands to matching IPv4 and IPv6 wildcard address rules.
-
-To specify all IPv4 and IPv6 internal and link-local networks (including 0.0.0.0/8, 169.254.0.0/16, 127.0.0.0/8, 192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, [::]/8, [FC00::]/7, [FE80::]/10, [FEC0::]/10, [FF00::]/8, and [::]/127), you can use the "private" alias instead of an address. ("private" always produces rules for IPv4 and IPv6 addresses, even when used with accept6/reject6.)
-
-Private addresses are rejected by default (at the beginning of your exit policy), along with any configured primary public IPv4 and IPv6 addresses. These private addresses are rejected unless you set the ExitPolicyRejectPrivate config option to 0. For example, once you've done that, you could allow HTTP to 127.0.0.1 and block all other connections to internal networks with "accept 127.0.0.1:80,reject private:*", though that may also allow connections to your own computer that are addressed to its public (external) IP address. See RFC 1918 and RFC 3330 for more details about internal and reserved IP address space. See ExitPolicyRejectLocalInterfaces if you want to block every address on the relay, even those that aren't advertised in the descriptor.
-
-This directive can be specified multiple times so you don't have to put it all on one line.
-
-Policies are considered first to last, and the first match wins. If you want to allow the same ports on IPv4 and IPv6, write your rules using accept/reject *. If you want to allow different ports on IPv4 and IPv6, write your IPv6 rules using accept6/reject6 *6, and your IPv4 rules using accept/reject *4. If you want to _replace_ the default exit policy, end your exit policy with either a reject *:* or an accept *:*. Otherwise, you're _augmenting_ (prepending to) the default exit policy.
-
-If you want to use a reduced exit policy rather than the default exit policy, set "ReducedExitPolicy 1". If you want to replace the default exit policy with your custom exit policy, end your exit policy with either a reject : or an accept :. Otherwise, you're augmenting (prepending to) the default or reduced exit policy.
-
-The default exit policy is:
-
-    reject *:25
-    reject *:119
-    reject *:135-139
-    reject *:445
-    reject *:563
-    reject *:1214
-    reject *:4661-4666
-    reject *:6346-6429
-    reject *:6699
-    reject *:6881-6999
-    accept *:*
-""".strip()
+EXPECTED_EXIT_POLICY_DESCRIPTION_START = 'Set an exit policy for this server. Each policy'
+EXPECTED_EXIT_POLICY_DESCRIPTION_END = 'it applies to both IPv4 and IPv6 addresses.'
 
 
 class TestManual(unittest.TestCase):
@@ -164,7 +133,8 @@ class TestManual(unittest.TestCase):
       return
 
     manual = stem.manual.Manual.from_man(self.man_path)
-    self.assertEqual(EXPECTED_EXIT_POLICY_DESCRIPTION, manual.config_options['ExitPolicy'].description)
+    self.assertTrue(manual.config_options['ExitPolicy'].description.startswith(EXPECTED_EXIT_POLICY_DESCRIPTION_START))
+    self.assertTrue(manual.config_options['ExitPolicy'].description.endswith(EXPECTED_EXIT_POLICY_DESCRIPTION_END))
 
   def test_that_cache_is_up_to_date(self):
     """

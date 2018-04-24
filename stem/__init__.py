@@ -476,6 +476,7 @@ Library for working with the tor process.
   ================= ===========
 """
 
+import stem.util
 import stem.util.enum
 
 __version__ = '1.6.0-dev'
@@ -616,6 +617,57 @@ class SocketError(ControllerError):
 
 class SocketClosed(SocketError):
   'Control socket was closed before completing the message.'
+
+
+class Endpoint(object):
+  """
+  Tor endpint that can be connected to.
+
+  .. versionadded:: 1.7.0
+
+  :var str address: ip address of the endpoint
+  :var int port: port of the endpoint
+  """
+
+  def __init__(self, address, port):
+    if not stem.util.connection.is_valid_ipv4_address(address) and not stem.util.connection.is_valid_ipv6_address(address):
+      raise ValueError("'%s' isn't a valid IPv4 or IPv6 address" % address)
+    elif not stem.util.connection.is_valid_port(port):
+      raise ValueError("'%s' isn't a valid port" % port)
+
+    self.address = address
+    self.port = int(port)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'address', 'port')
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, Endpoint) else False
+
+  def __ne__(self, other):
+    return not self == other
+
+
+class ORPort(Endpoint):
+  """
+  Tor relay's ORPort. The endpoint on which Tor accepts relay traffic.
+
+  :var list link_protocols: link protocol version we're willing to establish
+  """
+
+  def __init__(self, address, port, link_protocols = None):
+    super(ORPort, self).__init__(address, port)
+    self.link_protocols = link_protocols
+
+  def __hash__(self):
+    return super(ORPort, self).__hash__() + stem.util._hash_attr(self, 'link_protocols', 'port') * 10
+
+
+class DirPort(Endpoint):
+  """
+  Tor relay's DirPort. The endpoint on which Tor provides http access for
+  downloading descriptors.
+  """
 
 
 Runlevel = stem.util.enum.UppercaseEnum(
@@ -863,3 +915,6 @@ HSAuth = stem.util.enum.UppercaseEnum(
   'STEALTH_AUTH',
   'UNKNOWN',
 )
+
+
+import stem.util.connection  # importing afterward to avoid circular dependency
