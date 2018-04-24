@@ -130,10 +130,17 @@ ORPORT_DESCRIPTOR = 'HTTP/1.0 200 OK\n' + HEADER + '\n\n' + TEST_DESCRIPTOR
 
 
 def _orport_mock(data):
+  cells = []
+
+  for hunk in [data[i:i + 50] for i in range(0, len(data), 50)]:
+    cell = Mock()
+    cell.data = hunk
+    cells.append(cell)
+
   connect_mock = MagicMock()
   relay_mock = connect_mock().__enter__()
   circ_mock = relay_mock.create_circuit().__enter__()
-  circ_mock.send().data = data
+  circ_mock.send.return_value = cells
   return connect_mock
 
 

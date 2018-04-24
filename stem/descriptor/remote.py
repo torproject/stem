@@ -287,7 +287,7 @@ def _download_from_orport(endpoint, resource):
   with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocol) as relay:
     with relay.create_circuit() as circ:
       circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      lines = circ.send('RELAY_DATA', resource, stream_id = 1).data.splitlines()
+      lines = b''.join([cell.data for cell in circ.send('RELAY_DATA', resource, stream_id = 1)]).splitlines()
       first_line = lines.pop(0)
 
       if first_line != 'HTTP/1.0 200 OK':

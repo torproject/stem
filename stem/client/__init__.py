@@ -227,6 +227,8 @@ class Circuit(object):
     :param stem.client.RelayCommand command: command to be issued
     :param bytes data: message payload
     :param int stream_id: specific stream this concerns
+
+    :returns: **list** of :class:`~stem.client.cell.RelayCell` responses
     """
 
     with self.relay._orport_lock:
@@ -242,11 +244,14 @@ class Circuit(object):
         header, payload = split(cell.pack(self.relay.link_protocol), 3)
         encrypted_payload = header + self.forward_key.update(payload)
 
+        reply = []
         self.relay._orport.send(encrypted_payload)
-        reply = next(stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol))
 
-        decrypted = self.backward_key.update(reply.pack(self.relay.link_protocol)[3:])
-        return stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol)
+        for cell in stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol):
+          decrypted = self.backward_key.update(cell.pack(self.relay.link_protocol)[3:])
+          reply.append(stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol))
+
+        return reply
       except:
         self.forward_digest = orig_digest
         self.forward_key = orig_key
