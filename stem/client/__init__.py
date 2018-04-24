@@ -245,8 +245,8 @@ class Circuit(object):
         self.relay._orport.send(encrypted_payload)
         reply = next(stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol))
 
-        decrypted = self.backward_key.update(reply.pack(3)[3:])
-        return stem.client.cell.RelayCell._unpack(decrypted, self.id, 3)
+        decrypted = self.backward_key.update(reply.pack(self.relay.link_protocol)[3:])
+        return stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol)
       except:
         self.forward_digest = orig_digest
         self.forward_key = orig_key
