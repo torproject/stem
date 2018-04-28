@@ -963,6 +963,10 @@ class DescriptorDownloader(object):
     """
     Issues a request for the given resource.
 
+    .. versionchanged:: 1.7.0
+       The **fall_back_to_authority** default when using this method is now
+       **False**, like the :class:`~stem.descriptor.Query` class.
+
     :param str resource: resource being fetched, such as '/tor/server/all'
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
@@ -979,13 +983,7 @@ class DescriptorDownloader(object):
     if 'endpoints' not in args:
       args['endpoints'] = self._endpoints
 
-    if 'fall_back_to_authority' not in args:
-      args['fall_back_to_authority'] = True
-
-    return Query(
-      resource,
-      **args
-    )
+    return Query(resource, **args)
 
 
 class Directory(object):
