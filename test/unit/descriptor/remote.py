@@ -12,6 +12,7 @@ import unittest
 import stem.descriptor.remote
 import stem.prereq
 import stem.util.conf
+import stem.util.str_tools
 
 from stem.descriptor.remote import Compression
 from test.unit.descriptor import read_resource
@@ -126,10 +127,9 @@ HEADER = '\r\n'.join([
   'Content-Encoding: %s',
 ])
 
-ORPORT_DESCRIPTOR = 'HTTP/1.0 200 OK\n' + HEADER + '\n\n' + TEST_DESCRIPTOR
 
-
-def _orport_mock(data):
+def _orport_mock(data, encoding = 'identity'):
+  data = b'HTTP/1.0 200 OK\r\n' + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
   cells = []
 
   for hunk in [data[i:i + 50] for i in range(0, len(data), 50)]:
@@ -167,7 +167,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # prevent our mocks from impacting other tests
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
-  @patch('stem.client.Relay.connect', _orport_mock(ORPORT_DESCRIPTOR))
+  @patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR))
   def test_using_orport(self):
     """
     Download a descriptor through the ORPort.
@@ -175,7 +175,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     reply = stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.ORPort('12.34.56.78', 1100)],
-      fall_back_to_authority = False,
       validate = True,
     )
 
@@ -191,7 +190,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     reply = stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.DirPort('12.34.56.78', 1100)],
-      fall_back_to_authority = False,
       validate = True,
     )
 

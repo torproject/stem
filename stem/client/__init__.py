@@ -168,7 +168,7 @@ class Relay(object):
       if not created_fast_cells:
         raise ValueError('We should get a CREATED_FAST response from a CREATE_FAST request')
 
-      created_fast_cell = created_fast_cells[0]
+      created_fast_cell = list(created_fast_cells)[0]
       kdf = KDF.from_value(create_fast_cell.key_material + created_fast_cell.key_material)
 
       if created_fast_cell.derivative_key != kdf.key_hash:
@@ -211,7 +211,7 @@ class Circuit(object):
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
 
-    ctr = modes.CTR(ZERO * (algorithms.AES.block_size / 8))
+    ctr = modes.CTR(ZERO * (algorithms.AES.block_size // 8))
 
     self.relay = relay
     self.id = circ_id
