@@ -60,6 +60,7 @@ The following are only available within Stem's `git repository
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Added server descriptor's new is_hidden_service_dir attribute
   * Don't retry downloading descriptors when we've timed out
+  * Don't download from tor26 and Bifroest, which are authorities that frequently timeout.
   * `stem.descriptor.remote <api/descriptor/remote.html>`_  now consistently defaults **fall_back_to_authority** to false.
   * Added :func:`~stem.descriptor.remote.their_server_descriptor`
   * Added the reply_headers attribute to :class:`~stem.descriptor.remote.Query`

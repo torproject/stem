@@ -494,6 +494,10 @@ class Query(object):
      DirPort to such an extent that requests either time out or take on the
      order of minutes.
 
+  .. versionchanged:: 1.7.0
+     Avoid downloading from Bifroest. This is the bridge authority so it
+     doesn't vote in the consensus, and apparently times out frequently.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -696,7 +700,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice([auth for auth in get_authorities().values() if auth.nickname != 'tor26'])
+      picked = random.choice([auth for auth in get_authorities().values() if auth.nickname not in ('tor26', 'Bifroest')])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
