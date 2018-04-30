@@ -91,7 +91,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_server_descriptor - querying the server descriptor for a relay
     |- get_server_descriptors - provides all currently available server descriptors
     |- get_network_status - querying the router status entry for a relay
-    |- get_network_statuses - provides all preently available router status entries
+    |- get_network_statuses - provides all presently available router status entries
     |- get_hidden_service_descriptor - queries the given hidden service descriptor
     |
     |- get_conf - gets the value of a configuration option
