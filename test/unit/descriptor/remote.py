@@ -535,7 +535,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
     )
 
-    self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_str(FALLBACK_ENTRY))
+    self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory._from_str(FALLBACK_ENTRY))
 
   def test_fallback_directories_from_str_malformed(self):
     test_values = {
@@ -548,4 +548,4 @@ class TestDescriptorDownloader(unittest.TestCase):
     }
 
     for entry, expected in test_values.items():
-      self.assertRaisesRegexp(ValueError, expected, stem.descriptor.remote.FallbackDirectory.from_str, entry)
+      self.assertRaisesRegexp(ValueError, expected, stem.descriptor.remote.FallbackDirectory._from_str, entry)

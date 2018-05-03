@@ -167,8 +167,14 @@ LZMA_UNAVAILABLE_MSG = 'LZMA compression requires the lzma module (https://docs.
 MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 90
 
-GITWEB_FALLBACK_DIR_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
+GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc'
+GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')
+
+AUTHORITY_NAME = re.compile('"(\S+) orport=(\d+) .*"')
+AUTHORITY_V3IDENT = re.compile('"v3ident=([\dA-F]{40}) "')
+AUTHORITY_IPV6 = re.compile('"ipv6=\[([\da-f:]+)\]:(\d+) "')
+AUTHORITY_ADDR = re.compile('"([\d\.]+):(\d+) ([\dA-F ]{49})",')
 
 FALLBACK_DIV = '/* ===== */'
 FALLBACK_MAPPING = re.compile('/\*\s+(\S+)=(\S*)\s+\*/')
@@ -1088,6 +1094,143 @@ class DirectoryAuthority(Directory):
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
+  @staticmethod
+  def from_remote(timeout = 60):
+    """
+    Reads and parses tor's latest directory authority data `from
+    gitweb.torproject.org
+    <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_.
+    Note that while convenient, this reliance on GitWeb means you should alway
+    call with a fallback, such as...
+
+    ::
+
+      try:
+        fallback_directories = DirectoryAuthority.from_remote()
+      except IOError:
+        fallback_directories = get_authorities()
+
+    Authorities provided through this method will not have a
+    **is_bandwidth_authority** value set.
+
+    .. versionadded:: 1.7.0
+
+    :param int timeout: seconds to wait before timing out the request
+
+    :returns: **dict** of **str** nicknames to their
+      :class:`~stem.descriptor.remote.DirectoryAuthority`
+
+    :raises: **IOError** if unable to retrieve the directory authorities
+    """
+
+    try:
+      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
+    except:
+      exc = sys.exc_info()[1]
+      raise IOError("Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc))
+
+    if not lines:
+      raise IOError('%s did not have any content' % GITWEB_AUTHORITY_URL)
+
+    results = {}
+
+    while lines:
+      section = DirectoryAuthority._pop_section(lines)
+
+      if section:
+        try:
+          authority = DirectoryAuthority._from_str('\n'.join(section))
+          results[authority.nickname] = authority
+        except ValueError as exc:
+          raise IOError(str(exc))
+
+    return results
+
+  @staticmethod
+  def _from_str(content):
+    """
+    Parses authority from its textual representation. For example...
+
+    ::
+
+      "moria1 orport=9101 "
+        "v3ident=D586D18309DED4CD6D57C18FDB97EFA96D330566 "
+        "128.31.0.39:9131 9695 DFC3 5FFE B861 329B 9F1A B04C 4639 7020 CE31",
+
+    :param str content: text to parse
+
+    :returns: :class:`~stem.descriptor.remote.DirectoryAuthority` in the text
+
+    :raises: **ValueError** if content is malformed
+    """
+
+    if isinstance(content, bytes):
+      content = str_tools._to_unicode(content)
+
+    matches = {}
+
+    for line in content.splitlines():
+      for matcher in (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR):
+        m = matcher.match(line.strip())
+
+        if m:
+          match_groups = m.groups()
+          matches[matcher] = match_groups if len(match_groups) > 1 else match_groups[0]
+
+    if AUTHORITY_NAME not in matches:
+      raise ValueError('Unable to parse the name and orport from:\n\n%s' % content)
+    elif AUTHORITY_ADDR not in matches:
+      raise ValueError('Unable to parse the address and fingerprint from:\n\n%s' % content)
+
+    nickname, or_port = matches.get(AUTHORITY_NAME)
+    v3ident = matches.get(AUTHORITY_V3IDENT)
+    orport_v6 = matches.get(AUTHORITY_IPV6)  # TODO: add this to stem's data?
+    address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
+
+    fingerprint = fingerprint.replace(' ', '')
+
+    if not connection.is_valid_ipv4_address(address):
+      raise ValueError('%s has an invalid IPv4 address: %s' % (nickname, address))
+    elif not connection.is_valid_port(or_port):
+      raise ValueError('%s has an invalid or_port: %s' % (nickname, or_port))
+    elif not connection.is_valid_port(dir_port):
+      raise ValueError('%s has an invalid dir_port: %s' % (nickname, dir_port))
+    elif not tor_tools.is_valid_fingerprint(fingerprint):
+      raise ValueError('%s has an invalid fingerprint: %s' % (nickname, fingerprint))
+    elif nickname and not tor_tools.is_valid_nickname(nickname):
+      raise ValueError('%s has an invalid nickname: %s' % (nickname, nickname))
+    elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
+      raise ValueError('%s has an invalid IPv6 address: %s' % (nickname, orport_v6[0]))
+    elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
+      raise ValueError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (nickname, orport_v6[1]))
+    elif v3ident and not tor_tools.is_valid_fingerprint(v3ident):
+      raise ValueError('%s has an invalid v3ident: %s' % (nickname, v3ident))
+
+    return DirectoryAuthority(
+      address = address,
+      or_port = int(or_port),
+      dir_port = int(dir_port),
+      fingerprint = fingerprint,
+      nickname = nickname,
+      v3ident = v3ident,
+    )
+
+  @staticmethod
+  def _pop_section(lines):
+    """
+    Provides the next authority entry.
+    """
+
+    section_lines = []
+
+    if lines:
+      section_lines.append(lines.pop(0))
+
+      while lines and lines[0].startswith(' '):
+        section_lines.append(lines.pop(0))
+
+    return section_lines
+
   def __hash__(self):
     return _hash_attr(self, 'nickname', 'v3ident', 'is_bandwidth_authority', parent = Directory)
 
@@ -1333,9 +1476,9 @@ class FallbackDirectory(Directory):
     ::
 
       try:
-        fallback_directories = stem.descriptor.remote.from_remote()
+        fallback_directories = FallbackDirectory.from_remote()
       except IOError:
-        fallback_directories = stem.descriptor.remote.from_cache()
+        fallback_directories = FallbackDirectory.from_cache()
 
     :param int timeout: seconds to wait before timing out the request
 
@@ -1346,15 +1489,15 @@ class FallbackDirectory(Directory):
     """
 
     try:
-      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_DIR_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
     except:
       exc = sys.exc_info()[1]
-      raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_DIR_URL, exc))
+      raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc))
 
     if not lines:
-      raise IOError('%s did not have any content' % GITWEB_FALLBACK_DIR_URL)
+      raise IOError('%s did not have any content' % GITWEB_FALLBACK_URL)
     elif lines[0] != '/* type=fallback */':
-      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_DIR_URL)
+      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
 
     # header metadata
 
@@ -1381,7 +1524,7 @@ class FallbackDirectory(Directory):
 
       if section:
         try:
-          fallback = FallbackDirectory.from_str('\n'.join(section))
+          fallback = FallbackDirectory._from_str('\n'.join(section))
           fallback.header = header
           results[fallback.fingerprint] = fallback
         except ValueError as exc:
@@ -1390,7 +1533,7 @@ class FallbackDirectory(Directory):
     return results
 
   @staticmethod
-  def from_str(content):
+  def _from_str(content):
     """
     Parses a fallback from its textual representation. For example...
 
@@ -1400,8 +1543,6 @@ class FallbackDirectory(Directory):
       " ipv6=[2a01:4f8:162:51e2::2]:9001"
       /* nickname=rueckgrat */
       /* extrainfo=1 */
-
-    .. versionadded:: 1.7.0
 
     :param str content: text to parse
 

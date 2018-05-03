@@ -247,7 +247,35 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(2, len(list(multiple_query)))
 
   @test.require.online
-  def test_that_cache_is_up_to_date(self):
+  def test_authority_cache_is_up_to_date(self):
+    """
+    Check if the cached authorities bundled with Stem are up to date or not.
+    """
+
+    cached_authorities = stem.descriptor.remote.get_authorities()
+    latest_authorities = stem.descriptor.remote.DirectoryAuthority.from_remote()
+
+    for nickname in cached_authorities:
+      if nickname not in latest_authorities:
+        self.fail('%s is no longer a directory authority in tor' % nickname)
+
+    for nickname in latest_authorities:
+      if nickname not in cached_authorities:
+        self.fail('%s is now a directory authority in tor' % nickname)
+
+    # tor doesn't note if an autority is a bwauth or not, so we need to exclude
+    # that from our comparison
+
+    for attr in ('address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'v3ident'):
+      for auth in cached_authorities.values():
+        cached_value = getattr(auth, attr)
+        latest_value = getattr(latest_authorities[auth.nickname], attr)
+
+        if cached_value != latest_value:
+          self.fail('The %s of the %s authority is %s in tor but %s in stem' % (attr, auth.nickname, latest_value, cached_value))
+
+  @test.require.online
+  def test_fallback_cache_is_up_to_date(self):
     """
     Check if the cached fallback directories bundled with Stem are up to date
     or not.
