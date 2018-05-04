@@ -50,13 +50,12 @@ content. For example...
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     +- get_consensus - provides the present consensus or router status entries
 
-  get_authorities - Provides tor directory information.
-
   Directory - Relay we can retrieve directory information from
+    | |- from_cache - Provides fallback directories cached with Stem.
+    | +- from_remote - Retrieves fallback directories remotely from tor's latest commit.
+    |
     |- DirectoryAuthority - Information about a tor directory authority
     +- FallbackDirectory - Directory mirror tor uses when authories are unavailable
-        |- from_cache - Provides fallback directories cached with Stem.
-        +- from_remote - Retrieves fallback directories remotely from tor's latest commit.
 
   Query - Asynchronous request to download tor descriptors
     |- start - issues the query if it isn't already running
@@ -1022,9 +1021,18 @@ class DescriptorDownloader(object):
 
 class Directory(object):
   """
-  Relay we can contact for directory information
+  Relay we can contact for directory information.
 
-  .. versionadded:: 1.5.0
+  Our :func:`~stem.descriptor.remote.Directory.from_cache` and
+  :func:`~stem.descriptor.remote.Directory.from_remote` functions key off a
+  different identifier based on our subclass...
+
+    * **DirectoryAuthority** keys off the nickname.
+    * **FallbackDirectory** keys off fingerprints.
+
+  This is because authorities are highly static and canonically known by their
+  names, whereas fallbacks vary more and don't necessarily have a nickname to
+  key off of.
 
   .. versionchanged:: 1.3.0
      Moved nickname from subclasses to this base class.
@@ -1043,6 +1051,53 @@ class Directory(object):
     self.fingerprint = fingerprint
     self.nickname = nickname
 
+  @staticmethod
+  def from_cache():
+    """
+    Provides cached Tor directory information. This information is hardcoded
+    into Tor and occasionally changes, so the information this provides might
+    not necessarily match your version of tor.
+
+    .. versionadded:: 1.5.0
+
+    .. versionchanged:: 1.7.0
+       Support added to the :class:`~stem.descriptor.remote.DirectoryAuthority` class.
+
+    :returns: **dict** of **str** identifiers to
+      :class:`~stem.descriptor.remote.Directory` instances
+    """
+
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
+
+  @staticmethod
+  def from_remote(timeout = 60):
+    """
+    Reads and parses tor's directory data `from gitweb.torproject.org <https://gitweb.torproject.org/>`_.
+    Note that while convenient, this reliance on GitWeb means you should alway
+    call with a fallback, such as...
+
+    ::
+
+      try:
+        authorities = DirectoryAuthority.from_remote()
+      except IOError:
+        authorities = DirectoryAuthority.from_cache()
+
+    .. versionadded:: 1.5.0
+
+    .. versionchanged:: 1.7.0
+       Support added to the :class:`~stem.descriptor.remote.DirectoryAuthority` class.
+
+    :param int timeout: seconds to wait before timing out the request
+
+    :returns: **dict** of **str** identifiers to their
+      :class:`~stem.descriptor.remote.Directory`
+
+    :raises: **IOError** if unable to retrieve the fallback directories
+    """
+
+    raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
+
   def __hash__(self):
     return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
 
@@ -1056,7 +1111,7 @@ class Directory(object):
 class DirectoryAuthority(Directory):
   """
   Tor directory authority, a special type of relay `hardcoded into tor
-  <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
+  <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_
   that enumerates the other relays within the network.
 
   At a very high level tor works as follows...
@@ -1095,34 +1150,11 @@ class DirectoryAuthority(Directory):
     self.is_bandwidth_authority = is_bandwidth_authority
 
   @staticmethod
+  def from_cache():
+    return dict(DIRECTORY_AUTHORITIES)
+
+  @staticmethod
   def from_remote(timeout = 60):
-    """
-    Reads and parses tor's latest directory authority data `from
-    gitweb.torproject.org
-    <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_.
-    Note that while convenient, this reliance on GitWeb means you should alway
-    call with a fallback, such as...
-
-    ::
-
-      try:
-        fallback_directories = DirectoryAuthority.from_remote()
-      except IOError:
-        fallback_directories = get_authorities()
-
-    Authorities provided through this method will not have a
-    **is_bandwidth_authority** value set.
-
-    .. versionadded:: 1.7.0
-
-    :param int timeout: seconds to wait before timing out the request
-
-    :returns: **dict** of **str** nicknames to their
-      :class:`~stem.descriptor.remote.DirectoryAuthority`
-
-    :raises: **IOError** if unable to retrieve the directory authorities
-    """
-
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
     except:
@@ -1341,10 +1373,13 @@ def get_authorities():
   information hardcoded into Tor and occasionally changes, so the information
   this provides might not necessarily match your version of tor.
 
+  .. deprecated:: 1.7.0
+     Use stem.descriptor.remote.DirectoryAuthority.from_cache() instead.
+
   :returns: **dict** of **str** nicknames to :class:`~stem.descriptor.remote.DirectoryAuthority` instances
   """
 
-  return dict(DIRECTORY_AUTHORITIES)
+  return DirectoryAuthority.from_cache()
 
 
 class FallbackDirectory(Directory):
@@ -1398,22 +1433,6 @@ class FallbackDirectory(Directory):
 
   @staticmethod
   def from_cache(path = CACHE_PATH):
-    """
-    Provides fallback directory information cached with Stem. Unlike
-    :func:`~stem.descriptor.remote.FallbackDirectory.from_remote` this doesn't
-    have any system requirements, and is faster too. Only drawback is that
-    these fallback directories are only as up to date as the Stem release we're
-    using.
-
-    .. versionchanged:: 1.7.0
-       Added the path argument.
-
-    :param str path: cache file to load from
-
-    :returns: **dict** of **str** fingerprints to their
-      :class:`~stem.descriptor.remote.FallbackDirectory`
-    """
-
     conf = stem.util.conf.Config()
     conf.load(path)
     headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
@@ -1466,28 +1485,6 @@ class FallbackDirectory(Directory):
 
   @staticmethod
   def from_remote(timeout = 60):
-    """
-    Reads and parses tor's latest fallback directories `from
-    gitweb.torproject.org
-    <https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc>`_.
-    Note that while convenient, this reliance on GitWeb means you should alway
-    call with a fallback, such as...
-
-    ::
-
-      try:
-        fallback_directories = FallbackDirectory.from_remote()
-      except IOError:
-        fallback_directories = FallbackDirectory.from_cache()
-
-    :param int timeout: seconds to wait before timing out the request
-
-    :returns: **dict** of **str** fingerprints to their
-      :class:`~stem.descriptor.remote.FallbackDirectory`
-
-    :raises: **IOError** if unable to retrieve the fallback directories
-    """
-
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
     except:
