@@ -207,20 +207,20 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(TEST_RESOURCE, query.resource)
 
   def test_zstd_support_check(self):
-    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', True):
+    with patch('stem.prereq.is_zstd_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
       self.assertEqual([Compression.ZSTD], query.compression)
 
-    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', False):
+    with patch('stem.prereq.is_zstd_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
 
   def test_lzma_support_check(self):
-    with patch('stem.descriptor.remote.LZMA_SUPPORTED', True):
+    with patch('stem.prereq.is_lzma_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.LZMA], query.compression)
 
-    with patch('stem.descriptor.remote.LZMA_SUPPORTED', False):
+    with patch('stem.prereq.is_lzma_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
 
@@ -260,7 +260,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a zstd compressed descriptor.
     """
 
-    if not stem.descriptor.remote.ZSTD_SUPPORTED:
+    if not stem.prereq.is_zstd_available():
       self.skipTest('(requires zstd module)')
       return
 
@@ -279,7 +279,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a lzma compressed descriptor.
     """
 
-    if not stem.descriptor.remote.LZMA_SUPPORTED:
+    if not stem.prereq.is_lzma_available():
       self.skipTest('(requires lzma module)')
       return
 

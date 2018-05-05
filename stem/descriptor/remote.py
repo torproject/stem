@@ -113,38 +113,12 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-try:
-  # added in python 3.3
-  import lzma
-  LZMA_SUPPORTED = True
-except ImportError:
-  LZMA_SUPPORTED = False
-
-try:
-  # We use the suggested python zstd library...
-  #
-  #   https://pypi.python.org/pypi/zstandard
-  #
-  # Unfortunately this installs as a zstd module which can be confused with...
-  #
-  #   https://pypi.python.org/pypi/zstd
-  #
-  # As such checking for the specific decompression class we'll need.
-
-  import zstd
-  ZSTD_SUPPORTED = hasattr(zstd, 'ZstdDecompressor')
-except ImportError:
-  ZSTD_SUPPORTED = False
-
 Compression = stem.util.enum.Enum(
   ('PLAINTEXT', 'identity'),
   ('GZIP', 'gzip'),  # can also be 'deflate'
   ('ZSTD', 'x-zstd'),
   ('LZMA', 'x-tor-lzma'),
 )
-
-ZSTD_UNAVAILABLE_MSG = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
-LZMA_UNAVAILABLE_MSG = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -340,9 +314,10 @@ def _decompress(data, encoding):
   elif encoding in (Compression.GZIP, 'deflate'):
     return zlib.decompress(data, zlib.MAX_WBITS | 32).strip()
   elif encoding == Compression.ZSTD:
-    if not ZSTD_SUPPORTED:
+    if not stem.prereq.is_zstd_available():
       raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
 
+    import zstd
     output_buffer = io.BytesIO()
 
     with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
@@ -350,9 +325,10 @@ def _decompress(data, encoding):
 
     return output_buffer.getvalue().strip()
   elif encoding == Compression.LZMA:
-    if not LZMA_SUPPORTED:
+    if not stem.prereq.is_lzma_available():
       raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
 
+    import lzma
     return lzma.decompress(data).strip()
   else:
     raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
@@ -528,12 +504,10 @@ class Query(object):
       if isinstance(compression, str):
         compression = [compression]  # caller provided only a single option
 
-      if Compression.ZSTD in compression and not ZSTD_SUPPORTED:
-        log.log_once('stem.descriptor.remote.zstd_unavailable', log.INFO, ZSTD_UNAVAILABLE_MSG)
+      if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
         compression.remove(Compression.ZSTD)
 
-      if Compression.LZMA in compression and not LZMA_SUPPORTED:
-        log.log_once('stem.descriptor.remote.lzma_unavailable', log.INFO, LZMA_UNAVAILABLE_MSG)
+      if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
         compression.remove(Compression.LZMA)
 
       if not compression:
