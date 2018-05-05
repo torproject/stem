@@ -202,158 +202,6 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
-def _download_from_orport(endpoint, compression, resource):
-  """
-  Downloads descriptors from the given orport. Payload is just like an http
-  response (headers and all)...
-
-  ::
-
-    HTTP/1.0 200 OK
-    Date: Mon, 23 Apr 2018 18:43:47 GMT
-    Content-Type: text/plain
-    X-Your-Address-Is: 216.161.254.25
-    Content-Encoding: identity
-    Expires: Wed, 25 Apr 2018 18:43:47 GMT
-
-    router dannenberg 193.23.244.244 443 0 80
-    identity-ed25519
-    ... rest of the descriptor content...
-
-  :param stem.ORPort endpoint: endpoint to download from
-  :param list compression: compression methods for the request
-  :param str resource: descriptor resource to download
-
-  :returns: two value tuple of the form (data, reply_headers)
-
-  :raises:
-    * :class:`stem.ProtocolError` if not a valid descriptor response
-    * :class:`stem.SocketError` if unable to establish a connection
-  """
-
-  link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
-
-  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
-    with relay.create_circuit() as circ:
-      request = '\r\n'.join((
-        'GET %s HTTP/1.0' % resource,
-        'Accept-Encoding: %s' % ', '.join(compression),
-        'User-Agent: Stem/%s' % stem.__version__,
-      )) + '\r\n\r\n'
-
-      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      response = b''.join([cell.data for cell in circ.send('RELAY_DATA', request, stream_id = 1)])
-      first_line, data = response.split(b'\r\n', 1)
-      header_data, data = data.split(b'\r\n\r\n', 1)
-
-      if first_line != b'HTTP/1.0 200 OK':
-        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
-
-      headers = {}
-
-      for line in str_tools._to_unicode(header_data).splitlines():
-        if ': ' not in line:
-          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % line)
-
-        key, value = line.split(': ', 1)
-        headers[key] = value
-
-      return _decompress(data, headers.get('Content-Encoding')), headers
-
-
-def _download_from_dirport(url, compression, timeout):
-  """
-  Downloads descriptors from the given url.
-
-  :param str url: dirport url from which to download from
-  :param list compression: compression methods for the request
-  :param float timeout: duration before we'll time out our request
-
-  :returns: two value tuple of the form (data, reply_headers)
-
-  :raises:
-    * **socket.timeout** if our request timed out
-    * **urllib2.URLError** for most request failures
-  """
-
-  response = urllib.urlopen(
-    urllib.Request(
-      url,
-      headers = {
-        'Accept-Encoding': ', '.join(compression),
-        'User-Agent': 'Stem/%s' % stem.__version__,
-      }
-    ),
-    timeout = timeout,
-  )
-
-  return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
-
-
-def _decompress(data, encoding):
-  """
-  Decompresses descriptor data.
-
-  Tor doesn't include compression headers. As such when using gzip we
-  need to include '32' for automatic header detection...
-
-    https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
-
-  ... and with zstd we need to use the streaming API.
-
-  :param bytes data: data we received
-  :param str encoding: 'Content-Encoding' header of the response
-
-  :raises:
-    * **ValueError** if encoding is unrecognized
-    * **ImportError** if missing the decompression module
-  """
-
-  if encoding == Compression.PLAINTEXT:
-    return data.strip()
-  elif encoding in (Compression.GZIP, 'deflate'):
-    return zlib.decompress(data, zlib.MAX_WBITS | 32).strip()
-  elif encoding == Compression.ZSTD:
-    if not stem.prereq.is_zstd_available():
-      raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
-
-    import zstd
-    output_buffer = io.BytesIO()
-
-    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
-      decompressor.write(data)
-
-    return output_buffer.getvalue().strip()
-  elif encoding == Compression.LZMA:
-    if not stem.prereq.is_lzma_available():
-      raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
-
-    import lzma
-    return lzma.decompress(data).strip()
-  else:
-    raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
-
-
-def _guess_descriptor_type(resource):
-  # Attempts to determine the descriptor type based on the resource url. This
-  # raises a ValueError if the resource isn't recognized.
-
-  if resource.startswith('/tor/server/'):
-    return 'server-descriptor 1.0'
-  elif resource.startswith('/tor/extra/'):
-    return 'extra-info 1.0'
-  elif resource.startswith('/tor/micro/'):
-    return 'microdescriptor 1.0'
-  elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
-    return 'network-status-microdesc-consensus-3 1.0'
-  elif resource.startswith('/tor/status-vote/'):
-    return 'network-status-consensus-3 1.0'
-  elif resource.startswith('/tor/keys/'):
-    return 'dir-key-certificate-3 1.0'
-  else:
-    raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
-
-
 class Query(object):
   """
   Asynchronous request for descriptor content from a directory authority or
@@ -960,6 +808,158 @@ class DescriptorDownloader(object):
       args['endpoints'] = self._endpoints
 
     return Query(resource, **args)
+
+
+def _download_from_orport(endpoint, compression, resource):
+  """
+  Downloads descriptors from the given orport. Payload is just like an http
+  response (headers and all)...
+
+  ::
+
+    HTTP/1.0 200 OK
+    Date: Mon, 23 Apr 2018 18:43:47 GMT
+    Content-Type: text/plain
+    X-Your-Address-Is: 216.161.254.25
+    Content-Encoding: identity
+    Expires: Wed, 25 Apr 2018 18:43:47 GMT
+
+    router dannenberg 193.23.244.244 443 0 80
+    identity-ed25519
+    ... rest of the descriptor content...
+
+  :param stem.ORPort endpoint: endpoint to download from
+  :param list compression: compression methods for the request
+  :param str resource: descriptor resource to download
+
+  :returns: two value tuple of the form (data, reply_headers)
+
+  :raises:
+    * :class:`stem.ProtocolError` if not a valid descriptor response
+    * :class:`stem.SocketError` if unable to establish a connection
+  """
+
+  link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
+
+  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
+    with relay.create_circuit() as circ:
+      request = '\r\n'.join((
+        'GET %s HTTP/1.0' % resource,
+        'Accept-Encoding: %s' % ', '.join(compression),
+        'User-Agent: Stem/%s' % stem.__version__,
+      )) + '\r\n\r\n'
+
+      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
+      response = b''.join([cell.data for cell in circ.send('RELAY_DATA', request, stream_id = 1)])
+      first_line, data = response.split(b'\r\n', 1)
+      header_data, data = data.split(b'\r\n\r\n', 1)
+
+      if first_line != b'HTTP/1.0 200 OK':
+        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
+
+      headers = {}
+
+      for line in str_tools._to_unicode(header_data).splitlines():
+        if ': ' not in line:
+          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % line)
+
+        key, value = line.split(': ', 1)
+        headers[key] = value
+
+      return _decompress(data, headers.get('Content-Encoding')), headers
+
+
+def _download_from_dirport(url, compression, timeout):
+  """
+  Downloads descriptors from the given url.
+
+  :param str url: dirport url from which to download from
+  :param list compression: compression methods for the request
+  :param float timeout: duration before we'll time out our request
+
+  :returns: two value tuple of the form (data, reply_headers)
+
+  :raises:
+    * **socket.timeout** if our request timed out
+    * **urllib2.URLError** for most request failures
+  """
+
+  response = urllib.urlopen(
+    urllib.Request(
+      url,
+      headers = {
+        'Accept-Encoding': ', '.join(compression),
+        'User-Agent': 'Stem/%s' % stem.__version__,
+      }
+    ),
+    timeout = timeout,
+  )
+
+  return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
+
+
+def _decompress(data, encoding):
+  """
+  Decompresses descriptor data.
+
+  Tor doesn't include compression headers. As such when using gzip we
+  need to include '32' for automatic header detection...
+
+    https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
+
+  ... and with zstd we need to use the streaming API.
+
+  :param bytes data: data we received
+  :param str encoding: 'Content-Encoding' header of the response
+
+  :raises:
+    * **ValueError** if encoding is unrecognized
+    * **ImportError** if missing the decompression module
+  """
+
+  if encoding == Compression.PLAINTEXT:
+    return data.strip()
+  elif encoding in (Compression.GZIP, 'deflate'):
+    return zlib.decompress(data, zlib.MAX_WBITS | 32).strip()
+  elif encoding == Compression.ZSTD:
+    if not stem.prereq.is_zstd_available():
+      raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
+
+    import zstd
+    output_buffer = io.BytesIO()
+
+    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
+      decompressor.write(data)
+
+    return output_buffer.getvalue().strip()
+  elif encoding == Compression.LZMA:
+    if not stem.prereq.is_lzma_available():
+      raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
+
+    import lzma
+    return lzma.decompress(data).strip()
+  else:
+    raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
+
+
+def _guess_descriptor_type(resource):
+  # Attempts to determine the descriptor type based on the resource url. This
+  # raises a ValueError if the resource isn't recognized.
+
+  if resource.startswith('/tor/server/'):
+    return 'server-descriptor 1.0'
+  elif resource.startswith('/tor/extra/'):
+    return 'extra-info 1.0'
+  elif resource.startswith('/tor/micro/'):
+    return 'microdescriptor 1.0'
+  elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
+    return 'network-status-microdesc-consensus-3 1.0'
+  elif resource.startswith('/tor/status-vote/'):
+    return 'network-status-consensus-3 1.0'
+  elif resource.startswith('/tor/keys/'):
+    return 'dir-key-certificate-3 1.0'
+  else:
+    raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
 
 
 def get_authorities():
