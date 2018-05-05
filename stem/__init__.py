@@ -492,6 +492,7 @@ __all__ = [
   'util',
   'connection',
   'control',
+  'directory',
   'exit_policy',
   'prereq',
   'process',

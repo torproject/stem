@@ -106,8 +106,7 @@ try:
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
     package_data = {
-      'stem': ['cached_tor_manual.sqlite', 'settings.cfg'],
-      'stem.descriptor': ['fallback_directories.cfg'],
+      'stem': ['cached_tor_manual.sqlite', 'fallback_directories.cfg', 'settings.cfg'],
       'stem.interpreter': ['settings.cfg'],
       'stem.util': ['ports.cfg'],
     }, classifiers = [

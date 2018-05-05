@@ -17,9 +17,9 @@ import stem.prereq
 
 from stem.control import Controller
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
-from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 from stem.util import str_type
 
