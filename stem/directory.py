@@ -38,7 +38,7 @@ except ImportError:
 
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc'
 GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'fallback_directories.cfg')
+CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\S+) orport=(\d+) .*"')
 AUTHORITY_V3IDENT = re.compile('"v3ident=([\dA-F]{40}) "')
