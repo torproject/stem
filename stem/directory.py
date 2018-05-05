@@ -2,16 +2,38 @@
 # See LICENSE for licensing information
 
 """
-Directories with Tor descriptor information.
+Directories with `tor descriptor information
+<../tutorials/mirror_mirror_on_the_wall.html>`_. At a very high level tor works
+as follows...
+
+1. Volunteer starts a new tor relay, during which it sends a `server
+   descriptor <descriptor/server_descriptor.html>`_ to each of the directory
+   authorities.
+
+2. Each hour the directory authorities make a `vote
+   <descriptor/networkstatus.html>`_  that says who they think the active
+   relays are in the network and some attributes about them.
+
+3. The directory authorities send each other their votes, and compile that
+   into the `consensus <descriptor/networkstatus.html>`_. This document is very
+   similar to the votes, the only difference being that the majority of the
+   authorities agree upon and sign this document. The idividual relay entries
+   in the vote or consensus is called `router status entries
+   <descriptor/router_status_entry.html>`_.
+
+4. Tor clients (people using the service) download the consensus from an
+   authority, fallback, or other mirror to determine who the active relays in
+   the network are. They then use this to construct circuits and use the
+   network.
 
 ::
 
-  Directory - Relay we can retrieve directory information from
-    | |- from_cache - Provides fallback directories cached with Stem.
-    | +- from_remote - Retrieves fallback directories remotely from tor's latest commit.
+  Directory - Relay we can retrieve descriptor information from
+    | |- from_cache - Provides cached information bundled with Stem.
+    | +- from_remote - Downloads the latest directory information from tor.
     |
-    |- Authority - Information about a tor directory authority
-    +- Fallback - Directory mirror tor uses when authories are unavailable
+    |- Authority - Tor directory authority
+    +- Fallback - Mirrors that can be used instead of the authorities
 
 .. versionadded:: 1.7.0
 """
@@ -148,28 +170,6 @@ class Authority(Directory):
   Tor directory authority, a special type of relay `hardcoded into tor
   <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_
   that enumerates the other relays within the network.
-
-  At a very high level tor works as follows...
-
-  1. A volunteer starts up a new tor relay, during which it sends a `server
-     descriptor <server_descriptor.html>`_ to each of the directory
-     authorities.
-
-  2. Each hour the directory authorities make a `vote <networkstatus.html>`_
-     that says who they think the active relays are in the network and some
-     attributes about them.
-
-  3. The directory authorities send each other their votes, and compile that
-     into the `consensus <networkstatus.html>`_. This document is very similar
-     to the votes, the only difference being that the majority of the
-     authorities agree upon and sign this document. The idividual relay entries
-     in the vote or consensus is called `router status entries
-     <router_status_entry.html>`_.
-
-  4. Tor clients (people using the service) download the consensus from one of
-     the authorities or a mirror to determine the active relays within the
-     network. They in turn use this to construct their circuits and use the
-     network.
 
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
@@ -319,14 +319,12 @@ class Fallback(Directory):
   ::
 
     import time
-    from stem.descriptor.remote import DescriptorDownloader
+    from stem.descriptor.remote import get_consensus
     from stem.directory import Fallback
-
-    downloader = DescriptorDownloader()
 
     for fallback in Fallback.from_cache().values():
       start = time.time()
-      downloader.get_consensus(endpoints = [(fallback.address, fallback.dir_port)]).run()
+      get_consensus(endpoints = [(fallback.address, fallback.dir_port)]).run()
       print('Downloading the consensus took %0.2f from %s' % (time.time() - start, fallback.fingerprint))
 
   ::
