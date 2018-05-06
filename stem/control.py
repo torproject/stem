@@ -2874,9 +2874,19 @@ class Controller(BaseController):
       })
 
     To create a **version 3** service simply specify **ED25519-V3** as the
-    key_type, and to create a **version 2** service use **RSA1024**. The
+    our key type, and to create a **version 2** service use **RSA1024**. The
     default version of newly created hidden services is based on the
-    **HiddenServiceVersion** value in your torrc.
+    **HiddenServiceVersion** value in your torrc...
+
+    ::
+
+      response = controller.create_ephemeral_hidden_service(
+        80,
+        key_content = 'ED25519-V3',
+        await_publication = True,
+      )
+
+      print('service established at %s.onion' % response.service_id)
 
     .. versionadded:: 1.4.0
 
