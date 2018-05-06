@@ -65,6 +65,30 @@ FALLBACK_ENTRY = b"""\
 
 
 class TestFallback(unittest.TestCase):
+  def test_equality(self):
+    fallback_attr = {
+      'address': '5.9.110.236',
+      'or_port': 9001,
+      'dir_port': 9030,
+      'fingerprint': '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+      'nickname': 'rueckgrat',
+      'has_extrainfo': True,
+      'orport_v6': ('2a01:4f8:162:51e2::2', 9001),
+      'header': OrderedDict((
+        ('type', 'fallback'),
+        ('version', '2.0.0'),
+        ('timestamp', '20170526090242'),
+      )),
+    }
+
+    self.assertEqual(stem.directory.Fallback(**fallback_attr), stem.directory.Fallback(**fallback_attr))
+
+    for attr in fallback_attr:
+      for value in (None, 'something else'):
+        second_fallback = dict(fallback_attr)
+        second_fallback[attr] = value
+        self.assertNotEqual(stem.directory.Fallback(**fallback_attr), stem.directory.Fallback(**second_fallback))
+
   def test_from_cache(self):
     # quick sanity test that we can load cached content
     fallback_directories = stem.directory.Fallback.from_cache()
