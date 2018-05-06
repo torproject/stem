@@ -113,7 +113,7 @@ class Directory(object):
     """
     Provides cached Tor directory information. This information is hardcoded
     into Tor and occasionally changes, so the information this provides might
-    not necessarily match your version of tor.
+    not necessarily match the latest version of tor.
 
     .. versionadded:: 1.5.0
 
@@ -156,7 +156,7 @@ class Directory(object):
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
   def __hash__(self):
-    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint')
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname')
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Directory) else False
@@ -299,7 +299,7 @@ class Authority(Directory):
     return section_lines
 
   def __hash__(self):
-    return _hash_attr(self, 'nickname', 'v3ident', 'is_bandwidth_authority', parent = Directory)
+    return _hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Authority) else False
@@ -574,7 +574,7 @@ class Fallback(Directory):
     conf.save(path)
 
   def __hash__(self):
-    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'has_extrainfo', 'orport_v6', 'header', parent = Directory)
+    return _hash_attr(self, 'has_extrainfo', 'orport_v6', 'header', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Fallback) else False
