@@ -1,11 +1,12 @@
-from stem.descriptor import remote
+import stem.descriptor.remote
+import stem.directory
 
 # request votes from all the bandwidth authorities
 
 queries = {}
-downloader = remote.DescriptorDownloader()
+downloader = stem.descriptor.remote.DescriptorDownloader()
 
-for authority in remote.get_authorities().values():
+for authority in stem.directory.Authority.from_cache().values():
   if authority.is_bandwidth_authority:
     queries[authority.nickname] = downloader.query(
       '/tor/status-vote/current/authority',

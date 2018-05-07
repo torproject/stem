@@ -11,6 +11,7 @@ import stem.descriptor.networkstatus
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
+import stem.directory
 import test.require
 
 
@@ -18,7 +19,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_via_orport(self):
-    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+    moria1 = stem.directory.Authority.from_cache()['moria1']
 
     desc = list(stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.ORPort(moria1.address, moria1.or_port)],
@@ -31,7 +32,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_via_dirport(self):
-    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+    moria1 = stem.directory.Authority.from_cache()['moria1']
 
     desc = list(stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.DirPort(moria1.address, moria1.dir_port)],
@@ -73,7 +74,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       if auth.nickname == 'dannenberg-legacy':
         continue  # skip due to https://trac.torproject.org/projects/tor/ticket/17906
 
-      stem_auth = stem.descriptor.remote.get_authorities().get(auth.nickname)
+      stem_auth = stem.directory.Authority.from_cache().get(auth.nickname)
 
       if not stem_auth:
         self.fail("%s isn't a recognized directory authority in stem" % auth.nickname)
@@ -99,7 +100,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     queries = []
 
-    for nickname, authority in stem.descriptor.remote.get_authorities().items():
+    for nickname, authority in stem.directory.Authority.from_cache().items():
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',

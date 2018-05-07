@@ -1,16 +1,21 @@
-from collections import OrderedDict
-from stem.descriptor import DocumentHandler, remote
+import collections
+
+import stem.descriptor
+import stem.descriptor.remote
+import stem.directory
 
 # Query all authority votes asynchronously.
 
-downloader = remote.DescriptorDownloader(document_handler=DocumentHandler.DOCUMENT)
+downloader = stem.descriptor.remote.DescriptorDownloader(
+  document_handler = stem.descriptor.DocumentHandler.DOCUMENT,
+)
 
 # An ordered dictionary ensures queries are finished in the order they were
 # added.
 
-queries = OrderedDict()
+queries = collections.OrderedDict()
 
-for name, authority in remote.get_authorities().items():
+for name, authority in stem.directory.Authority.from_cache().items():
   if authority.v3ident is None:
     continue  # authority doesn't vote if it lacks a v3ident
 

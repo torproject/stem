@@ -496,7 +496,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice([auth for auth in get_authorities().values() if auth.nickname not in ('tor26', 'Bifroest')])
+      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Bifroest')])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
@@ -547,7 +547,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    directories = list(get_authorities().values())
+    directories = list(stem.directory.Authority.from_cache().values())
     self._endpoints = [(directory.address, directory.dir_port) for directory in directories]
 
     if use_mirrors:
@@ -569,7 +569,7 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    directories = get_authorities().values()
+    directories = stem.directory.Authority.from_cache().values()
     new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
@@ -735,7 +735,7 @@ class DescriptorDownloader(object):
     """
     Provides the present vote for a given directory authority.
 
-    :param stem.descriptor.remote.DirectoryAuthority authority: authority for which to retrieve a vote for
+    :param stem.directory.Authority authority: authority for which to retrieve a vote for
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
