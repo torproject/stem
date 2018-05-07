@@ -23,7 +23,7 @@ except ImportError:
 
 URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 
-FALLBACK_DIR_CONTENT = b"""\
+FALLBACK_GITWEB_CONTENT = b"""\
 /* type=fallback */
 /* version=2.0.0 */
 /* timestamp=20170526090242 */
@@ -63,6 +63,12 @@ FALLBACK_ENTRY = b"""\
 /* extrainfo=1 */
 """
 
+HEADER = OrderedDict((
+  ('type', 'fallback'),
+  ('version', '2.0.0'),
+  ('timestamp', '20170526090242'),
+))
+
 
 class TestFallback(unittest.TestCase):
   def test_equality(self):
@@ -90,16 +96,12 @@ class TestFallback(unittest.TestCase):
         self.assertNotEqual(stem.directory.Fallback(**fallback_attr), stem.directory.Fallback(**second_fallback))
 
   def test_from_cache(self):
-    # quick sanity test that we can load cached content
-    fallback_directories = stem.directory.Fallback.from_cache()
-    self.assertTrue(len(fallback_directories) > 10)
-    self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
+    fallbacks = stem.directory.Fallback.from_cache()
+    self.assertTrue(len(fallbacks) > 10)
+    self.assertEqual('5.39.92.199', fallbacks['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_DIR_CONTENT)))
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT)))
   def test_from_remote(self):
-    fallback_directories = stem.directory.Fallback.from_remote()
-    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
-
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.directory.Fallback(
         address = '5.9.110.236',
@@ -109,7 +111,7 @@ class TestFallback(unittest.TestCase):
         nickname = 'rueckgrat',
         has_extrainfo = True,
         orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-        header = header,
+        header = HEADER,
       ),
       '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.directory.Fallback(
         address = '193.171.202.146',
@@ -119,75 +121,21 @@ class TestFallback(unittest.TestCase):
         nickname = None,
         has_extrainfo = False,
         orport_v6 = None,
-        header = header,
+        header = HEADER,
       ),
     }
 
-    self.assertEqual(expected, fallback_directories)
-
-  def test_persistence(self):
-    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
-
-    expected = {
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.directory.Fallback(
-        address = '5.9.110.236',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
-        nickname = 'rueckgrat',
-        has_extrainfo = True,
-        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-        header = header,
-      ),
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.directory.Fallback(
-        address = '193.171.202.146',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
-        nickname = None,
-        has_extrainfo = False,
-        orport_v6 = None,
-        header = header,
-      ),
-    }
-
-    excepted_config = {
-      'tor_commit': ['abc'],
-      'stem_commit': ['def'],
-      'header.type': ['fallback'],
-      'header.version': ['2.0.0'],
-      'header.timestamp': ['20170526090242'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.has_extrainfo': ['false'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.nickname': ['rueckgrat'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.has_extrainfo': ['true'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
-    }
-
-    with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
-      stem.directory.Fallback._write(expected, 'abc', 'def', header, tmp.name)
-
-      conf = stem.util.conf.Config()
-      conf.load(tmp.name)
-      self.assertEqual(excepted_config, dict(conf))
-
-      self.assertEqual(expected, stem.directory.Fallback.from_cache(tmp.name))
+    self.assertEqual(expected, stem.directory.Fallback.from_remote())
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
     self.assertRaisesRegexp(IOError, 'did not have any content', stem.directory.Fallback.from_remote)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:]))))
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_GITWEB_CONTENT.splitlines()[1:]))))
   def test_from_remote_no_header(self):
     self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.directory.Fallback.from_remote)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_DIR_CONTENT.replace(b'version=2.0.0', b'version'))))
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT.replace(b'version=2.0.0', b'version'))))
   def test_from_remote_malformed_header(self):
     self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.directory.Fallback.from_remote)
 
@@ -216,3 +164,55 @@ class TestFallback(unittest.TestCase):
 
     for entry, expected in test_values.items():
       self.assertRaisesRegexp(ValueError, expected, stem.directory.Fallback._from_str, entry)
+
+  def test_persistence(self):
+    expected = {
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.directory.Fallback(
+        address = '5.9.110.236',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
+        nickname = 'rueckgrat',
+        has_extrainfo = True,
+        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
+        header = HEADER,
+      ),
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.directory.Fallback(
+        address = '193.171.202.146',
+        or_port = 9001,
+        dir_port = 9030,
+        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
+        nickname = None,
+        has_extrainfo = False,
+        orport_v6 = None,
+        header = HEADER,
+      ),
+    }
+
+    excepted_config = {
+      'tor_commit': ['abc'],
+      'stem_commit': ['def'],
+      'header.type': ['fallback'],
+      'header.version': ['2.0.0'],
+      'header.timestamp': ['20170526090242'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
+      '01A9258A46E97FF8B2CAC7910577862C14F2C524.has_extrainfo': ['false'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.nickname': ['rueckgrat'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.has_extrainfo': ['true'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
+      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
+    }
+
+    with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
+      stem.directory.Fallback._write(expected, 'abc', 'def', HEADER, tmp.name)
+
+      conf = stem.util.conf.Config()
+      conf.load(tmp.name)
+      self.assertEqual(excepted_config, dict(conf))
+
+      self.assertEqual(expected, stem.directory.Fallback.from_cache(tmp.name))
