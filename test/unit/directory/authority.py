@@ -36,7 +36,6 @@ class TestAuthority(unittest.TestCase):
       'fingerprint': '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
       'nickname': 'rueckgrat',
       'v3ident': '23D15D965BC35114467363C165C4F724B64B4F66',
-      'is_bandwidth_authority': False,
     }
 
     self.assertEqual(stem.directory.Authority(**authority_attr), stem.directory.Authority(**authority_attr))

@@ -2,7 +2,7 @@
 # See LICENSE for licensing information
 
 """
-Directories with `tor descriptor information
+Directories that provide `relay descriptor information
 <../tutorials/mirror_mirror_on_the_wall.html>`_. At a very high level tor works
 as follows...
 
@@ -60,7 +60,7 @@ except ImportError:
 
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc'
 GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
-CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
+FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\S+) orport=(\d+) .*"')
 AUTHORITY_V3IDENT = re.compile('"v3ident=([\dA-F]{40}) "')
@@ -78,14 +78,14 @@ FALLBACK_IPV6 = re.compile('" ipv6=\[([\da-f:]+)\]:(\d+)"')
 
 class Directory(object):
   """
-  Relay we can contact for directory information.
+  Relay we can contact for descriptor information.
 
   Our :func:`~stem.directory.Directory.from_cache` and
   :func:`~stem.directory.Directory.from_remote` functions key off a
   different identifier based on our subclass...
 
-    * **Authority** keys off the nickname.
-    * **Fallback** keys off fingerprints.
+    * :class:`~stem.directory.Authority` keys off the nickname.
+    * :class:`~stem.directory.Fallback` keys off fingerprints.
 
   This is because authorities are highly static and canonically known by their
   names, whereas fallbacks vary more and don't necessarily have a nickname to
@@ -112,8 +112,8 @@ class Directory(object):
   def from_cache():
     """
     Provides cached Tor directory information. This information is hardcoded
-    into Tor and occasionally changes, so the information this provides might
-    not necessarily match the latest version of tor.
+    into Tor and occasionally changes, so the information provided by this
+    method may not necessarily match the latest version of tor.
 
     .. versionadded:: 1.5.0
 
@@ -169,14 +169,16 @@ class Authority(Directory):
   """
   Tor directory authority, a special type of relay `hardcoded into tor
   <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_
-  that enumerates the other relays within the network.
+  to enumerate the relays in the network.
 
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
+  .. deprecated:: 1.7.0
+     The is_bandwidth_authority attribute is deprecated and will be removed in
+     the future.
+
   :var str v3ident: identity key fingerprint used to sign votes and consensus
-  :var bool is_bandwidth_authority: **True** if this is a bandwidth authority,
-    **False** otherwise
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
@@ -357,7 +359,7 @@ class Fallback(Directory):
     self.header = header if header else OrderedDict()
 
   @staticmethod
-  def from_cache(path = CACHE_PATH):
+  def from_cache(path = FALLBACK_CACHE_PATH):
     conf = stem.util.conf.Config()
     conf.load(path)
     headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
@@ -375,7 +377,7 @@ class Fallback(Directory):
         attr[attr_name] = conf.get(key)
 
         if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
-          raise IOError("'%s' is missing from %s" % (key, CACHE_PATH))
+          raise IOError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
 
       if not connection.is_valid_ipv4_address(attr['address']):
         raise IOError("'%s.address' was an invalid IPv4 address (%s)" % (fingerprint, attr['address']))
@@ -540,7 +542,7 @@ class Fallback(Directory):
     return section_lines
 
   @staticmethod
-  def _write(fallbacks, tor_commit, stem_commit, headers, path = CACHE_PATH):
+  def _write(fallbacks, tor_commit, stem_commit, headers, path = FALLBACK_CACHE_PATH):
     """
     Persists fallback directories to a location in a way that can be read by
     from_cache().
@@ -635,7 +637,6 @@ DIRECTORY_AUTHORITIES = {
     address = '128.31.0.39',
     or_port = 9101,
     dir_port = 9131,
-    is_bandwidth_authority = True,
     fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
     v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
   ),
@@ -644,7 +645,6 @@ DIRECTORY_AUTHORITIES = {
     address = '86.59.21.38',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
     fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
     v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   ),
@@ -653,7 +653,6 @@ DIRECTORY_AUTHORITIES = {
     address = '194.109.206.212',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
     fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
     v3ident = 'E8A9C45EDE6D711294FADF8E7951F4DE6CA56B58',
   ),
@@ -662,7 +661,6 @@ DIRECTORY_AUTHORITIES = {
     address = '131.188.40.189',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = True,
     fingerprint = 'F2044413DAC2E02E3D6BCF4735A19BCA1DE97281',
     v3ident = 'ED03BB616EB2F60BEC80151114BB25CEF515B226',
   ),
@@ -671,7 +669,6 @@ DIRECTORY_AUTHORITIES = {
     address = '193.23.244.244',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
     fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
     v3ident = '0232AF901C31A04EE9848595AF9BB7620D4C5B2E',
   ),
@@ -680,7 +677,6 @@ DIRECTORY_AUTHORITIES = {
     address = '171.25.193.9',
     or_port = 80,
     dir_port = 443,
-    is_bandwidth_authority = True,
     fingerprint = 'BD6A829255CB08E66FBE7D3748363586E46B3810',
     v3ident = '49015F787433103580E3B66A1707A00E60F2D15B',
   ),
@@ -689,7 +685,6 @@ DIRECTORY_AUTHORITIES = {
     address = '154.35.175.225',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = True,
     fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
     v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
   ),
@@ -698,7 +693,6 @@ DIRECTORY_AUTHORITIES = {
     address = '199.58.81.140',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
     fingerprint = '74A910646BCEEFBCD2E874FC1DC997430F968145',
     v3ident = '23D15D965BC35114467363C165C4F724B64B4F66',
   ),
@@ -707,7 +701,6 @@ DIRECTORY_AUTHORITIES = {
     address = '204.13.164.118',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = True,
     fingerprint = '24E2F139121D4394C54B5BCC368B3B411857C413',
     v3ident = '27102BC123E7AF1D4741AE047E160C91ADC76B21',
   ),
@@ -716,7 +709,6 @@ DIRECTORY_AUTHORITIES = {
     address = '37.218.247.217',
     or_port = 443,
     dir_port = 80,
-    is_bandwidth_authority = False,
     fingerprint = '1D8F3A91C37C5D1C4C19B1AD1D0CFBE8BF72D8E1',
     v3ident = None,  # does not vote in the consensus
   ),
