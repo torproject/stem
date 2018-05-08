@@ -40,7 +40,6 @@ as follows...
 
 import os
 import re
-import sys
 
 import stem.util.conf
 
@@ -259,8 +258,7 @@ class Authority(Directory):
   def from_remote(timeout = 60):
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
-    except:
-      exc = sys.exc_info()[1]
+    except Exception as exc:
       raise IOError("Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc))
 
     if not lines:
@@ -410,8 +408,7 @@ class Fallback(Directory):
   def from_remote(timeout = 60):
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
-    except:
-      exc = sys.exc_info()[1]
+    except Exception as exc:
       raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc))
 
     if not lines:
