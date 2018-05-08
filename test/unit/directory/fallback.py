@@ -57,13 +57,6 @@ URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=rela
 /* ===== */
 """
 
-FALLBACK_ENTRY = b"""\
-"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-" ipv6=[2a01:4f8:162:51e2::2]:9001"
-/* nickname=rueckgrat */
-/* extrainfo=1 */
-"""
-
 HEADER = OrderedDict((
   ('type', 'fallback'),
   ('version', '2.0.0'),
@@ -140,31 +133,19 @@ class TestFallback(unittest.TestCase):
   def test_from_remote_malformed_header(self):
     self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.directory.Fallback.from_remote)
 
-  def test_from_str(self):
-    expected = stem.directory.Fallback(
-      address = '5.9.110.236',
-      or_port = 9001,
-      dir_port = 9030,
-      fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
-      nickname = 'rueckgrat',
-      has_extrainfo = True,
-      orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-    )
-
-    self.assertEqual(expected, stem.directory.Fallback._from_str(FALLBACK_ENTRY))
-
-  def test_from_str_malformed(self):
+  def test_from_remote_malformed(self):
     test_values = {
-      FALLBACK_ENTRY.replace(b'id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', b''): 'Malformed fallback address line:',
-      FALLBACK_ENTRY.replace(b'5.9.110.236', b'5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv4 address: 5.9.110',
-      FALLBACK_ENTRY.replace(b':9030', b':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid DirPort: 7814713228',
-      FALLBACK_ENTRY.replace(b'orport=9001', b'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid ORPort: 7814713228',
-      FALLBACK_ENTRY.replace(b'ipv6=[2a01', b'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv6 address: ::::4f8:162:51e2::2',
-      FALLBACK_ENTRY.replace(b'nickname=rueckgrat', b'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
+      FALLBACK_GITWEB_CONTENT.replace(b'id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', b''): 'Failed to parse mandatory data from:',
+      FALLBACK_GITWEB_CONTENT.replace(b'5.9.110.236', b'5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv4 address: 5.9.110',
+      FALLBACK_GITWEB_CONTENT.replace(b':9030', b':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid DirPort: 7814713228',
+      FALLBACK_GITWEB_CONTENT.replace(b'orport=9001', b'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid ORPort: 7814713228',
+      FALLBACK_GITWEB_CONTENT.replace(b'ipv6=[2a01', b'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv6 address: ::::4f8:162:51e2::2',
+      FALLBACK_GITWEB_CONTENT.replace(b'nickname=rueckgrat', b'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
     }
 
     for entry, expected in test_values.items():
-      self.assertRaisesRegexp(ValueError, re.escape(expected), stem.directory.Fallback._from_str, entry)
+      with patch(URL_OPEN, Mock(return_value = io.BytesIO(entry))):
+        self.assertRaisesRegexp(IOError, re.escape(expected), stem.directory.Fallback.from_remote)
 
   def test_persistence(self):
     expected = {
