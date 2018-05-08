@@ -75,13 +75,13 @@ FALLBACK_EXTRAINFO = re.compile('/\* extrainfo=([0-1]) \*/')
 FALLBACK_IPV6 = re.compile('" ipv6=\[([\da-f:]+)\]:(\d+)"')
 
 
-def _match_with(content, regexes, required = None):
+def _match_with(lines, regexes, required = None):
   """
   Scans the given content against a series of regex matchers, providing back a
   mapping of regexes to their capture groups. This maping is with the value if
   the regex has just a single capture group, and a tuple otherwise.
 
-  :param str content: text to parse
+  :param list lines: text to parse
   :param list regexes: regexes to match against
   :param list required: matches that must be in the content
 
@@ -90,14 +90,11 @@ def _match_with(content, regexes, required = None):
   :raises: **ValueError** if a required match is not present
   """
 
-  if isinstance(content, bytes):
-    content = str_tools._to_unicode(content)
-
   matches = {}
 
-  for line in content.splitlines():
+  for line in lines:
     for matcher in regexes:
-      m = matcher.search(line)
+      m = matcher.search(str_tools._to_unicode(line))
 
       if m:
         match_groups = m.groups()
@@ -106,7 +103,7 @@ def _match_with(content, regexes, required = None):
   if required:
     for required_matcher in required:
       if required_matcher not in matches:
-        raise ValueError('Failed to parse mandatory data from:\n\n%s' % content)
+        raise ValueError('Failed to parse mandatory data from:\n\n%s' % '\n'.join(lines))
 
   return matches
 
@@ -277,7 +274,7 @@ class Authority(Directory):
 
       if section:
         try:
-          matches = _match_with('\n'.join(section), (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR), required = (AUTHORITY_NAME, AUTHORITY_ADDR))
+          matches = _match_with(section, (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR), required = (AUTHORITY_NAME, AUTHORITY_ADDR))
           nickname, or_port = matches.get(AUTHORITY_NAME)
           address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
 
@@ -448,7 +445,7 @@ class Fallback(Directory):
 
       if section:
         try:
-          matches = _match_with('\n'.join(section), (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,))
+          matches = _match_with(section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,))
           address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
 
           results[fingerprint] = Fallback(
