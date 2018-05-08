@@ -91,17 +91,16 @@ class Directory(object):
   names, whereas fallbacks vary more and don't necessarily have a nickname to
   key off of.
 
-  .. versionchanged:: 1.3.0
-     Moved nickname from subclasses to this base class.
-
   :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
   :var str nickname: relay nickname
+  :var str orport_v6: **(address, port)** tuple for the directory's IPv6
+    ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address, or_port, dir_port, fingerprint, nickname):
+  def __init__(self, address, or_port, dir_port, fingerprint, nickname, orport_v6):
     identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
 
     if not connection.is_valid_ipv4_address(address):
@@ -115,11 +114,20 @@ class Directory(object):
     elif nickname and not tor_tools.is_valid_nickname(nickname):
       raise ValueError('%s has an invalid nickname: %s' % (fingerprint, nickname))
 
+    if orport_v6:
+      if not isinstance(orport_v6, tuple) or len(orport_v6) != 2:
+        raise ValueError('%s orport_v6 should be a two value tuple: %s' % (identifier, str(orport_v6)))
+      elif not connection.is_valid_ipv6_address(orport_v6[0]):
+        raise ValueError('%s has an invalid IPv6 address: %s' % (identifier, orport_v6[0]))
+      elif not connection.is_valid_port(orport_v6[1]):
+        raise ValueError('%s has an invalid IPv6 port: %s' % (identifier, orport_v6[1]))
+
     self.address = address
     self.or_port = int(or_port)
     self.dir_port = int(dir_port)
     self.fingerprint = fingerprint
     self.nickname = nickname
+    self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
 
   @staticmethod
   def from_cache():
@@ -169,7 +177,7 @@ class Directory(object):
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
   def __hash__(self):
-    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname')
+    return _hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'orport_v6')
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Directory) else False
@@ -187,6 +195,9 @@ class Authority(Directory):
   .. versionchanged:: 1.3.0
      Added the is_bandwidth_authority attribute.
 
+  .. versionchanged:: 1.7.0
+     Added the orport_v6 attribute.
+
   .. deprecated:: 1.7.0
      The is_bandwidth_authority attribute is deprecated and will be removed in
      the future.
@@ -194,8 +205,8 @@ class Authority(Directory):
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
-    super(Authority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, orport_v6 = None, v3ident = None, is_bandwidth_authority = False):
+    super(Authority, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
 
     if v3ident and not tor_tools.is_valid_fingerprint(v3ident):
@@ -271,7 +282,7 @@ class Authority(Directory):
 
     nickname, or_port = matches.get(AUTHORITY_NAME)
     v3ident = matches.get(AUTHORITY_V3IDENT)
-    # orport_v6 = matches.get(AUTHORITY_IPV6)  # TODO: add this to stem's data?
+    orport_v6 = matches.get(AUTHORITY_IPV6)
     address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
 
     return Authority(
@@ -280,6 +291,7 @@ class Authority(Directory):
       dir_port = dir_port,
       fingerprint = fingerprint.replace(' ', ''),
       nickname = nickname,
+      orport_v6 = orport_v6,
       v3ident = v3ident,
     )
 
@@ -339,31 +351,18 @@ class Fallback(Directory):
   .. versionadded:: 1.5.0
 
   .. versionchanged:: 1.7.0
-     Added the nickname, has_extrainfo, and header attributes which are part of
+     Added the has_extrainfo, and header attributes which are part of
      the `second version of the fallback directories
      <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
 
   :var bool has_extrainfo: **True** if the relay should be able to provide
     extrainfo descriptors, **False** otherwise.
-  :var str orport_v6: **(address, port)** tuple for the directory's IPv6
-    ORPort, or **None** if it doesn't have one
   :var dict header: metadata about the fallback directory file this originated from
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
-    super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname)
-    identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
-
-    if orport_v6:
-      if not isinstance(orport_v6, tuple) or len(orport_v6) != 2:
-        raise ValueError('%s orport_v6 should be a two value tuple: %s' % (identifier, str(orport_v6)))
-      elif not connection.is_valid_ipv6_address(orport_v6[0]):
-        raise ValueError('%s has an invalid IPv6 address: %s' % (identifier, orport_v6[0]))
-      elif not connection.is_valid_port(orport_v6[1]):
-        raise ValueError('%s has an invalid IPv6 port: %s' % (identifier, orport_v6[1]))
-
+    super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     self.has_extrainfo = has_extrainfo
-    self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
     self.header = header if header else OrderedDict()
 
   @staticmethod
@@ -556,7 +555,7 @@ class Fallback(Directory):
     conf.save(path)
 
   def __hash__(self):
-    return _hash_attr(self, 'has_extrainfo', 'orport_v6', 'header', parent = Directory)
+    return _hash_attr(self, 'has_extrainfo', 'header', parent = Directory)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Fallback) else False
@@ -626,6 +625,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 443,
     dir_port = 80,
     fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
+    orport_v6 = ('2001:858:2:2:aabb:0:563b:1526', 443),
     v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
   ),
   'dizum': Authority(
@@ -642,6 +642,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 443,
     dir_port = 80,
     fingerprint = 'F2044413DAC2E02E3D6BCF4735A19BCA1DE97281',
+    orport_v6 = ('2001:638:a000:4140::ffff:189', 443),
     v3ident = 'ED03BB616EB2F60BEC80151114BB25CEF515B226',
   ),
   'dannenberg': Authority(
@@ -658,6 +659,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 80,
     dir_port = 443,
     fingerprint = 'BD6A829255CB08E66FBE7D3748363586E46B3810',
+    orport_v6 = ('2001:67c:289c::9', 80),
     v3ident = '49015F787433103580E3B66A1707A00E60F2D15B',
   ),
   'Faravahar': Authority(
@@ -682,6 +684,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 443,
     dir_port = 80,
     fingerprint = '24E2F139121D4394C54B5BCC368B3B411857C413',
+    orport_v6 = ('2620:13:4000:6000::1000:118', 443),
     v3ident = '27102BC123E7AF1D4741AE047E160C91ADC76B21',
   ),
   'Bifroest': Authority(

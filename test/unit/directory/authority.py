@@ -35,6 +35,7 @@ class TestAuthority(unittest.TestCase):
       'dir_port': 9030,
       'fingerprint': '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
       'nickname': 'rueckgrat',
+      'orport_v6': ('2a01:4f8:162:51e2::2', 9001),
       'v3ident': '23D15D965BC35114467363C165C4F724B64B4F66',
     }
 
@@ -68,6 +69,7 @@ class TestAuthority(unittest.TestCase):
         or_port = 443,
         dir_port = 80,
         fingerprint = '847B1F850344D7876491A54892F904934E4EB85D',
+        orport_v6 = ('2001:858:2:2:aabb:0:563b:1526', 443),
         v3ident = '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
       ),
     }
