@@ -5,13 +5,11 @@ Unit tests for stem.descriptor.remote.
 import io
 import re
 import socket
-import tempfile
 import time
 import unittest
 
 import stem.descriptor.remote
 import stem.prereq
-import stem.util.conf
 import stem.util.str_tools
 
 from stem.descriptor.remote import Compression
@@ -21,12 +19,6 @@ try:
   from http.client import HTTPMessage  # python3
 except ImportError:
   from httplib import HTTPMessage  # python2
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 try:
   # added in python 3.3
@@ -77,46 +69,6 @@ Y8Tj2e7mPbFJbguulkPEBVYzyO57p4btpWEXvRMD6vxIh/eyn25pehg5dUVBtZlL
 iO3EUE0AEYah2W9gdz8t+i3Dtr0zgqLS841GC/TyDKCm+MKmN8d098qnwK0NGF9q
 01NZPuSqXM1b6hnl2espFzL7XL8XEGRU+aeg+f/ukw4=
 -----END SIGNATURE-----
-"""
-
-FALLBACK_DIR_CONTENT = b"""\
-/* type=fallback */
-/* version=2.0.0 */
-/* timestamp=20170526090242 */
-/* ===== */
-/* Whitelist & blacklist excluded 1326 of 1513 candidates. */
-/* Checked IPv4 DirPorts served a consensus within 15.0s. */
-/*
-Final Count: 151 (Eligible 187, Target 392 (1963 * 0.20), Max 200)
-Excluded: 36 (Same Operator 27, Failed/Skipped Download 9, Excess 0)
-Bandwidth Range: 1.3 - 40.0 MByte/s
-*/
-/*
-Onionoo Source: details Date: 2017-05-16 07:00:00 Version: 4.0
-URL: https:onionoo.torproject.orgdetails?fields=fingerprint%2Cnickname%2Ccontact%2Clast_changed_address_or_port%2Cconsensus_weight%2Cadvertised_bandwidth%2Cor_addresses%2Cdir_address%2Crecommended_version%2Cflags%2Ceffective_family%2Cplatform&flag=V2Dir&type=relay&last_seen_days=-0&first_seen_days=30-
-*/
-/*
-Onionoo Source: uptime Date: 2017-05-16 07:00:00 Version: 4.0
-URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=relay&last_seen_days=-0
-*/
-/* ===== */
-"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-" ipv6=[2a01:4f8:162:51e2::2]:9001"
-/* nickname=rueckgrat */
-/* extrainfo=1 */
-/* ===== */
-,
-"193.171.202.146:9030 orport=9001 id=01A9258A46E97FF8B2CAC7910577862C14F2C524"
-/* nickname= */
-/* extrainfo=0 */
-/* ===== */
-"""
-
-FALLBACK_ENTRY = b"""\
-"5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-" ipv6=[2a01:4f8:162:51e2::2]:9001"
-/* nickname=rueckgrat */
-/* extrainfo=1 */
 """
 
 HEADER = '\r\n'.join([
@@ -207,20 +159,20 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(TEST_RESOURCE, query.resource)
 
   def test_zstd_support_check(self):
-    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', True):
+    with patch('stem.prereq.is_zstd_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
       self.assertEqual([Compression.ZSTD], query.compression)
 
-    with patch('stem.descriptor.remote.ZSTD_SUPPORTED', False):
+    with patch('stem.prereq.is_zstd_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
 
   def test_lzma_support_check(self):
-    with patch('stem.descriptor.remote.LZMA_SUPPORTED', True):
+    with patch('stem.prereq.is_lzma_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.LZMA], query.compression)
 
-    with patch('stem.descriptor.remote.LZMA_SUPPORTED', False):
+    with patch('stem.prereq.is_lzma_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([Compression.PLAINTEXT], query.compression)
 
@@ -260,7 +212,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a zstd compressed descriptor.
     """
 
-    if not stem.descriptor.remote.ZSTD_SUPPORTED:
+    if not stem.prereq.is_zstd_available():
       self.skipTest('(requires zstd module)')
       return
 
@@ -279,7 +231,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a lzma compressed descriptor.
     """
 
-    if not stem.descriptor.remote.LZMA_SUPPORTED:
+    if not stem.prereq.is_lzma_available():
       self.skipTest('(requires lzma module)')
       return
 
@@ -417,135 +369,3 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
-
-  def test_using_authorities_in_hash(self):
-    # ensure our DirectoryAuthority instances can be used in hashes
-    {stem.descriptor.remote.get_authorities()['moria1']: 'hello'}
-
-  def test_fallback_directories_from_cache(self):
-    # quick sanity test that we can load cached content
-    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
-    self.assertTrue(len(fallback_directories) > 10)
-    self.assertEqual('5.39.92.199', fallback_directories['0BEA4A88D069753218EAAAD6D22EA87B9A1319D6'].address)
-
-  @patch(URL_OPEN, _dirport_mock(FALLBACK_DIR_CONTENT))
-  def test_fallback_directories_from_remote(self):
-    fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
-    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
-
-    expected = {
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
-        address = '5.9.110.236',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
-        nickname = 'rueckgrat',
-        has_extrainfo = True,
-        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-        header = header,
-      ),
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
-        address = '193.171.202.146',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
-        nickname = None,
-        has_extrainfo = False,
-        orport_v6 = None,
-        header = header,
-      ),
-    }
-
-    self.assertEqual(expected, fallback_directories)
-
-  def test_fallback_persistence(self):
-    header = OrderedDict((('type', 'fallback'), ('version', '2.0.0'), ('timestamp', '20170526090242')))
-
-    expected = {
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.descriptor.remote.FallbackDirectory(
-        address = '5.9.110.236',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
-        nickname = 'rueckgrat',
-        has_extrainfo = True,
-        orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-        header = header,
-      ),
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524': stem.descriptor.remote.FallbackDirectory(
-        address = '193.171.202.146',
-        or_port = 9001,
-        dir_port = 9030,
-        fingerprint = '01A9258A46E97FF8B2CAC7910577862C14F2C524',
-        nickname = None,
-        has_extrainfo = False,
-        orport_v6 = None,
-        header = header,
-      ),
-    }
-
-    excepted_config = {
-      'tor_commit': ['abc'],
-      'stem_commit': ['def'],
-      'header.type': ['fallback'],
-      'header.version': ['2.0.0'],
-      'header.timestamp': ['20170526090242'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.address': ['193.171.202.146'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.or_port': ['9001'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.dir_port': ['9030'],
-      '01A9258A46E97FF8B2CAC7910577862C14F2C524.has_extrainfo': ['false'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.address': ['5.9.110.236'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.or_port': ['9001'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.dir_port': ['9030'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.nickname': ['rueckgrat'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.has_extrainfo': ['true'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_address': ['2a01:4f8:162:51e2::2'],
-      '0756B7CD4DFC8182BE23143FAC0642F515182CEB.orport6_port': ['9001'],
-    }
-
-    with tempfile.NamedTemporaryFile(prefix = 'fallbacks.') as tmp:
-      stem.descriptor.remote.FallbackDirectory._write(expected, 'abc', 'def', header, tmp.name)
-
-      conf = stem.util.conf.Config()
-      conf.load(tmp.name)
-      self.assertEqual(excepted_config, dict(conf))
-
-      self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_cache(tmp.name))
-
-  @patch(URL_OPEN, _dirport_mock(b''))
-  def test_fallback_directories_from_remote_empty(self):
-    self.assertRaisesRegexp(IOError, 'did not have any content', stem.descriptor.remote.FallbackDirectory.from_remote)
-
-  @patch(URL_OPEN, _dirport_mock(b'\n'.join(FALLBACK_DIR_CONTENT.splitlines()[1:])))
-  def test_fallback_directories_from_remote_no_header(self):
-    self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.descriptor.remote.FallbackDirectory.from_remote)
-
-  @patch(URL_OPEN, _dirport_mock(FALLBACK_DIR_CONTENT.replace(b'version=2.0.0', b'version')))
-  def test_fallback_directories_from_remote_malformed_header(self):
-    self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.descriptor.remote.FallbackDirectory.from_remote)
-
-  def test_fallback_directories_from_str(self):
-    expected = stem.descriptor.remote.FallbackDirectory(
-      address = '5.9.110.236',
-      or_port = 9001,
-      dir_port = 9030,
-      fingerprint = '0756B7CD4DFC8182BE23143FAC0642F515182CEB',
-      nickname = 'rueckgrat',
-      has_extrainfo = True,
-      orport_v6 = ('2a01:4f8:162:51e2::2', 9001),
-    )
-
-    self.assertEqual(expected, stem.descriptor.remote.FallbackDirectory.from_str(FALLBACK_ENTRY))
-
-  def test_fallback_directories_from_str_malformed(self):
-    test_values = {
-      FALLBACK_ENTRY.replace(b'id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', b''): 'Malformed fallback address line:',
-      FALLBACK_ENTRY.replace(b'5.9.110.236', b'5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv4 address: 5.9.110',
-      FALLBACK_ENTRY.replace(b':9030', b':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid dir_port: 7814713228',
-      FALLBACK_ENTRY.replace(b'orport=9001', b'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid or_port: 7814713228',
-      FALLBACK_ENTRY.replace(b'ipv6=[2a01', b'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv6 address: ::::4f8:162:51e2::2',
-      FALLBACK_ENTRY.replace(b'nickname=rueckgrat', b'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
-    }
-
-    for entry, expected in test_values.items():
-      self.assertRaisesRegexp(ValueError, expected, stem.descriptor.remote.FallbackDirectory.from_str, entry)

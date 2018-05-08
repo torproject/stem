@@ -1,16 +1,16 @@
-from stem.descriptor import remote
+import stem.descriptor.remote
+import stem.directory
 
 # request votes from all the bandwidth authorities
 
 queries = {}
-downloader = remote.DescriptorDownloader()
+downloader = stem.descriptor.remote.DescriptorDownloader()
 
-for authority in remote.get_authorities().values():
-  if authority.is_bandwidth_authority:
-    queries[authority.nickname] = downloader.query(
-      '/tor/status-vote/current/authority',
-      endpoints = [(authority.address, authority.dir_port)],
-    )
+for authority in stem.directory.Authority.from_cache().values():
+  queries[authority.nickname] = downloader.query(
+    '/tor/status-vote/current/authority',
+    endpoints = [(authority.address, authority.dir_port)],
+  )
 
 for authority_name, query in queries.items():
   try:
@@ -24,6 +24,9 @@ for authority_name, query in queries.items():
       else:
         unmeasured += 1
 
-    print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
+    if measured == 0:
+      print('  %s is not a bandwidth authority' % authority_name)
+    else:
+      print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
   except Exception as exc:
     print("  failed to get the vote (%s)" % exc)

@@ -10,6 +10,7 @@ __all__ = [
   'connection',
   'control',
   'descriptor',
+  'directory',
   'exit_policy',
   'socket',
   'util',

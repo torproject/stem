@@ -17,9 +17,9 @@ import stem.prereq
 
 from stem.control import Controller
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
-from stem.descriptor.remote import DIRECTORY_AUTHORITIES
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 from stem.util import str_type
 
@@ -234,8 +234,8 @@ class TestTutorialExamples(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.Query')
-  @patch('stem.descriptor.remote.get_authorities')
-  def test_compare_flags(self, get_authorities_mock, query_mock, stdout_mock):
+  @patch('stem.directory.Authority.from_cache')
+  def test_compare_flags(self, authorities_mock, query_mock, stdout_mock):
     if stem.prereq._is_python_26():
       # example imports OrderedDict from collections which doesn't work under
       # python 2.6
@@ -243,7 +243,7 @@ class TestTutorialExamples(unittest.TestCase):
       self.skipTest("(example doesn't support python 2.6)")
       return
 
-    get_authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
+    authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
     fingerprint = [
       ('92FCB6748A40E6088E22FBAB943AB2DD743EA818', 'kvy2dIpA5giOIvurlDqy3XQ+qBg='),
@@ -281,9 +281,9 @@ class TestTutorialExamples(unittest.TestCase):
     self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
-  @patch('stem.descriptor.remote.get_authorities')
+  @patch('stem.directory.Authority.from_cache')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
-  def test_votes_by_bandwidth_authorities(self, query_mock, get_authorities_mock, stdout_mock):
+  def test_votes_by_bandwidth_authorities(self, query_mock, authorities_mock, stdout_mock):
     directory_values = [
       DIRECTORY_AUTHORITIES['gabelmoo'],
       DIRECTORY_AUTHORITIES['moria1'],
@@ -291,7 +291,7 @@ class TestTutorialExamples(unittest.TestCase):
     ]
 
     directory_values[0].address = '131.188.40.189'
-    get_authorities_mock().values.return_value = directory_values
+    authorities_mock().values.return_value = directory_values
 
     entry_with_measurement = RouterStatusEntryV3.create({'w': 'Bandwidth=1 Measured=1'})
     entry_without_measurement = RouterStatusEntryV3.create()

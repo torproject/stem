@@ -54,8 +54,7 @@ class TestInstallation(unittest.TestCase):
     # Checking that we have all non-source files. Data looks like...
     #
     #   package_data = {
-    #     'stem': ['cached_tor_manual.cfg', 'settings.cfg'],
-    #     'stem.descriptor': ['fallback_directories.cfg'],
+    #     'stem': ['cached_fallbacks.cfg', 'cached_manual.cfg', 'settings.cfg'],
     #   },
 
     package_data = {}

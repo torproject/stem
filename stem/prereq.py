@@ -16,6 +16,8 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
   is_python_3 - checks if python 3.0 or later is available
   is_sqlite_available - checks if the sqlite3 module is available
   is_crypto_available - checks if the cryptography module is available
+  is_zstd_available - checks if the zstd module is available
+  is_lzma_available - checks if the lzma module is available
   is_mock_available - checks if the mock module is available
 """
 
@@ -29,6 +31,8 @@ except ImportError:
   from stem.util.lru_cache import lru_cache
 
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
+ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
+LZMA_UNAVAILABLE = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
 PYNACL_UNAVAILABLE = "Unable to import the pynacl module. Because of this we'll be unable to verify descriptor ed25519 certificate integrity. You can get pynacl from https://pypi.python.org/pypi/PyNaCl/"
 
 
@@ -113,8 +117,6 @@ def is_crypto_available():
     otherwise
   """
 
-  from stem.util import log
-
   try:
     from cryptography.utils import int_from_bytes, int_to_bytes
     from cryptography.hazmat.backends import default_backend
@@ -127,7 +129,52 @@ def is_crypto_available():
 
     return True
   except ImportError:
+    from stem.util import log
     log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
+    return False
+
+
+@lru_cache()
+def is_zstd_available():
+  """
+  Checks if the `zstd module <https://pypi.python.org/pypi/zstandard>`_ is
+  available.
+
+  .. versionadded:: 1.7.0
+
+  :returns: **True** if we can use the zstd module and **False** otherwise
+  """
+
+  try:
+    # Unfortunately the zstandard module uses the same namespace as another
+    # zstd module (https://pypi.python.org/pypi/zstd), so we need to
+    # differentiate them.
+
+    import zstd
+    return hasattr(zstd, 'ZstdDecompressor')
+  except ImportError:
+    from stem.util import log
+    log.log_once('stem.prereq.is_zstd_available', log.INFO, ZSTD_UNAVAILABLE)
+    return False
+
+
+@lru_cache()
+def is_lzma_available():
+  """
+  Checks if the `lzma module <https://docs.python.org/3/library/lzma.html>`_ is
+  available. This was added as a builtin in Python 3.3.
+
+  .. versionadded:: 1.7.0
+
+  :returns: **True** if we can use the lzma module and **False** otherwise
+  """
+
+  try:
+    import lzma
+    return True
+  except ImportError:
+    from stem.util import log
+    log.log_once('stem.prereq.is_lzma_available', log.INFO, LZMA_UNAVAILABLE)
     return False
 
 

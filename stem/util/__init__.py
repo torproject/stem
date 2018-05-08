@@ -31,6 +31,12 @@ else:
   str_type = unicode
   int_type = long
 
+# Python hashes booleans to zero or one. Usually this would be fine, but since
+# we use hashes for equality checks we need them to be something less common.
+
+TRUE_HASH_VALUE = 4813749
+FALSE_HASH_VALUE = 5826450
+
 
 def datetime_to_unix(timestamp):
   """
@@ -72,6 +78,8 @@ def _hash_attr(obj, *attributes, **kwargs):
       elif isinstance(attr_value, (list, tuple)):
         for entry in attr_value:
           my_hash = (my_hash + hash(entry)) * 1024
+      elif isinstance(attr_value, bool):
+        my_hash += TRUE_HASH_VALUE if attr_value else FALSE_HASH_VALUE
       else:
         my_hash += hash(attr_value)
 

@@ -11,6 +11,7 @@ import stem.descriptor.networkstatus
 import stem.descriptor.remote
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
+import stem.directory
 import test.require
 
 
@@ -18,7 +19,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_via_orport(self):
-    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+    moria1 = stem.directory.Authority.from_cache()['moria1']
 
     desc = list(stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.ORPort(moria1.address, moria1.or_port)],
@@ -31,7 +32,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_via_dirport(self):
-    moria1 = stem.descriptor.remote.get_authorities()['moria1']
+    moria1 = stem.directory.Authority.from_cache()['moria1']
 
     desc = list(stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.DirPort(moria1.address, moria1.dir_port)],
@@ -73,7 +74,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       if auth.nickname == 'dannenberg-legacy':
         continue  # skip due to https://trac.torproject.org/projects/tor/ticket/17906
 
-      stem_auth = stem.descriptor.remote.get_authorities().get(auth.nickname)
+      stem_auth = stem.directory.Authority.from_cache().get(auth.nickname)
 
       if not stem_auth:
         self.fail("%s isn't a recognized directory authority in stem" % auth.nickname)
@@ -99,7 +100,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     queries = []
 
-    for nickname, authority in stem.descriptor.remote.get_authorities().items():
+    for nickname, authority in stem.directory.Authority.from_cache().items():
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',
@@ -245,47 +246,3 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertTrue(isinstance(single_query_results[0], stem.descriptor.networkstatus.KeyCertificate))
 
     self.assertEqual(2, len(list(multiple_query)))
-
-  @test.require.online
-  def test_that_cache_is_up_to_date(self):
-    """
-    Check if the cached fallback directories bundled with Stem are up to date
-    or not.
-    """
-
-    cached_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
-    latest_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
-
-    if cached_fallback_directories != latest_fallback_directories:
-      self.fail("Stem's cached fallback directories are out of date. Please run 'cache_fallback_directories.py'...\n\n%s" % stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
-
-  @test.require.online
-  def test_fallback_directory_reachability(self):
-    """
-    Fetch information from each fallback directory to confirm that it's
-    available.
-    """
-
-    # Don't run this test by default. Once upon a time it was fine, but tor has
-    # added so many fallbacks now that this takes a looong time. :(
-
-    self.skipTest('(skipped by default)')
-    return
-
-    unsuccessful = {}
-    downloader = stem.descriptor.remote.DescriptorDownloader()
-    moria1_v3ident = stem.descriptor.remote.get_authorities()['moria1'].v3ident
-
-    for fallback_directory in stem.descriptor.remote.FallbackDirectory.from_cache().values():
-      try:
-        downloader.get_key_certificates(authority_v3idents = moria1_v3ident, endpoints = [(fallback_directory.address, fallback_directory.dir_port)]).run()
-      except Exception as exc:
-        unsuccessful[fallback_directory] = exc
-
-    if unsuccessful:
-      lines = ['We were unable to contact the following fallback directories...\n']
-
-      for fallback_directory, exc in unsuccessful.items():
-        lines.append('* %s:%s (%s): %s' % (fallback_directory.address, fallback_directory.dir_port, fallback_directory.fingerprint, exc))
-
-      self.fail('\n'.join(lines))
