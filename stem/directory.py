@@ -108,6 +108,14 @@ def _match_with(lines, regexes, required = None):
   return matches
 
 
+def _directory_entries(lines, pop_section_func, regexes, required = None):
+  next_section = pop_section_func(lines)
+
+  while next_section:
+    yield _match_with(next_section, regexes, required)
+    next_section = pop_section_func(lines)
+
+
 class Directory(object):
   """
   Relay we can contact for descriptor information.
@@ -261,34 +269,30 @@ class Authority(Directory):
     if not lines:
       raise IOError('%s did not have any content' % GITWEB_AUTHORITY_URL)
 
-    results = {}
+    # Entries look like...
+    #
+    # "moria1 orport=9101 "
+    #   "v3ident=D586D18309DED4CD6D57C18FDB97EFA96D330566 "
+    #   "128.31.0.39:9131 9695 DFC3 5FFE B861 329B 9F1A B04C 4639 7020 CE31",
 
-    while lines:
-      # Entries look like...
-      #
-      # "moria1 orport=9101 "
-      #   "v3ident=D586D18309DED4CD6D57C18FDB97EFA96D330566 "
-      #   "128.31.0.39:9131 9695 DFC3 5FFE B861 329B 9F1A B04C 4639 7020 CE31",
+    try:
+      results = {}
 
-      section = Authority._pop_section(lines)
+      for matches in _directory_entries(lines, Authority._pop_section, (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR), required = (AUTHORITY_NAME, AUTHORITY_ADDR)):
+        nickname, or_port = matches.get(AUTHORITY_NAME)
+        address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
 
-      if section:
-        try:
-          matches = _match_with(section, (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR), required = (AUTHORITY_NAME, AUTHORITY_ADDR))
-          nickname, or_port = matches.get(AUTHORITY_NAME)
-          address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
-
-          results[nickname] = Authority(
-            address = address,
-            or_port = or_port,
-            dir_port = dir_port,
-            fingerprint = fingerprint.replace(' ', ''),
-            nickname = nickname,
-            orport_v6 = matches.get(AUTHORITY_IPV6),
-            v3ident = matches.get(AUTHORITY_V3IDENT),
-          )
-        except ValueError as exc:
-          raise IOError(str(exc))
+        results[nickname] = Authority(
+          address = address,
+          or_port = or_port,
+          dir_port = dir_port,
+          fingerprint = fingerprint.replace(' ', ''),
+          nickname = nickname,
+          orport_v6 = matches.get(AUTHORITY_IPV6),
+          v3ident = matches.get(AUTHORITY_V3IDENT),
+        )
+    except ValueError as exc:
+      raise IOError(str(exc))
 
     return results
 
@@ -425,41 +429,33 @@ class Fallback(Directory):
       else:
         raise IOError('Malformed fallback directory header line: %s' % line)
 
-    # human readable comments
+    Fallback._pop_section(lines)  # skip human readable comments
 
-    Fallback._pop_section(lines)
+    # Entries look like...
+    #
+    # "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
+    # " ipv6=[2a01:4f8:162:51e2::2]:9001"
+    # /* nickname=rueckgrat */
+    # /* extrainfo=1 */
 
-    # content, everything remaining are fallback directories
+    try:
+      results = {}
 
-    results = {}
+      for matches in _directory_entries(lines, Fallback._pop_section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,)):
+        address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
 
-    while lines:
-      # Entries look like...
-      #
-      # "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-      # " ipv6=[2a01:4f8:162:51e2::2]:9001"
-      # /* nickname=rueckgrat */
-      # /* extrainfo=1 */
-
-      section = Fallback._pop_section(lines)
-
-      if section:
-        try:
-          matches = _match_with(section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,))
-          address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
-
-          results[fingerprint] = Fallback(
-            address = address,
-            or_port = int(or_port),
-            dir_port = int(dir_port),
-            fingerprint = fingerprint,
-            nickname = matches.get(FALLBACK_NICKNAME),
-            has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1',
-            orport_v6 = matches.get(FALLBACK_IPV6),
-            header = header,
-          )
-        except ValueError as exc:
-          raise IOError(str(exc))
+        results[fingerprint] = Fallback(
+          address = address,
+          or_port = int(or_port),
+          dir_port = int(dir_port),
+          fingerprint = fingerprint,
+          nickname = matches.get(FALLBACK_NICKNAME),
+          has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1',
+          orport_v6 = matches.get(FALLBACK_IPV6),
+          header = header,
+        )
+    except ValueError as exc:
+      raise IOError(str(exc))
 
     return results
 
