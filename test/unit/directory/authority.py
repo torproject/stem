@@ -42,9 +42,9 @@ class TestAuthority(unittest.TestCase):
 
     for attr in authority_attr:
       for value in (None, 'something else'):
-        second_authority = dict(authority_attr)
-        second_authority[attr] = value
-        self.assertNotEqual(stem.directory.Authority(**authority_attr), stem.directory.Authority(**second_authority))
+        second_authority = stem.directory.Authority(**authority_attr)
+        setattr(second_authority, attr, value)
+        self.assertNotEqual(stem.directory.Authority(**authority_attr), second_authority)
 
   def test_from_cache(self):
     authorities = stem.directory.Authority.from_cache()

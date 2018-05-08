@@ -3,6 +3,7 @@ Unit tests for stem.directory.Fallback.
 """
 
 import io
+import re
 import tempfile
 import unittest
 
@@ -91,9 +92,9 @@ class TestFallback(unittest.TestCase):
 
     for attr in fallback_attr:
       for value in (None, 'something else'):
-        second_fallback = dict(fallback_attr)
-        second_fallback[attr] = value
-        self.assertNotEqual(stem.directory.Fallback(**fallback_attr), stem.directory.Fallback(**second_fallback))
+        second_fallback = stem.directory.Fallback(**fallback_attr)
+        setattr(second_fallback, attr, value)
+        self.assertNotEqual(stem.directory.Fallback(**fallback_attr), second_fallback)
 
   def test_from_cache(self):
     fallbacks = stem.directory.Fallback.from_cache()
@@ -155,15 +156,15 @@ class TestFallback(unittest.TestCase):
   def test_from_str_malformed(self):
     test_values = {
       FALLBACK_ENTRY.replace(b'id=0756B7CD4DFC8182BE23143FAC0642F515182CEB', b''): 'Malformed fallback address line:',
-      FALLBACK_ENTRY.replace(b'5.9.110.236', b'5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv4 address: 5.9.110',
-      FALLBACK_ENTRY.replace(b':9030', b':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid dir_port: 7814713228',
-      FALLBACK_ENTRY.replace(b'orport=9001', b'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid or_port: 7814713228',
-      FALLBACK_ENTRY.replace(b'ipv6=[2a01', b'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid IPv6 address: ::::4f8:162:51e2::2',
+      FALLBACK_ENTRY.replace(b'5.9.110.236', b'5.9.110'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv4 address: 5.9.110',
+      FALLBACK_ENTRY.replace(b':9030', b':7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid DirPort: 7814713228',
+      FALLBACK_ENTRY.replace(b'orport=9001', b'orport=7814713228'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid ORPort: 7814713228',
+      FALLBACK_ENTRY.replace(b'ipv6=[2a01', b'ipv6=[:::'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB (rueckgrat) has an invalid IPv6 address: ::::4f8:162:51e2::2',
       FALLBACK_ENTRY.replace(b'nickname=rueckgrat', b'nickname=invalid~nickname'): '0756B7CD4DFC8182BE23143FAC0642F515182CEB has an invalid nickname: invalid~nickname',
     }
 
     for entry, expected in test_values.items():
-      self.assertRaisesRegexp(ValueError, expected, stem.directory.Fallback._from_str, entry)
+      self.assertRaisesRegexp(ValueError, re.escape(expected), stem.directory.Fallback._from_str, entry)
 
   def test_persistence(self):
     expected = {

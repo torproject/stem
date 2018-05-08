@@ -102,9 +102,22 @@ class Directory(object):
   """
 
   def __init__(self, address, or_port, dir_port, fingerprint, nickname):
+    identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
+
+    if not connection.is_valid_ipv4_address(address):
+      raise ValueError('%s has an invalid IPv4 address: %s' % (identifier, address))
+    elif not connection.is_valid_port(or_port):
+      raise ValueError('%s has an invalid ORPort: %s' % (identifier, or_port))
+    elif not connection.is_valid_port(dir_port):
+      raise ValueError('%s has an invalid DirPort: %s' % (identifier, dir_port))
+    elif not tor_tools.is_valid_fingerprint(fingerprint):
+      raise ValueError('%s has an invalid fingerprint: %s' % (identifier, fingerprint))
+    elif nickname and not tor_tools.is_valid_nickname(nickname):
+      raise ValueError('%s has an invalid nickname: %s' % (fingerprint, nickname))
+
     self.address = address
-    self.or_port = or_port
-    self.dir_port = dir_port
+    self.or_port = int(or_port)
+    self.dir_port = int(dir_port)
     self.fingerprint = fingerprint
     self.nickname = nickname
 
@@ -183,6 +196,11 @@ class Authority(Directory):
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, v3ident = None, is_bandwidth_authority = False):
     super(Authority, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+    identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
+
+    if v3ident and not tor_tools.is_valid_fingerprint(v3ident):
+      raise ValueError('%s has an invalid v3ident: %s' % (identifier, v3ident))
+
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
 
@@ -253,33 +271,14 @@ class Authority(Directory):
 
     nickname, or_port = matches.get(AUTHORITY_NAME)
     v3ident = matches.get(AUTHORITY_V3IDENT)
-    orport_v6 = matches.get(AUTHORITY_IPV6)  # TODO: add this to stem's data?
+    # orport_v6 = matches.get(AUTHORITY_IPV6)  # TODO: add this to stem's data?
     address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
-
-    fingerprint = fingerprint.replace(' ', '')
-
-    if not connection.is_valid_ipv4_address(address):
-      raise ValueError('%s has an invalid IPv4 address: %s' % (nickname, address))
-    elif not connection.is_valid_port(or_port):
-      raise ValueError('%s has an invalid or_port: %s' % (nickname, or_port))
-    elif not connection.is_valid_port(dir_port):
-      raise ValueError('%s has an invalid dir_port: %s' % (nickname, dir_port))
-    elif not tor_tools.is_valid_fingerprint(fingerprint):
-      raise ValueError('%s has an invalid fingerprint: %s' % (nickname, fingerprint))
-    elif nickname and not tor_tools.is_valid_nickname(nickname):
-      raise ValueError('%s has an invalid nickname: %s' % (nickname, nickname))
-    elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
-      raise ValueError('%s has an invalid IPv6 address: %s' % (nickname, orport_v6[0]))
-    elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
-      raise ValueError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (nickname, orport_v6[1]))
-    elif v3ident and not tor_tools.is_valid_fingerprint(v3ident):
-      raise ValueError('%s has an invalid v3ident: %s' % (nickname, v3ident))
 
     return Authority(
       address = address,
-      or_port = int(or_port),
-      dir_port = int(dir_port),
-      fingerprint = fingerprint,
+      or_port = or_port,
+      dir_port = dir_port,
+      fingerprint = fingerprint.replace(' ', ''),
       nickname = nickname,
       v3ident = v3ident,
     )
@@ -353,9 +352,18 @@ class Fallback(Directory):
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
     super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname)
+    identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
+
+    if orport_v6:
+      if not isinstance(orport_v6, tuple) or len(orport_v6) != 2:
+        raise ValueError('%s orport_v6 should be a two value tuple: %s' % (identifier, str(orport_v6)))
+      elif not connection.is_valid_ipv6_address(orport_v6[0]):
+        raise ValueError('%s has an invalid IPv6 address: %s' % (identifier, orport_v6[0]))
+      elif not connection.is_valid_port(orport_v6[1]):
+        raise ValueError('%s has an invalid IPv6 port: %s' % (identifier, orport_v6[1]))
 
     self.has_extrainfo = has_extrainfo
-    self.orport_v6 = orport_v6
+    self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
     self.header = header if header else OrderedDict()
 
   @staticmethod
@@ -378,19 +386,6 @@ class Fallback(Directory):
 
         if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
           raise IOError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
-
-      if not connection.is_valid_ipv4_address(attr['address']):
-        raise IOError("'%s.address' was an invalid IPv4 address (%s)" % (fingerprint, attr['address']))
-      elif not connection.is_valid_port(attr['or_port']):
-        raise IOError("'%s.or_port' was an invalid port (%s)" % (fingerprint, attr['or_port']))
-      elif not connection.is_valid_port(attr['dir_port']):
-        raise IOError("'%s.dir_port' was an invalid port (%s)" % (fingerprint, attr['dir_port']))
-      elif attr['nickname'] and not tor_tools.is_valid_nickname(attr['nickname']):
-        raise IOError("'%s.nickname' was an invalid nickname (%s)" % (fingerprint, attr['nickname']))
-      elif attr['orport6_address'] and not connection.is_valid_ipv6_address(attr['orport6_address']):
-        raise IOError("'%s.orport6_address' was an invalid IPv6 address (%s)" % (fingerprint, attr['orport6_address']))
-      elif attr['orport6_port'] and not connection.is_valid_port(attr['orport6_port']):
-        raise IOError("'%s.orport6_port' was an invalid port (%s)" % (fingerprint, attr['orport6_port']))
 
       if attr['orport6_address'] and attr['orport6_port']:
         orport_v6 = (attr['orport6_address'], int(attr['orport6_port']))
@@ -496,21 +491,6 @@ class Fallback(Directory):
     has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1'
     orport_v6 = matches.get(FALLBACK_IPV6)
 
-    if not connection.is_valid_ipv4_address(address):
-      raise ValueError('%s has an invalid IPv4 address: %s' % (fingerprint, address))
-    elif not connection.is_valid_port(or_port):
-      raise ValueError('%s has an invalid or_port: %s' % (fingerprint, or_port))
-    elif not connection.is_valid_port(dir_port):
-      raise ValueError('%s has an invalid dir_port: %s' % (fingerprint, dir_port))
-    elif not tor_tools.is_valid_fingerprint(fingerprint):
-      raise ValueError('%s has an invalid fingerprint: %s' % (fingerprint, fingerprint))
-    elif nickname and not tor_tools.is_valid_nickname(nickname):
-      raise ValueError('%s has an invalid nickname: %s' % (fingerprint, nickname))
-    elif orport_v6 and not connection.is_valid_ipv6_address(orport_v6[0]):
-      raise ValueError('%s has an invalid IPv6 address: %s' % (fingerprint, orport_v6[0]))
-    elif orport_v6 and not connection.is_valid_port(orport_v6[1]):
-      raise ValueError('%s has an invalid ORPort for its IPv6 endpoint: %s' % (fingerprint, orport_v6[1]))
-
     return Fallback(
       address = address,
       or_port = int(or_port),
@@ -518,7 +498,7 @@ class Fallback(Directory):
       fingerprint = fingerprint,
       nickname = nickname,
       has_extrainfo = has_extrainfo,
-      orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None,
+      orport_v6 = (orport_v6[0], orport_v6[1]) if orport_v6 else None,
     )
 
   @staticmethod
