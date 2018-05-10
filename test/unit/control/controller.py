@@ -606,7 +606,20 @@ class TestControl(unittest.TestCase):
     self.controller.add_event_listener(Mock(), EventType.BW)
 
     # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
+
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, Mock(), EventType.SIGNAL)
+
+  @patch('stem.control.Controller.get_version', Mock(return_value = stem.version.Version('0.5.0.14')))
+  @patch('stem.control.Controller.msg', Mock(return_value = ControlMessage.from_str('250 OK\r\n')))
+  @patch('stem.control.Controller.add_event_listener', Mock())
+  @patch('stem.control.Controller.remove_event_listener', Mock())
+  def test_timeout(self):
+    """
+    Methods that have an 'await' argument also have an optional timeout. Check
+    that we raise a Timeout exception when it's elapsed.
+    """
+
+    self.assertRaisesRegexp(stem.Timeout, 'Reached our 0.1 second timeout', self.controller.get_hidden_service_descriptor, '5g2upl4pq6kufc4m', await_result = True, timeout = 0.1)
 
   def test_get_streams(self):
     """

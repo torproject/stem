@@ -10,12 +10,17 @@ Library for working with the tor process.
 
   ControllerError - Base exception raised when using the controller.
     |- ProtocolError - Malformed socket data.
+    |
     |- OperationFailed - Tor was unable to successfully complete the operation.
     |  |- UnsatisfiableRequest - Tor was unable to satisfy a valid request.
-    |  |  +- CircuitExtensionFailed - Attempt to make or extend a circuit failed.
-    |  |- DescriptorUnavailable - The given relay descriptor is unavailable.
+    |  |  |- CircuitExtensionFailed - Attempt to make or extend a circuit failed.
+    |  |  |- DescriptorUnavailable - The given relay descriptor is unavailable.
+    |  |  +- Timeout - Caller requested timeout was reached.
+    |  |
+    |  |
     |  +- InvalidRequest - Invalid request.
     |     +- InvalidArguments - Invalid request parameters.
+    |
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 
@@ -504,6 +509,7 @@ __all__ = [
   'UnsatisfiableRequest',
   'CircuitExtensionFailed',
   'DescriptorUnavailable',
+  'Timeout',
   'InvalidRequest',
   'InvalidArguments',
   'SocketError',
@@ -582,13 +588,27 @@ class CircuitExtensionFailed(UnsatisfiableRequest):
     self.circ = circ
 
 
-class DescriptorUnavailable(OperationFailed):
+class DescriptorUnavailable(UnsatisfiableRequest):
   """
   Tor was unable to provide a descriptor for the given relay.
+
+  .. versionchanged:: 1.7.0
+     Subclassed under UnsatisfiableRequest rather than OperationFailed.
   """
 
   def __init__(self, message):
     super(DescriptorUnavailable, self).__init__(message = message)
+
+
+class Timeout(UnsatisfiableRequest):
+  """
+  Timeout requested by the caller was reached.
+
+  .. versionadded:: 1.7.0
+  """
+
+  def __init__(self, message):
+    super(Timeout, self).__init__(message = message)
 
 
 class InvalidRequest(OperationFailed):
