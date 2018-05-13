@@ -40,6 +40,7 @@ Messages communicated over a Tor relay's ORPort.
 import datetime
 import inspect
 import io
+import numbers
 import os
 import random
 import sys
@@ -309,7 +310,7 @@ class RelayCell(CircuitCell):
       digest = Size.LONG.unpack(digest.digest()[:4])
     elif isinstance(digest, (bytes, str_type)):
       digest = Size.LONG.unpack(digest[:4])
-    elif isinstance(digest, int):
+    elif isinstance(digest, numbers.Integral):
       pass
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)

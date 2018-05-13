@@ -2,6 +2,8 @@
 Unit tests for stem.client.* contents.
 """
 
+import os
+
 __all__ = [
   'address',
   'cell',
@@ -9,8 +11,6 @@ __all__ = [
   'kdf',
   'size',
 ]
-
-import os
 
 TEST_DATA = os.path.join(os.path.dirname(__file__), 'data')
 

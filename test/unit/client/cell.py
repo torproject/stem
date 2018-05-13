@@ -74,7 +74,7 @@ CERTS_CELLS = {
 }
 
 AUTH_CHALLENGE_CELLS = {
-  b'\x00\x00\x82\x00&%s\x00\x02\x00\x01\x00\x03' % CHALLENGE: (CHALLENGE, [1, 3]),
+  b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3]),
 }
 
 
@@ -237,5 +237,5 @@ class TestCell(unittest.TestCase):
       self.assertEqual(challenge, cell.challenge)
       self.assertEqual(methods, cell.methods)
 
-    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&%s\x00\x02\x00\x01\x00\x03' % CHALLENGE[:10], 2)
-    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&%s\x00\x03\x00\x01\x00\x03' % CHALLENGE, 2)
+    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
+    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)
