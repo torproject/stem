@@ -8,10 +8,11 @@ import time
 import stem
 import stem.control
 import stem.descriptor.router_status_entry
+import stem.prereq
 import stem.response
 import stem.version
 
-from stem.util import str_type, int_type, connection, log, str_tools, tor_tools
+from stem.util import str_type, connection, log, str_tools, tor_tools
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -21,6 +22,10 @@ KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\S*)$')
 QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
 CELL_TYPE = re.compile('^[a-z0-9_]+$')
 PARSE_NEWCONSENSUS_EVENTS = True
+
+# TODO: We can remove the following when we drop python2.6 support.
+
+INT_TYPE = int if stem.prereq.is_python_3() else long
 
 
 class Event(stem.response.ControlMessage):
@@ -268,8 +273,8 @@ class BandwidthEvent(Event):
   The BW event was one of the first Control Protocol V1 events and was
   introduced in tor version 0.1.1.1-alpha.
 
-  :var long read: bytes received by tor that second
-  :var long written: bytes sent by tor that second
+  :var int read: bytes received by tor that second
+  :var int written: bytes sent by tor that second
   """
 
   _POSITIONAL_ARGS = ('read', 'written')
@@ -282,8 +287,8 @@ class BandwidthEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = int_type(self.read)
-    self.written = int_type(self.written)
+    self.read = INT_TYPE(self.read)
+    self.written = INT_TYPE(self.written)
 
 
 class BuildTimeoutSetEvent(Event):
@@ -1088,8 +1093,8 @@ class StreamBwEvent(Event):
      Added the time attribute.
 
   :var str id: stream identifier
-  :var long written: bytes sent by the application
-  :var long read: bytes received by the application
+  :var int written: bytes sent by the application
+  :var int read: bytes received by the application
   :var datetime time: time when the measurement was recorded
   """
 
@@ -1106,8 +1111,8 @@ class StreamBwEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A STREAM_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = int_type(self.read)
-    self.written = int_type(self.written)
+    self.read = INT_TYPE(self.read)
+    self.written = INT_TYPE(self.written)
     self.time = self._iso_timestamp(self.time)
 
 
@@ -1158,8 +1163,8 @@ class ConnectionBandwidthEvent(Event):
 
   :var str id: connection identifier
   :var stem.ConnectionType conn_type: connection type
-  :var long read: bytes received by tor that second
-  :var long written: bytes sent by tor that second
+  :var int read: bytes received by tor that second
+  :var int written: bytes sent by tor that second
   """
 
   _KEYWORD_ARGS = {
@@ -1185,8 +1190,8 @@ class ConnectionBandwidthEvent(Event):
     elif not tor_tools.is_valid_connection_id(self.id):
       raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = int_type(self.read)
-    self.written = int_type(self.written)
+    self.read = INT_TYPE(self.read)
+    self.written = INT_TYPE(self.written)
 
     self._log_if_unrecognized('conn_type', stem.ConnectionType)
 
@@ -1204,8 +1209,8 @@ class CircuitBandwidthEvent(Event):
      Added the time attribute.
 
   :var str id: circuit identifier
-  :var long read: bytes received by tor that second
-  :var long written: bytes sent by tor that second
+  :var int read: bytes received by tor that second
+  :var int written: bytes sent by tor that second
   :var datetime time: time when the measurement was recorded
   """
 
@@ -1230,8 +1235,8 @@ class CircuitBandwidthEvent(Event):
     elif not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = int_type(self.read)
-    self.written = int_type(self.written)
+    self.read = INT_TYPE(self.read)
+    self.written = INT_TYPE(self.written)
     self.time = self._iso_timestamp(self.time)
 
 

@@ -26,10 +26,8 @@ __all__ = [
 
 if stem.prereq.is_python_3():
   str_type = str
-  int_type = int
 else:
   str_type = unicode
-  int_type = long
 
 # Python hashes booleans to zero or one. Usually this would be fine, but since
 # we use hashes for equality checks we need them to be something less common.
