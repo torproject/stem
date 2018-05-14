@@ -1064,7 +1064,13 @@ class Controller(BaseController):
 
     def _confchanged_listener(event):
       if self.is_caching_enabled():
-        to_cache = dict((k.lower(), None) for k in event.config)
+        to_cache_changed = dict((k.lower(), v) for k, v in event.changed.items())
+        to_cache_unset = dict((k.lower(), []) for k in event.unset)  # [] represents None value in cache
+
+        to_cache = {}
+        to_cache.update(to_cache_changed)
+        to_cache.update(to_cache_unset)
+
         self._set_cache(to_cache, 'getconf')
 
         self._confchanged_cache_invalidation(to_cache)
