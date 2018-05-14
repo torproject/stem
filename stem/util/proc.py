@@ -379,65 +379,29 @@ def connections(pid = None, user = None):
         continue  # ipv6 proc contents are optional
 
       protocol = proc_file_path[10:].rstrip('6')  # 'tcp' or 'udp'
-      is_tcp, is_ipv6 = protocol == 'tcp', proc_file_path.endswith('6')
-      title = ''
+      is_ipv6 = proc_file_path.endswith('6')
 
       try:
         with open(proc_file_path, 'rb') as proc_file:
-          title = proc_file.readline()
-
-          if b'local_address' in title:
-            laddr_start = title.index(b'local_address')
-            laddr_end = laddr_start + (8 if not is_ipv6 else 32)
-
-            lport_start = laddr_end + 1
-            lport_end = lport_start + 4
-          else:
-            raise IOError("title line missing 'local_address', %s" % title)
-
-          if b'rem_address' in title or b'remote_address' in title:
-            raddr_start = title.index(b'rem_address') if b'rem_address' in title else title.index(b'remote_address')
-            raddr_end = raddr_start + (8 if not is_ipv6 else 32)
-
-            rport_start = raddr_end + 1
-            rport_end = rport_start + 4
-          else:
-            raise IOError("title line missing 'remote_address', %s" % title)
-
-          if b'st' in title:
-            status_start = title.index(b'st')
-            status_end = status_start + 2
-          else:
-            raise IOError("title line missing 'st', %s" % title)
-
-          if b'retrnsmt' in title and b'uid' in title:
-            # unlike the above fields uid is right aligned
-            uid_start = title.index(b'retrnsmt') + 9
-            uid_end = title.index(b'uid') + 3
-          elif b'retrnsmt' not in title:
-            raise IOError("title line missing 'retrnsmt', %s" % title)
-          else:
-            raise IOError("title line missing 'uid', %s" % title)
-
-          if b'timeout' in title:
-            # inodes can lack a header, and are a dynamic size
-            inode_start = title.index(b'timeout') + 8
-          else:
-            raise IOError("title line missing 'timeout', %s" % title)
+          proc_file.readline()  # skip the first line
 
           for line in proc_file:
-            if inodes and line[inode_start:].split(b' ', 1)[0] not in inodes:
+            _, l_dst, r_dst, status, _, _, _, uid, _, inode = line.split()[:10]
+
+            if inodes and inode not in inodes:
               continue
-            elif process_uid and line[uid_start:uid_end].strip() != process_uid:
+            elif process_uid and uid != process_uid:
               continue
-            elif is_tcp and line[status_start:status_end] != b'01':
+            elif protocol == 'tcp' and status != b'01':
               continue  # skip tcp connections that aren't yet established
 
-            l_addr = _unpack_addr(line[laddr_start:laddr_end])
-            l_port = int(line[lport_start:lport_end], 16)
+            div = l_dst.find(':')
+            l_addr = _unpack_addr(l_dst[:div])
+            l_port = int(l_dst[div + 1:], 16)
 
-            r_addr = _unpack_addr(line[raddr_start:raddr_end])
-            r_port = int(line[rport_start:rport_end], 16)
+            div = r_dst.find(':')
+            r_addr = _unpack_addr(r_dst[:div])
+            r_port = int(r_dst[div + 1:], 16)
 
             if r_addr == '0.0.0.0' or r_addr == '0000:0000:0000:0000:0000:0000':
               continue  # no address

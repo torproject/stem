@@ -33,6 +33,13 @@ TCP6_CONTENT = b"""\
   10: 0000000000000000FFFF00004B9E0905:1466 0000000000000000FFFF00002186364E:951E 01 00000000:00000000 02:00090E70 00000000   106        0 41512577 2 0000000000000000 26 4 31 10 -1
 """
 
+SL_WIDTH_CHANGE = b"""\
+  sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt   uid  timeout inode
+   0: 11111111:1111 22222233:2244 01 44444444:44444444 55:55555555 66666666  1111        8 99999999
+   1: 22222222:2222 33333344:3355 01 44444444:44444444 55:55555555 66666666  1111        8 88888888
+12675: 33333333:3333 44444455:4466 01 44444444:44444444 55:55555555 66666666  1111        8 77777777
+""".rstrip()
+
 
 class TestProc(unittest.TestCase):
   @patch('stem.util.proc._get_line')
@@ -216,9 +223,7 @@ class TestProc(unittest.TestCase):
     udp = TITLE_LINE + b'\n A: BBBBBBBB:BBBB CCCCCCCC:CCCC DD EEEEEEEE:EEEEEEEE FF:FFFFFFFF GGGGGGGG 1111        H IIIIIIII'
 
     path_exists_mock.side_effect = lambda param: {
-      '/proc/net/tcp': True,
       '/proc/net/tcp6': False,
-      '/proc/net/udp': True,
       '/proc/net/udp6': False
     }[param]
 
@@ -227,12 +232,12 @@ class TestProc(unittest.TestCase):
       '/proc/net/udp': io.BytesIO(udp)
     }[param]
 
-    expected_results = [
+    expected = [
       Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
       Connection('187.187.187.187', 48059, '204.204.204.204', 52428, 'udp', False),
     ]
 
-    self.assertEqual(expected_results, proc.connections(pid))
+    self.assertEqual(expected, proc.connections(pid))
 
   @patch('os.listdir')
   @patch('os.path.exists')
@@ -265,12 +270,12 @@ class TestProc(unittest.TestCase):
       '/proc/net/udp': io.BytesIO(TITLE_LINE),
     }[param]
 
-    expected_results = [
+    expected = [
       Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 443, '2001:0638:a000:4140:0000:0000:ffff:0189', 40435, 'tcp', True),
       Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 443, '2001:0858:0002:0002:aabb:0000:563b:1526', 44469, 'tcp', True),
     ]
 
-    self.assertEqual(expected_results, proc.connections(pid = pid))
+    self.assertEqual(expected, proc.connections(pid = pid))
 
   @patch('os.path.exists')
   @patch('pwd.getpwnam')
@@ -293,10 +298,52 @@ class TestProc(unittest.TestCase):
       '/proc/net/udp': io.BytesIO(TITLE_LINE),
     }[param]
 
-    expected_results = [
+    expected = [
       Connection('0000:0000:0000:0000:0000:ffff:0509:9e4b', 5222, '0000:0000:0000:0000:0000:ffff:4e36:8621', 38330, 'tcp', True),
       Connection('2a01:04f8:0190:514a:0000:0000:0000:0002', 5269, '2001:06f8:126f:0011:0000:0000:0000:0026', 50594, 'tcp', True),
       Connection('0000:0000:0000:0000:0000:ffff:0509:9e4b', 5222, '0000:0000:0000:0000:0000:ffff:4e36:8621', 38174, 'tcp', True),
     ]
 
-    self.assertEqual(expected_results, proc.connections(user = 'me'))
+    self.assertEqual(expected, proc.connections(user = 'me'))
+
+  @patch('os.listdir')
+  @patch('os.path.exists')
+  @patch('os.readlink')
+  @patch('stem.util.proc.open', create = True)
+  def test_high_connection_count(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
+    """
+    When we have over ten thousand connections the 'SL' column's width changes.
+    Checking that we account for this.
+    """
+
+    pid = 1111
+
+    listdir_mock.side_effect = lambda param: {
+      '/proc/%s/fd' % pid: ['1', '2', '3', '4'],
+    }[param]
+
+    readlink_mock.side_effect = lambda param: {
+      '/proc/%s/fd/1' % pid: 'socket:[99999999]',
+      '/proc/%s/fd/2' % pid: 'socket:[88888888]',
+      '/proc/%s/fd/3' % pid: 'socket:[77777777]',
+      '/proc/%s/fd/4' % pid: 'pipe:[30303]',
+      '/proc/%s/fd/5' % pid: 'pipe:[40404]',
+    }[param]
+
+    path_exists_mock.side_effect = lambda param: {
+      '/proc/net/tcp6': False,
+      '/proc/net/udp6': False
+    }[param]
+
+    open_mock.side_effect = lambda param, mode: {
+      '/proc/net/tcp': io.BytesIO(SL_WIDTH_CHANGE),
+      '/proc/net/udp': io.BytesIO(TITLE_LINE)
+    }[param]
+
+    expected = [
+      Connection('17.17.17.17', 4369, '51.34.34.34', 8772, 'tcp', False),
+      Connection('34.34.34.34', 8738, '68.51.51.51', 13141, 'tcp', False),
+      Connection('51.51.51.51', 13107, '85.68.68.68', 17510, 'tcp', False),
+    ]
+
+    self.assertEqual(expected, proc.connections(pid))
