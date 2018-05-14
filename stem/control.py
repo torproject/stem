@@ -2229,10 +2229,6 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         to_cache = dict((k.lower(), v) for k, v in response.entries.items())
 
-        for key in UNCACHEABLE_GETCONF_PARAMS:
-          if key in to_cache:
-            del to_cache[key]
-
         self._set_cache(to_cache, 'getconf')
 
       # Maps the entries back to the parameters that the user requested so the
@@ -3189,6 +3185,14 @@ class Controller(BaseController):
             del self._request_cache[cache_key]
 
         return
+
+      # remove uncacheable items
+      if namespace == 'getconf':
+        # shallow copy before edit so as not to change it for the caller
+        params = params.copy()
+        for key in UNCACHEABLE_GETCONF_PARAMS:
+          if key in params:
+            del params[key]
 
       for key, value in list(params.items()):
         if namespace:
