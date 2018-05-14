@@ -21,7 +21,6 @@ from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
-from stem.util import str_type
 
 from test.unit import exec_documentation_example
 
@@ -39,7 +38,7 @@ PURPOSE=%s'
 
 PATH_CONTENT = '$%s=%s,$%s=%s,$%s=%s'
 
-LIST_CIRCUITS_OUTPUT = str_type("""\
+LIST_CIRCUITS_OUTPUT = """\
 
 Circuit 4 (GENERAL)
  |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
@@ -55,9 +54,9 @@ Circuit 10 (GENERAL)
  |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
  |- 00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F (ph3x, 86.59.119.83)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
-""")
+"""
 
-EXIT_USED_OUTPUT = str_type("""\
+EXIT_USED_OUTPUT = """\
 Tracking requests for tor exits. Press 'enter' to end.
 
 Exit relay for our connection to 64.15.112.44:80
@@ -66,15 +65,15 @@ Exit relay for our connection to 64.15.112.44:80
   nickname: chaoscomputerclub19
   locale: unknown
 
-""")
+"""
 
-OUTDATED_RELAYS_OUTPUT = str_type("""\
+OUTDATED_RELAYS_OUTPUT = """\
 Checking for outdated relays...
 
   0.1.0           Sambuddha Basu
 
 2 outdated relays found, 1 had contact information
-""")
+"""
 
 COMPARE_FLAGS_OUTPUT = """\
 maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62

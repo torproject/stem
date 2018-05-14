@@ -10,9 +10,10 @@ import stem.control
 import stem.descriptor.router_status_entry
 import stem.prereq
 import stem.response
+import stem.util
 import stem.version
 
-from stem.util import str_type, connection, log, str_tools, tor_tools
+from stem.util import connection, log, str_tools, tor_tools
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -166,7 +167,7 @@ class Event(stem.response.ControlMessage):
     attr_values = getattr(self, attr)
 
     if attr_values:
-      if isinstance(attr_values, (bytes, str_type)):
+      if stem.util._is_str(attr_values):
         attr_values = [attr_values]
 
       for value in attr_values:

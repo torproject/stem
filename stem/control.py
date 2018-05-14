@@ -269,6 +269,7 @@ import stem.exit_policy
 import stem.response
 import stem.response.events
 import stem.socket
+import stem.util
 import stem.util.conf
 import stem.util.connection
 import stem.util.enum
@@ -278,7 +279,7 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import str_type, log
+from stem.util import log
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -1141,7 +1142,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, str_type)):
+    if stem.util._is_str(params):
       is_multiple = False
       params = set([params])
     else:
@@ -2191,7 +2192,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if isinstance(params, (bytes, str_type)):
+    if stem.util._is_str(params):
       params = [params]
 
     # remove strings which contain only whitespace
@@ -2433,7 +2434,7 @@ class Controller(BaseController):
         for param, value in params:
           param = param.lower()
 
-          if isinstance(value, (bytes, str_type)):
+          if stem.util._is_str(value):
             value = [value]
 
           to_cache[param] = value
@@ -3331,7 +3332,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if isinstance(features, (bytes, str_type)):
+    if stem.util._is_str(features):
       features = [features]
 
     response = self.msg('USEFEATURE %s' % ' '.join(features))
@@ -3486,7 +3487,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if isinstance(path, (bytes, str_type)):
+      if stem.util._is_str(path):
         path = [path]
 
       if path:

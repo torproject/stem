@@ -80,12 +80,13 @@ import tarfile
 import threading
 import time
 
+import stem.util
 import stem.util.enum
 import stem.util.proc
 import stem.util.str_tools
 
 from stem import UNDEFINED
-from stem.util import str_type, log
+from stem.util import log
 
 State = stem.util.enum.UppercaseEnum(
   'PENDING',
@@ -446,7 +447,7 @@ def is_running(command):
     if command_listing:
       command_listing = [c.strip() for c in command_listing]
 
-      if isinstance(command, (bytes, str_type)):
+      if stem.util._is_str(command):
         command = [command]
 
       for cmd in command:

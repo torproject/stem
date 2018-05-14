@@ -14,9 +14,10 @@ import time
 import unittest
 
 import stem.descriptor.reader
-import test.unit.descriptor
+import stem.util.str_tools
+import stem.util.system
 
-from stem.util import str_type, system
+import test.unit.descriptor
 
 try:
   # added in python 3.3
@@ -89,13 +90,13 @@ class TestDescriptorReader(unittest.TestCase):
     """
 
     test_lines = (
-      str_type('/dir/ 0'),
-      str_type('/dir/file 12345'),
-      str_type('/dir/file with spaces 7138743'),
-      str_type('  /dir/with extra space 12345   '),
-      str_type('   \t   '),
-      str_type(''),
-      str_type('/dir/after empty line 12345'),
+      '/dir/ 0',
+      '/dir/file 12345',
+      '/dir/file with spaces 7138743',
+      '  /dir/with extra space 12345   ',
+      '   \t   ',
+      '',
+      '/dir/after empty line 12345',
     )
 
     expected_value = {
@@ -106,7 +107,7 @@ class TestDescriptorReader(unittest.TestCase):
       '/dir/after empty line': 12345,
     }
 
-    open_mock.return_value = io.StringIO(str_type('\n'.join(test_lines)))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes('\n'.join(test_lines)))
     self.assertEqual(expected_value, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -115,7 +116,7 @@ class TestDescriptorReader(unittest.TestCase):
     Tests the load_processed_files() function with an empty file.
     """
 
-    open_mock.return_value = io.StringIO(str_type(''))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes(''))
     self.assertEqual({}, stem.descriptor.reader.load_processed_files(''))
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -125,7 +126,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the file path.
     """
 
-    open_mock.return_value = io.StringIO(str_type(' 12345'))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes(' 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -135,7 +136,7 @@ class TestDescriptorReader(unittest.TestCase):
     it is missing the timestamp.
     """
 
-    open_mock.return_value = io.StringIO(str_type('/dir/file '))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes('/dir/file '))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -145,7 +146,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has an invalid file path.
     """
 
-    open_mock.return_value = io.StringIO(str_type('not_an_absolute_file 12345'))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes('not_an_absolute_file 12345'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   @patch('stem.descriptor.reader.open', create = True)
@@ -155,7 +156,7 @@ class TestDescriptorReader(unittest.TestCase):
     it has a non-numeric timestamp.
     """
 
-    open_mock.return_value = io.StringIO(str_type('/dir/file 123a'))
+    open_mock.return_value = io.BytesIO(stem.util.str_tools._to_bytes('/dir/file 123a'))
     self.assertRaises(TypeError, stem.descriptor.reader.load_processed_files, '')
 
   def test_load_processed_files_from_data(self):
@@ -197,7 +198,7 @@ class TestDescriptorReader(unittest.TestCase):
     # read-only flag with os.chmod(). For more information see...
     # http://docs.python.org/library/os.html#os.chmod
 
-    if system.is_windows():
+    if stem.util.system.is_windows():
       self.skipTest('(chmod not functional)')
 
     test_listing_path = self._make_processed_files_listing(BASIC_LISTING)
@@ -418,7 +419,7 @@ class TestDescriptorReader(unittest.TestCase):
 
     # Skip on windows since SIGALRM is unavailable
 
-    if system.is_windows():
+    if stem.util.system.is_windows():
       self.skipTest('(SIGALRM unavailable)')
 
     is_test_running = True
@@ -558,7 +559,7 @@ class TestDescriptorReader(unittest.TestCase):
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
       return
-    elif system.is_windows():
+    elif stem.util.system.is_windows():
       self.skipTest('(chmod not functional)')
       return
 

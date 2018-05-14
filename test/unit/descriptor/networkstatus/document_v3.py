@@ -12,7 +12,6 @@ import stem.version
 import test.require
 
 from stem import Flag
-from stem.util import str_type
 
 from stem.descriptor import CRYPTO_BLOB
 
@@ -783,19 +782,19 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     test_values = (
       ('', {}),
-      ('fast-speed=40960', {str_type('fast-speed'): 40960}),    # numeric value
-      ('guard-wfu=94.669%', {str_type('guard-wfu'): 0.94669}),  # percentage value
-      ('guard-wfu=94.669% guard-tk=691200', {str_type('guard-wfu'): 0.94669, str_type('guard-tk'): 691200}),  # multiple values
+      ('fast-speed=40960', {'fast-speed': 40960}),    # numeric value
+      ('guard-wfu=94.669%', {'guard-wfu': 0.94669}),  # percentage value
+      ('guard-wfu=94.669% guard-tk=691200', {'guard-wfu': 0.94669, 'guard-tk': 691200}),  # multiple values
       ('stable-uptime=0 stable-mtbf=0 fast-speed=0 guard-wfu=0.000% guard-tk=0 guard-bw-inc-exits=0 guard-bw-exc-exits=0 enough-mtbf=1 ignoring-advertised-bws=0', {
-        str_type('stable-uptime'): 0,
-        str_type('stable-mtbf'): 0,
-        str_type('fast-speed'): 0,
-        str_type('guard-wfu'): 0.0,
-        str_type('guard-tk'): 0,
-        str_type('guard-bw-inc-exits'): 0,
-        str_type('guard-bw-exc-exits'): 0,
-        str_type('enough-mtbf'): 1,
-        str_type('ignoring-advertised-bws'): 0,
+        'stable-uptime': 0,
+        'stable-mtbf': 0,
+        'fast-speed': 0,
+        'guard-wfu': 0.0,
+        'guard-tk': 0,
+        'guard-bw-inc-exits': 0,
+        'guard-bw-exc-exits': 0,
+        'enough-mtbf': 1,
+        'ignoring-advertised-bws': 0,
       }),
     )
 
@@ -808,14 +807,14 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     full_line = 'stable-uptime=693369 stable-mtbf=153249 fast-speed=40960 guard-wfu=94.669% guard-tk=691200 guard-bw-inc-exits=174080 guard-bw-exc-exits=184320 enough-mtbf=1'
 
     expected_value = {
-      str_type('stable-uptime'): 693369,
-      str_type('stable-mtbf'): 153249,
-      str_type('fast-speed'): 40960,
-      str_type('guard-wfu'): 0.94669,
-      str_type('guard-tk'): 691200,
-      str_type('guard-bw-inc-exits'): 174080,
-      str_type('guard-bw-exc-exits'): 184320,
-      str_type('enough-mtbf'): 1,
+      'stable-uptime': 693369,
+      'stable-mtbf': 153249,
+      'fast-speed': 40960,
+      'guard-wfu': 0.94669,
+      'guard-tk': 691200,
+      'guard-bw-inc-exits': 174080,
+      'guard-bw-exc-exits': 184320,
+      'enough-mtbf': 1,
     }
 
     document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'flag-thresholds': full_line})

@@ -19,7 +19,6 @@ import stem.version
 import stem.util.str_tools
 import test.require
 
-from stem.util import str_type
 from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import BridgeDistribution, RelayDescriptor, BridgeDescriptor
 
@@ -42,9 +41,9 @@ except ImportError:
   from mock import Mock, patch
 
 TARFILE_FINGERPRINTS = set([
-  str_type('B6D83EC2D9E18B0A7A33428F8CFA9C536769E209'),
-  str_type('E0BD57A11F00041A9789577C53A1B784473669E4'),
-  str_type('1F43EE37A0670301AD9CB555D94AFEC2C89FDE86'),
+  'B6D83EC2D9E18B0A7A33428F8CFA9C536769E209',
+  'E0BD57A11F00041A9789577C53A1B784473669E4',
+  '1F43EE37A0670301AD9CB555D94AFEC2C89FDE86',
 ])
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, RelayDescriptor, 'nickname', 'Unnamed')

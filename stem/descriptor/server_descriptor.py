@@ -64,7 +64,6 @@ import stem.util.tor_tools
 import stem.version
 
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from stem.util import str_type
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -412,7 +411,7 @@ def _parse_history_line(keyword, history_end_attribute, history_interval_attribu
 
 def _parse_exit_policy(descriptor, entries):
   if hasattr(descriptor, '_unparsed_exit_policy'):
-    if descriptor._unparsed_exit_policy == [str_type('reject *:*')]:
+    if descriptor._unparsed_exit_policy and stem.util.str_tools._to_unicode(descriptor._unparsed_exit_policy[0]) == 'reject *:*':
       descriptor.exit_policy = REJECT_ALL_POLICY
     else:
       descriptor.exit_policy = stem.exit_policy.ExitPolicy(*descriptor._unparsed_exit_policy)

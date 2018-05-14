@@ -113,10 +113,10 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 import collections
 import hashlib
 import io
-import numbers
 import struct
 
 import stem.prereq
+import stem.util
 import stem.util.connection
 import stem.util.enum
 
@@ -159,10 +159,7 @@ class _IntegerEnum(stem.util.enum.Enum):
     Privides the (enum, int_value) tuple for a given value.
     """
 
-    # TODO: when we drop python 2.x support all "isinstance(val,
-    # numbers.Integral)" checks should become "isinstance(val, int)"
-
-    if isinstance(val, numbers.Integral):
+    if stem.util._is_int(val):
       return self._int_to_enum.get(val, self.UNKNOWN), val
     elif val in self:
       return val, self._enum_to_int.get(val, val)
@@ -314,7 +311,7 @@ class Size(Field):
     raise NotImplementedError("Use our constant's unpack() and pop() instead")
 
   def pack(self, content):
-    if not isinstance(content, numbers.Integral):
+    if not stem.util._is_int(content):
       raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
 
     packed = struct.pack(self.format, content)

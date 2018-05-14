@@ -8,7 +8,6 @@ import stem.descriptor
 import stem.exit_policy
 import test.require
 
-from stem.util import str_type
 from stem.descriptor.microdescriptor import Microdescriptor
 from test.unit.descriptor import get_resource
 
@@ -59,7 +58,7 @@ class TestMicrodescriptor(unittest.TestCase):
 
       router = next(descriptors)
       self.assertEqual(SECOND_ONION_KEY, router.onion_key)
-      self.assertEqual(str_type('r5572HzD+PMPBbXlZwBhsm6YEbxnYgis8vhZ1jmdI2k='), router.ntor_onion_key)
+      self.assertEqual('r5572HzD+PMPBbXlZwBhsm6YEbxnYgis8vhZ1jmdI2k=', router.ntor_onion_key)
       self.assertEqual([], router.or_addresses)
       self.assertEqual(['$6141629FA0D15A6AEAEF3A1BEB76E64C767B3174'], router.family)
       self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), router.exit_policy)
@@ -69,7 +68,7 @@ class TestMicrodescriptor(unittest.TestCase):
       router = next(descriptors)
       self.assertEqual(THIRD_ONION_KEY, router.onion_key)
       self.assertEqual(None, router.ntor_onion_key)
-      self.assertEqual([(str_type('2001:6b0:7:125::242'), 9001, True)], router.or_addresses)
+      self.assertEqual([('2001:6b0:7:125::242', 9001, True)], router.or_addresses)
       self.assertEqual([], router.family)
       self.assertEqual(stem.exit_policy.MicroExitPolicy('accept 80,443'), router.exit_policy)
       self.assertEqual({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
