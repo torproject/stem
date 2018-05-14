@@ -1064,9 +1064,10 @@ class Controller(BaseController):
 
     def _confchanged_listener(event):
       if self.is_caching_enabled():
-        self._set_cache(dict((k, None) for k in event.config), 'getconf')
+        to_cache = dict((k, None) for k in event.config)
+        self._set_cache(to_cache, 'getconf')
 
-        self._set_cache({'exit_policy': None})  # numerous options can change our policy
+        self._confchanged_cache_invalidation(to_cache)
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -2435,18 +2436,8 @@ class Controller(BaseController):
 
           to_cache[param] = value
 
-          if 'hidden' in param:
-            self._set_cache({'hidden_service_conf': None})
-
-        # reset any getinfo parameters that can be changed by a SETCONF
-
-        self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
-        self._set_cache(None, 'listeners')
-
         self._set_cache(to_cache, 'getconf')
-        self._set_cache({'get_custom_options': None})
-
-        self._set_cache({'exit_policy': None})  # numerous options can change our policy
+        self._confchanged_cache_invalidation(dict(params))
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
       immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
@@ -3205,6 +3196,30 @@ class Controller(BaseController):
             del self._request_cache[cache_key]
         else:
           self._request_cache[cache_key] = value
+
+  def _confchanged_cache_invalidation(self, params):
+    """
+    Drops dependent portions of the cache when configuration changes.
+
+    :param dict params: **dict** of 'config_key => value' pairs for configs
+      that changed. The entries' values are currently unused.
+    """
+
+    with self._cache_lock:
+      if not self.is_caching_enabled():
+        return
+
+      if any('hidden' in param.lower() for param in params.keys()):
+        self._set_cache({'hidden_service_conf': None})
+
+      # reset any getinfo parameters that can be changed by a SETCONF
+
+      self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
+      self._set_cache(None, 'listeners')
+
+      self._set_cache({'get_custom_options': None})
+
+      self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
   def is_caching_enabled(self):
     """
