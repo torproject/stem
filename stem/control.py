@@ -4026,14 +4026,14 @@ def _get_with_timeout(event_queue, timeout, start_time):
   """
 
   if timeout:
-    time_left = time.time() - start_time - timeout
+    time_left = timeout - (time.time() - start_time)
 
     if time_left <= 0:
       raise stem.Timeout('Reached our %0.1f second timeout' % timeout)
 
     try:
-      return event_queue.get(time_left)
-    except event_queue.Queue.Empty:
+      return event_queue.get(True, time_left)
+    except queue.Empty:
       raise stem.Timeout('Reached our %0.1f second timeout' % timeout)
   else:
     return event_queue.get()
