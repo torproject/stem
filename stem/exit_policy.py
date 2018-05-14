@@ -72,11 +72,10 @@ import socket
 import zlib
 
 import stem.prereq
+import stem.util
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
-
-from stem.util import _hash_attr, str_type
 
 try:
   # added in python 3.2
@@ -130,7 +129,7 @@ def get_config_policy(rules, ip_address = None):
   elif ip_address and stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True) and not (ip_address[0] == '[' and ip_address[-1] == ']'):
     ip_address = '[%s]' % ip_address  # ExitPolicy validation expects IPv6 addresses to be bracketed
 
-  if isinstance(rules, (bytes, str_type)):
+  if stem.util._is_str(rules):
     rules = rules.split(',')
 
   result = []
@@ -244,7 +243,7 @@ class ExitPolicy(object):
     # sanity check the types
 
     for rule in rules:
-      if not isinstance(rule, (bytes, str_type, ExitPolicyRule)):
+      if not stem.util._is_str(rule) and not isinstance(rule, ExitPolicyRule):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
@@ -255,7 +254,7 @@ class ExitPolicy(object):
     is_all_str = True
 
     for rule in rules:
-      if not isinstance(rule, (bytes, str_type)):
+      if not stem.util._is_str(rule):
         is_all_str = False
 
     if rules and is_all_str:
@@ -467,7 +466,7 @@ class ExitPolicy(object):
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
-        if isinstance(rule, str_type):
+        if stem.util._is_str(rule):
           if not rule.strip():
             continue
 
@@ -1028,7 +1027,7 @@ class ExitPolicyRule(object):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = _hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
+      self._hash = stem.util._hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
 
     return self._hash
 
@@ -1074,7 +1073,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = _hash_attr(self, 'is_accept', 'min_port', 'max_port')
+      self._hash = stem.util._hash_attr(self, 'is_accept', 'min_port', 'max_port')
 
     return self._hash
 

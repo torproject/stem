@@ -89,9 +89,9 @@ except ImportError:
 
 import stem.descriptor
 import stem.prereq
+import stem.util
+import stem.util.str_tools
 import stem.util.system
-
-from stem.util import str_type
 
 # flag to indicate when the reader thread is out of descriptor files to read
 FINISHED = 'DONE'
@@ -179,9 +179,9 @@ def load_processed_files(path):
 
   processed_files = {}
 
-  with open(path) as input_file:
+  with open(path, 'rb') as input_file:
     for line in input_file.readlines():
-      line = line.strip()
+      line = stem.util.str_tools._to_unicode(line.strip())
 
       if not line:
         continue  # skip blank lines
@@ -265,10 +265,7 @@ class DescriptorReader(object):
   """
 
   def __init__(self, target, validate = False, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
-    if isinstance(target, (bytes, str_type)):
-      self._targets = [target]
-    else:
-      self._targets = target
+    self._targets = [target] if stem.util._is_str(target) else target
 
     # expand any relative paths we got
 

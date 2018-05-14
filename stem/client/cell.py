@@ -44,9 +44,11 @@ import os
 import random
 import sys
 
+import stem.util
+
 from stem import UNDEFINED
 from stem.client.datatype import HASH_LEN, ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
-from stem.util import _hash_attr, datetime_to_unix, str_type, str_tools
+from stem.util import _hash_attr, datetime_to_unix, str_tools
 
 FIXED_PAYLOAD_LEN = 509
 AUTH_CHALLENGE_SIZE = 32
@@ -307,9 +309,9 @@ class RelayCell(CircuitCell):
       # isinstance() isn't such a great option.
 
       digest = Size.LONG.unpack(digest.digest()[:4])
-    elif isinstance(digest, (bytes, str_type)):
+    elif stem.util._is_str(digest):
       digest = Size.LONG.unpack(digest[:4])
-    elif isinstance(digest, int):
+    elif stem.util._is_int(digest):
       pass
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)

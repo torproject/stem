@@ -68,11 +68,10 @@ import string
 import tarfile
 
 import stem.prereq
+import stem.util
 import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
-
-from stem.util import str_type
 
 try:
   # added in python 2.7
@@ -205,7 +204,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   handler = None
 
-  if isinstance(descriptor_file, (bytes, str_type)):
+  if stem.util._is_str(descriptor_file):
     if stem.util.system.is_tarfile(descriptor_file):
       handler = _parse_file_for_tar_path
     else:
@@ -896,7 +895,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
 
-  if isinstance(keywords, (bytes, str_type)):
+  if stem.util._is_str(keywords):
     keywords = (keywords,)
 
   if ignore_first:
