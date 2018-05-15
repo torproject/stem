@@ -73,6 +73,10 @@ The following are only available within Stem's `git repository
   * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute (:trac:`25046`)
   * Allow 'proto' line to have blank values (:spec:`a8455f4`)
 
+ * **Utilities**
+
+  * Connection information from proc limited to 10,000 results
+
  * **Website**
 
   * Added `terminal styling <tutorials/east_of_the_sun.html#terminal-styling>`_ to our utilities tutorial
