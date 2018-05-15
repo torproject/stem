@@ -1209,9 +1209,17 @@ class CircuitBandwidthEvent(Event):
   .. versionchanged:: 1.6.0
      Added the time attribute.
 
+  .. versionchanged:: 1.7.0
+     Added the delivered_read, delivered_written, overhead_read, and
+     overhead_written attributes.
+
   :var str id: circuit identifier
   :var int read: bytes received by tor that second
   :var int written: bytes sent by tor that second
+  :var int delivered_read: description pending :trac:`26110`
+  :var int delivered_written: description pending :trac:`26110`
+  :var int overhead_read: description pending :trac:`26110`
+  :var int overhead_written: description pending :trac:`26110`
   :var datetime time: time when the measurement was recorded
   """
 
@@ -1219,6 +1227,10 @@ class CircuitBandwidthEvent(Event):
     'ID': 'id',
     'READ': 'read',
     'WRITTEN': 'written',
+    'DELIVERED_READ': 'delivered_read',
+    'DELIVERED_WRITTEN': 'delivered_written',
+    'OVERHEAD_READ': 'overhead_read',
+    'OVERHEAD_WRITTEN': 'overhead_written',
     'TIME': 'time',
   }
 
@@ -1231,14 +1243,28 @@ class CircuitBandwidthEvent(Event):
       raise stem.ProtocolError('CIRC_BW event is missing its read value')
     elif not self.written:
       raise stem.ProtocolError('CIRC_BW event is missing its written value')
-    elif not self.read.isdigit() or not self.written.isdigit():
-      raise stem.ProtocolError("A CIRC_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
+    elif not self.read.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's bytes received should be a positive numeric value, received: %s" % self)
+    elif not self.written.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's bytes sent should be a positive numeric value, received: %s" % self)
+    elif self.delivered_read and not self.delivered_read.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's delivered bytes received should be a positive numeric value, received: %s" % self)
+    elif self.delivered_written and not self.delivered_written.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's delivered bytes sent should be a positive numeric value, received: %s" % self)
+    elif self.overhead_read and not self.overhead_read.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's overhead bytes received should be a positive numeric value, received: %s" % self)
+    elif self.overhead_written and not self.overhead_written.isdigit():
+      raise stem.ProtocolError("A CIRC_BW event's overhead bytes sent should be a positive numeric value, received: %s" % self)
     elif not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = INT_TYPE(self.read)
-    self.written = INT_TYPE(self.written)
     self.time = self._iso_timestamp(self.time)
+
+    for attr in ('read', 'written', 'delivered_read', 'delivered_written', 'overhead_read', 'overhead_written'):
+      value = getattr(self, attr)
+
+      if value:
+        setattr(self, attr, INT_TYPE(value))
 
 
 class CellStatsEvent(Event):

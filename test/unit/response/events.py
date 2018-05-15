@@ -491,6 +491,7 @@ CIRC_BW_WITH_TIMESTAMP = '650 CIRC_BW ID=11 READ=272 WRITTEN=817 TIME=2012-12-06
 CIRC_BW_BAD_WRITTEN_VALUE = '650 CIRC_BW ID=11 READ=272 WRITTEN=817.7'
 CIRC_BW_BAD_MISSING_ID = '650 CIRC_BW READ=272 WRITTEN=817'
 CIRC_BW_MALFORMED_TIMESTAMP = '650 CIRC_BW ID=11 READ=272 WRITTEN=817 TIME=boom'
+CIRC_BW_WITH_EXTRA_COUNTS = '650 CIRC_BW ID=11 READ=272 WRITTEN=817 TIME=2012-12-06T13:51:11.433755 DELIVERED_READ=12 OVERHEAD_READ=34 DELIVERED_WRITTEN=56 OVERHEAD_WRITTEN=78'
 
 CELL_STATS_1 = '650 CELL_STATS ID=14 \
 OutboundQueue=19403 OutboundConn=15 \
@@ -1523,6 +1524,16 @@ class TestEvents(unittest.TestCase):
     self.assertEqual(272, event.read)
     self.assertEqual(817, event.written)
     self.assertEqual(datetime.datetime(2012, 12, 6, 13, 51, 11, 433755), event.time)
+
+    event = _get_event(CIRC_BW_WITH_EXTRA_COUNTS)
+    self.assertEqual('11', event.id)
+    self.assertEqual(272, event.read)
+    self.assertEqual(817, event.written)
+    self.assertEqual(datetime.datetime(2012, 12, 6, 13, 51, 11, 433755), event.time)
+    self.assertEqual(12, event.delivered_read)
+    self.assertEqual(56, event.delivered_written)
+    self.assertEqual(34, event.overhead_read)
+    self.assertEqual(78, event.overhead_written)
 
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_WRITTEN_VALUE)
     self.assertRaises(ProtocolError, _get_event, CIRC_BW_BAD_MISSING_ID)
