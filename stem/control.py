@@ -2432,16 +2432,8 @@ class Controller(BaseController):
       log.debug('%s (runtime: %0.4f)' % (query, time.time() - start_time))
 
       if self.is_caching_enabled():
-        to_cache = {}
-
-        for param, value in params:
-          param = param.lower()
-
-          if stem.util._is_str(value):
-            value = [value]
-
-          to_cache[param] = value
-
+        # clear cache for params; the CONF_CHANGED event will set cache for changes
+        to_cache = dict((k.lower(), None) for k, v in params)
         self._set_cache(to_cache, 'getconf')
         self._confchanged_cache_invalidation(dict(params))
     else:
