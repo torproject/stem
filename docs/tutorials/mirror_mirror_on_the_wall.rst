@@ -135,17 +135,19 @@ the network!
   FetchDirInfoEarly 1
   FetchDirInfoExtraEarly 1
 
-  # If you aren't actively using Tor as a client then Tor will eventually stop
-  # downloading descriptor information that it doesn't need. To prevent this
-  # from happening set...
+  # Tor doesn't need all descriptors to function. In particular...
+  #
+  #   * Tor no longer downloads server descriptors by default, opting
+  #     for microdescriptors instead.
+  #
+  #   * If you aren't actively using Tor as a client then Tor will
+  #     eventually stop downloading descriptor information altogether
+  #     to relieve load on the network.
+  #
+  # To download descriptors regardless of if they're needed by the
+  # Tor process or not set...
 
   FetchUselessDescriptors 1
-
-  # Tor no longer downloads server descriptors by default, opting for
-  # microdescriptors instead. If you want Tor to download server descriptors
-  # then set...
-
-  UseMicrodescriptors 0
 
   # Tor doesn't need extrainfo descriptors to work. If you want Tor to download
   # them anyway then set...
