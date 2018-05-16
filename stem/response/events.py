@@ -570,15 +570,26 @@ class ConfChangedEvent(Event):
 
   The CONF_CHANGED event was introduced in tor version 0.2.3.3-alpha.
 
-  :var dict config: mapping of configuration options to their new values
-    (**None** if the option is being unset)
+  .. deprecated:: 1.7.0
+     Deprecated the *config* attribute. Some tor configuration options (like
+     ExitPolicy) can have multiple values, so a simple 'str => str' mapping
+     meant that we only provided the last.
+
+  .. versionchanged:: 1.7.0
+     Added the changed and unset attributes.
+
+  :var dict changed: mapping of configuration options to a list of their new
+    values
+  :var list unset: configuration options that have been unset
   """
 
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Requirement.EVENT_CONF_CHANGED
 
   def _parse(self):
-    self.config = {}
+    self.changed = {}
+    self.unset = []
+    self.config = {}  # TODO: remove in stem 2.0
 
     # Skip first and last line since they're the header and footer. For
     # instance...
@@ -592,8 +603,10 @@ class ConfChangedEvent(Event):
     for line in str(self).splitlines()[1:-1]:
       if '=' in line:
         key, value = line.split('=', 1)
+        self.changed.setdefault(key, []).append(value)
       else:
         key, value = line, None
+        self.unset.append(key)
 
       self.config[key] = value
 

@@ -252,6 +252,13 @@ CONF_CHANGED_EVENT = """650-CONF_CHANGED
 650 OK
 """
 
+CONF_CHANGED_EVENT_MULTIPLE = """650-CONF_CHANGED
+650-ExitPolicy=accept 34.3.4.5
+650-ExitPolicy=accept 3.4.53.3
+650-MaxCircuitDirtiness=20
+650 OK
+"""
+
 # GUARD events from tor v0.2.1.30.
 
 GUARD_NEW = '650 GUARD ENTRY $36B5DBA788246E8369DBAF58577C6BC044A9A374 NEW'
@@ -863,15 +870,35 @@ class TestEvents(unittest.TestCase):
 
   def test_conf_changed(self):
     event = _get_event(CONF_CHANGED_EVENT)
+    self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
 
-    expected_config = {
+    self.assertEqual({
+      'ExitNodes': ['caerSidi'],
+      'MaxCircuitDirtiness': ['20'],
+    }, event.changed)
+
+    self.assertEqual(['ExitPolicy'], event.unset)
+
+    self.assertEqual({
       'ExitNodes': 'caerSidi',
       'MaxCircuitDirtiness': '20',
       'ExitPolicy': None,
-    }
+    }, event.config)
 
+    event = _get_event(CONF_CHANGED_EVENT_MULTIPLE)
     self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
-    self.assertEqual(expected_config, event.config)
+
+    self.assertEqual({
+      'ExitPolicy': ['accept 34.3.4.5', 'accept 3.4.53.3'],
+      'MaxCircuitDirtiness': ['20'],
+    }, event.changed)
+
+    self.assertEqual([], event.unset)
+
+    self.assertEqual({
+      'ExitPolicy': 'accept 3.4.53.3',  # overwrote with second value
+      'MaxCircuitDirtiness': '20',
+    }, event.config)
 
   def test_descchanged_event(self):
     # all we can check for is that the event is properly parsed as a
