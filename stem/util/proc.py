@@ -395,11 +395,11 @@ def connections(pid = None, user = None):
             elif protocol == 'tcp' and status != b'01':
               continue  # skip tcp connections that aren't yet established
 
-            div = l_dst.find(':')
+            div = l_dst.find(b':')
             l_addr = _unpack_addr(l_dst[:div])
             l_port = int(l_dst[div + 1:], 16)
 
-            div = r_dst.find(':')
+            div = r_dst.find(b':')
             r_addr = _unpack_addr(r_dst[:div])
             r_port = int(r_dst[div + 1:], 16)
 
