@@ -1064,9 +1064,16 @@ class Controller(BaseController):
 
     def _confchanged_listener(event):
       if self.is_caching_enabled():
-        self._set_cache(dict((k, None) for k in event.config), 'getconf')
+        to_cache_changed = dict((k.lower(), v) for k, v in event.changed.items())
+        to_cache_unset = dict((k.lower(), []) for k in event.unset)  # [] represents None value in cache
 
-        self._set_cache({'exit_policy': None})  # numerous options can change our policy
+        to_cache = {}
+        to_cache.update(to_cache_changed)
+        to_cache.update(to_cache_unset)
+
+        self._set_cache(to_cache, 'getconf')
+
+        self._confchanged_cache_invalidation(to_cache)
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
@@ -2229,10 +2236,6 @@ class Controller(BaseController):
       if self.is_caching_enabled():
         to_cache = dict((k.lower(), v) for k, v in response.entries.items())
 
-        for key in UNCACHEABLE_GETCONF_PARAMS:
-          if key in to_cache:
-            del to_cache[key]
-
         self._set_cache(to_cache, 'getconf')
 
       # Maps the entries back to the parameters that the user requested so the
@@ -2429,28 +2432,10 @@ class Controller(BaseController):
       log.debug('%s (runtime: %0.4f)' % (query, time.time() - start_time))
 
       if self.is_caching_enabled():
-        to_cache = {}
-
-        for param, value in params:
-          param = param.lower()
-
-          if stem.util._is_str(value):
-            value = [value]
-
-          to_cache[param] = value
-
-          if 'hidden' in param:
-            self._set_cache({'hidden_service_conf': None})
-
-        # reset any getinfo parameters that can be changed by a SETCONF
-
-        self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
-        self._set_cache(None, 'listeners')
-
+        # clear cache for params; the CONF_CHANGED event will set cache for changes
+        to_cache = dict((k.lower(), None) for k, v in params)
         self._set_cache(to_cache, 'getconf')
-        self._set_cache({'get_custom_options': None})
-
-        self._set_cache({'exit_policy': None})  # numerous options can change our policy
+        self._confchanged_cache_invalidation(dict(params))
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
       immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
@@ -3190,6 +3175,14 @@ class Controller(BaseController):
 
         return
 
+      # remove uncacheable items
+      if namespace == 'getconf':
+        # shallow copy before edit so as not to change it for the caller
+        params = params.copy()
+        for key in UNCACHEABLE_GETCONF_PARAMS:
+          if key in params:
+            del params[key]
+
       for key, value in list(params.items()):
         if namespace:
           cache_key = '%s.%s' % (namespace, key)
@@ -3201,6 +3194,30 @@ class Controller(BaseController):
             del self._request_cache[cache_key]
         else:
           self._request_cache[cache_key] = value
+
+  def _confchanged_cache_invalidation(self, params):
+    """
+    Drops dependent portions of the cache when configuration changes.
+
+    :param dict params: **dict** of 'config_key => value' pairs for configs
+      that changed. The entries' values are currently unused.
+    """
+
+    with self._cache_lock:
+      if not self.is_caching_enabled():
+        return
+
+      if any('hidden' in param.lower() for param in params.keys()):
+        self._set_cache({'hidden_service_conf': None})
+
+      # reset any getinfo parameters that can be changed by a SETCONF
+
+      self._set_cache(dict([(k.lower(), None) for k in CACHEABLE_GETINFO_PARAMS_UNTIL_SETCONF]), 'getinfo')
+      self._set_cache(None, 'listeners')
+
+      self._set_cache({'get_custom_options': None})
+
+      self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
   def is_caching_enabled(self):
     """
