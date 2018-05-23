@@ -110,6 +110,10 @@ Relays
 Descriptors
 -----------
 
+* `Download Descriptors <examples/download_descriptor.html>`_
+
+  Download a descriptor from a Tor relay's ORPort or DirPort.
+
 * `List Outdated Relays <examples/outdated_relays.html>`_
 
   Prints contact information for relays prior to a given version.

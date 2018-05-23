@@ -84,6 +84,7 @@ The following are only available within Stem's `git repository
 
   * Added `terminal styling <tutorials/east_of_the_sun.html#terminal-styling>`_ to our utilities tutorial
   * Added `multiprocessing <tutorials/east_of_the_sun.html#multiprocessing>`_ to our utilities tutorial
+  * Added a `descriptor download example <tutorials/examples/download_descriptor.html>`_
   * Added a `relay connection summary example <tutorials/examples/relay_connections.html>`_
 
 .. _version_1.6:
