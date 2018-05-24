@@ -235,20 +235,26 @@ class Circuit(object):
       orig_digest = self.forward_digest.copy()
       orig_key = copy.copy(self.forward_key)
 
+      # Digests and such are computed using the RELAY cell payload. This
+      # doesn't include the initial circuit id and cell type fields.
+      # Circuit ids vary in length depending on the protocol version.
+
+      header_size = 5 if self.relay.link_protocol > 3 else 3
+
       try:
         cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
-        payload_without_digest = cell.pack(self.relay.link_protocol)[3:]
+        payload_without_digest = cell.pack(self.relay.link_protocol)[header_size:]
         self.forward_digest.update(payload_without_digest)
 
         cell = stem.client.cell.RelayCell(self.id, command, data, self.forward_digest, stream_id)
-        header, payload = split(cell.pack(self.relay.link_protocol), 3)
+        header, payload = split(cell.pack(self.relay.link_protocol), header_size)
         encrypted_payload = header + self.forward_key.update(payload)
 
         reply = []
         self.relay._orport.send(encrypted_payload)
 
         for cell in stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol):
-          decrypted = self.backward_key.update(cell.pack(self.relay.link_protocol)[3:])
+          decrypted = self.backward_key.update(cell.pack(self.relay.link_protocol)[header_size:])
           reply.append(stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol))
 
         return reply
