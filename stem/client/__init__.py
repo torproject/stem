@@ -34,7 +34,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, Address, KDF, split
+from stem.client.datatype import ZERO, Address, Size, KDF, split
 
 __all__ = [
   'cell',
@@ -250,14 +250,32 @@ class Circuit(object):
         header, payload = split(cell.pack(self.relay.link_protocol), header_size)
         encrypted_payload = header + self.forward_key.update(payload)
 
-        reply = []
+        reply_cells = []
         self.relay._orport.send(encrypted_payload)
+        reply = self.relay._orport.recv()
 
-        for cell in stem.client.cell.Cell.unpack(self.relay._orport.recv(), self.relay.link_protocol):
-          decrypted = self.backward_key.update(cell.pack(self.relay.link_protocol)[header_size:])
-          reply.append(stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol))
+        # Check that we got the correct number of bytes for a series of RELAY cells
 
-        return reply
+        relay_cell_size = header_size + stem.client.cell.FIXED_PAYLOAD_LEN
+        relay_cell_cmd = stem.client.cell.RelayCell.VALUE
+
+        if len(reply) % relay_cell_size != 0:
+          raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
+
+        while reply:
+          circ_id, reply = Size.SHORT.pop(reply) if self.relay.link_protocol < 4 else Size.LONG.pop(reply)
+          command, reply = Size.CHAR.pop(reply)
+          payload, reply = split(reply, stem.client.cell.FIXED_PAYLOAD_LEN)
+
+          if command != relay_cell_cmd:
+            raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, command))
+          elif circ_id != self.id:
+            raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, circ_id))
+
+          decrypted = self.backward_key.update(payload)
+          reply_cells.append(stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol))
+
+        return reply_cells
       except:
         self.forward_digest = orig_digest
         self.forward_key = orig_key
