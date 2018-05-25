@@ -39,7 +39,6 @@ Messages communicated over a Tor relay's ORPort.
 
 import datetime
 import inspect
-import io
 import os
 import random
 import sys
@@ -192,24 +191,23 @@ class Cell(object):
     if isinstance(cls, CircuitCell) and circ_id is None:
       raise ValueError('%s cells require a circ_id' % cls.NAME)
 
-    cell = io.BytesIO()
-    cell.write(Size.LONG.pack(circ_id) if link_protocol > 3 else Size.SHORT.pack(circ_id))
-    cell.write(Size.CHAR.pack(cls.VALUE))
-    cell.write(b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload)))
-    cell.write(payload)
+    cell = bytearray()
+    cell += Size.LONG.pack(circ_id) if link_protocol > 3 else Size.SHORT.pack(circ_id)
+    cell += Size.CHAR.pack(cls.VALUE)
+    cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
+    cell += payload
 
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
-      cell_size = cell.seek(0, io.SEEK_END)
       fixed_cell_len = 514 if link_protocol > 3 else 512
 
-      if cell_size > fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, cell_size, fixed_cell_len))
+      if len(cell) > fixed_cell_len:
+        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), fixed_cell_len))
 
-      cell.write(ZERO * (fixed_cell_len - cell_size))
+      cell += ZERO * (fixed_cell_len - len(cell))
 
-    return cell.getvalue()
+    return bytes(cell)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -330,15 +328,15 @@ class RelayCell(CircuitCell):
         raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
   def pack(self, link_protocol):
-    payload = io.BytesIO()
-    payload.write(Size.CHAR.pack(self.command_int))
-    payload.write(Size.SHORT.pack(self.recognized))
-    payload.write(Size.SHORT.pack(self.stream_id))
-    payload.write(Size.LONG.pack(self.digest))
-    payload.write(Size.SHORT.pack(len(self.data)))
-    payload.write(self.data)
+    payload = bytearray()
+    payload += Size.CHAR.pack(self.command_int)
+    payload += Size.SHORT.pack(self.recognized)
+    payload += Size.SHORT.pack(self.stream_id)
+    payload += Size.LONG.pack(self.digest)
+    payload += Size.SHORT.pack(len(self.data))
+    payload += self.data
 
-    return RelayCell._pack(link_protocol, payload.getvalue(), self.circ_id)
+    return RelayCell._pack(link_protocol, bytes(payload), self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -521,15 +519,15 @@ class NetinfoCell(Cell):
     self.sender_addresses = sender_addresses
 
   def pack(self, link_protocol):
-    payload = io.BytesIO()
-    payload.write(Size.LONG.pack(int(datetime_to_unix(self.timestamp))))
-    payload.write(self.receiver_address.pack())
-    payload.write(Size.CHAR.pack(len(self.sender_addresses)))
+    payload = bytearray()
+    payload += Size.LONG.pack(int(datetime_to_unix(self.timestamp)))
+    payload += self.receiver_address.pack()
+    payload += Size.CHAR.pack(len(self.sender_addresses))
 
     for addr in self.sender_addresses:
-      payload.write(addr.pack())
+      payload += addr.pack()
 
-    return NetinfoCell._pack(link_protocol, payload.getvalue())
+    return NetinfoCell._pack(link_protocol, bytes(payload))
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -664,14 +662,14 @@ class AuthChallengeCell(Cell):
     self.methods = methods
 
   def pack(self, link_protocol):
-    payload = io.BytesIO()
-    payload.write(self.challenge)
-    payload.write(Size.SHORT.pack(len(self.methods)))
+    payload = bytearray()
+    payload += self.challenge
+    payload += Size.SHORT.pack(len(self.methods))
 
     for method in self.methods:
-      payload.write(Size.SHORT.pack(method))
+      payload += Size.SHORT.pack(method)
 
-    return AuthChallengeCell._pack(link_protocol, payload.getvalue())
+    return AuthChallengeCell._pack(link_protocol, bytes(payload))
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):

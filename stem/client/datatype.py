@@ -112,7 +112,6 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 
 import collections
 import hashlib
-import io
 import struct
 
 import stem.prereq
@@ -381,11 +380,11 @@ class Address(Field):
       self.value_bin = value
 
   def pack(self):
-    cell = io.BytesIO()
-    cell.write(Size.CHAR.pack(self.type_int))
-    cell.write(Size.CHAR.pack(len(self.value_bin)))
-    cell.write(self.value_bin)
-    return cell.getvalue()
+    cell = bytearray()
+    cell += Size.CHAR.pack(self.type_int)
+    cell += Size.CHAR.pack(len(self.value_bin))
+    cell += self.value_bin
+    return bytes(cell)
 
   @staticmethod
   def pop(content):
@@ -422,11 +421,11 @@ class Certificate(Field):
     self.value = value
 
   def pack(self):
-    cell = io.BytesIO()
-    cell.write(Size.CHAR.pack(self.type_int))
-    cell.write(Size.SHORT.pack(len(self.value)))
-    cell.write(self.value)
-    return cell.getvalue()
+    cell = bytearray()
+    cell += Size.CHAR.pack(self.type_int)
+    cell += Size.SHORT.pack(len(self.value))
+    cell += self.value
+    return bytes(cell)
 
   @staticmethod
   def pop(content):
