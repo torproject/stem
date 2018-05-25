@@ -846,7 +846,7 @@ def _download_from_orport(endpoint, compression, resource):
       request = '\r\n'.join((
         'GET %s HTTP/1.0' % resource,
         'Accept-Encoding: %s' % ', '.join(compression),
-        'User-Agent: Stem/%s' % stem.__version__,
+        'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
       circ.send('RELAY_BEGIN_DIR', stream_id = 1)
@@ -889,7 +889,7 @@ def _download_from_dirport(url, compression, timeout):
       url,
       headers = {
         'Accept-Encoding': ', '.join(compression),
-        'User-Agent': 'Stem/%s' % stem.__version__,
+        'User-Agent': stem.USER_AGENT,
       }
     ),
     timeout = timeout,
