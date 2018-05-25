@@ -544,6 +544,9 @@ __all__ = [
   'TimeoutSetType',
 ]
 
+# Constant that we use by default for our User-Agent when downloading descriptors
+stem.USER_AGENT = 'Stem/%s' % __version__
+
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
 # else fairly unique...
