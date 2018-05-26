@@ -34,6 +34,10 @@ PADDING_CELLS = {
   b'\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
 }
 
+# TODO: CREATE_CELLS
+
+# TODO: CREATED_CELLS
+
 RELAY_CELLS = {
   b'\x00\x01\x03\r\x00\x00\x00\x01!\xa3?\xec' + ZERO * 500: ('RELAY_BEGIN_DIR', 13, 1, 1, b'', 564346860),
   b'\x00\x01\x03\x02\x00\x00\x00\x01\x15:m\xe0\x00&GET /tor/server/authority HTTP/1.0\r\n\r\n' + ZERO * 460: ('RELAY_DATA', 2, 1, 1, b'GET /tor/server/authority HTTP/1.0\r\n\r\n', 356150752),
@@ -66,6 +70,14 @@ NETINFO_CELLS = {
   b'\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')]),
 }
 
+# TODO: RELAY_EARLY_CELLS
+
+# TODO: CREATE2_CELLS
+
+# TODO: CREATED2_CELLS
+
+# TODO: PADDING_NEGOTIATE_CELLS
+
 VPADDING_CELL_EMPTY_PACKED = b'\x00\x00\x80\x00\x00'
 
 VPADDING_CELLS = {
@@ -84,6 +96,10 @@ CERTS_CELLS = {
 AUTH_CHALLENGE_CELLS = {
   b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3]),
 }
+
+# TODO: AUTHENTICATE_CELLS
+
+# TODO: AUTHORIZE_CELLS
 
 
 class TestCell(unittest.TestCase):
