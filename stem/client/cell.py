@@ -114,7 +114,7 @@ class Cell(object):
     raise ValueError("'%s' isn't a valid cell value" % value)
 
   def pack(self, link_protocol):
-    raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
+    raise NotImplementedError('Packing not yet implemented for %s cells' % type(self).NAME)
 
   @staticmethod
   def unpack(content, link_protocol):
