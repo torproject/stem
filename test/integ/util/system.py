@@ -8,6 +8,7 @@ import os
 import tempfile
 import unittest
 
+import stem.prereq
 import stem.util.proc
 import stem.util.system
 import test.require
@@ -545,6 +546,10 @@ class TestSystem(unittest.TestCase):
     """
     Exercises the get_process_name() and set_process_name() methods.
     """
+
+    if stem.prereq.is_pypy():
+      self.skipTest('(unimplemented for pypy)')
+      return
 
     initial_name = stem.util.system.get_process_name()
     self.assertTrue('run_tests.py' in initial_name)

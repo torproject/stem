@@ -12,6 +12,8 @@ import posixpath
 import tempfile
 import unittest
 
+import stem.prereq
+
 from stem.util import system
 
 try:
@@ -154,9 +156,12 @@ class TestSystem(unittest.TestCase):
     Exercises the size_of function.
     """
 
-    self.assertTrue(system.size_of('') < system.size_of('hello') < system.size_of('hello world'))
-    self.assertTrue(system.size_of([]) < system.size_of(['hello']) < system.size_of(['hello', 'world']))
-    self.assertTrue(system.size_of({}) < system.size_of({'hello': 'world'}) < system.size_of({'hello': 'world', 'more': 'stuff'}))
+    if stem.prereq.is_pypy():
+      self.assertRaises(NotImplementedError, system.size_of, 'hello')
+    else:
+      self.assertTrue(system.size_of('') < system.size_of('hello') < system.size_of('hello world'))
+      self.assertTrue(system.size_of([]) < system.size_of(['hello']) < system.size_of(['hello', 'world']))
+      self.assertTrue(system.size_of({}) < system.size_of({'hello': 'world'}) < system.size_of({'hello': 'world', 'more': 'stuff'}))
 
   @patch('stem.util.system.call')
   @patch('stem.util.proc.is_available', Mock(return_value = False))

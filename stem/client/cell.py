@@ -302,9 +302,10 @@ class RelayCell(CircuitCell):
   IS_FIXED_SIZE = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0):
-    if 'hashlib.HASH' in str(type(digest)):
+    if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
-      # isinstance() isn't such a great option.
+      # isinstance() isn't such a great option. With python2/python3 the
+      # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH'.
 
       digest = Size.LONG.unpack(digest.digest()[:4])
     elif stem.util._is_str(digest):

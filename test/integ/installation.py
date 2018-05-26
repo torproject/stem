@@ -11,6 +11,7 @@ import time
 import unittest
 
 import stem
+import stem.prereq
 import stem.util.system
 import stem.util.test_tools
 import test
@@ -73,7 +74,11 @@ class TestInstallation(unittest.TestCase):
       try:
         stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE)
         stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
-        site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
+
+        if stem.prereq.is_pypy():
+          site_packages_paths = glob.glob('%s/site-packages' % BASE_INSTALL_PATH)
+        else:
+          site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)
       except Exception as exc:
         raise AssertionError("Unable to install with 'python setup.py install': %s" % exc)
 

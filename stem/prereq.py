@@ -22,6 +22,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 """
 
 import inspect
+import platform
 import sys
 
 try:
@@ -87,6 +88,18 @@ def is_python_3():
   """
 
   return sys.version_info[0] == 3
+
+
+def is_pypy():
+  """
+  Checks if we're running PyPy.
+
+  .. versionadded:: 1.7.0
+
+  :returns: **True** if running pypy, **False** otherwise
+  """
+
+  return platform.python_implementation() == 'PyPy'
 
 
 @lru_cache()

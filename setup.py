@@ -7,6 +7,9 @@
 #
 # * Recache latest information (cache_manual.py and cache_fallback_directories.py)
 #
+# * Run 'run_tests.py --all --target RUN_ALL,ONLINE' with python2.6, python2.7,
+#   python3, and pypy.
+#
 # * Tag the release
 #   |- Bump stem's version (in stem/__init__.py and docs/index.rst).
 #   |- git commit -a -m "Stem release 1.0.0"

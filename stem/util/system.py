@@ -80,6 +80,7 @@ import tarfile
 import threading
 import time
 
+import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.proc
@@ -94,8 +95,6 @@ State = stem.util.enum.UppercaseEnum(
   'DONE',
   'FAILED',
 )
-
-DEFAULT_SIZE = sys.getsizeof(0)  # estimate if object lacks a __sizeof__
 
 SIZE_RECURSES = {
   tuple: iter,
@@ -476,14 +475,23 @@ def size_of(obj, exclude = None):
   :param set exclude: object ids to exclude from size estimation
 
   :returns: **int** with the size of the object in bytes
+
+  :raises: **NotImplementedError** if using PyPy
   """
+
+  if stem.prereq.is_pypy():
+    raise NotImplementedError('PyPy does not implement sys.getsizeof()')
 
   if exclude is None:
     exclude = set()
   elif id(obj) in exclude:
     return 0
 
-  size = sys.getsizeof(obj, DEFAULT_SIZE)
+  try:
+    size = sys.getsizeof(obj)
+  except TypeError:
+    size = sys.getsizeof(0)  # estimate if object lacks a __sizeof__
+
   exclude.add(id(obj))
 
   if type(obj) in SIZE_RECURSES:
