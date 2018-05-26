@@ -102,8 +102,17 @@ class TestCell(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_value, 85)
     self.assertRaises(ValueError, Cell.by_value, None)
 
-  def test_unpack_not_implemented(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.pop, b'\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
+  def test_unimplemented_cell_methods(self):
+    class UnimplementedCell(Cell):
+      NAME = 'UNIMPLEMENTED'
+
+    instance = UnimplementedCell()
+
+    self.assertRaisesRegexp(NotImplementedError, '^%s$' % re.escape('Packing not yet implemented for UNIMPLEMENTED cells'), instance.pack, 2)
+
+    # ideally we'd test unpacking with Cell.pop(), but that would mean monkey-patching for Cell.pop() to see this UnimplementedCell
+    # that's probably not worth it; instead we'll use the instance method _unpack()
+    self.assertRaisesRegexp(NotImplementedError, '^%s$' % re.escape('Unpacking not yet implemented for UNIMPLEMENTED cells'), instance._unpack, b'dummy', 0, 2)
 
   def test_unpack_for_new_link(self):
     expected_certs = (

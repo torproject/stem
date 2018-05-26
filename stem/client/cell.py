@@ -130,7 +130,7 @@ class Cell(object):
     return Size.LONG if link_protocol >= 4 else Size.SHORT
 
   def pack(self, link_protocol):
-    raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
+    raise NotImplementedError('Packing not yet implemented for %s cells' % type(self).NAME)
 
   @staticmethod
   def unpack(content, link_protocol):
