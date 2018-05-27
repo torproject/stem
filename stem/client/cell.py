@@ -113,6 +113,22 @@ class Cell(object):
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
+  @staticmethod
+  def _get_circ_id_size(link_protocol):
+    """
+    Gets the proper Size for the link_protocol.
+
+    :param int link_protocol: link protocol version
+
+    :returns: :class:`~stem.client.datatype.Size`
+    """
+
+    # per tor-spec section 3
+    # CIRCID_LEN :=
+    #   2 for link protocol versions 1, 2, and 3
+    #   4 for link protocol versions 4+
+    return Size.LONG if link_protocol >= 4 else Size.SHORT
+
   def pack(self, link_protocol):
     raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
 
@@ -150,7 +166,7 @@ class Cell(object):
       * NotImplementedError if unable to unpack this cell type
     """
 
-    circ_id, content = Size.SHORT.pop(content) if link_protocol < 4 else Size.LONG.pop(content)
+    circ_id, content = Cell._get_circ_id_size(link_protocol).pop(content)
     command, content = Size.CHAR.pop(content)
     cls = Cell.by_value(command)
 
@@ -191,7 +207,7 @@ class Cell(object):
       raise ValueError('%s cells require a circ_id' % cls.NAME)
 
     cell = bytearray()
-    cell += Size.LONG.pack(circ_id) if link_protocol > 3 else Size.SHORT.pack(circ_id)
+    cell += Cell._get_circ_id_size(link_protocol).pack(circ_id)
     cell += Size.CHAR.pack(cls.VALUE)
     cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
     cell += payload
