@@ -1229,10 +1229,10 @@ class CircuitBandwidthEvent(Event):
   :var str id: circuit identifier
   :var int read: bytes received by tor that second
   :var int written: bytes sent by tor that second
-  :var int delivered_read: description pending :trac:`26110`
-  :var int delivered_written: description pending :trac:`26110`
-  :var int overhead_read: description pending :trac:`26110`
-  :var int overhead_written: description pending :trac:`26110`
+  :var int delivered_read: user payload received by tor that second
+  :var int delivered_written: user payload sent by tor that second
+  :var int overhead_read: padding so read cells will have a fixed length
+  :var int overhead_written: padding so written cells will have a fixed length
   :var datetime time: time when the measurement was recorded
   """
 
