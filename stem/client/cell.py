@@ -423,14 +423,11 @@ class DestroyCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    reason, _ = Size.CHAR.pop(content)
 
-    if not content:
-      content = ZERO
-    elif len(content) > 1:
-      raise ValueError('Circuit closure reason should be a single byte, but was %i' % len(content))
+    # remaining content (if any) is thrown out (ignored)
 
-    return DestroyCell(circ_id, Size.CHAR.unpack(content))
+    return DestroyCell(circ_id, reason)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'reason_int')
@@ -462,12 +459,14 @@ class CreateFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    key_material, _ = split(content, HASH_LEN)
 
-    if len(content) != HASH_LEN:
-      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(content)))
+    # remaining content (if any) is thrown out (ignored)
 
-    return CreateFastCell(circ_id, content)
+    if len(key_material) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
+
+    return CreateFastCell(circ_id, key_material)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'key_material')
@@ -503,12 +502,14 @@ class CreatedFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    content_to_parse, _ = split(content, HASH_LEN * 2)
 
-    if len(content) != HASH_LEN * 2:
-      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
+    # remaining content (if any) is thrown out (ignored)
 
-    key_material, derivative_key = split(content, HASH_LEN)
+    if len(content_to_parse) != HASH_LEN * 2:
+      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content_to_parse)))
+
+    key_material, derivative_key = split(content_to_parse, HASH_LEN)
     return CreatedFastCell(circ_id, derivative_key, key_material)
 
   def __hash__(self):
