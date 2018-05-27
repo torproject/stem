@@ -327,7 +327,9 @@ class Size(Field):
     return struct.unpack(self.format, packed)[0]
 
   def pop(self, packed):
-    return self.unpack(packed[:self.size]), packed[self.size:]
+    to_unpack, remainder = split(packed, self.size)
+
+    return self.unpack(to_unpack), remainder
 
 
 class Address(Field):
