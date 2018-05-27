@@ -129,6 +129,33 @@ class Cell(object):
     #   4 for link protocol versions 4+
     return Size.LONG if link_protocol >= 4 else Size.SHORT
 
+  @staticmethod
+  def _get_fixed_cell_len(link_protocol):
+    """
+    Gets the length in bytes of a fixed-size cell
+
+    :param int link_protocol: link protocol version
+
+    :returns: **int** with the number of bytes in a fixed-size cell
+    """
+
+    # fixed-width cell format, per tor-spec (section 3, Cell Packet format)
+    #
+    #   On a version 1 connection, each cell contains the following
+    #   fields:
+    #
+    #        CircID                                [CIRCID_LEN bytes]
+    #        Command                               [1 byte]
+    #        Payload (padded with 0 bytes)         [PAYLOAD_LEN bytes]
+
+    # thus...
+    #
+    # FIXED_CELL_LEN := CIRCID_LEN + COMMAND_LEN [1 byte] + FIXED_PAYLOAD_LEN
+    #   512 for link protocol versions 1,2,3
+    #   514 for link protocol versions 4+
+
+    return Cell._get_circ_id_size(link_protocol).size + 1 + FIXED_PAYLOAD_LEN
+
   def pack(self, link_protocol):
     raise NotImplementedError('Packing not yet implemented for %s cells' % type(self).NAME)
 
@@ -215,7 +242,7 @@ class Cell(object):
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
-      fixed_cell_len = 514 if link_protocol > 3 else 512
+      fixed_cell_len = Cell._get_fixed_cell_len(link_protocol)
 
       if len(cell) > fixed_cell_len:
         raise ValueError('Cell of type %s is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (cls.NAME, len(cell), fixed_cell_len, len(payload)))
