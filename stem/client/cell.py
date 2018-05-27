@@ -478,7 +478,8 @@ class CreatedFastCell(CircuitCell):
     if len(content) != HASH_LEN * 2:
       raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
 
-    return CreatedFastCell(circ_id, content[HASH_LEN:], content[:HASH_LEN])
+    key_material, derivative_key = split(content, HASH_LEN)
+    return CreatedFastCell(circ_id, derivative_key, key_material)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'derivative_key', 'key_material')
