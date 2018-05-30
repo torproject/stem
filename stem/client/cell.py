@@ -186,7 +186,7 @@ class Cell(object):
 
     :return: **bytes** with the encoded payload
 
-    :raise: **ValueError** if cell type invalid or payload is too large
+    :raise: **ValueError** if cell type invalid or payload makes cell too large
     """
 
     if isinstance(cls, CircuitCell) and circ_id is None:
@@ -204,7 +204,7 @@ class Cell(object):
 
     if cls.IS_FIXED_SIZE:
       if len(cell) > link_protocol.fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), link_protocol.fixed_cell_len))
+        raise ValueError('Cell of type %s is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (cls.NAME, len(cell), link_protocol.fixed_cell_len, len(payload)))
 
       cell += ZERO * (link_protocol.fixed_cell_len - len(cell))
 

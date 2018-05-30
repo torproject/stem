@@ -114,6 +114,20 @@ class TestCell(unittest.TestCase):
     # that's probably not worth it; instead we'll use the instance method _unpack()
     self.assertRaisesRegexp(NotImplementedError, '^%s$' % re.escape('Unpacking not yet implemented for UNIMPLEMENTED cells'), instance._unpack, b'dummy', 0, 2)
 
+  def test_payload_too_large(self):
+    class OversizedCell(Cell):
+      NAME = 'OVERSIZED'
+      VALUE = 127  # currently nonsense, but potentially will be allocated in the distant future
+      IS_FIXED_SIZE = True
+
+      def pack(self, link_protocol):
+        return OversizedCell._pack(link_protocol, ZERO * (FIXED_PAYLOAD_LEN + 1))
+
+    instance = OversizedCell()
+
+    expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
+    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), instance.pack, 2)
+
   def test_unpack_for_new_link(self):
     expected_certs = (
       (CertType.LINK, 1, b'0\x82\x02F0\x82\x01\xaf'),
