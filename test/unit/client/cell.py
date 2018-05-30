@@ -14,6 +14,7 @@ from test.unit.client import test_data
 from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
+  CircuitCell,
   PaddingCell,
   RelayCell,
   DestroyCell,
@@ -127,6 +128,29 @@ class TestCell(unittest.TestCase):
 
     expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
     self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), instance.pack, 2)
+
+  def test_circuit_cell_requires_circ_id(self):
+    class SomeCircuitCell(CircuitCell):
+      NAME = 'SOME_CIRCUIT_CELL'
+      VALUE = 127  # currently nonsense, but potentially will be allocated in the distant future
+      IS_FIXED_SIZE = True
+
+      def __init__(self):
+        pass  # don't take in a circ_id, unlike super()
+
+      def pack(self, link_protocol):
+        return SomeCircuitCell._pack(link_protocol, b'')
+
+      def pack_with_circ_id(self, link_protocol, circ_id):
+        return SomeCircuitCell._pack(link_protocol, b'', circ_id)
+
+    instance = SomeCircuitCell()
+
+    expected_message_regex = '^%s$' % re.escape('SOME_CIRCUIT_CELL cells require a non-zero circ_id')
+
+    self.assertRaisesRegexp(ValueError, expected_message_regex, instance.pack, 2)
+    self.assertRaisesRegexp(ValueError, expected_message_regex, instance.pack_with_circ_id, 2, None)
+    self.assertRaisesRegexp(ValueError, expected_message_regex, instance.pack_with_circ_id, 2, 0)
 
   def test_unpack_for_new_link(self):
     expected_certs = (

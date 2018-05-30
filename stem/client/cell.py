@@ -230,8 +230,8 @@ class Cell(object):
     :raise: **ValueError** if cell type invalid or payload makes cell too large
     """
 
-    if isinstance(cls, CircuitCell) and circ_id is None:
-      raise ValueError('%s cells require a circ_id' % cls.NAME)
+    if issubclass(cls, CircuitCell) and not circ_id:
+      raise ValueError('%s cells require a non-zero circ_id' % cls.NAME)
 
     cell = bytearray()
     cell += Cell._get_circ_id_size(link_protocol).pack(circ_id)
