@@ -505,12 +505,9 @@ class VersionsCell(Cell):
     super(VersionsCell, self).__init__()
     self.versions = versions
 
-  def pack(self, link_protocol = None):
-    # Used for link version negotiation so we don't have that yet. This is fine
-    # since VERSION cells avoid most version dependent attributes.
-
+  def pack(self, link_protocol):
     payload = b''.join([Size.SHORT.pack(v) for v in self.versions])
-    return VersionsCell._pack(2, payload)
+    return VersionsCell._pack(link_protocol, payload)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
