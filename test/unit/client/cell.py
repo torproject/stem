@@ -56,9 +56,10 @@ CREATED_FAST_CELLS = {
 }
 
 VERSIONS_CELLS = {
-  b'\x00\x00\x07\x00\x00': [],
-  b'\x00\x00\x07\x00\x02\x00\x01': [1],
-  b'\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
+  b'\x00\x00\x07\x00\x00': ([], 2),
+  b'\x00\x00\x07\x00\x02\x00\x01': ([1], 2),
+  b'\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': ([1, 2, 3], 2),
+  b'\x00\x00\x00\x00\x07\x00\x08\x00\x01\x00\x02\x00\x03\x00\x04': ([1, 2, 3, 4], 4),
 }
 
 NETINFO_CELLS = {
@@ -264,9 +265,9 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_versions_cell(self):
-    for cell_bytes, versions in VERSIONS_CELLS.items():
-      self.assertEqual(cell_bytes, VersionsCell(versions).pack())
-      self.assertEqual(versions, Cell.pop(cell_bytes, 2)[0].versions)
+    for cell_bytes, (versions, link_protocol) in VERSIONS_CELLS.items():
+      self.assertEqual(cell_bytes, VersionsCell(versions).pack(link_protocol))
+      self.assertEqual(versions, Cell.pop(cell_bytes, link_protocol)[0].versions)
 
   def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
