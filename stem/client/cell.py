@@ -588,7 +588,7 @@ class VPaddingCell(Cell):
 
   def __init__(self, size = None, payload = None):
     if payload is None:
-      payload = os.urandom(size) if size else os.urandom(random.randint(128, 1024))
+      payload = os.urandom(size) if size is not None else os.urandom(random.randint(128, 1024))
     elif size is not None and size != len(payload):
       raise ValueError('VPaddingCell constructor specified both a size of %i bytes and payload of %i bytes' % (size, len(payload)))
 
