@@ -396,6 +396,9 @@ class RelayCell(CircuitCell):
 
     # remaining content (if any) is thrown out (ignored)
 
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+
     return RelayCell(circ_id, command, data, digest, stream_id, recognized)
 
   def __hash__(self):
