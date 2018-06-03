@@ -361,7 +361,9 @@ class RelayCell(CircuitCell):
     stream_id, content = Size.SHORT.pop(content)
     digest, content = Size.LONG.pop(content)
     data_len, content = Size.SHORT.pop(content)
-    data, content = split(content, data_len)
+    data, _ = split(content, data_len)
+
+    # remaining content (if any) is thrown out (ignored)
 
     return RelayCell(circ_id, command, data, digest, stream_id, recognized)
 
@@ -560,6 +562,8 @@ class NetinfoCell(Cell):
       addr, content = Address.pop(content)
       sender_addresses.append(addr)
 
+    # remaining content (if any) is thrown out (ignored)
+
     return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp))
 
   def __hash__(self):
@@ -652,6 +656,8 @@ class CertsCell(Cell):
       cert, content = Certificate.pop(content)
       certs.append(cert)
 
+    # remaining content (if any) is thrown out (ignored)
+
     return CertsCell(certs)
 
   def __hash__(self):
@@ -706,6 +712,8 @@ class AuthChallengeCell(Cell):
     for i in range(method_count):
       method, content = Size.SHORT.pop(content)
       methods.append(method)
+
+    # remaining content (if any) is thrown out (ignored)
 
     return AuthChallengeCell(methods, challenge)
 
