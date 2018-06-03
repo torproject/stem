@@ -317,14 +317,18 @@ class RelayCell(CircuitCell):
   IS_FIXED_SIZE = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0):
+    # convert digest input into an integer, if necessary
+    digest_size = Size.LONG
     if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
       # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH'.
 
-      digest = Size.LONG.unpack(digest.digest()[:4])
+      digest_packed = digest.digest()[:digest_size.size]
+      digest = digest_size.unpack(digest_packed)
     elif stem.util._is_str(digest):
-      digest = Size.LONG.unpack(digest[:4])
+      digest_packed = digest[:digest_size.size]
+      digest = digest_size.unpack(digest_packed)
     elif stem.util._is_int(digest):
       pass
     else:
@@ -549,7 +553,7 @@ class NetinfoCell(Cell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    if len(content) < 4:
+    if len(content) < Size.LONG.size:
       raise ValueError('NETINFO cell expected to start with a timestamp')
 
     timestamp, content = Size.LONG.pop(content)
@@ -698,13 +702,14 @@ class AuthChallengeCell(Cell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    if len(content) < AUTH_CHALLENGE_SIZE + 2:
-      raise ValueError('AUTH_CHALLENGE payload should be at least 34 bytes, but was %i' % len(content))
+    min_size = AUTH_CHALLENGE_SIZE + Size.SHORT.size
+    if len(content) < min_size:
+      raise ValueError('AUTH_CHALLENGE payload should be at least %i bytes, but was %i' % (min_size, len(content)))
 
     challenge, content = split(content, AUTH_CHALLENGE_SIZE)
     method_count, content = Size.SHORT.pop(content)
 
-    if len(content) < method_count * 2:
+    if len(content) < method_count * Size.SHORT.size:
       raise ValueError('AUTH_CHALLENGE should have %i methods, but only had %i bytes for it' % (method_count, len(content)))
 
     methods = []
