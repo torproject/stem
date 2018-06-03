@@ -553,9 +553,6 @@ class NetinfoCell(Cell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    if len(content) < Size.LONG.size:
-      raise ValueError('NETINFO cell expected to start with a timestamp')
-
     timestamp, content = Size.LONG.pop(content)
     receiver_address, content = Address.pop(content)
 
