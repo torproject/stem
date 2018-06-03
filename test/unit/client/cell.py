@@ -198,6 +198,19 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, 'RELAY cell digest must be a hash, string, or int but was a list', RelayCell, 5, 'RELAY_BEGIN_DIR', '', [], 564346860)
     self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
+    mismatched_data_length_bytes = b''.join((
+      b'\x00\x01',  # circ ID
+      b'\x03',  # command
+      b'\x02',  # relay command
+      b'\x00\x00',  # 'recognized'
+      b'\x00\x01',  # stream ID
+      b'\x15:m\xe0',  # digest
+      b'\xFF\xFF',  # data len (65535, clearly invalid)
+      ZERO * 498,  # data
+    ))
+    expected_message = 'RELAY cell said it had 65535 bytes of data, but only had 498'
+    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), Cell.pop, mismatched_data_length_bytes, 2)
+
   def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int, unused) in DESTROY_CELLS.items():
       # Packed cells always pad with zeros, so if we're testing something with

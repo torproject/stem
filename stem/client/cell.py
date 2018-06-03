@@ -374,6 +374,9 @@ class RelayCell(CircuitCell):
     data_len, content = Size.SHORT.pop(content)
     data, unused = split(content, data_len)
 
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+
     return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
 
   def __hash__(self):
