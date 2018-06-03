@@ -420,11 +420,6 @@ class Address(Field):
 
   @staticmethod
   def pop(content):
-    if not content:
-      raise ValueError('Payload empty where an address was expected')
-    elif len(content) < 2:
-      raise ValueError('Insuffient data for address headers')
-
     addr_type, content = Size.CHAR.pop(content)
     addr_length, content = Size.CHAR.pop(content)
 
