@@ -24,11 +24,51 @@ __all__ = [
   'datetime_to_unix',
 ]
 
-# Python hashes booleans to zero or one. Usually this would be fine, but since
-# we use hashes for equality checks we need them to be something less common.
+# Beginning with Stem 1.7 we take attribute types into account when hashing
+# and checking equality. That is to say, if two Stem classes' attributes are
+# the same but use different types we no longer consider them to be equal.
+# For example...
+#
+#   s1 = Schedule(classes = ['Math', 'Art', 'PE'])
+#   s2 = Schedule(classes = ('Math', 'Art', 'PE'))
+#
+# Prior to Stem 1.7 s1 and s2 would be equal, but afterward unless Stem's
+# construcotr normalizes the types they won't.
+#
+# This change in behavior is the right thing to do but carries some risk, so
+# we provide the following constant to revert to legacy behavior. If you find
+# yourself using it them please let me know (https://www.atagar.com/contact/)
+# since this flag will go away in the future.
 
-TRUE_HASH_VALUE = 4813749
-FALSE_HASH_VALUE = 5826450
+HASH_TYPES = True
+
+
+def _hash_value(val):
+  if not HASH_TYPES:
+    my_hash = 0
+  else:
+    my_hash = hash(type(val))
+
+    # TODO: I hate doing this but until Python 2.x support is dropped we
+    # can't readily be strict about bytes vs unicode for attributes. This
+    # is because test assertions often use strings, and normalizing this
+    # would require wrapping most with to_unicode() calls.
+    #
+    # This hack will go away when we drop Python 2.x support.
+
+    if _is_str(val):
+      my_hash = hash(type(str))
+
+  if isinstance(val, (tuple, list)):
+    for v in val:
+      my_hash = (my_hash * 1024) + hash(v)
+  elif isinstance(val, dict):
+    for k in sorted(val.keys()):
+      my_hash = (my_hash * 2048) + (hash(k) * 1024) + hash(val[k])
+  else:
+    my_hash += hash(val)
+
+  return my_hash
 
 
 def _is_str(val):
@@ -91,23 +131,12 @@ def _hash_attr(obj, *attributes, **kwargs):
   :param class parent: parent object to include in the hash value
   """
 
-  my_hash = 0 if kwargs.get('parent') is None else kwargs.get('parent').__hash__(obj)
+  # TODO: deal with this parent thing
+
+  my_hash = hash(type(obj)) if kwargs.get('parent') is None else kwargs.get('parent').__hash__(obj)
 
   for attr in attributes:
-    my_hash *= 1024
-
-    attr_value = getattr(obj, attr)
-
-    if attr_value is not None:
-      if isinstance(attr_value, dict):
-        for k in sorted(attr_value.keys()):
-          my_hash = (my_hash + hash(k)) * 1024 + hash(attr_value[k])
-      elif isinstance(attr_value, (list, tuple)):
-        for entry in attr_value:
-          my_hash = (my_hash + hash(entry)) * 1024
-      elif isinstance(attr_value, bool):
-        my_hash += TRUE_HASH_VALUE if attr_value else FALSE_HASH_VALUE
-      else:
-        my_hash += hash(attr_value)
+    val = getattr(obj, attr)
+    my_hash = my_hash * 1024 + _hash_value(val)
 
   return my_hash

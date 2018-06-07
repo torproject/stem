@@ -359,11 +359,11 @@ class Manual(object):
   :var str synopsis: brief tor command usage
   :var str description: general description of what tor does
 
-  :var dict commandline_options: mapping of commandline arguments to their descripton
-  :var dict signals: mapping of signals tor accepts to their description
-  :var dict files: mapping of file paths to their description
+  :var collections.OrderedDict commandline_options: mapping of commandline arguments to their descripton
+  :var collections.OrderedDict signals: mapping of signals tor accepts to their description
+  :var collections.OrderedDict files: mapping of file paths to their description
 
-  :var dict config_options: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
+  :var collections.OrderedDict config_options: :class:`~stem.manual.ConfigOption` tuples for tor configuration options
 
   :var str man_commit: latest tor commit editing the man page when this
     information was cached
@@ -374,10 +374,10 @@ class Manual(object):
     self.name = name
     self.synopsis = synopsis
     self.description = description
-    self.commandline_options = commandline_options
-    self.signals = signals
-    self.files = files
-    self.config_options = config_options
+    self.commandline_options = OrderedDict(commandline_options)
+    self.signals = OrderedDict(signals)
+    self.files = OrderedDict(files)
+    self.config_options = OrderedDict(config_options)
     self.man_commit = None
     self.stem_commit = None
     self.schema = None
@@ -479,9 +479,9 @@ class Manual(object):
       conf.get('name', ''),
       conf.get('synopsis', ''),
       conf.get('description', ''),
-      conf.get('commandline_options', {}),
-      conf.get('signals', {}),
-      conf.get('files', {}),
+      conf.get('commandline_options', OrderedDict()),
+      conf.get('signals', OrderedDict()),
+      conf.get('files', OrderedDict()),
       config_options,
     )
 

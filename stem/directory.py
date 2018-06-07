@@ -352,19 +352,19 @@ class Fallback(Directory):
   .. versionadded:: 1.5.0
 
   .. versionchanged:: 1.7.0
-     Added the has_extrainfo, and header attributes which are part of
+     Added the has_extrainfo and header attributes which are part of
      the `second version of the fallback directories
      <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_.
 
   :var bool has_extrainfo: **True** if the relay should be able to provide
     extrainfo descriptors, **False** otherwise.
-  :var dict header: metadata about the fallback directory file this originated from
+  :var collections.OrderedDict header: metadata about the fallback directory file this originated from
   """
 
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
     super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     self.has_extrainfo = has_extrainfo
-    self.header = header if header else OrderedDict()
+    self.header = OrderedDict(header) if header else OrderedDict()
 
   @staticmethod
   def from_cache(path = FALLBACK_CACHE_PATH):

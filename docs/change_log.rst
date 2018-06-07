@@ -22,7 +22,7 @@ Versioning
 
 Stem uses `semantic versioning <http://semver.org/>`_, which means that
 **versions consist of three numbers** (such as '**1.2.4**'). These are used to
-convey the kind of backward compatibility a release has...
+convey the kind of backward compatibility you can expect...
 
  * The first value is the **major version**. This changes infrequently, and
    indicates that backward incompatible changes have been made (such as the
@@ -80,6 +80,7 @@ The following are only available within Stem's `git repository
 
   * Fixed PyPy compatibility (:trac:`26207`)
   * Connection information from proc limited to 10,000 results
+  * Accouting for attribute types in most equality checks and hashes
 
  * **Website**
 

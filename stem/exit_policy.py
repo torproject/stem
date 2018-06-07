@@ -656,6 +656,8 @@ class ExitPolicyRule(object):
     # policy ::= "accept[6]" exitpattern | "reject[6]" exitpattern
     # exitpattern ::= addrspec ":" portspec
 
+    rule = stem.util.str_tools._to_unicode(rule)
+
     self.is_accept = rule.startswith('accept')
     is_ipv6_only = rule.startswith('accept6') or rule.startswith('reject6')
 
