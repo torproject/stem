@@ -48,7 +48,7 @@ from stem import UNDEFINED
 from stem.client.datatype import HASH_LEN, ZERO, LinkProtocol, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import _hash_attr, datetime_to_unix, str_tools
 
-FIXED_PAYLOAD_LEN = 509
+FIXED_PAYLOAD_LEN = 509  # PAYLOAD_LEN, per tor-spec section 0.2
 AUTH_CHALLENGE_SIZE = 32
 RELAY_DIGEST_SIZE = Size.LONG
 
