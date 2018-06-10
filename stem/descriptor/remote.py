@@ -100,6 +100,7 @@ import zlib
 
 import stem
 import stem.client
+from stem.client.datatype import RelayCommand
 import stem.descriptor
 import stem.directory
 import stem.prereq
@@ -849,8 +850,8 @@ def _download_from_orport(endpoint, compression, resource):
         'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
-      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      response = b''.join([cell.data for cell in circ.send('RELAY_DATA', request, stream_id = 1)])
+      circ.send(RelayCommand.BEGIN_DIR, stream_id = 1)
+      response = b''.join([cell.data for cell in circ.send(RelayCommand.DATA, request, stream_id = 1)])
       first_line, data = response.split(b'\r\n', 1)
       header_data, data = data.split(b'\r\n\r\n', 1)
 
