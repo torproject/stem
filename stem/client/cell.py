@@ -343,10 +343,10 @@ class RelayCell(CircuitCell):
 
     super(RelayCell, self).__init__(circ_id, unused)
     self.command, self.command_int = RelayCommand.get(command)
-    self.data = str_tools._to_bytes(data)
     self.recognized = recognized
-    self.digest = digest
     self.stream_id = stream_id
+    self.digest = digest
+    self.data = str_tools._to_bytes(data)
 
     if digest == 0:
       if not stream_id and self.command in STREAM_ID_REQUIRED:
