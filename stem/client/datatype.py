@@ -157,7 +157,7 @@ class _IntegerEnum(stem.util.enum.Enum):
 
   def get(self, val):
     """
-    Privides the (enum, int_value) tuple for a given value.
+    Provides the (enum, int_value) tuple for a given value.
     """
 
     if stem.util._is_int(val):
