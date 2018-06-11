@@ -27,7 +27,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     ).run())[0]
 
     self.assertEqual('moria1', desc.nickname)
-    self.assertTrue(isinstance(desc, stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor))
+    self.assertTrue(isinstance(desc, stem.descriptor.server_descriptor.ServerDescriptor))
 
   @test.require.only_run_once
   @test.require.online
@@ -40,7 +40,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     ).run())[0]
 
     self.assertEqual('moria1', desc.nickname)
-    self.assertTrue(isinstance(desc, stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor))
+    self.assertTrue(isinstance(desc, stem.descriptor.server_descriptor.ServerDescriptor))
 
   @test.require.only_run_once
   @test.require.online
@@ -158,7 +158,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     single_query_results = list(single_query)
     self.assertEqual(1, len(single_query_results))
     self.assertEqual('moria1', single_query_results[0].nickname)
-    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.stem.descriptor.server_descriptor.ServerDescriptor))
+    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.server_descriptor.ServerDescriptor))
 
     self.assertEqual(2, len(list(multiple_query)))
 
