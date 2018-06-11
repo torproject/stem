@@ -18,6 +18,7 @@ import test.require
 class TestDescriptorDownloader(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
+  @test.require.cryptography
   def test_downloading_via_orport(self):
     moria1 = stem.directory.Authority.from_cache()['moria1']
 
