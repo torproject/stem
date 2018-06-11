@@ -40,7 +40,6 @@ Messages communicated over a Tor relay's ORPort.
 import datetime
 import inspect
 import os
-import random
 import sys
 
 import stem.util
@@ -49,7 +48,7 @@ from stem import UNDEFINED
 from stem.client.datatype import HASH_LEN, ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import _hash_attr, datetime_to_unix, str_tools
 
-FIXED_PAYLOAD_LEN = 509
+FIXED_PAYLOAD_LEN = 509  # PAYLOAD_LEN, per tor-spec section 0.2
 AUTH_CHALLENGE_SIZE = 32
 
 STREAM_ID_REQUIRED = (
@@ -114,8 +113,51 @@ class Cell(object):
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
+  @staticmethod
+  def _get_circ_id_size(link_protocol):
+    """
+    Gets the proper Size for the link_protocol.
+
+    :param int link_protocol: link protocol version
+
+    :returns: :class:`~stem.client.datatype.Size`
+    """
+
+    # per tor-spec section 3
+    # CIRCID_LEN :=
+    #   2 for link protocol versions 1, 2, and 3
+    #   4 for link protocol versions 4+
+    return Size.LONG if link_protocol >= 4 else Size.SHORT
+
+  @staticmethod
+  def _get_fixed_cell_len(link_protocol):
+    """
+    Gets the length in bytes of a fixed-size cell
+
+    :param int link_protocol: link protocol version
+
+    :returns: **int** with the number of bytes in a fixed-size cell
+    """
+
+    # fixed-width cell format, per tor-spec (section 3, Cell Packet format)
+    #
+    #   On a version 1 connection, each cell contains the following
+    #   fields:
+    #
+    #        CircID                                [CIRCID_LEN bytes]
+    #        Command                               [1 byte]
+    #        Payload (padded with 0 bytes)         [PAYLOAD_LEN bytes]
+
+    # thus...
+    #
+    # FIXED_CELL_LEN := CIRCID_LEN + COMMAND_LEN [1 byte] + FIXED_PAYLOAD_LEN
+    #   512 for link protocol versions 1,2,3
+    #   514 for link protocol versions 4+
+
+    return Cell._get_circ_id_size(link_protocol).size + 1 + FIXED_PAYLOAD_LEN
+
   def pack(self, link_protocol):
-    raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
+    raise NotImplementedError('Packing not yet implemented for %s cells' % type(self).NAME)
 
   @staticmethod
   def unpack(content, link_protocol):
@@ -151,7 +193,7 @@ class Cell(object):
       * NotImplementedError if unable to unpack this cell type
     """
 
-    circ_id, content = Size.SHORT.pop(content) if link_protocol < 4 else Size.LONG.pop(content)
+    circ_id, content = Cell._get_circ_id_size(link_protocol).pop(content)
     command, content = Size.CHAR.pop(content)
     cls = Cell.by_value(command)
 
@@ -185,14 +227,14 @@ class Cell(object):
 
     :return: **bytes** with the encoded payload
 
-    :raise: **ValueError** if cell type invalid or payload is too large
+    :raise: **ValueError** if cell type invalid or payload makes cell too large
     """
 
-    if isinstance(cls, CircuitCell) and circ_id is None:
-      raise ValueError('%s cells require a circ_id' % cls.NAME)
+    if issubclass(cls, CircuitCell) and not circ_id:
+      raise ValueError('%s cells require a non-zero circ_id' % cls.NAME)
 
     cell = bytearray()
-    cell += Size.LONG.pack(circ_id) if link_protocol > 3 else Size.SHORT.pack(circ_id)
+    cell += Cell._get_circ_id_size(link_protocol).pack(circ_id)
     cell += Size.CHAR.pack(cls.VALUE)
     cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
     cell += payload
@@ -200,10 +242,10 @@ class Cell(object):
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
-      fixed_cell_len = 514 if link_protocol > 3 else 512
+      fixed_cell_len = Cell._get_fixed_cell_len(link_protocol)
 
       if len(cell) > fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), fixed_cell_len))
+        raise ValueError('Cell of type %s is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (cls.NAME, len(cell), fixed_cell_len, len(payload)))
 
       cell += ZERO * (fixed_cell_len - len(cell))
 
@@ -302,14 +344,18 @@ class RelayCell(CircuitCell):
   IS_FIXED_SIZE = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0):
+    # convert digest input into an integer, if necessary
+    digest_size = Size.LONG
     if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
       # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH'.
 
-      digest = Size.LONG.unpack(digest.digest()[:4])
+      digest_packed = digest.digest()[:digest_size.size]
+      digest = digest_size.unpack(digest_packed)
     elif stem.util._is_str(digest):
-      digest = Size.LONG.unpack(digest[:4])
+      digest_packed = digest[:digest_size.size]
+      digest = digest_size.unpack(digest_packed)
     elif stem.util._is_int(digest):
       pass
     else:
@@ -317,10 +363,10 @@ class RelayCell(CircuitCell):
 
     super(RelayCell, self).__init__(circ_id)
     self.command, self.command_int = RelayCommand.get(command)
-    self.data = str_tools._to_bytes(data)
     self.recognized = recognized
-    self.digest = digest
     self.stream_id = stream_id
+    self.digest = digest
+    self.data = str_tools._to_bytes(data)
 
     if digest == 0:
       if not stream_id and self.command in STREAM_ID_REQUIRED:
@@ -346,7 +392,12 @@ class RelayCell(CircuitCell):
     stream_id, content = Size.SHORT.pop(content)
     digest, content = Size.LONG.pop(content)
     data_len, content = Size.SHORT.pop(content)
-    data, content = split(content, data_len)
+    data, _ = split(content, data_len)
+
+    # remaining content (if any) is thrown out (ignored)
+
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
 
     return RelayCell(circ_id, command, data, digest, stream_id, recognized)
 
@@ -375,14 +426,11 @@ class DestroyCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    reason, _ = Size.CHAR.pop(content)
 
-    if not content:
-      content = ZERO
-    elif len(content) > 1:
-      raise ValueError('Circuit closure reason should be a single byte, but was %i' % len(content))
+    # remaining content (if any) is thrown out (ignored)
 
-    return DestroyCell(circ_id, Size.CHAR.unpack(content))
+    return DestroyCell(circ_id, reason)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'reason_int')
@@ -414,12 +462,14 @@ class CreateFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    key_material, _ = split(content, HASH_LEN)
 
-    if len(content) != HASH_LEN:
-      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(content)))
+    # remaining content (if any) is thrown out (ignored)
 
-    return CreateFastCell(circ_id, content)
+    if len(key_material) != HASH_LEN:
+      raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
+
+    return CreateFastCell(circ_id, key_material)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'key_material')
@@ -455,12 +505,15 @@ class CreatedFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content = content.rstrip(ZERO)
+    content_to_parse, _ = split(content, HASH_LEN * 2)
 
-    if len(content) != HASH_LEN * 2:
-      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
+    # remaining content (if any) is thrown out (ignored)
 
-    return CreatedFastCell(circ_id, content[HASH_LEN:], content[:HASH_LEN])
+    if len(content_to_parse) != HASH_LEN * 2:
+      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content_to_parse)))
+
+    key_material, derivative_key = split(content_to_parse, HASH_LEN)
+    return CreatedFastCell(circ_id, derivative_key, key_material)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'derivative_key', 'key_material')
@@ -480,12 +533,9 @@ class VersionsCell(Cell):
   def __init__(self, versions):
     self.versions = versions
 
-  def pack(self, link_protocol = None):
-    # Used for link version negotiation so we don't have that yet. This is fine
-    # since VERSION cells avoid most version dependent attributes.
-
+  def pack(self, link_protocol):
     payload = b''.join([Size.SHORT.pack(v) for v in self.versions])
-    return VersionsCell._pack(2, payload)
+    return VersionsCell._pack(link_protocol, payload)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -532,9 +582,6 @@ class NetinfoCell(Cell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    if len(content) < 4:
-      raise ValueError('NETINFO cell expected to start with a timestamp')
-
     timestamp, content = Size.LONG.pop(content)
     receiver_address, content = Address.pop(content)
 
@@ -544,6 +591,8 @@ class NetinfoCell(Cell):
     for i in range(sender_addr_count):
       addr, content = Address.pop(content)
       sender_addresses.append(addr)
+
+    # remaining content (if any) is thrown out (ignored)
 
     return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp))
 
@@ -588,7 +637,10 @@ class VPaddingCell(Cell):
 
   def __init__(self, size = None, payload = None):
     if payload is None:
-      payload = os.urandom(size) if size else os.urandom(random.randint(128, 1024))
+      if size is not None:
+        payload = os.urandom(size)  # enforces size >= 0
+      else:
+        raise ValueError('VPaddingCell constructor must specify payload or size')
     elif size is not None and size != len(payload):
       raise ValueError('VPaddingCell constructor specified both a size of %i bytes and payload of %i bytes' % (size, len(payload)))
 
@@ -634,6 +686,8 @@ class CertsCell(Cell):
       cert, content = Certificate.pop(content)
       certs.append(cert)
 
+    # remaining content (if any) is thrown out (ignored)
+
     return CertsCell(certs)
 
   def __hash__(self):
@@ -674,13 +728,14 @@ class AuthChallengeCell(Cell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    if len(content) < AUTH_CHALLENGE_SIZE + 2:
-      raise ValueError('AUTH_CHALLENGE payload should be at least 34 bytes, but was %i' % len(content))
+    min_size = AUTH_CHALLENGE_SIZE + Size.SHORT.size
+    if len(content) < min_size:
+      raise ValueError('AUTH_CHALLENGE payload should be at least %i bytes, but was %i' % (min_size, len(content)))
 
     challenge, content = split(content, AUTH_CHALLENGE_SIZE)
     method_count, content = Size.SHORT.pop(content)
 
-    if len(content) < method_count * 2:
+    if len(content) < method_count * Size.SHORT.size:
       raise ValueError('AUTH_CHALLENGE should have %i methods, but only had %i bytes for it' % (method_count, len(content)))
 
     methods = []
@@ -688,6 +743,8 @@ class AuthChallengeCell(Cell):
     for i in range(method_count):
       method, content = Size.SHORT.pop(content)
       methods.append(method)
+
+    # remaining content (if any) is thrown out (ignored)
 
     return AuthChallengeCell(methods, challenge)
 

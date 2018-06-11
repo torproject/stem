@@ -155,7 +155,7 @@ class _IntegerEnum(stem.util.enum.Enum):
 
   def get(self, val):
     """
-    Privides the (enum, int_value) tuple for a given value.
+    Provides the (enum, int_value) tuple for a given value.
     """
 
     if stem.util._is_int(val):
@@ -327,7 +327,9 @@ class Size(Field):
     return struct.unpack(self.format, packed)[0]
 
   def pop(self, packed):
-    return self.unpack(packed[:self.size]), packed[self.size:]
+    to_unpack, remainder = split(packed, self.size)
+
+    return self.unpack(to_unpack), remainder
 
 
 class Address(Field):
@@ -388,11 +390,6 @@ class Address(Field):
 
   @staticmethod
   def pop(content):
-    if not content:
-      raise ValueError('Payload empty where an address was expected')
-    elif len(content) < 2:
-      raise ValueError('Insuffient data for address headers')
-
     addr_type, content = Size.CHAR.pop(content)
     addr_length, content = Size.CHAR.pop(content)
 

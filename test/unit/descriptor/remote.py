@@ -81,7 +81,7 @@ HEADER = '\r\n'.join([
 
 
 def _orport_mock(data, encoding = 'identity'):
-  data = b'HTTP/1.0 200 OK\r\n' + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
+  data = b'HTTP/1.0 200 This is fine\r\n' + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
   cells = []
 
   for hunk in [data[i:i + 50] for i in range(0, len(data), 50)]:
