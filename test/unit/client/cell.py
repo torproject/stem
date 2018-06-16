@@ -5,6 +5,7 @@ Unit tests for the stem.client.cell.
 import datetime
 import hashlib
 import os
+import re
 import unittest
 
 from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
@@ -60,8 +61,10 @@ NETINFO_CELLS = {
   b'\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')]),
 }
 
+VPADDING_CELL_EMPTY_PACKED = b'\x00\x00\x80\x00\x00'
+
 VPADDING_CELLS = {
-  b'\x00\x00\x80\x00\x00': b'',
+  VPADDING_CELL_EMPTY_PACKED: b'',
   b'\x00\x00\x80\x00\x01\x08': b'\x08',
   b'\x00\x00\x80\x00\x02\x08\x11': b'\x08\x11',
   b'\x00\x00\x80\x01\xfd' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
@@ -213,7 +216,13 @@ class TestCell(unittest.TestCase):
       self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
       self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
 
+    empty_constructed_cell = VPaddingCell(size = 0)
+    self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
+    self.assertEqual(b'', empty_constructed_cell.payload)
+
     self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
+    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell size (-15) cannot be negative'), VPaddingCell, -15)
+    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():

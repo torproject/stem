@@ -40,7 +40,6 @@ Messages communicated over a Tor relay's ORPort.
 import datetime
 import inspect
 import os
-import random
 import sys
 
 import stem.util
@@ -587,12 +586,14 @@ class VPaddingCell(Cell):
   IS_FIXED_SIZE = False
 
   def __init__(self, size = None, payload = None):
-    if payload is None:
-      payload = os.urandom(size) if size else os.urandom(random.randint(128, 1024))
-    elif size is not None and size != len(payload):
+    if size is None and payload is None:
+      raise ValueError('VPaddingCell constructor must specify payload or size')
+    elif size is not None and size < 0:
+      raise ValueError('VPaddingCell size (%s) cannot be negative' % size)
+    elif size is not None and payload is not None and size != len(payload):
       raise ValueError('VPaddingCell constructor specified both a size of %i bytes and payload of %i bytes' % (size, len(payload)))
 
-    self.payload = payload
+    self.payload = payload if payload is not None else os.urandom(size)
 
   def pack(self, link_protocol):
     return VPaddingCell._pack(link_protocol, self.payload)
