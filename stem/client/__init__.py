@@ -34,7 +34,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, Address, Size, KDF, split
+from stem.client.datatype import ZERO, LinkProtocol, Address, Size, KDF, split
 
 __all__ = [
   'cell',
@@ -52,7 +52,7 @@ class Relay(object):
   """
 
   def __init__(self, orport, link_protocol):
-    self.link_protocol = link_protocol
+    self.link_protocol = LinkProtocol.for_version(link_protocol)
     self._orport = orport
     self._orport_lock = threading.RLock()
     self._circuits = {}
@@ -151,13 +151,7 @@ class Relay(object):
     """
 
     with self._orport_lock:
-      # Find an unused circuit id. Since we're initiating the circuit we pick any
-      # value from a range that's determined by our link protocol.
-
-      circ_id = 0x80000000 if self.link_protocol > 3 else 0x01
-
-      while circ_id in self._circuits:
-        circ_id += 1
+      circ_id = max(self._circuits) + 1 if self._circuits else self.link_protocol.first_circ_id
 
       create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
       self._orport.send(create_fast_cell.pack(self.link_protocol))
@@ -239,7 +233,7 @@ class Circuit(object):
       # doesn't include the initial circuit id and cell type fields.
       # Circuit ids vary in length depending on the protocol version.
 
-      header_size = 5 if self.relay.link_protocol > 3 else 3
+      header_size = self.relay.link_protocol.circ_id_size.size + 1
 
       try:
         cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
@@ -263,7 +257,7 @@ class Circuit(object):
           raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
 
         while reply:
-          circ_id, reply = Size.SHORT.pop(reply) if self.relay.link_protocol < 4 else Size.LONG.pop(reply)
+          circ_id, reply = self.relay.link_protocol.circ_id_size.pop(reply)
           command, reply = Size.CHAR.pop(reply)
           payload, reply = split(reply, stem.client.cell.FIXED_PAYLOAD_LEN)
 
