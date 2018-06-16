@@ -221,7 +221,7 @@ class TestCell(unittest.TestCase):
     self.assertEqual(b'', empty_constructed_cell.payload)
 
     self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
-
+    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell size (-15) cannot be negative'), VPaddingCell, -15)
     self.assertRaisesRegexp(ValueError, '^%s$' % re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
