@@ -45,7 +45,7 @@ import sys
 import stem.util
 
 from stem import UNDEFINED
-from stem.client.datatype import HASH_LEN, ZERO, Address, Certificate, CloseReason, RelayCommand, Size, split
+from stem.client.datatype import HASH_LEN, ZERO, LinkProtocol, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import _hash_attr, datetime_to_unix, str_tools
 
 FIXED_PAYLOAD_LEN = 509
@@ -113,22 +113,6 @@ class Cell(object):
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
-  @staticmethod
-  def _get_circ_id_size(link_protocol):
-    """
-    Gets the proper Size for the link_protocol.
-
-    :param int link_protocol: link protocol version
-
-    :returns: :class:`~stem.client.datatype.Size`
-    """
-
-    # per tor-spec section 3
-    # CIRCID_LEN :=
-    #   2 for link protocol versions 1, 2, and 3
-    #   4 for link protocol versions 4+
-    return Size.LONG if link_protocol >= 4 else Size.SHORT
-
   def pack(self, link_protocol):
     raise NotImplementedError('Unpacking not yet implemented for %s cells' % type(self).NAME)
 
@@ -166,7 +150,9 @@ class Cell(object):
       * NotImplementedError if unable to unpack this cell type
     """
 
-    circ_id, content = Cell._get_circ_id_size(link_protocol).pop(content)
+    link_protocol = LinkProtocol.for_version(link_protocol)
+
+    circ_id, content = link_protocol.circ_id_size.pop(content)
     command, content = Size.CHAR.pop(content)
     cls = Cell.by_value(command)
 
@@ -206,8 +192,10 @@ class Cell(object):
     if isinstance(cls, CircuitCell) and circ_id is None:
       raise ValueError('%s cells require a circ_id' % cls.NAME)
 
+    link_protocol = LinkProtocol.for_version(link_protocol)
+
     cell = bytearray()
-    cell += Cell._get_circ_id_size(link_protocol).pack(circ_id)
+    cell += link_protocol.circ_id_size.pack(circ_id)
     cell += Size.CHAR.pack(cls.VALUE)
     cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
     cell += payload
@@ -215,12 +203,10 @@ class Cell(object):
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
-      fixed_cell_len = 514 if link_protocol > 3 else 512
+      if len(cell) > link_protocol.fixed_cell_len:
+        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), link_protocol.fixed_cell_len))
 
-      if len(cell) > fixed_cell_len:
-        raise ValueError('Payload of %s is too large (%i bytes), must be less than %i' % (cls.NAME, len(cell), fixed_cell_len))
-
-      cell += ZERO * (fixed_cell_len - len(cell))
+      cell += ZERO * (link_protocol.fixed_cell_len - len(cell))
 
     return bytes(cell)
 
@@ -230,7 +216,7 @@ class Cell(object):
     Subclass implementation for unpacking cell content.
 
     :param bytes content: payload to decode
-    :param int link_protocol: link protocol version
+    :param stem.client.datatype.LinkProtocol link_protocol: link protocol version
     :param int circ_id: circuit id cell is for
 
     :returns: instance of this cell type
