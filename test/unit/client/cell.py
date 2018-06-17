@@ -102,8 +102,25 @@ class TestCell(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_value, 85)
     self.assertRaises(ValueError, Cell.by_value, None)
 
-  def test_unpack_not_implemented(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.pop, b'\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
+  def test_unimplemented_cell_methods(self):
+    cell_instance = Cell()
+
+    self.assertRaisesRegexp(NotImplementedError, re.escape('Packing not yet implemented for UNKNOWN cells'), cell_instance.pack, 2)
+    self.assertRaisesRegexp(NotImplementedError, re.escape('Unpacking not yet implemented for UNKNOWN cells'), cell_instance._unpack, b'dummy', 0, 2)
+
+  def test_payload_too_large(self):
+    class OversizedCell(Cell):
+      NAME = 'OVERSIZED'
+      VALUE = 127  # currently nonsense, but potentially will be allocated in the distant future
+      IS_FIXED_SIZE = True
+
+      def pack(self, link_protocol):
+        return OversizedCell._pack(link_protocol, ZERO * (FIXED_PAYLOAD_LEN + 1))
+
+    instance = OversizedCell()
+
+    expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
+    self.assertRaisesRegexp(ValueError, re.escape(expected_message), instance.pack, 2)
 
   def test_unpack_for_new_link(self):
     expected_certs = (
@@ -222,7 +239,7 @@ class TestCell(unittest.TestCase):
 
     self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
     self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell size (-15) cannot be negative'), VPaddingCell, -15)
-    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
+    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():
