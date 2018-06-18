@@ -75,11 +75,17 @@ STREAM_ID_DISALLOWED = (
 class Cell(object):
   """
   Metadata for ORPort cells.
+
+  :var bytes unused: unused filler that padded the cell to the expected size
   """
 
   NAME = 'UNKNOWN'
   VALUE = -1
   IS_FIXED_SIZE = False
+
+  def __init__(self, unused = b''):
+    super(Cell, self).__init__()
+    self.unused = unused
 
   @staticmethod
   def by_name(name):
@@ -240,7 +246,8 @@ class CircuitCell(Cell):
   :var int circ_id: circuit id
   """
 
-  def __init__(self, circ_id):
+  def __init__(self, circ_id, unused = b''):
+    super(CircuitCell, self).__init__(unused)
     self.circ_id = circ_id
 
 
@@ -261,6 +268,7 @@ class PaddingCell(Cell):
     elif len(payload) != FIXED_PAYLOAD_LEN:
       raise ValueError('Padding payload should be %i bytes, but was %i' % (FIXED_PAYLOAD_LEN, len(payload)))
 
+    super(PaddingCell, self).__init__()
     self.payload = payload
 
   def pack(self, link_protocol):
@@ -279,11 +287,17 @@ class CreateCell(CircuitCell):
   VALUE = 1
   IS_FIXED_SIZE = True
 
+  def __init__(self):
+    super(CreateCell, self).__init__()  # TODO: implement
+
 
 class CreatedCell(CircuitCell):
   NAME = 'CREATED'
   VALUE = 2
   IS_FIXED_SIZE = True
+
+  def __init__(self):
+    super(CreatedCell, self).__init__()  # TODO: implement
 
 
 class RelayCell(CircuitCell):
@@ -302,7 +316,7 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0):
+  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
     if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
@@ -316,7 +330,7 @@ class RelayCell(CircuitCell):
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)
 
-    super(RelayCell, self).__init__(circ_id)
+    super(RelayCell, self).__init__(circ_id, unused)
     self.command, self.command_int = RelayCommand.get(command)
     self.data = str_tools._to_bytes(data)
     self.recognized = recognized
@@ -347,9 +361,9 @@ class RelayCell(CircuitCell):
     stream_id, content = Size.SHORT.pop(content)
     digest, content = Size.LONG.pop(content)
     data_len, content = Size.SHORT.pop(content)
-    data, content = split(content, data_len)
+    data, unused = split(content, data_len)
 
-    return RelayCell(circ_id, command, data, digest, stream_id, recognized)
+    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
 
   def __hash__(self):
     return _hash_attr(self, 'command_int', 'stream_id', 'digest', 'data')
@@ -479,6 +493,7 @@ class VersionsCell(Cell):
   IS_FIXED_SIZE = False
 
   def __init__(self, versions):
+    super(VersionsCell, self).__init__()
     self.versions = versions
 
   def pack(self, link_protocol = None):
@@ -515,7 +530,8 @@ class NetinfoCell(Cell):
   VALUE = 8
   IS_FIXED_SIZE = True
 
-  def __init__(self, receiver_address, sender_addresses, timestamp = None):
+  def __init__(self, receiver_address, sender_addresses, timestamp = None, unused = b''):
+    super(NetinfoCell, self).__init__(unused)
     self.timestamp = timestamp if timestamp else datetime.datetime.now()
     self.receiver_address = receiver_address
     self.sender_addresses = sender_addresses
@@ -546,7 +562,7 @@ class NetinfoCell(Cell):
       addr, content = Address.pop(content)
       sender_addresses.append(addr)
 
-    return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp))
+    return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp), unused = b'')
 
   def __hash__(self):
     return _hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses')
@@ -557,11 +573,17 @@ class RelayEarlyCell(CircuitCell):
   VALUE = 9
   IS_FIXED_SIZE = True
 
+  def __init__(self):
+    super(RelayEarlyCell, self).__init__()  # TODO: implement
+
 
 class Create2Cell(CircuitCell):
   NAME = 'CREATE2'
   VALUE = 10
   IS_FIXED_SIZE = True
+
+  def __init__(self):
+    super(Create2Cell, self).__init__()  # TODO: implement
 
 
 class Created2Cell(Cell):
@@ -569,11 +591,17 @@ class Created2Cell(Cell):
   VALUE = 11
   IS_FIXED_SIZE = True
 
+  def __init__(self):
+    super(Created2Cell, self).__init__()  # TODO: implement
+
 
 class PaddingNegotiateCell(Cell):
   NAME = 'PADDING_NEGOTIATE'
   VALUE = 12
   IS_FIXED_SIZE = True
+
+  def __init__(self):
+    super(PaddingNegotiateCell, self).__init__()  # TODO: implement
 
 
 class VPaddingCell(Cell):
@@ -595,6 +623,7 @@ class VPaddingCell(Cell):
     elif size is not None and payload is not None and size != len(payload):
       raise ValueError('VPaddingCell constructor specified both a size of %i bytes and payload of %i bytes' % (size, len(payload)))
 
+    super(VPaddingCell, self).__init__()
     self.payload = payload if payload is not None else os.urandom(size)
 
   def pack(self, link_protocol):
@@ -619,7 +648,8 @@ class CertsCell(Cell):
   VALUE = 129
   IS_FIXED_SIZE = False
 
-  def __init__(self, certs):
+  def __init__(self, certs, unused = b''):
+    super(CertsCell, self).__init__(unused)
     self.certificates = certs
 
   def pack(self, link_protocol):
@@ -637,7 +667,7 @@ class CertsCell(Cell):
       cert, content = Certificate.pop(content)
       certs.append(cert)
 
-    return CertsCell(certs)
+    return CertsCell(certs, unused = content)
 
   def __hash__(self):
     return _hash_attr(self, 'certificates')
@@ -656,12 +686,13 @@ class AuthChallengeCell(Cell):
   VALUE = 130
   IS_FIXED_SIZE = False
 
-  def __init__(self, methods, challenge = None):
+  def __init__(self, methods, challenge = None, unused = b''):
     if not challenge:
       challenge = os.urandom(AUTH_CHALLENGE_SIZE)
     elif len(challenge) != AUTH_CHALLENGE_SIZE:
       raise ValueError('AUTH_CHALLENGE must be %i bytes, but was %i' % (AUTH_CHALLENGE_SIZE, len(challenge)))
 
+    super(AuthChallengeCell, self).__init__(unused)
     self.challenge = challenge
     self.methods = methods
 
@@ -692,7 +723,7 @@ class AuthChallengeCell(Cell):
       method, content = Size.SHORT.pop(content)
       methods.append(method)
 
-    return AuthChallengeCell(methods, challenge)
+    return AuthChallengeCell(methods, challenge, unused = content)
 
   def __hash__(self):
     return _hash_attr(self, 'challenge', 'methods')
@@ -703,8 +734,14 @@ class AuthenticateCell(Cell):
   VALUE = 131
   IS_FIXED_SIZE = False
 
+  def __init__(self):
+    super(AuthenticateCell, self).__init__()  # TODO: implement
+
 
 class AuthorizeCell(Cell):
   NAME = 'AUTHORIZE'
   VALUE = 132
   IS_FIXED_SIZE = False
+
+  def __init__(self):
+    super(AuthorizeCell, self).__init__()  # TODO: implement
