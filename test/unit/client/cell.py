@@ -173,6 +173,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(data, cell.data)
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
+      self.assertEqual(b'\x00' * (498 - len(cell.data)), cell.unused)
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -190,6 +191,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(reason, cell.reason)
       self.assertEqual(reason_int, cell.reason_int)
+      self.assertEqual(b'', cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Circuit closure reason should be a single byte, but was 2', Cell.pop, b'\x80\x00\x00\x00\x04\x01\x01' + ZERO * 507, 5)
 
@@ -200,6 +202,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
+      self.assertEqual(b'', cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -211,6 +214,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
+      self.assertEqual(b'', cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -227,6 +231,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(timestamp, cell.timestamp)
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
+      self.assertEqual(b'', cell.unused)
 
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
@@ -262,6 +267,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 2)[0]
       self.assertEqual(challenge, cell.challenge)
       self.assertEqual(methods, cell.methods)
+      self.assertEqual(b'', cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)
