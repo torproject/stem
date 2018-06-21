@@ -1154,7 +1154,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if not os.path.exists(runner.get_test_dir('cached-descriptors')):
+    if not os.path.exists(runner.get_test_dir('cached-microdescs')):
       self.skipTest('(no cached microdescriptors)')
       return
 
