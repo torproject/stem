@@ -1770,7 +1770,7 @@ class Controller(BaseController):
     if not os.path.exists(data_directory):
       raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
     elif not os.path.exists(cached_descriptor_path):
-      raise stem.OperationFailed(message = "Data directory doesn't contain cached microescriptors (%s)" % cached_descriptor_path)
+      raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % cached_descriptor_path)
 
     with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
       for desc in reader:
