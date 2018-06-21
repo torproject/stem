@@ -1147,6 +1147,7 @@ class TestController(unittest.TestCase):
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
   @test.require.controller
+  @test.require.online
   def test_get_microdescriptors(self):
     """
     Fetches a few descriptors via the get_microdescriptors() method.
