@@ -39,9 +39,9 @@ RELAY_CELLS = {
 }
 
 DESTROY_CELLS = {
-  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, True, True),
-  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, True, True),
-  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, True, False),
+  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, b'\x01' + ZERO * 507),
 }
 
 CREATE_FAST_CELLS = {
@@ -189,7 +189,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(data, cell.data)
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
-      self.assertEqual(b'\x00' * (498 - len(cell.data)), cell.unused)
+      self.assertEqual(ZERO * (498 - len(cell.data)), cell.unused)
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -199,20 +199,19 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
   def test_destroy_cell(self):
-    for cell_bytes, (circ_id, reason, reason_int, test_unpack, test_recreate_exactly) in DESTROY_CELLS.items():
-      if test_recreate_exactly:
+    for cell_bytes, (circ_id, reason, reason_int, unused) in DESTROY_CELLS.items():
+      # Packed cells always pad with zeros, so if we're testing something with
+      # non-zero padding then skip this check.
+
+      if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
         self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
 
-      if test_unpack:
-        cell = Cell.pop(cell_bytes, 5)[0]
-        self.assertEqual(circ_id, cell.circ_id)
-        self.assertEqual(reason, cell.reason)
-        self.assertEqual(reason_int, cell.reason_int)
-        self.assertEqual(b'', cell.unused)
-
-      if not any((test_unpack, test_recreate_exactly)):
-        self.fail('Must test something!')
+      cell = Cell.pop(cell_bytes, 5)[0]
+      self.assertEqual(circ_id, cell.circ_id)
+      self.assertEqual(reason, cell.reason)
+      self.assertEqual(reason_int, cell.reason_int)
+      self.assertEqual(unused, cell.unused)
 
   def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
@@ -221,7 +220,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
-      self.assertEqual(b'', cell.unused)
+      self.assertEqual(ZERO * 489, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -233,7 +232,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
-      self.assertEqual(b'', cell.unused)
+      self.assertEqual(ZERO * 469, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 

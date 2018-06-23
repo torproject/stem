@@ -392,8 +392,8 @@ class DestroyCell(CircuitCell):
   VALUE = 4
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, reason = CloseReason.NONE):
-    super(DestroyCell, self).__init__(circ_id)
+  def __init__(self, circ_id, reason = CloseReason.NONE, unused = b''):
+    super(DestroyCell, self).__init__(circ_id, unused)
     self.reason, self.reason_int = CloseReason.get(reason)
 
   def pack(self, link_protocol):
@@ -401,11 +401,8 @@ class DestroyCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    reason, _ = Size.CHAR.pop(content)
-
-    # remaining content (if any) is thrown out (ignored)
-
-    return DestroyCell(circ_id, reason)
+    reason, unused = Size.CHAR.pop(content)
+    return DestroyCell(circ_id, reason, unused)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'reason_int')
@@ -423,13 +420,13 @@ class CreateFastCell(CircuitCell):
   VALUE = 5
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, key_material = None):
+  def __init__(self, circ_id, key_material = None, unused = b''):
     if not key_material:
       key_material = os.urandom(HASH_LEN)
     elif len(key_material) != HASH_LEN:
       raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
 
-    super(CreateFastCell, self).__init__(circ_id)
+    super(CreateFastCell, self).__init__(circ_id, unused)
     self.key_material = key_material
 
   def pack(self, link_protocol):
@@ -437,14 +434,12 @@ class CreateFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    key_material, _ = split(content, HASH_LEN)
-
-    # remaining content (if any) is thrown out (ignored)
+    key_material, unused = split(content, HASH_LEN)
 
     if len(key_material) != HASH_LEN:
       raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
 
-    return CreateFastCell(circ_id, key_material)
+    return CreateFastCell(circ_id, key_material, unused)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'key_material')
@@ -462,7 +457,7 @@ class CreatedFastCell(CircuitCell):
   VALUE = 6
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, derivative_key, key_material = None):
+  def __init__(self, circ_id, derivative_key, key_material = None, unused = b''):
     if not key_material:
       key_material = os.urandom(HASH_LEN)
     elif len(key_material) != HASH_LEN:
@@ -471,7 +466,7 @@ class CreatedFastCell(CircuitCell):
     if len(derivative_key) != HASH_LEN:
       raise ValueError('Derivatived key should be %i bytes, but was %i' % (HASH_LEN, len(derivative_key)))
 
-    super(CreatedFastCell, self).__init__(circ_id)
+    super(CreatedFastCell, self).__init__(circ_id, unused)
     self.key_material = key_material
     self.derivative_key = derivative_key
 
@@ -480,15 +475,13 @@ class CreatedFastCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
-    content_to_parse, _ = split(content, HASH_LEN * 2)
+    if len(content) < HASH_LEN * 2:
+      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
 
-    # remaining content (if any) is thrown out (ignored)
+    key_material, content = split(content, HASH_LEN)
+    derivative_key, content = split(content, HASH_LEN)
 
-    if len(content_to_parse) != HASH_LEN * 2:
-      raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content_to_parse)))
-
-    key_material, derivative_key = split(content_to_parse, HASH_LEN)
-    return CreatedFastCell(circ_id, derivative_key, key_material)
+    return CreatedFastCell(circ_id, derivative_key, key_material, content)
 
   def __hash__(self):
     return _hash_attr(self, 'circ_id', 'derivative_key', 'key_material')
