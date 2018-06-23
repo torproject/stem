@@ -105,6 +105,7 @@ import stem.directory
 import stem.prereq
 import stem.util.enum
 
+from stem.client.datatype import RelayCommand
 from stem.util import log, str_tools
 
 try:
@@ -846,16 +847,16 @@ def _download_from_orport(endpoint, compression, resource):
       request = '\r\n'.join((
         'GET %s HTTP/1.0' % resource,
         'Accept-Encoding: %s' % ', '.join(compression),
-        'User-Agent: Stem/%s' % stem.__version__,
+        'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
-      circ.send('RELAY_BEGIN_DIR', stream_id = 1)
-      response = b''.join([cell.data for cell in circ.send('RELAY_DATA', request, stream_id = 1)])
+      circ.send(RelayCommand.BEGIN_DIR, stream_id = 1)
+      response = b''.join([cell.data for cell in circ.send(RelayCommand.DATA, request, stream_id = 1)])
       first_line, data = response.split(b'\r\n', 1)
-      header_data, data = data.split(b'\r\n\r\n', 1)
+      header_data, body_data = data.split(b'\r\n\r\n', 1)
 
-      if first_line != b'HTTP/1.0 200 OK':
-        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
+      if not first_line.startswith(b'HTTP/1.0 2'):
+        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % str_tools._to_unicode(first_line))
 
       headers = {}
 
@@ -866,7 +867,7 @@ def _download_from_orport(endpoint, compression, resource):
         key, value = line.split(': ', 1)
         headers[key] = value
 
-      return _decompress(data, headers.get('Content-Encoding')), headers
+      return _decompress(body_data, headers.get('Content-Encoding')), headers
 
 
 def _download_from_dirport(url, compression, timeout):
@@ -889,7 +890,7 @@ def _download_from_dirport(url, compression, timeout):
       url,
       headers = {
         'Accept-Encoding': ', '.join(compression),
-        'User-Agent': 'Stem/%s' % stem.__version__,
+        'User-Agent': stem.USER_AGENT,
       }
     ),
     timeout = timeout,

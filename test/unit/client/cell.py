@@ -5,6 +5,7 @@ Unit tests for the stem.client.cell.
 import datetime
 import hashlib
 import os
+import re
 import unittest
 
 from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
@@ -38,30 +39,36 @@ RELAY_CELLS = {
 }
 
 DESTROY_CELLS = {
-  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0),
-  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3),
+  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, b'\x01' + ZERO * 507),
 }
 
 CREATE_FAST_CELLS = {
   (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce'),
+  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00'),
 }
 
 CREATED_FAST_CELLS = {
   (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2'),
+  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00'),
 }
 
 VERSIONS_CELLS = {
-  b'\x00\x00\x07\x00\x00': [],
-  b'\x00\x00\x07\x00\x02\x00\x01': [1],
-  b'\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': [1, 2, 3],
+  b'\x00\x00\x07\x00\x00': ([], 2),
+  b'\x00\x00\x07\x00\x02\x00\x01': ([1], 2),
+  b'\x00\x00\x07\x00\x06\x00\x01\x00\x02\x00\x03': ([1, 2, 3], 2),
+  b'\x00\x00\x00\x00\x07\x00\x08\x00\x01\x00\x02\x00\x03\x00\x04': ([1, 2, 3, 4], 4),
 }
 
 NETINFO_CELLS = {
   b'\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')]),
 }
 
+VPADDING_CELL_EMPTY_PACKED = b'\x00\x00\x80\x00\x00'
+
 VPADDING_CELLS = {
-  b'\x00\x00\x80\x00\x00': b'',
+  VPADDING_CELL_EMPTY_PACKED: b'',
   b'\x00\x00\x80\x00\x01\x08': b'\x08',
   b'\x00\x00\x80\x00\x02\x08\x11': b'\x08\x11',
   b'\x00\x00\x80\x01\xfd' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
@@ -99,8 +106,38 @@ class TestCell(unittest.TestCase):
     self.assertRaises(ValueError, Cell.by_value, 85)
     self.assertRaises(ValueError, Cell.by_value, None)
 
-  def test_unpack_not_implemented(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Unpacking not yet implemented for AUTHORIZE cells', Cell.pop, b'\x00\x00\x84\x00\x06\x00\x01\x00\x02\x00\x03', 2)
+  def test_unimplemented_cell_methods(self):
+    cell_instance = Cell()
+
+    self.assertRaisesRegexp(NotImplementedError, re.escape('Packing not yet implemented for UNKNOWN cells'), cell_instance.pack, 2)
+    self.assertRaisesRegexp(NotImplementedError, re.escape('Unpacking not yet implemented for UNKNOWN cells'), cell_instance._unpack, b'dummy', 0, 2)
+
+  def test_payload_too_large(self):
+    class OversizedCell(Cell):
+      NAME = 'OVERSIZED'
+      VALUE = 127  # currently nonsense, but potentially will be allocated in the distant future
+      IS_FIXED_SIZE = True
+
+      def pack(self, link_protocol):
+        return OversizedCell._pack(link_protocol, ZERO * (FIXED_PAYLOAD_LEN + 1))
+
+    instance = OversizedCell()
+
+    expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
+    self.assertRaisesRegexp(ValueError, re.escape(expected_message), instance.pack, 2)
+
+  def test_circuit_id_validation(self):
+    # only CircuitCell subclasses should provide a circ_id
+
+    self.assertRaisesRegexp(ValueError, 'PADDING cells should not specify a circuit identifier', PaddingCell._pack, 5, b'', 12)
+
+    # CircuitCell should validate its circ_id
+
+    self.assertRaisesRegexp(ValueError, 'RELAY cells require a circuit identifier', RelayCell._pack, 5, b'', None)
+
+    for circ_id in (0, -1, -50):
+      expected_msg = 'Circuit identifiers must a positive integer, not %s' % circ_id
+      self.assertRaisesRegexp(ValueError, expected_msg, RelayCell._pack, 5, b'', circ_id)
 
   def test_unpack_for_new_link(self):
     expected_certs = (
@@ -153,6 +190,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(data, cell.data)
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
+      self.assertEqual(ZERO * (498 - len(cell.data)), cell.unused)
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -161,17 +199,33 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, 'RELAY cell digest must be a hash, string, or int but was a list', RelayCell, 5, 'RELAY_BEGIN_DIR', '', [], 564346860)
     self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
+    mismatched_data_length_bytes = b''.join((
+      b'\x00\x01',  # circ ID
+      b'\x03',  # command
+      b'\x02',  # relay command
+      b'\x00\x00',  # 'recognized'
+      b'\x00\x01',  # stream ID
+      b'\x15:m\xe0',  # digest
+      b'\xFF\xFF',  # data len (65535, clearly invalid)
+      ZERO * 498,  # data
+    ))
+    expected_message = 'RELAY cell said it had 65535 bytes of data, but only had 498'
+    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), Cell.pop, mismatched_data_length_bytes, 2)
+
   def test_destroy_cell(self):
-    for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():
-      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
-      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
+    for cell_bytes, (circ_id, reason, reason_int, unused) in DESTROY_CELLS.items():
+      # Packed cells always pad with zeros, so if we're testing something with
+      # non-zero padding then skip this check.
+
+      if not unused.strip(ZERO):
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
 
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(reason, cell.reason)
       self.assertEqual(reason_int, cell.reason_int)
-
-    self.assertRaisesRegexp(ValueError, 'Circuit closure reason should be a single byte, but was 2', Cell.pop, b'\x80\x00\x00\x00\x04\x01\x01' + ZERO * 507, 5)
+      self.assertEqual(unused, cell.unused)
 
   def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
@@ -180,6 +234,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
+      self.assertEqual(ZERO * 489, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -191,13 +246,14 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
+      self.assertEqual(ZERO * 469, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_versions_cell(self):
-    for cell_bytes, versions in VERSIONS_CELLS.items():
-      self.assertEqual(cell_bytes, VersionsCell(versions).pack())
-      self.assertEqual(versions, Cell.pop(cell_bytes, 2)[0].versions)
+    for cell_bytes, (versions, link_protocol) in VERSIONS_CELLS.items():
+      self.assertEqual(cell_bytes, VersionsCell(versions).pack(link_protocol))
+      self.assertEqual(versions, Cell.pop(cell_bytes, link_protocol)[0].versions)
 
   def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
@@ -207,13 +263,20 @@ class TestCell(unittest.TestCase):
       self.assertEqual(timestamp, cell.timestamp)
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
+      self.assertEqual(b'', cell.unused)
 
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
       self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
       self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
 
+    empty_constructed_cell = VPaddingCell(size = 0)
+    self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
+    self.assertEqual(b'', empty_constructed_cell.payload)
+
     self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
+    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell size (-15) cannot be negative'), VPaddingCell, -15)
+    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():
@@ -236,6 +299,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 2)[0]
       self.assertEqual(challenge, cell.challenge)
       self.assertEqual(methods, cell.methods)
+      self.assertEqual(b'', cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)

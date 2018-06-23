@@ -14,6 +14,8 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 
   split - splits bytes into substrings
 
+  LinkProtocol - ORPort protocol version.
+
   Field - Packable and unpackable datatype.
     |- Size - Field of a static size.
     |- Address - Relay address.
@@ -155,7 +157,7 @@ class _IntegerEnum(stem.util.enum.Enum):
 
   def get(self, val):
     """
-    Privides the (enum, int_value) tuple for a given value.
+    Provides the (enum, int_value) tuple for a given value.
     """
 
     if stem.util._is_int(val):
@@ -226,6 +228,34 @@ def split(content, size):
   """
 
   return content[:size], content[size:]
+
+
+class LinkProtocol(collections.namedtuple('LinkProtocol', ['version', 'circ_id_size', 'fixed_cell_len', 'first_circ_id'])):
+  """
+  Constants that vary by our link protocol version.
+
+  :var int version: link protocol version
+  :var stem.client.datatype.Size circ_id_size: circuit identifier field size
+  :var int fixed_cell_length: size of cells with a fixed length
+  :var int first_circ_id: When creating circuits we pick an unused identifier
+    from a range that's determined by our link protocol.
+  """
+
+  @staticmethod
+  def for_version(version):
+    if isinstance(version, LinkProtocol):
+      return version  # already a LinkProtocol
+    elif isinstance(version, int):
+      circ_id_size = Size.LONG if version > 3 else Size.SHORT
+      fixed_cell_len = 514 if version > 3 else 512
+      first_circ_id = 0x80000000 if version > 3 else 0x01
+
+      return LinkProtocol(version, circ_id_size, fixed_cell_len, first_circ_id)
+    else:
+      raise TypeError('LinkProtocol.for_version() should receiving an int, not %s' % type(version).__name__)
+
+  def __int__(self):
+    return self.version
 
 
 class Field(object):
@@ -327,7 +357,9 @@ class Size(Field):
     return struct.unpack(self.format, packed)[0]
 
   def pop(self, packed):
-    return self.unpack(packed[:self.size]), packed[self.size:]
+    to_unpack, remainder = split(packed, self.size)
+
+    return self.unpack(to_unpack), remainder
 
 
 class Address(Field):
