@@ -88,14 +88,14 @@ class Relay(object):
       else:
         raise
 
-    # per tor-spec.txt (section 3):
-    #   "CIRCID_LEN is 2 for link protocol versions 1, 2, and 3.
-    #    CIRCID_LEN is 4 for link protocol version 4 or higher.
-    #    The first VERSIONS cell, and any cells sent before the
-    #    first VERSIONS cell, always have CIRCID_LEN == 2 for backward
-    #    compatibility."
+    # To negotiate our link protocol the first VERSIONS cell is expected to use
+    # a circuit ID field size from protocol version 1-3 for backward
+    # compatibility...
+    #
+    #   The first VERSIONS cell, and any cells sent before the
+    #   first VERSIONS cell, always have CIRCID_LEN == 2 for backward
+    #   compatibility.
 
-    # thus we arbitrarily select link_protocol=2 to accomplish this
     conn.send(stem.client.cell.VersionsCell(link_protocols).pack(2))
     response = conn.recv()
 
