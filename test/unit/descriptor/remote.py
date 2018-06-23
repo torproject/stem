@@ -8,6 +8,7 @@ import socket
 import time
 import unittest
 
+import stem
 import stem.descriptor.remote
 import stem.prereq
 import stem.util.str_tools
@@ -80,8 +81,11 @@ HEADER = '\r\n'.join([
 ])
 
 
-def _orport_mock(data, encoding = 'identity'):
-  data = b'HTTP/1.0 200 This is fine\r\n' + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
+def _orport_mock(data, encoding = 'identity', response_code_header = None):
+  if response_code_header is None:
+    response_code_header = b'HTTP/1.0 200 OK\r\n'
+
+  data = response_code_header + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
   cells = []
 
   for hunk in [data[i:i + 50] for i in range(0, len(data), 50)]:
@@ -133,6 +137,33 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(reply)))
     self.assertEqual('moria1', list(reply)[0].nickname)
     self.assertEqual(5, len(reply.reply_headers))
+
+  def test_orport_response_code_headers(self):
+    """
+    When successful Tor provides a '200 OK' status, but we should accept other 2xx
+    response codes, reason text, and recognize HTTP errors.
+    """
+
+    response_code_headers = (
+      b'HTTP/1.0 200 OK\r\n',
+      b'HTTP/1.0 205 OK\r\n',
+      b'HTTP/1.0 200 This is also alright\r\n',
+    )
+
+    for header in response_code_headers:
+      with patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR, response_code_header = header)):
+        stem.descriptor.remote.their_server_descriptor(
+          endpoints = [stem.ORPort('12.34.56.78', 1100)],
+          validate = True,
+        ).run()
+
+    with patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR, response_code_header = b'HTTP/1.0 500 Kaboom\r\n')):
+      request = stem.descriptor.remote.their_server_descriptor(
+        endpoints = [stem.ORPort('12.34.56.78', 1100)],
+        validate = True,
+      )
+
+      self.assertRaisesRegexp(stem.ProtocolError, "Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
   @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
   def test_using_dirport(self):

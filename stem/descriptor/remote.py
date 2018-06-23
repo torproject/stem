@@ -854,8 +854,8 @@ def _download_from_orport(endpoint, compression, resource):
       first_line, data = response.split(b'\r\n', 1)
       header_data, data = data.split(b'\r\n\r\n', 1)
 
-      if not first_line.startswith(b'HTTP/1.0 200 '):
-        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % first_line)
+      if not first_line.startswith(b'HTTP/1.0 2'):
+        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % str_tools._to_unicode(first_line))
 
       headers = {}
 
