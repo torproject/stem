@@ -39,16 +39,19 @@ RELAY_CELLS = {
 }
 
 DESTROY_CELLS = {
-  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0),
-  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3),
+  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, ZERO * 508),
+  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, b'\x01' + ZERO * 507),
 }
 
 CREATE_FAST_CELLS = {
   (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce'),
+  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00'),
 }
 
 CREATED_FAST_CELLS = {
   (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2'),
+  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00'),
 }
 
 VERSIONS_CELLS = {
@@ -186,7 +189,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(data, cell.data)
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
-      self.assertEqual(b'\x00' * (498 - len(cell.data)), cell.unused)
+      self.assertEqual(ZERO * (498 - len(cell.data)), cell.unused)
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -196,17 +199,19 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
   def test_destroy_cell(self):
-    for cell_bytes, (circ_id, reason, reason_int) in DESTROY_CELLS.items():
-      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
-      self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
+    for cell_bytes, (circ_id, reason, reason_int, unused) in DESTROY_CELLS.items():
+      # Packed cells always pad with zeros, so if we're testing something with
+      # non-zero padding then skip this check.
+
+      if not unused.strip(ZERO):
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
 
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(reason, cell.reason)
       self.assertEqual(reason_int, cell.reason_int)
-      self.assertEqual(b'', cell.unused)
-
-    self.assertRaisesRegexp(ValueError, 'Circuit closure reason should be a single byte, but was 2', Cell.pop, b'\x80\x00\x00\x00\x04\x01\x01' + ZERO * 507, 5)
+      self.assertEqual(unused, cell.unused)
 
   def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
@@ -215,7 +220,7 @@ class TestCell(unittest.TestCase):
       cell = Cell.pop(cell_bytes, 5)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
-      self.assertEqual(b'', cell.unused)
+      self.assertEqual(ZERO * 489, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -227,7 +232,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
-      self.assertEqual(b'', cell.unused)
+      self.assertEqual(ZERO * 469, cell.unused)
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
