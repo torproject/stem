@@ -88,7 +88,15 @@ class Relay(object):
       else:
         raise
 
-    conn.send(stem.client.cell.VersionsCell(link_protocols).pack())
+    # To negotiate our link protocol the first VERSIONS cell is expected to use
+    # a circuit ID field size from protocol version 1-3 for backward
+    # compatibility...
+    #
+    #   The first VERSIONS cell, and any cells sent before the
+    #   first VERSIONS cell, always have CIRCID_LEN == 2 for backward
+    #   compatibility.
+
+    conn.send(stem.client.cell.VersionsCell(link_protocols).pack(2))
     response = conn.recv()
 
     # Link negotiation ends right away if we lack a common protocol
