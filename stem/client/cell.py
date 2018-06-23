@@ -175,7 +175,7 @@ class Cell(object):
     return cls._unpack(payload, circ_id, link_protocol), content
 
   @classmethod
-  def _pack(cls, link_protocol, payload, circ_id = 0):
+  def _pack(cls, link_protocol, payload, circ_id = None):
     """
     Provides bytes that can be used on the wire for these cell attributes.
     Format of a properly packed cell depends on if it's fixed or variable
@@ -196,8 +196,16 @@ class Cell(object):
     :raise: **ValueError** if cell type invalid or payload makes cell too large
     """
 
-    if isinstance(cls, CircuitCell) and circ_id is None:
-      raise ValueError('%s cells require a circ_id' % cls.NAME)
+    if issubclass(cls, CircuitCell):
+      if circ_id is None:
+        raise ValueError('%s cells require a circuit identifier' % cls.NAME)
+      elif circ_id < 1:
+        raise ValueError('Circuit identifiers must a positive integer, not %s' % circ_id)
+    else:
+      if circ_id is not None:
+        raise ValueError('%s cells should not specify a circuit identifier' % cls.NAME)
+
+      circ_id = 0  # cell doesn't concern a circuit, default field to zero
 
     link_protocol = LinkProtocol.for_version(link_protocol)
 

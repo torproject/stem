@@ -122,6 +122,19 @@ class TestCell(unittest.TestCase):
     expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
     self.assertRaisesRegexp(ValueError, re.escape(expected_message), instance.pack, 2)
 
+  def test_circuit_id_validation(self):
+    # only CircuitCell subclasses should provide a circ_id
+
+    self.assertRaisesRegexp(ValueError, 'PADDING cells should not specify a circuit identifier', PaddingCell._pack, 5, b'', 12)
+
+    # CircuitCell should validate its circ_id
+
+    self.assertRaisesRegexp(ValueError, 'RELAY cells require a circuit identifier', RelayCell._pack, 5, b'', None)
+
+    for circ_id in (0, -1, -50):
+      expected_msg = 'Circuit identifiers must a positive integer, not %s' % circ_id
+      self.assertRaisesRegexp(ValueError, expected_msg, RelayCell._pack, 5, b'', circ_id)
+
   def test_unpack_for_new_link(self):
     expected_certs = (
       (CertType.LINK, 1, b'0\x82\x02F0\x82\x01\xaf'),
