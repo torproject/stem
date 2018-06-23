@@ -100,12 +100,12 @@ import zlib
 
 import stem
 import stem.client
-from stem.client.datatype import RelayCommand
 import stem.descriptor
 import stem.directory
 import stem.prereq
 import stem.util.enum
 
+from stem.client.datatype import RelayCommand
 from stem.util import log, str_tools
 
 try:
