@@ -1324,7 +1324,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
       return stdout.decode('utf-8', 'replace').splitlines()
     else:
       return []
-  except CallTimeoutError as exc:
+  except CallTimeoutError:
     log.debug('System call (timeout): %s (after %0.4fs)' % (command, timeout))
 
     if default != UNDEFINED:

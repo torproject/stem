@@ -512,7 +512,7 @@ class DescriptorReader(object):
 
           self._unreturned_descriptors.put(desc)
           self._iter_notice.set()
-    except TypeError as exc:
+    except TypeError:
       self._notify_skip_listeners(target, UnrecognizedType(mime_type))
     except ValueError as exc:
       self._notify_skip_listeners(target, ParsingFailure(exc))

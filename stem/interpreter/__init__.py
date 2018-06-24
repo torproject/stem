@@ -145,7 +145,7 @@ def main():
 
         try:
           raw_input()
-        except (KeyboardInterrupt, stem.SocketClosed) as exc:
+        except (KeyboardInterrupt, stem.SocketClosed):
           pass
       else:
         interpreter.run_command(args.run_cmd, print_response = True)
@@ -169,7 +169,7 @@ def main():
           prompt = '... ' if interpreter.is_multiline_context else PROMPT
           user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
           interpreter.run_command(user_input, print_response = True)
-        except stem.SocketClosed as exc:
+        except stem.SocketClosed:
           if showed_close_confirmation:
             print(format('Unable to run tor commands. The control connection has been closed.', *ERROR_OUTPUT))
           else:
@@ -181,6 +181,6 @@ def main():
               showed_close_confirmation = True
             else:
               break
-        except (KeyboardInterrupt, EOFError, stem.SocketClosed) as exc:
+        except (KeyboardInterrupt, EOFError, stem.SocketClosed):
           print('')  # move cursor to the following line
           break
