@@ -1147,6 +1147,7 @@ class TestController(unittest.TestCase):
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
   @test.require.controller
+  @test.require.online
   def test_get_microdescriptors(self):
     """
     Fetches a few descriptors via the get_microdescriptors() method.
@@ -1154,7 +1155,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if not os.path.exists(runner.get_test_dir('cached-descriptors')):
+    if not os.path.exists(runner.get_test_dir('cached-microdescs')):
       self.skipTest('(no cached microdescriptors)')
       return
 
