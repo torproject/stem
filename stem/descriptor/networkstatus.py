@@ -130,6 +130,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('shared-rand-commit', True, False, False),
   ('shared-rand-previous-value', True, True, False),
   ('shared-rand-current-value', True, True, False),
+  ('bandwidth-file', True, False, False),
   ('recommended-client-protocols', True, True, False),
   ('recommended-relay-protocols', True, True, False),
   ('required-client-protocols', True, True, False),
@@ -783,6 +784,27 @@ def _parse_shared_rand_current_value(descriptor, entries):
     raise ValueError("A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was '%s'" % value)
 
 
+def _parse_bandwidth_file(descriptor, entries):
+  # "bandwidth-file" KeyValues
+  # Value ::= any printing ASCII character except NL and SP.
+  # KeyValue ::= Keyword '=' Value
+  # KeyValues ::= KeyValue | KeyValues SP KeyValue
+
+  value = _value('bandwidth-file', entries)
+  results = {}
+
+  for entry in value.split(' '):
+    if not entry:
+      continue
+    elif '=' not in entry:
+      raise ValueError("'bandwidth-file' lines must be a series of 'key=value' pairs: %s" % value)
+
+    k, v = entry.split('=', 1)
+    results[k] = v
+
+  descriptor.bandwidth_file = results
+
+
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
 _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
@@ -852,6 +874,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var dict recommended_relay_protocols: recommended protocols for relays
   :var dict required_client_protocols: required protocols for clients
   :var dict required_relay_protocols: required protocols for relays
+  :var dict bandwidth_file: bandwidth authority headers that generated this vote
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -868,7 +891,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   .. versionchanged:: 1.6.0
      Added the recommended_client_protocols, recommended_relay_protocols,
-     required_client_protocols, and required_relay_protocols.
+     required_client_protocols, and required_relay_protocols attributes.
 
   .. versionchanged:: 1.6.0
      The is_shared_randomness_participate and shared_randomness_commitments
@@ -880,6 +903,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      shared_randomness_previous_reveal_count attributes were undocumented and
      not provided properly if retrieved before their shred_randomness_*_value
      counterpart.
+
+  .. versionchanged:: 1.7.0
+     Added the bandwidth_file attributbute.
   """
 
   ATTRIBUTES = {
@@ -910,6 +936,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
+    'bandwidth_file': ({}, _parse_bandwidth_file),
 
     'signatures': ([], _parse_footer_directory_signature_line),
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
@@ -937,6 +964,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'params': _parse_header_parameters_line,
     'shared-rand-previous-value': _parse_shared_rand_previous_value,
     'shared-rand-current-value': _parse_shared_rand_current_value,
+    'bandwidth-file': _parse_bandwidth_file,
   }
 
   FOOTER_PARSER_FOR_LINE = {
