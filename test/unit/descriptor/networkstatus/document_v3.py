@@ -1255,14 +1255,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEqual(None, authority.shared_randomness_current_reveal_count)
       self.assertEqual(None, authority.shared_randomness_current_value)
 
-  def test_bandwidth_file(self):
+  def test_bandwidth_file_headers(self):
     """
-    Parses a 'bandwidth-file' line of votes.
+    Parses a 'bandwidth-file-headers' line of votes.
     """
 
     test_values = {
       '': {},
-      'timestamp=': {'timestamp': ''},
       'timestamp=12=34': {'timestamp': '12=34'},
       'timestamp=123': {'timestamp': '123'},
       'timestamp=123 version=1.0': {'timestamp': '123', 'version': '1.0'},
@@ -1270,16 +1269,25 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     }
 
     for test_value, expected_value in test_values.items():
-      document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'bandwidth-file': test_value})
-      self.assertEqual(expected_value, document.bandwidth_file)
+      document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'bandwidth-file-headers': test_value})
+      self.assertEqual(expected_value, document.bandwidth_file_headers)
 
-    # there really isn't much that *isn't* valid :P
+  def test_bandwidth_file_headers_malformed(self):
+    """
+    Parses 'bandwidth-file-headers' with invalid content.
+    """
 
-    content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file': 'key_without_value'})
-    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
+    test_values = (
+      'timestamp=',
+      'key_without_value',
+    )
 
-    document = NetworkStatusDocumentV3(content, False)
-    self.assertEqual(DEFAULT_PARAMS, document.params)
+    for attr in test_values:
+      content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file-headers': attr})
+      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
+
+      document = NetworkStatusDocumentV3(content, False)
+      self.assertEqual({}, document.bandwidth_file_headers)
 
   def test_with_legacy_directory_authorities(self):
     """

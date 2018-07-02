@@ -130,7 +130,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('shared-rand-commit', True, False, False),
   ('shared-rand-previous-value', True, True, False),
   ('shared-rand-current-value', True, True, False),
-  ('bandwidth-file', True, False, False),
+  ('bandwidth-file-headers', True, False, False),
   ('recommended-client-protocols', True, True, False),
   ('recommended-relay-protocols', True, True, False),
   ('required-client-protocols', True, True, False),
@@ -784,25 +784,29 @@ def _parse_shared_rand_current_value(descriptor, entries):
     raise ValueError("A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was '%s'" % value)
 
 
-def _parse_bandwidth_file(descriptor, entries):
-  # "bandwidth-file" KeyValues
-  # Value ::= any printing ASCII character except NL and SP.
-  # KeyValue ::= Keyword '=' Value
+def _parse_bandwidth_file_headers(descriptor, entries):
+  # "bandwidth-file-headers" KeyValues
   # KeyValues ::= KeyValue | KeyValues SP KeyValue
+  # KeyValue ::= Keyword '=' Value
+  # Value ::= ArgumentChar+
 
-  value = _value('bandwidth-file', entries)
+  value = _value('bandwidth-file-headers', entries)
   results = {}
 
   for entry in value.split(' '):
     if not entry:
       continue
     elif '=' not in entry:
-      raise ValueError("'bandwidth-file' lines must be a series of 'key=value' pairs: %s" % value)
+      raise ValueError("'bandwidth-file-headers' lines must be a series of 'key=value' pairs: %s" % value)
 
     k, v = entry.split('=', 1)
+
+    if not v:
+      raise ValueError("'bandwidth-file-headers' mappings should all have values: %s" % value)
+
     results[k] = v
 
-  descriptor.bandwidth_file = results
+  descriptor.bandwidth_file_headers = results
 
 
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
@@ -874,7 +878,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var dict recommended_relay_protocols: recommended protocols for relays
   :var dict required_client_protocols: required protocols for clients
   :var dict required_relay_protocols: required protocols for relays
-  :var dict bandwidth_file: bandwidth authority headers that generated this vote
+  :var dict bandwidth_file_headers: headers from the bandwidth authority that
+    generated this vote
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -905,7 +910,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      counterpart.
 
   .. versionchanged:: 1.7.0
-     Added the bandwidth_file attributbute.
+     Added the bandwidth_file_headers attributbute.
   """
 
   ATTRIBUTES = {
@@ -936,7 +941,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_previous_value': (None, _parse_shared_rand_previous_value),
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
-    'bandwidth_file': ({}, _parse_bandwidth_file),
+    'bandwidth_file_headers': ({}, _parse_bandwidth_file_headers),
 
     'signatures': ([], _parse_footer_directory_signature_line),
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
@@ -964,7 +969,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'params': _parse_header_parameters_line,
     'shared-rand-previous-value': _parse_shared_rand_previous_value,
     'shared-rand-current-value': _parse_shared_rand_current_value,
-    'bandwidth-file': _parse_bandwidth_file,
+    'bandwidth-file-headers': _parse_bandwidth_file_headers,
   }
 
   FOOTER_PARSER_FOR_LINE = {
