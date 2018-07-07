@@ -170,6 +170,7 @@ class TestCell(unittest.TestCase):
     self.assertEqual(datetime.datetime(2018, 1, 14, 1, 46, 56), netinfo_cell.timestamp)
     self.assertEqual(Address('127.0.0.1'), netinfo_cell.receiver_address)
     self.assertEqual([Address('97.113.15.2')], netinfo_cell.sender_addresses)
+    self.assertEqual(ZERO * 492, netinfo_cell.unused)
 
     self.assertEqual(b'', content)  # check that we've consumed all of the bytes
 
@@ -263,7 +264,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(timestamp, cell.timestamp)
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
-      self.assertEqual(b'', cell.unused)
+      self.assertEqual(ZERO * 492, cell.unused)
 
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():

@@ -565,7 +565,7 @@ class NetinfoCell(Cell):
       addr, content = Address.pop(content)
       sender_addresses.append(addr)
 
-    return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp), unused = b'')
+    return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp), unused = content)
 
   def __hash__(self):
     return _hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses')
