@@ -77,6 +77,9 @@ class Cell(object):
   """
   Metadata for ORPort cells.
 
+  Unused padding are **not** used in equality checks or hashing. If two cells
+  differ only in their *unused* attribute they are functionally equal.
+
   :var bytes unused: unused filler that padded the cell to the expected size
   """
 
