@@ -179,6 +179,8 @@ class TestCell(unittest.TestCase):
       self.assertEqual(cell_bytes, PaddingCell(payload).pack(2))
       self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
 
+      # TODO: unpack, repack
+
   def test_relay_cell(self):
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest) in RELAY_CELLS.items():
       self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(2))
@@ -192,6 +194,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
       self.assertEqual(ZERO * (498 - len(cell.data)), cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -227,6 +230,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(reason, cell.reason)
       self.assertEqual(reason_int, cell.reason_int)
       self.assertEqual(unused, cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(5))
 
   def test_create_fast_cell(self):
     for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
@@ -236,6 +240,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(ZERO * 489, cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(5))
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -248,6 +253,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
       self.assertEqual(ZERO * 469, cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(5))
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -255,6 +261,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (versions, link_protocol) in VERSIONS_CELLS.items():
       self.assertEqual(cell_bytes, VersionsCell(versions).pack(link_protocol))
       self.assertEqual(versions, Cell.pop(cell_bytes, link_protocol)[0].versions)
+
+      # TODO: unpack, repack
 
   def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
@@ -265,11 +273,14 @@ class TestCell(unittest.TestCase):
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
       self.assertEqual(ZERO * 492, cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
       self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
       self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
+
+      # TODO: unpack, repack
 
     empty_constructed_cell = VPaddingCell(size = 0)
     self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
@@ -283,6 +294,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, certs in CERTS_CELLS.items():
       self.assertEqual(cell_bytes, CertsCell(certs).pack(2))
       self.assertEqual(certs, Cell.pop(cell_bytes, 2)[0].certificates)
+
+      # TODO: unpack, repack
 
     # extra bytes after the last certificate should be ignored
 
@@ -301,6 +314,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(challenge, cell.challenge)
       self.assertEqual(methods, cell.methods)
       self.assertEqual(b'', cell.unused)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)
