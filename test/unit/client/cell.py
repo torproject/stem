@@ -30,28 +30,28 @@ RANDOM_PAYLOAD = os.urandom(FIXED_PAYLOAD_LEN)
 CHALLENGE = b'\x89Y\t\x99\xb2\x1e\xd9*V\xb6\x1bn\n\x05\xd8/\xe3QH\x85\x13Z\x17\xfc\x1c\x00{\xa9\xae\x83^K'
 
 PADDING_CELLS = {
-  b'\x00\x00\x00' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+  b'\x00\x00\x00' + RANDOM_PAYLOAD: (RANDOM_PAYLOAD, 2),
 }
 
 RELAY_CELLS = {
-  b'\x00\x01\x03\r\x00\x00\x00\x01!\xa3?\xec' + ZERO * 500: ('RELAY_BEGIN_DIR', 13, 1, 1, b'', 564346860),
-  b'\x00\x01\x03\x02\x00\x00\x00\x01\x15:m\xe0\x00&GET /tor/server/authority HTTP/1.0\r\n\r\n' + ZERO * 460: ('RELAY_DATA', 2, 1, 1, b'GET /tor/server/authority HTTP/1.0\r\n\r\n', 356150752),
+  b'\x00\x01\x03\r\x00\x00\x00\x01!\xa3?\xec' + ZERO * 500: ('RELAY_BEGIN_DIR', 13, 1, 1, b'', 564346860, 2),
+  b'\x00\x01\x03\x02\x00\x00\x00\x01\x15:m\xe0\x00&GET /tor/server/authority HTTP/1.0\r\n\r\n' + ZERO * 460: ('RELAY_DATA', 2, 1, 1, b'GET /tor/server/authority HTTP/1.0\r\n\r\n', 356150752, 2),
 }
 
 DESTROY_CELLS = {
-  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, ZERO * 508),
-  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, ZERO * 508),
-  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, b'\x01' + ZERO * 507),
+  b'\x80\x00\x00\x00\x04\x00' + ZERO * 508: (2147483648, CloseReason.NONE, 0, ZERO * 508, 5),
+  b'\x80\x00\x00\x00\x04\x03' + ZERO * 508: (2147483648, CloseReason.REQUESTED, 3, ZERO * 508, 5),
+  b'\x80\x00\x00\x00\x04\x01' + b'\x01' + ZERO * 507: (2147483648, CloseReason.PROTOCOL, 1, b'\x01' + ZERO * 507, 5),
 }
 
 CREATE_FAST_CELLS = {
-  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce'),
-  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00'),
+  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', 5),
+  (b'\x80\x00\x00\x00\x05\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00' + ZERO * 489): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\x00', 5),
 }
 
 CREATED_FAST_CELLS = {
-  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2'),
-  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00'),
+  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\xb2', 5),
+  (b'\x80\x00\x00\x00\x06\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00' + ZERO * 469): (2147483648, b'\x92O\x0c\xcb\xa8\xac\xfb\xc9\x7f\xd0\rz\x1a\x03u\x91\xceas\xce', b'\x13Z\x99\xb2\x1e\xb6\x05\x85\x17\xfc\x1c\x00{\xa9\xae\x83^K\x99\x00', 5),
 }
 
 VERSIONS_CELLS = {
@@ -62,26 +62,26 @@ VERSIONS_CELLS = {
 }
 
 NETINFO_CELLS = {
-  b'\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')]),
+  b'\x00\x00\x08ZZ\xb6\x90\x04\x04\x7f\x00\x00\x01\x01\x04\x04aq\x0f\x02' + ZERO * (FIXED_PAYLOAD_LEN - 17): (datetime.datetime(2018, 1, 14, 1, 46, 56), Address('127.0.0.1'), [Address('97.113.15.2')], 2),
 }
 
 VPADDING_CELL_EMPTY_PACKED = b'\x00\x00\x80\x00\x00'
 
 VPADDING_CELLS = {
-  VPADDING_CELL_EMPTY_PACKED: b'',
-  b'\x00\x00\x80\x00\x01\x08': b'\x08',
-  b'\x00\x00\x80\x00\x02\x08\x11': b'\x08\x11',
-  b'\x00\x00\x80\x01\xfd' + RANDOM_PAYLOAD: RANDOM_PAYLOAD,
+  VPADDING_CELL_EMPTY_PACKED: (b'', 2),
+  b'\x00\x00\x80\x00\x01\x08': (b'\x08', 2),
+  b'\x00\x00\x80\x00\x02\x08\x11': (b'\x08\x11', 2),
+  b'\x00\x00\x80\x01\xfd' + RANDOM_PAYLOAD: (RANDOM_PAYLOAD, 2),
 }
 
 CERTS_CELLS = {
-  b'\x00\x00\x81\x00\x01\x00': [],
-  b'\x00\x00\x81\x00\x04\x01\x01\x00\x00': [Certificate(1, b'')],
-  b'\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': [Certificate(1, b'\x08')],
+  b'\x00\x00\x81\x00\x01\x00': ([], 2),
+  b'\x00\x00\x81\x00\x04\x01\x01\x00\x00': ([Certificate(1, b'')], 2),
+  b'\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': ([Certificate(1, b'\x08')], 2),
 }
 
 AUTH_CHALLENGE_CELLS = {
-  b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3]),
+  b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3], 2),
 }
 
 
@@ -175,20 +175,20 @@ class TestCell(unittest.TestCase):
     self.assertEqual(b'', content)  # check that we've consumed all of the bytes
 
   def test_padding_cell(self):
-    for cell_bytes, payload in PADDING_CELLS.items():
-      self.assertEqual(cell_bytes, PaddingCell(payload).pack(2))
+    for cell_bytes, (payload, link_protocol) in PADDING_CELLS.items():
+      self.assertEqual(cell_bytes, PaddingCell(payload).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(payload, cell.payload)
       self.assertEqual(b'', cell.unused)  # always empty
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_relay_cell(self):
-    for cell_bytes, (command, command_int, circ_id, stream_id, data, digest) in RELAY_CELLS.items():
-      self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(2))
-      self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id).pack(2))
+    for cell_bytes, (command, command_int, circ_id, stream_id, data, digest, link_protocol) in RELAY_CELLS.items():
+      self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(link_protocol))
+      self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(command, cell.command)
       self.assertEqual(command_int, cell.command_int)
@@ -196,7 +196,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
       self.assertEqual(ZERO * (498 - len(cell.data)), cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -219,43 +219,43 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), Cell.pop, mismatched_data_length_bytes, 2)
 
   def test_destroy_cell(self):
-    for cell_bytes, (circ_id, reason, reason_int, unused) in DESTROY_CELLS.items():
+    for cell_bytes, (circ_id, reason, reason_int, unused, link_protocol) in DESTROY_CELLS.items():
       # Packed cells always pad with zeros, so if we're testing something with
       # non-zero padding then skip this check.
 
       if not unused.strip(ZERO):
-        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(5))
-        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(5))
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(link_protocol))
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 5)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(reason, cell.reason)
       self.assertEqual(reason_int, cell.reason_int)
       self.assertEqual(unused, cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(5))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_create_fast_cell(self):
-    for cell_bytes, (circ_id, key_material) in CREATE_FAST_CELLS.items():
-      self.assertEqual(cell_bytes, CreateFastCell(circ_id, key_material).pack(5))
+    for cell_bytes, (circ_id, key_material, link_protocol) in CREATE_FAST_CELLS.items():
+      self.assertEqual(cell_bytes, CreateFastCell(circ_id, key_material).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 5)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(ZERO * 489, cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(5))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_created_fast_cell(self):
-    for cell_bytes, (circ_id, key_material, derivative_key) in CREATED_FAST_CELLS.items():
-      self.assertEqual(cell_bytes, CreatedFastCell(circ_id, derivative_key, key_material).pack(5))
+    for cell_bytes, (circ_id, key_material, derivative_key, link_protocol) in CREATED_FAST_CELLS.items():
+      self.assertEqual(cell_bytes, CreatedFastCell(circ_id, derivative_key, key_material).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 5)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(key_material, cell.key_material)
       self.assertEqual(derivative_key, cell.derivative_key)
       self.assertEqual(ZERO * 469, cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(5))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
@@ -269,24 +269,24 @@ class TestCell(unittest.TestCase):
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_netinfo_cell(self):
-    for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
-      self.assertEqual(cell_bytes, NetinfoCell(receiver_address, sender_addresses, timestamp).pack(2))
+    for cell_bytes, (timestamp, receiver_address, sender_addresses, link_protocol) in NETINFO_CELLS.items():
+      self.assertEqual(cell_bytes, NetinfoCell(receiver_address, sender_addresses, timestamp).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(timestamp, cell.timestamp)
       self.assertEqual(receiver_address, cell.receiver_address)
       self.assertEqual(sender_addresses, cell.sender_addresses)
       self.assertEqual(ZERO * 492, cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_vpadding_cell(self):
-    for cell_bytes, payload in VPADDING_CELLS.items():
-      self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
+    for cell_bytes, (payload, link_protocol) in VPADDING_CELLS.items():
+      self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(payload, cell.payload)
       self.assertEqual(b'', cell.unused)  # always empty
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     empty_constructed_cell = VPaddingCell(size = 0)
     self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
@@ -297,12 +297,12 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
-    for cell_bytes, certs in CERTS_CELLS.items():
-      self.assertEqual(cell_bytes, CertsCell(certs).pack(2))
+    for cell_bytes, (certs, link_protocol) in CERTS_CELLS.items():
+      self.assertEqual(cell_bytes, CertsCell(certs).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(certs, cell.certificates)
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     # extra bytes after the last certificate should be ignored
 
@@ -314,14 +314,14 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, 'CERTS cell indicates it should have 2 certificates, but only contained 1', Cell.pop, b'\x00\x00\x81\x00\x05\x02\x01\x00\x01\x08', 2)
 
   def test_auth_challenge_cell(self):
-    for cell_bytes, (challenge, methods) in AUTH_CHALLENGE_CELLS.items():
-      self.assertEqual(cell_bytes, AuthChallengeCell(methods, challenge).pack(2))
+    for cell_bytes, (challenge, methods, link_protocol) in AUTH_CHALLENGE_CELLS.items():
+      self.assertEqual(cell_bytes, AuthChallengeCell(methods, challenge).pack(link_protocol))
 
-      cell = Cell.pop(cell_bytes, 2)[0]
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(challenge, cell.challenge)
       self.assertEqual(methods, cell.methods)
       self.assertEqual(b'', cell.unused)
-      self.assertEqual(cell_bytes, cell.pack(2))
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
     self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)
