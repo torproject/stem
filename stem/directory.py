@@ -57,8 +57,8 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc'
-GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/or/fallback_dirs.inc'
+GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
+GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\S+) orport=(\d+) .*"')
