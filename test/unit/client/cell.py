@@ -177,9 +177,10 @@ class TestCell(unittest.TestCase):
   def test_padding_cell(self):
     for cell_bytes, payload in PADDING_CELLS.items():
       self.assertEqual(cell_bytes, PaddingCell(payload).pack(2))
-      self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
 
-      # TODO: unpack, repack
+      cell = Cell.pop(cell_bytes, 2)[0]
+      self.assertEqual(payload, cell.payload)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
   def test_relay_cell(self):
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest) in RELAY_CELLS.items():
@@ -260,9 +261,10 @@ class TestCell(unittest.TestCase):
   def test_versions_cell(self):
     for cell_bytes, (versions, link_protocol) in VERSIONS_CELLS.items():
       self.assertEqual(cell_bytes, VersionsCell(versions).pack(link_protocol))
-      self.assertEqual(versions, Cell.pop(cell_bytes, link_protocol)[0].versions)
 
-      # TODO: unpack, repack
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
+      self.assertEqual(versions, cell.versions)
+      self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_netinfo_cell(self):
     for cell_bytes, (timestamp, receiver_address, sender_addresses) in NETINFO_CELLS.items():
@@ -278,9 +280,10 @@ class TestCell(unittest.TestCase):
   def test_vpadding_cell(self):
     for cell_bytes, payload in VPADDING_CELLS.items():
       self.assertEqual(cell_bytes, VPaddingCell(payload = payload).pack(2))
-      self.assertEqual(payload, Cell.pop(cell_bytes, 2)[0].payload)
 
-      # TODO: unpack, repack
+      cell = Cell.pop(cell_bytes, 2)[0]
+      self.assertEqual(payload, cell.payload)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
     empty_constructed_cell = VPaddingCell(size = 0)
     self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
@@ -293,9 +296,10 @@ class TestCell(unittest.TestCase):
   def test_certs_cell(self):
     for cell_bytes, certs in CERTS_CELLS.items():
       self.assertEqual(cell_bytes, CertsCell(certs).pack(2))
-      self.assertEqual(certs, Cell.pop(cell_bytes, 2)[0].certificates)
 
-      # TODO: unpack, repack
+      cell = Cell.pop(cell_bytes, 2)[0]
+      self.assertEqual(certs, cell.certificates)
+      self.assertEqual(cell_bytes, cell.pack(2))
 
     # extra bytes after the last certificate should be ignored
 
