@@ -180,6 +180,7 @@ class TestCell(unittest.TestCase):
 
       cell = Cell.pop(cell_bytes, 2)[0]
       self.assertEqual(payload, cell.payload)
+      self.assertEqual(b'', cell.unused)  # always empty
       self.assertEqual(cell_bytes, cell.pack(2))
 
   def test_relay_cell(self):
@@ -264,6 +265,7 @@ class TestCell(unittest.TestCase):
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(versions, cell.versions)
+      self.assertEqual(b'', cell.unused)  # always empty
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
   def test_netinfo_cell(self):
@@ -283,6 +285,7 @@ class TestCell(unittest.TestCase):
 
       cell = Cell.pop(cell_bytes, 2)[0]
       self.assertEqual(payload, cell.payload)
+      self.assertEqual(b'', cell.unused)  # always empty
       self.assertEqual(cell_bytes, cell.pack(2))
 
     empty_constructed_cell = VPaddingCell(size = 0)

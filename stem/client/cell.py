@@ -80,6 +80,11 @@ class Cell(object):
   Unused padding are **not** used in equality checks or hashing. If two cells
   differ only in their *unused* attribute they are functionally equal.
 
+  The following cell types explicitly don't have *unused* content:
+    * PaddingCell (we consider all content part of payload)
+    * VersionsCell (all content is unpacked and treated as a version specification)
+    * VPaddingCell (we consider all content part of payload)
+
   :var bytes unused: unused filler that padded the cell to the expected size
   """
 
