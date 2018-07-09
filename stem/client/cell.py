@@ -178,7 +178,7 @@ class Cell(object):
     return cls._unpack(payload, circ_id, link_protocol), content
 
   @classmethod
-  def _pack(cls, link_protocol, payload, circ_id = None):
+  def _pack(cls, link_protocol, payload, unused = b'', circ_id = None):
     """
     Provides bytes that can be used on the wire for these cell attributes.
     Format of a properly packed cell depends on if it's fixed or variable
@@ -215,8 +215,11 @@ class Cell(object):
     cell = bytearray()
     cell += link_protocol.circ_id_size.pack(circ_id)
     cell += Size.CHAR.pack(cls.VALUE)
-    cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload))
+    cell += b'' if cls.IS_FIXED_SIZE else Size.SHORT.pack(len(payload) + len(unused))
     cell += payload
+
+    # include the unused portion (typically from unpacking)
+    cell += unused
 
     # pad fixed sized cells to the required length
 
@@ -366,7 +369,7 @@ class RelayCell(CircuitCell):
     payload += Size.SHORT.pack(len(self.data))
     payload += self.data
 
-    return RelayCell._pack(link_protocol, bytes(payload), self.circ_id)
+    return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -403,7 +406,7 @@ class DestroyCell(CircuitCell):
     self.reason, self.reason_int = CloseReason.get(reason)
 
   def pack(self, link_protocol):
-    return DestroyCell._pack(link_protocol, Size.CHAR.pack(self.reason_int), self.circ_id)
+    return DestroyCell._pack(link_protocol, Size.CHAR.pack(self.reason_int), self.unused, self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -436,7 +439,7 @@ class CreateFastCell(CircuitCell):
     self.key_material = key_material
 
   def pack(self, link_protocol):
-    return CreateFastCell._pack(link_protocol, self.key_material, self.circ_id)
+    return CreateFastCell._pack(link_protocol, self.key_material, self.unused, self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -477,7 +480,7 @@ class CreatedFastCell(CircuitCell):
     self.derivative_key = derivative_key
 
   def pack(self, link_protocol):
-    return CreatedFastCell._pack(link_protocol, self.key_material + self.derivative_key, self.circ_id)
+    return CreatedFastCell._pack(link_protocol, self.key_material + self.derivative_key, self.unused, self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -554,7 +557,7 @@ class NetinfoCell(Cell):
     for addr in self.sender_addresses:
       payload += addr.pack()
 
-    return NetinfoCell._pack(link_protocol, bytes(payload))
+    return NetinfoCell._pack(link_protocol, bytes(payload), self.unused)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -659,7 +662,7 @@ class CertsCell(Cell):
     self.certificates = certs
 
   def pack(self, link_protocol):
-    return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + b''.join([cert.pack() for cert in self.certificates]))
+    return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + b''.join([cert.pack() for cert in self.certificates]), self.unused)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -710,7 +713,7 @@ class AuthChallengeCell(Cell):
     for method in self.methods:
       payload += Size.SHORT.pack(method)
 
-    return AuthChallengeCell._pack(link_protocol, bytes(payload))
+    return AuthChallengeCell._pack(link_protocol, bytes(payload), self.unused)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
