@@ -609,6 +609,7 @@ DIRECTORY_AUTHORITIES = {
     address = '193.23.244.244',
     or_port = 443,
     dir_port = 80,
+    orport_v6 = ('2001:678:558:1000::244', 443),
     fingerprint = '7BE683E65D48141321C5ED92F075C55364AC7123',
     v3ident = '0232AF901C31A04EE9848595AF9BB7620D4C5B2E',
   ),
