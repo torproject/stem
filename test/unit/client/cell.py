@@ -75,9 +75,9 @@ VPADDING_CELLS = {
 }
 
 CERTS_CELLS = {
-  b'\x00\x00\x81\x00\x01\x00': ([], 2),
-  b'\x00\x00\x81\x00\x04\x01\x01\x00\x00': ([Certificate(1, b'')], 2),
-  b'\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': ([Certificate(1, b'\x08')], 2),
+  b'\x00\x00\x81\x00\x01\x00': ([], b'', 2),
+  b'\x00\x00\x81\x00\x04\x01\x01\x00\x00': ([Certificate(1, b'')], b'', 2),
+  b'\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': ([Certificate(1, b'\x08')], b'', 2),
 }
 
 AUTH_CHALLENGE_CELLS = {
@@ -297,11 +297,12 @@ class TestCell(unittest.TestCase):
     self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
 
   def test_certs_cell(self):
-    for cell_bytes, (certs, link_protocol) in CERTS_CELLS.items():
+    for cell_bytes, (certs, unused, link_protocol) in CERTS_CELLS.items():
       self.assertEqual(cell_bytes, CertsCell(certs).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(certs, cell.certificates)
+      self.assertEqual(unused, cell.unused)
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     # extra bytes after the last certificate should be ignored
