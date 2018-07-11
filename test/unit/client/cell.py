@@ -188,6 +188,9 @@ class TestCell(unittest.TestCase):
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(link_protocol))
         self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id, unused = unused).pack(link_protocol))
+        self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -224,6 +227,9 @@ class TestCell(unittest.TestCase):
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, DestroyCell(circ_id, reason).pack(link_protocol))
         self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason, unused = unused).pack(link_protocol))
+        self.assertEqual(cell_bytes, DestroyCell(circ_id, reason_int, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -236,6 +242,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (circ_id, key_material, unused, link_protocol) in CREATE_FAST_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, CreateFastCell(circ_id, key_material).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, CreateFastCell(circ_id, key_material, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -249,6 +257,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (circ_id, key_material, derivative_key, unused, link_protocol) in CREATED_FAST_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, CreatedFastCell(circ_id, derivative_key, key_material).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, CreatedFastCell(circ_id, derivative_key, key_material, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
@@ -272,6 +282,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (timestamp, receiver_address, sender_addresses, unused, link_protocol) in NETINFO_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, NetinfoCell(receiver_address, sender_addresses, timestamp).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, NetinfoCell(receiver_address, sender_addresses, timestamp, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(timestamp, cell.timestamp)
@@ -301,6 +313,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (certs, unused, link_protocol) in CERTS_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, CertsCell(certs).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, CertsCell(certs, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(certs, cell.certificates)
@@ -320,6 +334,8 @@ class TestCell(unittest.TestCase):
     for cell_bytes, (challenge, methods, unused, link_protocol) in AUTH_CHALLENGE_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, AuthChallengeCell(methods, challenge).pack(link_protocol))
+      else:
+        self.assertEqual(cell_bytes, AuthChallengeCell(methods, challenge, unused = unused).pack(link_protocol))
 
       cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(challenge, cell.challenge)
