@@ -78,6 +78,7 @@ CERTS_CELLS = {
   b'\x00\x00\x81\x00\x01\x00': ([], b'', 2),
   b'\x00\x00\x81\x00\x04\x01\x01\x00\x00': ([Certificate(1, b'')], b'', 2),
   b'\x00\x00\x81\x00\x05\x01\x01\x00\x01\x08': ([Certificate(1, b'\x08')], b'', 2),
+  b'\x00\x00\x81\x00\x07\x01\x01\x00\x01\x08\x06\x04': ([Certificate(1, '\x08')], b'\x06\x04', 2),
 }
 
 AUTH_CHALLENGE_CELLS = {
@@ -321,11 +322,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(unused, cell.unused)
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
-    # extra bytes after the last certificate should be ignored
-
-    self.assertEqual([Certificate(1, '\x08')], Cell.pop(b'\x00\x00\x81\x00\x07\x01\x01\x00\x01\x08\x06\x04', 2)[0].certificates)
-
-    # ... but truncated or missing certificates should error
+    # truncated or missing certificates should error
 
     self.assertRaisesRegexp(ValueError, 'CERTS cell should have a certificate with 3 bytes, but only had 1 remaining', Cell.pop, b'\x00\x00\x81\x00\x05\x01\x01\x00\x03\x08', 2)
     self.assertRaisesRegexp(ValueError, 'CERTS cell indicates it should have 2 certificates, but only contained 1', Cell.pop, b'\x00\x00\x81\x00\x05\x02\x01\x00\x01\x08', 2)
