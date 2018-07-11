@@ -135,7 +135,7 @@ def query(query, *param):
 
     >>> import stem.manual
     >>> print(stem.manual.query('SELECT description FROM torrc WHERE key=?', 'CONTROLSOCKET').fetchone()[0])
-    Like ControlPort, but listens on a Unix domain socket, rather than a TCP socket.  0 disables ControlSocket (Unix and Unix-like systems only.)
+    Like ControlPort, but listens on a Unix domain socket, rather than a TCP socket.  0 disables ControlSocket. (Unix and Unix-like systems only.) (Default: 0)
 
   .. versionadded:: 1.6.0
 
