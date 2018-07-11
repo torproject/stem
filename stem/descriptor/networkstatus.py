@@ -76,6 +76,7 @@ from stem.descriptor import (
   _parse_forty_character_hex,
   _parse_protocol_line,
   _parse_key_block,
+  _mappings_for,
   _random_nickname,
   _random_fingerprint,
   _random_ipv4_address,
@@ -642,26 +643,20 @@ def _parse_header_flag_thresholds_line(descriptor, entries):
 
   value, thresholds = _value('flag-thresholds', entries).strip(), {}
 
-  if value:
-    for entry in value.split(' '):
-      if '=' not in entry:
-        raise ValueError("Network status document's 'flag-thresholds' line is expected to be space separated key=value mappings, got: flag-thresholds %s" % value)
+  for key, val in _mappings_for('flag-thresholds', value):
+    try:
+      if val.endswith('%'):
+        # opting for string manipulation rather than just
+        # 'float(entry_value) / 100' because floating point arithmetic
+        # will lose precision
 
-      entry_key, entry_value = entry.split('=', 1)
-
-      try:
-        if entry_value.endswith('%'):
-          # opting for string manipulation rather than just
-          # 'float(entry_value) / 100' because floating point arithmetic
-          # will lose precision
-
-          thresholds[entry_key] = float('0.' + entry_value[:-1].replace('.', '', 1))
-        elif '.' in entry_value:
-          thresholds[entry_key] = float(entry_value)
-        else:
-          thresholds[entry_key] = int(entry_value)
-      except ValueError:
-        raise ValueError("Network status document's 'flag-thresholds' line is expected to have float values, got: flag-thresholds %s" % value)
+        thresholds[key] = float('0.' + val[:-1].replace('.', '', 1))
+      elif '.' in val:
+        thresholds[key] = float(val)
+      else:
+        thresholds[key] = int(val)
+    except ValueError:
+      raise ValueError("Network status document's 'flag-thresholds' line is expected to have float values, got: flag-thresholds %s" % value)
 
   descriptor.flag_thresholds = thresholds
 
@@ -716,7 +711,7 @@ def _parse_package_line(descriptor, entries):
   package_versions = []
 
   for value, _, _ in entries['package']:
-    value_comp = value.split()
+    value_comp = value.split(' ', 3)
 
     if len(value_comp) < 3:
       raise ValueError("'package' must at least have a 'PackageName Version URL': %s" % value)
@@ -724,12 +719,9 @@ def _parse_package_line(descriptor, entries):
     name, version, url = value_comp[:3]
     digests = {}
 
-    for digest_entry in value_comp[3:]:
-      if '=' not in digest_entry:
-        raise ValueError("'package' digest entries should be 'key=value' pairs: %s" % value)
-
-      key, value = digest_entry.split('=', 1)
-      digests[key] = value
+    if len(value_comp) == 4:
+      for key, val in _mappings_for('package', value_comp[3]):
+        digests[key] = val
 
     package_versions.append(PackageVersion(name, version, url, digests))
 
@@ -793,18 +785,8 @@ def _parse_bandwidth_file_headers(descriptor, entries):
   value = _value('bandwidth-file-headers', entries)
   results = {}
 
-  for entry in value.split(' '):
-    if not entry:
-      continue
-    elif '=' not in entry:
-      raise ValueError("'bandwidth-file-headers' lines must be a series of 'key=value' pairs: %s" % value)
-
-    k, v = entry.split('=', 1)
-
-    if not v:
-      raise ValueError("'bandwidth-file-headers' mappings should all have values: %s" % value)
-
-    results[k] = v
+  for key, val in _mappings_for('bandwidth-file-headers', value, require_value = True):
+    results[key] = val
 
   descriptor.bandwidth_file_headers = results
 
@@ -1310,35 +1292,26 @@ def _parse_int_mappings(keyword, value, validate):
   # - keys are sorted in lexical order
 
   results, seen_keys = {}, []
-  for entry in value.split(' '):
+  error_template = "Unable to parse network status document's '%s' line (%%s): %s'" % (keyword, value)
+
+  for key, val in _mappings_for(keyword, value):
+    if validate:
+      # parameters should be in ascending order by their key
+      for prior_key in seen_keys:
+        if prior_key > key:
+          raise ValueError(error_template % 'parameters must be sorted by their key')
+
     try:
-      if '=' not in entry:
-        raise ValueError("must only have 'key=value' entries")
+      # the int() function accepts things like '+123', but we don't want to
 
-      entry_key, entry_value = entry.split('=', 1)
+      if val.startswith('+'):
+        raise ValueError()
 
-      try:
-        # the int() function accepts things like '+123', but we don't want to
-        if entry_value.startswith('+'):
-          raise ValueError()
+      results[key] = int(val)
+    except ValueError:
+      raise ValueError(error_template % ("'%s' is a non-numeric value" % val))
 
-        entry_value = int(entry_value)
-      except ValueError:
-        raise ValueError("'%s' is a non-numeric value" % entry_value)
-
-      if validate:
-        # parameters should be in ascending order by their key
-        for prior_key in seen_keys:
-          if prior_key > entry_key:
-            raise ValueError('parameters must be sorted by their key')
-
-      results[entry_key] = entry_value
-      seen_keys.append(entry_key)
-    except ValueError as exc:
-      if not validate:
-        continue
-
-      raise ValueError("Unable to parse network status document's '%s' line (%s): %s'" % (keyword, exc, value))
+    seen_keys.append(key)
 
   return results
 

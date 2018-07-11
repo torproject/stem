@@ -88,6 +88,7 @@ from stem.descriptor import (
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
+  _mappings_for,
   _append_router_signature,
   _random_nickname,
   _random_fingerprint,
@@ -321,22 +322,14 @@ def _parse_padding_counts_line(descriptor, entries):
 
   value = _value('padding-counts', entries)
   timestamp, interval, remainder = _parse_timestamp_and_interval('padding-counts', value)
-  entries = {}
+  counts = {}
 
-  for entry in remainder.split(' '):
-    if '=' not in entry:
-      raise ValueError('Entries in padding-counts line should be key=value mappings: padding-counts %s' % value)
-
-    k, v = entry.split('=', 1)
-
-    if not v:
-      raise ValueError('Entry in padding-counts line had a blank value: padding-counts %s' % value)
-
-    entries[k] = int(v) if v.isdigit() else v
+  for k, v in _mappings_for('padding-counts', remainder, require_value = True):
+    counts[k] = int(v) if v.isdigit() else v
 
   setattr(descriptor, 'padding_counts_end', timestamp)
   setattr(descriptor, 'padding_counts_interval', interval)
-  setattr(descriptor, 'padding_counts', entries)
+  setattr(descriptor, 'padding_counts', counts)
 
 
 def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr, descriptor, entries):
@@ -349,22 +342,15 @@ def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr
   key_set = DirResponse if is_response_stats else DirStat
 
   key_type = 'STATUS' if is_response_stats else 'STAT'
-  error_msg = '%s lines should contain %s=COUNT mappings: %s %s' % (keyword, key_type, keyword, value)
 
-  if value:
-    for entry in value.split(','):
-      if '=' not in entry:
-        raise ValueError(error_msg)
+  for status, count in _mappings_for(keyword, value, divider = ','):
+    if not count.isdigit():
+      raise ValueError('%s lines should contain %s=COUNT mappings: %s %s' % (keyword, key_type, keyword, value))
 
-      status, count = entry.split('=', 1)
-
-      if count.isdigit():
-        if status in key_set:
-          recognized_counts[status] = int(count)
-        else:
-          unrecognized_counts[status] = int(count)
-      else:
-        raise ValueError(error_msg)
+    if status in key_set:
+      recognized_counts[status] = int(count)
+    else:
+      unrecognized_counts[status] = int(count)
 
   setattr(descriptor, recognized_counts_attr, recognized_counts)
   setattr(descriptor, unrecognized_counts_attr, unrecognized_counts)
@@ -453,22 +439,13 @@ def _parse_port_count_line(keyword, attribute, descriptor, entries):
   # "<keyword>" port=N,port=N,...
 
   value, port_mappings = _value(keyword, entries), {}
-  error_msg = 'Entries in %s line should only be PORT=N entries: %s %s' % (keyword, keyword, value)
 
-  if value:
-    for entry in value.split(','):
-      if '=' not in entry:
-        raise ValueError(error_msg)
+  for port, stat in _mappings_for(keyword, value, divider = ','):
+    if (port != 'other' and not stem.util.connection.is_valid_port(port)) or not stat.isdigit():
+      raise ValueError('Entries in %s line should only be PORT=N entries: %s %s' % (keyword, keyword, value))
 
-      port, stat = entry.split('=', 1)
-
-      if (port == 'other' or stem.util.connection.is_valid_port(port)) and stat.isdigit():
-        if port != 'other':
-          port = int(port)
-
-        port_mappings[port] = int(stat)
-      else:
-        raise ValueError(error_msg)
+    port = int(port) if port.isdigit() else port
+    port_mappings[port] = int(stat)
 
   setattr(descriptor, attribute, port_mappings)
 
@@ -483,19 +460,12 @@ def _parse_geoip_to_count_line(keyword, attribute, descriptor, entries):
   #   ??,"Unknown"
 
   value, locale_usage = _value(keyword, entries), {}
-  error_msg = 'Entries in %s line should only be CC=N entries: %s %s' % (keyword, keyword, value)
 
-  if value:
-    for entry in value.split(','):
-      if '=' not in entry:
-        raise ValueError(error_msg)
+  for locale, count in _mappings_for(keyword, value, divider = ','):
+    if not _locale_re.match(locale) or not count.isdigit():
+      raise ValueError('Entries in %s line should only be CC=N entries: %s %s' % (keyword, keyword, value))
 
-      locale, count = entry.split('=', 1)
-
-      if _locale_re.match(locale) and count.isdigit():
-        locale_usage[locale] = int(count)
-      else:
-        raise ValueError(error_msg)
+    locale_usage[locale] = int(count)
 
   setattr(descriptor, attribute, locale_usage)
 
@@ -503,17 +473,11 @@ def _parse_geoip_to_count_line(keyword, attribute, descriptor, entries):
 def _parse_bridge_ip_versions_line(descriptor, entries):
   value, ip_versions = _value('bridge-ip-versions', entries), {}
 
-  if value:
-    for entry in value.split(','):
-      if '=' not in entry:
-        raise stem.ProtocolError("The bridge-ip-versions should be a comma separated listing of '<protocol>=<count>' mappings: bridge-ip-versions %s" % value)
+  for protocol, count in _mappings_for('bridge-ip-versions', value, divider = ','):
+    if not count.isdigit():
+      raise stem.ProtocolError('IP protocol count was non-numeric (%s): bridge-ip-versions %s' % (count, value))
 
-      protocol, count = entry.split('=', 1)
-
-      if not count.isdigit():
-        raise stem.ProtocolError('IP protocol count was non-numeric (%s): bridge-ip-versions %s' % (count, value))
-
-      ip_versions[protocol] = int(count)
+    ip_versions[protocol] = int(count)
 
   descriptor.ip_versions = ip_versions
 
@@ -521,17 +485,11 @@ def _parse_bridge_ip_versions_line(descriptor, entries):
 def _parse_bridge_ip_transports_line(descriptor, entries):
   value, ip_transports = _value('bridge-ip-transports', entries), {}
 
-  if value:
-    for entry in value.split(','):
-      if '=' not in entry:
-        raise stem.ProtocolError("The bridge-ip-transports should be a comma separated listing of '<protocol>=<count>' mappings: bridge-ip-transports %s" % value)
+  for protocol, count in _mappings_for('bridge-ip-transports', value, divider = ','):
+    if not count.isdigit():
+      raise stem.ProtocolError('Transport count was non-numeric (%s): bridge-ip-transports %s' % (count, value))
 
-      protocol, count = entry.split('=', 1)
-
-      if not count.isdigit():
-        raise stem.ProtocolError('Transport count was non-numeric (%s): bridge-ip-transports %s' % (count, value))
-
-      ip_transports[protocol] = int(count)
+    ip_transports[protocol] = int(count)
 
   descriptor.ip_transports = ip_transports
 
@@ -541,22 +499,22 @@ def _parse_hs_stats(keyword, stat_attribute, extra_attribute, descriptor, entrie
 
   value, stat, extra = _value(keyword, entries), None, {}
 
-  if value is not None:
-    value_comp = value.split()
-
-    if not value_comp:
-      raise ValueError("'%s' line was blank" % keyword)
+  if value is None:
+    pass  # not in the descriptor
+  elif value == '':
+    raise ValueError("'%s' line was blank" % keyword)
+  else:
+    if ' ' in value:
+      stat_value, remainder = value.split(' ', 1)
+    else:
+      stat_value, remainder = value, None
 
     try:
-      stat = int(value_comp[0])
+      stat = int(stat_value)
     except ValueError:
-      raise ValueError("'%s' stat was non-numeric (%s): %s %s" % (keyword, value_comp[0], keyword, value))
+      raise ValueError("'%s' stat was non-numeric (%s): %s %s" % (keyword, stat_value, keyword, value))
 
-    for entry in value_comp[1:]:
-      if '=' not in entry:
-        raise ValueError('Entries after the stat in %s lines should only be key=val entries: %s %s' % (keyword, keyword, value))
-
-      key, val = entry.split('=', 1)
+    for key, val in _mappings_for(keyword, remainder):
       extra[key] = val
 
   setattr(descriptor, stat_attribute, stat)

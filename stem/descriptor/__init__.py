@@ -512,21 +512,17 @@ def _parse_protocol_line(keyword, attribute):
     value = _value(keyword, entries)
     protocols = OrderedDict()
 
-    for entry in value.split():
-      if '=' not in entry:
-        raise ValueError("Protocol entires are expected to be a series of 'key=value' pairs but was: %s %s" % (keyword, value))
-
-      k, v = entry.split('=', 1)
+    for k, v in _mappings_for(keyword, value):
       versions = []
 
       if not v:
         continue
 
-      for subentry in v.split(','):
-        if '-' in subentry:
-          min_value, max_value = subentry.split('-', 1)
+      for entry in v.split(','):
+        if '-' in entry:
+          min_value, max_value = entry.split('-', 1)
         else:
-          min_value = max_value = subentry
+          min_value = max_value = entry
 
         if not min_value.isdigit() or not max_value.isdigit():
           raise ValueError('Protocol values should be a number or number range, but was: %s %s' % (keyword, value))
@@ -553,6 +549,39 @@ def _parse_key_block(keyword, attribute, expected_block_type, value_attribute = 
       setattr(descriptor, value_attribute, value)
 
   return _parse
+
+
+def _mappings_for(keyword, value, require_value = False, divider = ' '):
+  """
+  Parses an attribute as a series of 'key=value' mappings. Unlike _parse_*
+  functions this is a helper, returning the attribute value rather than setting
+  a descriptor field. This way parsers can perform additional validations.
+
+  :param str keyword: descriptor field being parsed
+  :param str value: 'attribute => values' mappings to parse
+  :param str divider: separator between the key/value mappings
+  :param bool require_value: validates that values are not empty
+
+  :returns: **generator** with the key/value of the map attribute
+
+  :raises: **ValueError** if descriptor content is invalid
+  """
+
+  if value is None:
+    return  # no descripoter value to process
+  elif value == '':
+    return  # descriptor field was present, but blank
+
+  for entry in value.split(divider):
+    if '=' not in entry:
+      raise ValueError("'%s' should be a series of 'key=value' pairs but was: %s" % (keyword, value))
+
+    k, v = entry.split('=', 1)
+
+    if require_value and not v:
+      raise ValueError("'%s' line's %s mapping had a blank value: %s" % (keyword, k, value))
+
+    yield k, v
 
 
 def _copy(default):

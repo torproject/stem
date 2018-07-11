@@ -796,7 +796,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     Checks a 'proto' line when it's not key=value pairs.
     """
 
-    exc_msg = "Protocol entires are expected to be a series of 'key=value' pairs but was: proto Desc Link=1-4"
+    exc_msg = "'proto' should be a series of 'key=value' pairs but was: Desc Link=1-4"
     self.assertRaisesRegexp(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc Link=1-4'})
 
   def test_parse_with_non_int_version(self):
