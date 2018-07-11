@@ -80,6 +80,7 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * Fixed PyPy compatibility (:trac:`26207`)
+  * Python 3.6+ syntax error if test_tools.py imported (:trac:`26739`)
   * Connection information from proc limited to 10,000 results
   * Accouting for attribute types in most equality checks and hashes
 

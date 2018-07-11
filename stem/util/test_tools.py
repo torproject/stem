@@ -148,7 +148,6 @@ class AsyncTest(object):
     self._threaded = threaded
 
     self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
-    self.method.async = self
 
     self._process = None
     self._process_pipe = None
