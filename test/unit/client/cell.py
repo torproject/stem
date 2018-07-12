@@ -86,7 +86,7 @@ CERTS_CELLS = {
 }
 
 AUTH_CHALLENGE_CELLS = {
-  b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3], b'', 2),
+  b'\x00\x00\x82\x00\x26' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03': (CHALLENGE, [1, 3], b'', 2),
   b'\x00\x00\x82\x00\x28' + CHALLENGE + b'\x00\x02\x00\x01\x00\x03' + b'\x01\x02': (CHALLENGE, [1, 3], b'\x01\x02', 2),
 }
 
