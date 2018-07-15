@@ -76,6 +76,7 @@ The following are only available within Stem's `git repository
   * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)
   * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute (:trac:`25046`)
   * Allow 'proto' line to have blank values (:spec:`a8455f4`)
+  * Replaced Bifroest bridge authority with Serge (:trac:`26771`)
 
  * **Utilities**
 

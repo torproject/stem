@@ -647,12 +647,12 @@ DIRECTORY_AUTHORITIES = {
     orport_v6 = ('2620:13:4000:6000::1000:118', 443),
     v3ident = '27102BC123E7AF1D4741AE047E160C91ADC76B21',
   ),
-  'Bifroest': Authority(
-    nickname = 'Bifroest',
-    address = '37.218.247.217',
-    or_port = 443,
-    dir_port = 80,
-    fingerprint = '1D8F3A91C37C5D1C4C19B1AD1D0CFBE8BF72D8E1',
+  'Serge': Authority(
+    nickname = 'Serge',
+    address = '66.111.2.131',
+    or_port = 9001,
+    dir_port = 9030,
+    fingerprint = 'BA44A889E64B93FAA2B114E02C2A279A8555C533',
     v3ident = None,  # does not vote in the consensus
   ),
 }
