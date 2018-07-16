@@ -67,6 +67,7 @@ The following are only available within Stem's `git repository
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
   * Added the network status vote's new bandwidth_file attribute (:spec:`84591df`)
+  * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e8`)
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26 and Bifroest, which are authorities that frequently timeout
   * `stem.descriptor.remote <api/descriptor/remote.html>`_  now consistently defaults **fall_back_to_authority** to false

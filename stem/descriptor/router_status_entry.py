@@ -662,6 +662,8 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   Information about an individual router stored within a microdescriptor
   flavored network status document.
 
+  :var list or_addresses: **\*** relay's OR addresses, this is a tuple listing
+    of the form (address (**str**), port (**int**), is_ipv6 (**bool**))
   :var int bandwidth: bandwidth claimed by the relay (in kb/s)
   :var int measured: bandwidth measured to be available by the relay
   :var bool is_unmeasured: bandwidth measurement isn't based on three or more
@@ -675,11 +677,15 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
 
+  .. versionchanged:: 1.7.0
+     Added the or_addresses attribute.
+
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
+    'or_addresses': ([], _parse_a_line),
     'bandwidth': (None, _parse_w_line),
     'measured': (None, _parse_w_line),
     'is_unmeasured': (False, _parse_w_line),
@@ -690,6 +696,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   })
 
   PARSER_FOR_LINE = dict(RouterStatusEntry.PARSER_FOR_LINE, **{
+    'a': _parse_a_line,
     'w': _parse_w_line,
     'm': _parse_microdescriptor_m_line,
     'pr': _parse_pr_line,

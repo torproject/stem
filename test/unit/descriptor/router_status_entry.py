@@ -26,6 +26,12 @@ from stem.descriptor.router_status_entry import (
   _base64_to_hex,
 )
 
+try:
+  # Added in 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
 ENTRY_WITHOUT_ED25519 = """\
 r seele AAoQ1DAR6kkoo19hBAX5K0QztNw m0ynPuwzSextzsiXYJYA0Hce+Cs 2015-08-23 00:26:35 73.15.150.172 9001 0
 s Running Stable Valid
@@ -50,6 +56,16 @@ m 14,15 sha256=0wsEwBbxJ8RtPmGYwilHQTVEw2pWzUBEVlSgEO77OyU
 m 16,17 sha256=JK2xhYr/VsCF60px+LsT990BCpfKfQTeMxRbD63o2vE
 m 18,19,20 sha256=AkZH3gIvz3wunsroqh5izBJizdYuR7kn2oVbsvqgML8
 m 21 sha256=AVp41YVxKEJCaoEf0+77Cdvyw5YgpyDXdob0+LSv/pE
+"""
+
+ENTRY_WITH_IPV6 = """\
+r MYLEX AQt3KEVEEfSFzinUx5oUU0FRwsQ 2018-07-15 16:38:10 77.123.42.148 444 800
+a [2001:470:71:9b9:f66d:4ff:fee7:954c]:444
+m GWb+xjav0fsuwPwPNnUvW9Q1Ivk5nz8m1McECM4KY8A
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.2.5.16
+pr Cons=1 Desc=1 DirCache=1 HSDir=1 HSIntro=3 HSRend=1 Link=1-4 LinkAuth=1 Microdesc=1 Relay=1-2
+w Bandwidth=4950
 """
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, RouterStatusEntryV3, 'nickname', 'Unnamed')
@@ -220,6 +236,43 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual('ed25519', entry.identifier_type)
     self.assertEqual('8RH34kO07Pp+XYwzdoATVyCibIvmbslUjRkAm7J4IA8', entry.identifier)
     self.assertEqual('CAB27A6FFEF7A661C18B0B11120C3E8A77FC585C', entry.digest)
+    self.assertEqual([], entry.get_unrecognized_lines())
+
+  def test_with_ipv6(self):
+    """
+    Parse a router status entry with an IPv6 address.
+    """
+
+    expected_protocols = OrderedDict((
+      ('Cons', [1]),
+      ('Desc', [1]),
+      ('DirCache', [1]),
+      ('HSDir', [1]),
+      ('HSIntro', [3]),
+      ('HSRend', [1]),
+      ('Link', [1, 2, 3, 4]),
+      ('LinkAuth', [1]),
+      ('Microdesc', [1]),
+      ('Relay', [1, 2]),
+    ))
+
+    entry = RouterStatusEntryMicroV3(ENTRY_WITH_IPV6, validate = True)
+    self.assertEqual('MYLEX', entry.nickname)
+    self.assertEqual('010B7728454411F485CE29D4C79A14534151C2C4', entry.fingerprint)
+    self.assertEqual(datetime.datetime(2018, 7, 15, 16, 38, 10), entry.published)
+    self.assertEqual('77.123.42.148', entry.address)
+    self.assertEqual(444, entry.or_port)
+    self.assertEqual(800, entry.dir_port)
+    self.assertEqual(set([Flag.FAST, Flag.GUARD, Flag.HSDIR, Flag.RUNNING, Flag.STABLE, Flag.V2DIR, Flag.VALID]), set(entry.flags))
+    self.assertEqual('Tor 0.2.5.16', entry.version_line)
+    self.assertEqual(Version('0.2.5.16'), entry.version)
+    self.assertEqual([('2001:470:71:9b9:f66d:4ff:fee7:954c', 444, True)], entry.or_addresses)
+    self.assertEqual(4950, entry.bandwidth)
+    self.assertEqual(None, entry.measured)
+    self.assertEqual(False, entry.is_unmeasured)
+    self.assertEqual([], entry.unrecognized_bandwidth_entries)
+    self.assertEqual(expected_protocols, entry.protocols)
+    self.assertEqual('1966FEC636AFD1FB2EC0FC0F36752F5BD43522F9399F3F26D4C70408CE0A63C0', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_missing_fields(self):
