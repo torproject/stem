@@ -47,8 +47,6 @@ def _hash_value(val):
   if not HASH_TYPES:
     my_hash = 0
   else:
-    my_hash = hash(type(val))
-
     # TODO: I hate doing this but until Python 2.x support is dropped we
     # can't readily be strict about bytes vs unicode for attributes. This
     # is because test assertions often use strings, and normalizing this
@@ -57,7 +55,11 @@ def _hash_value(val):
     # This hack will go away when we drop Python 2.x support.
 
     if _is_str(val):
-      my_hash = hash(type(str))
+      my_hash = hash('str')
+    else:
+      # Hashing common builtins (ints, bools, etc) provide consistant values but many others vary their value on interpreter invokation.
+
+      my_hash = hash(str(type(val)))
 
   if isinstance(val, (tuple, list)):
     for v in val:
@@ -133,7 +135,7 @@ def _hash_attr(obj, *attributes, **kwargs):
 
   # TODO: deal with this parent thing
 
-  my_hash = hash(type(obj)) if kwargs.get('parent') is None else kwargs.get('parent').__hash__(obj)
+  my_hash = hash(str(type(obj))) if kwargs.get('parent') is None else kwargs.get('parent').__hash__(obj)
 
   for attr in attributes:
     val = getattr(obj, attr)
