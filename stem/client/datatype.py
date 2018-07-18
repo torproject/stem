@@ -121,8 +121,6 @@ import stem.util
 import stem.util.connection
 import stem.util.enum
 
-from stem.util import _hash_attr
-
 ZERO = b'\x00'
 HASH_LEN = 20
 KEY_LEN = 16
@@ -382,6 +380,7 @@ class Address(Field):
         raise ValueError("'%s' isn't an IPv4 or IPv6 address" % value)
 
     self.type, self.type_int = AddrType.get(addr_type)
+    self._hash = None
 
     if self.type == AddrType.IPv4:
       if stem.util.connection.is_valid_ipv4_address(value):
@@ -431,7 +430,10 @@ class Address(Field):
     return Address(addr_value, addr_type), content
 
   def __hash__(self):
-    return _hash_attr(self, 'type_int', 'value_bin')
+    if self._hash is None:
+      self._hash = stem.util._hash_attr(self, 'type_int', 'value_bin')
+
+    return self._hash
 
 
 class Certificate(Field):
@@ -446,6 +448,7 @@ class Certificate(Field):
   def __init__(self, cert_type, value):
     self.type, self.type_int = CertType.get(cert_type)
     self.value = value
+    self._hash = None
 
   def pack(self):
     cell = bytearray()
@@ -466,7 +469,10 @@ class Certificate(Field):
     return Certificate(cert_type, cert_bytes), content
 
   def __hash__(self):
-    return _hash_attr(self, 'type_int', 'value')
+    if self._hash is None:
+      self._hash = stem.util._hash_attr(self, 'type_int', 'value')
+
+    return self._hash
 
 
 class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
