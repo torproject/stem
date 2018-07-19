@@ -89,10 +89,9 @@ from stem.descriptor import (
   _random_crypto_blob,
 )
 
-try:
-  # added in python 3.2
+if stem.prereq._is_lru_cache_available():
   from functools import lru_cache
-except ImportError:
+else:
   from stem.util.lru_cache import lru_cache
 
 # relay descriptors must have exactly one of the following

@@ -77,10 +77,9 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
-try:
-  # added in python 3.2
+if stem.prereq._is_lru_cache_available():
   from functools import lru_cache
-except ImportError:
+else:
   from stem.util.lru_cache import lru_cache
 
 AddressType = stem.util.enum.Enum(('WILDCARD', 'Wildcard'), ('IPv4', 'IPv4'), ('IPv6', 'IPv6'))

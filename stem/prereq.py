@@ -21,15 +21,10 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
   is_mock_available - checks if the mock module is available
 """
 
+import functools
 import inspect
 import platform
 import sys
-
-try:
-  # added in python 3.2
-  from functools import lru_cache
-except ImportError:
-  from stem.util.lru_cache import lru_cache
 
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
 ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
@@ -102,7 +97,6 @@ def is_pypy():
   return platform.python_implementation() == 'PyPy'
 
 
-@lru_cache()
 def is_sqlite_available():
   """
   Checks if the sqlite3 module is available. Usually this is built in, but some
@@ -120,7 +114,6 @@ def is_sqlite_available():
     return False
 
 
-@lru_cache()
 def is_crypto_available():
   """
   Checks if the cryptography functions we use are available. This is used for
@@ -147,7 +140,6 @@ def is_crypto_available():
     return False
 
 
-@lru_cache()
 def is_zstd_available():
   """
   Checks if the `zstd module <https://pypi.python.org/pypi/zstandard>`_ is
@@ -171,7 +163,6 @@ def is_zstd_available():
     return False
 
 
-@lru_cache()
 def is_lzma_available():
   """
   Checks if the `lzma module <https://docs.python.org/3/library/lzma.html>`_ is
@@ -191,7 +182,6 @@ def is_lzma_available():
     return False
 
 
-@lru_cache()
 def is_mock_available():
   """
   Checks if the mock module is available. In python 3.3 and up it is a builtin
@@ -234,7 +224,21 @@ def is_mock_available():
     return False
 
 
-@lru_cache()
+def _is_lru_cache_available():
+  """
+  Functools added lru_cache to the standard library in Python 3.2. Prior to
+  this using a bundled implementation. We're also using this with Python 3.5
+  due to a buggy implementation. (:trac:`26412`)
+  """
+
+  major_version, minor_version = sys.version_info[0:2]
+
+  if major_version == 3 and minor_version == 5:
+    return False
+  else:
+    return hasattr(functools, 'lru_cache')
+
+
 def _is_pynacl_available():
   """
   Checks if the pynacl functions we use are available. This is used for

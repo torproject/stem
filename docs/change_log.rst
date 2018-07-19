@@ -85,6 +85,7 @@ The following are only available within Stem's `git repository
   * Python 3.6+ syntax error if test_tools.py imported (:trac:`26739`)
   * Connection information from proc limited to 10,000 results
   * Accouting for attribute types in most equality checks and hashes
+  * Funcions using lru_cache could fail with a KeyError on Python 3.5 (:trac:`26412`)
 
  * **Website**
 
