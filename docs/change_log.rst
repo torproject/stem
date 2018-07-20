@@ -63,6 +63,7 @@ The following are only available within Stem's `git repository
   * Zstd and lzma compression support (:spec:`1cb56af`)
   * Moved the Directory classes into their own `stem.directory <api/directory.html>`_ module
   * Added :func:`~stem.descriptor.remote.Directory.from_cache` and :func:`~stem.descriptor.remote.Directory.from_remote` to the :class:`~stem.descriptor.remote.DirectoryAuthority` subclass
+  * `Tor rearranged its files <https://lists.torproject.org/pipermail/tor-dev/2018-July/013287.html>`_, adjusted :func:`stem.descriptor.remote.Directory.from_remote` and :func:`stem.manual.Manual.from_remote` to account for this
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
@@ -84,8 +85,10 @@ The following are only available within Stem's `git repository
   * Fixed PyPy compatibility (:trac:`26207`)
   * Python 3.6+ syntax error if test_tools.py imported (:trac:`26739`)
   * Connection information from proc limited to 10,000 results
-  * Accouting for attribute types in most equality checks and hashes
-  * Funcions using lru_cache could fail with a KeyError on Python 3.5 (:trac:`26412`)
+  * Include attribute types in most equality checks and hashes
+  * Cache hash values of immutable classes
+  * More performant string concatenation `via bytearrays <https://docs.python.org/3/faq/programming.html#what-is-the-most-efficient-way-to-concatenate-many-strings-together>`_
+  * Functions using lru_cache could fail with a KeyError on Python 3.5 (:trac:`26412`)
 
  * **Website**
 
@@ -152,7 +155,7 @@ Year long accumulation of fixes and improvements in support of the `Nyx 2.0 rele
   * Added cwd argument to :func:`~stem.util.system.call`
   * Added round argument to :func:`~stem.util.str_tools.size_label`
   * Added :class:`~stem.util.test_tools.TimedTestRunner` and :func:`~stem.util.test_tools.test_runtimes`
-  * Supporing pid arguments in :func:`~stem.util.system.is_running`
+  * Supporting pid arguments in :func:`~stem.util.system.is_running`
   * Made connection resolution via proc about 5x faster
   * Normalized :func:`~stem.util.term.format` to return unicode
   * Don't load vim swap files as configurations
@@ -160,7 +163,7 @@ Year long accumulation of fixes and improvements in support of the `Nyx 2.0 rele
  * **Interpreter**
 
   * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands (:trac:`21541`)
-  * Allowing interpreter to continue after tor shutsdown (:trac:`22374`)
+  * Allowing interpreter to continue after tor shuts down (:trac:`22374`)
   * Interpreter buffered an unbounded number of events, leaking memory over time
 
  * **Website**
