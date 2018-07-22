@@ -1262,6 +1262,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     test_values = {
       '': {},
+      'timestamp=': {'timestamp': ''},
       'timestamp=12=34': {'timestamp': '12=34'},
       'timestamp=123': {'timestamp': '123'},
       'timestamp=123 version=1.0': {'timestamp': '123', 'version': '1.0'},
@@ -1272,22 +1273,13 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'bandwidth-file-headers': test_value})
       self.assertEqual(expected_value, document.bandwidth_file_headers)
 
-  def test_bandwidth_file_headers_malformed(self):
-    """
-    Parses 'bandwidth-file-headers' with invalid content.
-    """
+    # field must be key=value mappings
 
-    test_values = (
-      'timestamp=',
-      'key_without_value',
-    )
+    content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file-headers': 'key_without_value'})
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
 
-    for attr in test_values:
-      content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file-headers': attr})
-      self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
-
-      document = NetworkStatusDocumentV3(content, False)
-      self.assertEqual({}, document.bandwidth_file_headers)
+    document = NetworkStatusDocumentV3(content, False)
+    self.assertEqual({}, document.bandwidth_file_headers)
 
   def test_with_legacy_directory_authorities(self):
     """

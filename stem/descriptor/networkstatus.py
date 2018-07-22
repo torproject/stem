@@ -778,14 +778,14 @@ def _parse_shared_rand_current_value(descriptor, entries):
 
 def _parse_bandwidth_file_headers(descriptor, entries):
   # "bandwidth-file-headers" KeyValues
-  # KeyValues ::= KeyValue | KeyValues SP KeyValue
+  # KeyValues ::= "" | KeyValue | KeyValues SP KeyValue
   # KeyValue ::= Keyword '=' Value
   # Value ::= ArgumentChar+
 
   value = _value('bandwidth-file-headers', entries)
   results = {}
 
-  for key, val in _mappings_for('bandwidth-file-headers', value, require_value = True):
+  for key, val in _mappings_for('bandwidth-file-headers', value):
     results[key] = val
 
   descriptor.bandwidth_file_headers = results
