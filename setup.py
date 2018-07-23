@@ -9,6 +9,7 @@
 #
 # * Run 'run_tests.py --all --target RUN_ALL,ONLINE' with python2.6, python2.7,
 #   python3, and pypy.
+#   +- or 'tox -- --all --target RUN_ALL,ONLINE'
 #
 # * Tag the release
 #   |- Bump stem's version (in stem/__init__.py and docs/index.rst).
