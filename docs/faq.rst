@@ -561,8 +561,17 @@ can be as simple as...
   ~/stem$ tox
   ...
   ____ summary _____
+  SKIPPED:  py26: InterpreterNotFound: python2.6
     py27: commands succeeded
+  SKIPPED:  py32: InterpreterNotFound: python3.2
     py33: commands succeeded
+  SKIPPED:  py34: InterpreterNotFound: python3.4
+  SKIPPED:  py35: InterpreterNotFound: python3.5
+  SKIPPED:  py36: InterpreterNotFound: python3.6
+  SKIPPED:  py37: InterpreterNotFound: python3.7
+  SKIPPED:  jython: InterpreterNotFound: jython
+  SKIPPED:  pypy: InterpreterNotFound: pypy
+    congratulations :)
 
 Tox fetches Stem's dependencies for each version of python. One of these
 dependencies is pycrypto which requires **python-dev** (or **python3-dev** if
