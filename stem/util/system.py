@@ -67,7 +67,6 @@ best-effort, providing **None** if the lookup fails.
 import collections
 import ctypes
 import ctypes.util
-import distutils.spawn
 import itertools
 import mimetypes
 import multiprocessing
@@ -383,17 +382,26 @@ def is_available(command, cached=True):
     command = command.split(' ')[0]
 
   if command in SHELL_COMMANDS:
-    # we can't actually look it up, so hope the shell really provides it...
-
-    return True
+    return True  # we can't actually look it up, so hope the shell really provides it...
   elif cached and command in CMD_AVAILABLE_CACHE:
     return CMD_AVAILABLE_CACHE[command]
   elif 'PATH' not in os.environ:
     return False  # lacking a path will cause find_executable() to internally fail
-  else:
-    cmd_exists = distutils.spawn.find_executable(command) is not None
-    CMD_AVAILABLE_CACHE[command] = cmd_exists
-    return cmd_exists
+
+  cmd_exists = False
+
+  for path in os.environ['PATH'].split(os.pathsep):
+    cmd_path = os.path.join(path, command)
+
+    if is_windows():
+      cmd_path += '.exe'
+
+    if os.path.exists(cmd_path) and os.access(cmd_path, os.X_OK):
+      cmd_exists = True
+      break
+
+  CMD_AVAILABLE_CACHE[command] = cmd_exists
+  return cmd_exists
 
 
 def is_running(command):
