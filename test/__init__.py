@@ -67,11 +67,13 @@ NEW_CAPABILITIES_SUPPRESSION_TOKENS = set()
 # File extensions of contents that should be ignored.
 
 IGNORED_FILE_TYPES = []
+GIT_IGNORE_PATH = os.path.join(STEM_BASE, '.gitignore')
 
-with open(os.path.join(STEM_BASE, '.gitignore')) as ignore_file:
-  for line in ignore_file:
-    if line.startswith('*.'):
-      IGNORED_FILE_TYPES.append(line[2:].strip())
+if os.path.exists(GIT_IGNORE_PATH):
+  with open(GIT_IGNORE_PATH) as ignore_file:
+    for line in ignore_file:
+      if line.startswith('*.'):
+        IGNORED_FILE_TYPES.append(line[2:].strip())
 
 if os.path.exists(os.path.join(STEM_BASE, '.travis.yml')):
     IGNORED_FILE_TYPES.append('.travis.yml')
