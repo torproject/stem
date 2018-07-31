@@ -1746,9 +1746,10 @@ class Controller(BaseController):
     Provides an iterator for all of the microdescriptors that tor currently
     knows about.
 
-    **Tor does not expose this information via the control protocol**
-    (:trac:`8323`). Until it does this reads the microdescriptors from disk,
-    and hence won't work remotely or if we lack read permissions.
+    Prior to Tor 0.3.5.1 this information was not available via the control
+    protocol. When connected to prior versions we read the microdescriptors
+    directly from disk instead, which will not work remotely or if our process
+    lacks read permissions.
 
     :param list default: items to provide if the query fails
 
@@ -1760,27 +1761,38 @@ class Controller(BaseController):
       default was provided
     """
 
-    try:
-      data_directory = self.get_conf('DataDirectory')
-    except stem.ControllerError as exc:
-      raise stem.OperationFailed(message = 'Unable to determine the data directory (%s)' % exc)
+    if self.get_version() >= stem.version.Requirement.GETINFO_MICRODESCRIPTORS:
+      desc_content = self.get_info('md/all', get_bytes = True)
 
-    cached_descriptor_path = os.path.join(data_directory, 'cached-microdescs')
+      if not desc_content:
+        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
-    if not os.path.exists(data_directory):
-      raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
-    elif not os.path.exists(cached_descriptor_path):
-      raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % cached_descriptor_path)
-
-    with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
-      for desc in reader:
-        # It shouldn't be possible for these to be something other than
-        # microdescriptors but as the saying goes: trust but verify.
-
-        if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
-          raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
-
+      for desc in stem.descriptor.microdescriptor._parse_file(io.BytesIO(desc_content)):
         yield desc
+    else:
+      # TODO: remove when tor versions that require this are obsolete
+
+      try:
+        data_directory = self.get_conf('DataDirectory')
+      except stem.ControllerError as exc:
+        raise stem.OperationFailed(message = 'Unable to determine the data directory (%s)' % exc)
+
+      cached_descriptor_path = os.path.join(data_directory, 'cached-microdescs')
+
+      if not os.path.exists(data_directory):
+        raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
+      elif not os.path.exists(cached_descriptor_path):
+        raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % cached_descriptor_path)
+
+      with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
+        for desc in reader:
+          # It shouldn't be possible for these to be something other than
+          # microdescriptors but as the saying goes: trust but verify.
+
+          if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
+            raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
+
+          yield desc
 
   @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):
