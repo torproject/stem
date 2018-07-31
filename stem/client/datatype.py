@@ -228,7 +228,7 @@ def split(content, size):
   return content[:size], content[size:]
 
 
-class LinkProtocol(collections.namedtuple('LinkProtocol', ['version', 'circ_id_size', 'fixed_cell_len', 'first_circ_id'])):
+class LinkProtocol(int):
   """
   Constants that vary by our link protocol version.
 
@@ -239,18 +239,35 @@ class LinkProtocol(collections.namedtuple('LinkProtocol', ['version', 'circ_id_s
     from a range that's determined by our link protocol.
   """
 
-  @staticmethod
-  def for_version(version):
+  def __new__(cls, version):
     if isinstance(version, LinkProtocol):
       return version  # already a LinkProtocol
-    elif isinstance(version, int):
-      circ_id_size = Size.LONG if version > 3 else Size.SHORT
-      fixed_cell_len = 514 if version > 3 else 512
-      first_circ_id = 0x80000000 if version > 3 else 0x01
 
-      return LinkProtocol(version, circ_id_size, fixed_cell_len, first_circ_id)
+    protocol = int.__new__(cls, version)
+    protocol.version = version
+    protocol.circ_id_size = Size.LONG if version > 3 else Size.SHORT
+    protocol.fixed_cell_length = 514 if version > 3 else 512
+    protocol.first_circ_id = 0x80000000 if version > 3 else 0x01
+
+    return protocol
+
+  def __hash__(self):
+    # All LinkProtocol attributes can be derived from our version, so that's
+    # all we need in our hash. Offsetting by our type so we don't hash conflict
+    # with ints.
+
+    return self.version * hash(str(type(self)))
+
+  def __eq__(self, other):
+    if isinstance(other, int):
+      return self.version == other
+    elif isinstance(other, LinkProtocol):
+      return hash(self) == hash(other)
     else:
-      raise TypeError('LinkProtocol.for_version() should receiving an int, not %s' % type(version).__name__)
+      return False
+
+  def __ne__(self, other):
+    return not self == other
 
   def __int__(self):
     return self.version

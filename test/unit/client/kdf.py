@@ -1,5 +1,5 @@
 """
-Unit tests for stem.client.KDF.
+Unit tests for stem.client.datatype.KDF.
 """
 
 import unittest

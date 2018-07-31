@@ -52,7 +52,7 @@ class Relay(object):
   """
 
   def __init__(self, orport, link_protocol):
-    self.link_protocol = LinkProtocol.for_version(link_protocol)
+    self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
     self._orport_lock = threading.RLock()
     self._circuits = {}

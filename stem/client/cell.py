@@ -166,7 +166,7 @@ class Cell(object):
       * NotImplementedError if unable to unpack this cell type
     """
 
-    link_protocol = LinkProtocol.for_version(link_protocol)
+    link_protocol = LinkProtocol(link_protocol)
 
     circ_id, content = link_protocol.circ_id_size.pop(content)
     command, content = Size.CHAR.pop(content)
@@ -216,7 +216,7 @@ class Cell(object):
 
       circ_id = 0  # cell doesn't concern a circuit, default field to zero
 
-    link_protocol = LinkProtocol.for_version(link_protocol)
+    link_protocol = LinkProtocol(link_protocol)
 
     cell = bytearray()
     cell += link_protocol.circ_id_size.pack(circ_id)
@@ -230,10 +230,10 @@ class Cell(object):
     # pad fixed sized cells to the required length
 
     if cls.IS_FIXED_SIZE:
-      if len(cell) > link_protocol.fixed_cell_len:
-        raise ValueError('Cell of type %s is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (cls.NAME, len(cell), link_protocol.fixed_cell_len, len(payload)))
+      if len(cell) > link_protocol.fixed_cell_length:
+        raise ValueError('Cell of type %s is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (cls.NAME, len(cell), link_protocol.fixed_cell_length, len(payload)))
 
-      cell += ZERO * (link_protocol.fixed_cell_len - len(cell))
+      cell += ZERO * (link_protocol.fixed_cell_length - len(cell))
 
     return bytes(cell)
 
