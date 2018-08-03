@@ -14,6 +14,7 @@ Messages communicated over a Tor relay's ORPort.
     |- CircuitCell - Circuit management.
     |  |- CreateCell - Create a circuit.              (section 5.1)
     |  |- CreatedCell - Acknowledge create.           (section 5.1)
+    |  |- BaseRelayCell - End-to-end data; abstract.  (section 6.1)
     |  |- RelayCell - End-to-end data.                (section 6.1)
     |  |- DestroyCell - Stop using a circuit.         (section 5.4)
     |  |- CreateFastCell - Create a circuit, no PK.   (section 5.1)
@@ -83,6 +84,7 @@ class Cell(object):
   The following cell types explicitly don't have *unused* content:
     * PaddingCell (we consider all content part of payload)
     * VersionsCell (all content is unpacked and treated as a version specification)
+    * BaseRelayCell (we don't parse cell beyond header/body)
     * VPaddingCell (we consider all content part of payload)
 
   :var bytes unused: unused filler that padded the cell to the expected size
@@ -318,6 +320,40 @@ class CreatedCell(CircuitCell):
 
   def __init__(self):
     super(CreatedCell, self).__init__()  # TODO: implement
+
+
+class BaseRelayCell(CircuitCell):
+  """
+  Cell whose subclasses are relayed over circuits.
+
+  :var bytes payload: raw payload, quite possibly encrypted
+  """
+
+  NAME = 'INTERNAL_BASE_RELAY'  # defined for error/other strings
+  IS_FIXED_SIZE = True  # all relay cells are fixed-size
+
+  # other attributes are deferred to subclasses, since this class cannot be directly unpacked
+
+  def __init__(self, circ_id, payload):
+    if not payload:
+      raise ValueError('Relay cells require a payload')
+    if len(payload) != FIXED_PAYLOAD_LEN:
+      raise ValueError('Payload should be %i bytes, but was %i' % (FIXED_PAYLOAD_LEN, len(payload)))
+
+    super(BaseRelayCell, self).__init__(circ_id, unused = b'')
+    self.payload = payload
+
+  def pack(self, link_protocol):
+    # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
+    return type(self)._pack(link_protocol, self.payload, circ_id = self.circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_protocol):
+    # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
+    return cls(circ_id, content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
 
 
 class RelayCell(CircuitCell):

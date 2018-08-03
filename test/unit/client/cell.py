@@ -5,6 +5,7 @@ Unit tests for the stem.client.cell.
 import datetime
 import hashlib
 import os
+import struct
 import unittest
 
 from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
@@ -14,6 +15,7 @@ from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
   PaddingCell,
+  BaseRelayCell,
   RelayCell,
   DestroyCell,
   CreateFastCell,
@@ -187,6 +189,35 @@ class TestCell(unittest.TestCase):
       self.assertEqual(payload, cell.payload)
       self.assertEqual(b'', cell.unused)  # always empty
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
+
+  def test_base_relay_cell(self):
+    arbitrary_circ_id = 123
+    even_more_arbitrary_link_protocol = 1234
+
+    cell = BaseRelayCell(arbitrary_circ_id, RANDOM_PAYLOAD)
+    self.assertEqual(RANDOM_PAYLOAD, cell.payload)
+    self.assertEqual(arbitrary_circ_id, cell.circ_id)
+    self.assertEqual(True, cell.IS_FIXED_SIZE)
+
+    # Cell.unpack not reachable - won't be tested
+    # but we can at least directly test _unpack, although it's a pretty simple method
+    cell_2 = BaseRelayCell._unpack(RANDOM_PAYLOAD, arbitrary_circ_id, even_more_arbitrary_link_protocol)
+    self.assertEqual(cell, cell_2)
+
+    # pack not possible, but easily callable
+    self.assertRaises(struct.error, cell.pack, even_more_arbitrary_link_protocol)
+
+    # check other values and inequality
+    for (circ_id, payload) in ((arbitrary_circ_id, ZERO * FIXED_PAYLOAD_LEN), (arbitrary_circ_id + 1, RANDOM_PAYLOAD)):
+      unequal_cell = BaseRelayCell(circ_id, payload)
+      self.assertEqual(payload, unequal_cell.payload)
+      self.assertNotEqual(cell, unequal_cell)
+
+    # invalid constructions
+    self.assertRaisesWith(ValueError, 'Relay cells require a payload', BaseRelayCell, arbitrary_circ_id, None)
+    expected_message_format = 'Payload should be %i bytes, but was ' % FIXED_PAYLOAD_LEN + '%i'
+    for payload_len in (FIXED_PAYLOAD_LEN - 1, FIXED_PAYLOAD_LEN + 1):
+      self.assertRaisesWith(ValueError, expected_message_format % payload_len, BaseRelayCell, arbitrary_circ_id, ZERO * payload_len)
 
   def test_relay_cell(self):
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest, unused, link_protocol) in RELAY_CELLS.items():
