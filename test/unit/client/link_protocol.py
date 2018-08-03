@@ -30,7 +30,7 @@ class TestLinkProtocol(unittest.TestCase):
     self.assertEqual(7, protocol + 2)
     self.assertEqual(3, protocol - 2)
     self.assertEqual(15, protocol * 3)
-    self.assertEqual(1, protocol / 3)
+    self.assertEqual(1, protocol // 3)
 
   def test_equality(self):
     # LinkProtocols should be comparable with both other LinkProtocols and

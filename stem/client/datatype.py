@@ -349,6 +349,7 @@ class Size(Field):
     self.name = name
     self.size = size
     self.format = pack_format
+    self._hash = None
 
   @staticmethod
   def pop(packed):
@@ -375,6 +376,12 @@ class Size(Field):
     to_unpack, remainder = split(packed, self.size)
 
     return self.unpack(to_unpack), remainder
+
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = stem.util._hash_attr(self, 'name', 'size', 'format')
+
+    return self._hash
 
 
 class Address(Field):
