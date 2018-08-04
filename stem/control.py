@@ -1078,7 +1078,7 @@ class Controller(BaseController):
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
     def _address_changed_listener(event):
-      if event.action == 'EXTERNAL_ADDRESS':
+      if event.action in ('EXTERNAL_ADDRESS', 'DNS_USELESS'):
         self._set_cache({'exit_policy': None})
         self._set_cache({'address': None}, 'getinfo')
         self._last_address_exc = None
