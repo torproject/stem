@@ -1127,6 +1127,10 @@ class Controller(BaseController):
     .. versionchanged:: 1.1.0
        Added the get_bytes argument.
 
+    .. versionchanged:: 1.7.0
+       Errors commonly provided a :class:`stem.ProtocolError` when we should
+       raise a :class:`stem.OperationFailed`.
+
     :param str,list params: GETINFO option or options to be queried
     :param object default: response if the query fails
     :param bool get_bytes: provides **bytes** values rather than a **str** under python 3.x
@@ -1275,10 +1279,13 @@ class Controller(BaseController):
        parsing the user's torrc entries. This should be more reliable for
        some edge cases. (:trac:`25739`)
 
+    .. versionchanged:: 1.7.0
+       Returning **None** if not contigured to be a relay.
+
     :param object default: response if the query fails
 
     :returns: :class:`~stem.exit_policy.ExitPolicy` of the tor instance that
-      we're connected to
+      we're connected to, this is **None** if not configured to be a relay
 
     :raises:
       * :class:`stem.ControllerError` if unable to query the policy
@@ -1292,34 +1299,12 @@ class Controller(BaseController):
     if not policy:
       try:
         policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
-      except stem.ProtocolError:
-        # When tor is unable to determine our address 'GETINFO
-        # exit-policy/full' fails with...
-        #
-        #   ProtocolError: GETINFO response didn't have an OK status:
-        #     router_get_my_routerinfo returned NULL
-        #
-        #   https://trac.torproject.org/projects/tor/ticket/25842
-        #
-        # Failing back to the legacy method we used for getting our exit
-        # policy.
+        self._set_cache({'exit_policy': policy})
+      except stem.OperationFailed as exc:
+        if exc.code == '552':
+          return None  # not configured to be a relay
 
-        rules = []
-
-        if self.get_conf('ExitRelay') == '0':
-          rules.append('reject *:*')
-
-        if self.get_conf('ExitPolicyRejectPrivate') == '1':
-          rules.append('reject private:*')
-
-        for policy_line in self.get_conf('ExitPolicy', multiple = True):
-          rules += policy_line.split(',')
-
-        rules += self.get_info('exit-policy/default').split(',')
-
-        policy = stem.exit_policy.get_config_policy(rules, self.get_info('address', None))
-
-      self._set_cache({'exit_policy': policy})
+        raise
 
     return policy
 

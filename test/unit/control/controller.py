@@ -58,19 +58,19 @@ class TestControl(unittest.TestCase):
     msg_mock.return_value = ControlMessage.from_str('551 Address unknown\r\n')
 
     self.assertEqual(None, self.controller._last_address_exc)
-    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
-    self.assertEqual("GETINFO response didn't have an OK status:\nAddress unknown", str(self.controller._last_address_exc))
+    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
+    self.assertEqual('Address unknown', str(self.controller._last_address_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
 
-    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
+    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
     self.assertEqual(1, msg_mock.call_count)
 
     # invalidates the cache, transitioning from no address to having one
 
     msg_mock.return_value = ControlMessage.from_str('250-address=17.2.89.80\r\n250 OK\r\n', 'GETINFO')
-    self.assertRaisesRegexp(stem.ProtocolError, 'Address unknown', self.controller.get_info, 'address')
+    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
     self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=17.2.89.80 METHOD=DIRSERV\r\n'))
     self.assertEqual('17.2.89.80', self.controller.get_info('address'))
 
@@ -88,19 +88,19 @@ class TestControl(unittest.TestCase):
     get_conf_mock.return_value = None
 
     self.assertEqual(None, self.controller._last_fingerprint_exc)
-    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
-    self.assertEqual("GETINFO response didn't have an OK status:\nNot running in server mode", str(self.controller._last_fingerprint_exc))
+    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertEqual('Not running in server mode', str(self.controller._last_fingerprint_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
 
-    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual(1, msg_mock.call_count)
 
     # ... but if we become a relay we'll call it again
 
     get_conf_mock.return_value = '443'
-    self.assertRaisesRegexp(stem.ProtocolError, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual(2, msg_mock.call_count)
 
   @patch('stem.control.Controller.get_info')
@@ -158,16 +158,10 @@ class TestControl(unittest.TestCase):
       self.controller._is_caching_enabled = True
 
   @patch('stem.control.Controller.get_info')
-  @patch('stem.control.Controller.get_conf')
-  def test_get_exit_policy(self, get_conf_mock, get_info_mock):
+  def test_get_exit_policy(self, get_info_mock):
     """
     Exercises the get_exit_policy() method.
     """
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'ExitPolicyRejectPrivate': '1',
-      'ExitPolicy': ['accept *:80,   accept *:443', 'accept 43.5.5.5,reject *:22'],
-    }[param]
 
     get_info_mock.side_effect = lambda param, default = None: {
       'exit-policy/full': 'reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*',
@@ -188,6 +182,11 @@ class TestControl(unittest.TestCase):
     )
 
     self.assertEqual(expected, self.controller.get_exit_policy())
+
+  @patch('stem.control.Controller.get_info')
+  def test_get_exit_policy_if_not_relaying(self, get_info_mock):
+    get_info_mock.side_effect = stem.OperationFailed('552', 'Not running in server mode')
+    self.assertEqual(None, self.controller.get_exit_policy())
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')
