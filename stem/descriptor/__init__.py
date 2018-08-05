@@ -93,6 +93,13 @@ __all__ = [
   'Descriptor',
 ]
 
+UNSEEKABLE_MSG = """\
+File object isn't seekable. Try wrapping it with a BytesIO instead...
+
+  content = my_file.read()
+  parsed_descriptors = stem.descriptor.parse_file(io.BytesIO(content))
+"""
+
 KEYWORD_CHAR = 'a-zA-Z0-9-'
 WHITESPACE = ' \t'
 KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE))
@@ -217,6 +224,16 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
       yield desc
 
     return
+
+  # Not all files are seekable. If unseekable then advising the user.
+  #
+  # Python 3.x adds an io.seekable() method, but not an option with python 2.x
+  # so using an experimental call to tell() to determine this.
+
+  try:
+    descriptor_file.tell()
+  except IOError:
+    raise IOError(UNSEEKABLE_MSG)
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
