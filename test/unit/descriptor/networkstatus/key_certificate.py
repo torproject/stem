@@ -141,7 +141,7 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of KeyCertificate not implemented', KeyCertificate.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of KeyCertificate not implemented', KeyCertificate.create, sign = True)
 
   def test_unrecognized_line(self):
     """

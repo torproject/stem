@@ -95,7 +95,7 @@ class TestMicrodescriptor(unittest.TestCase):
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of Microdescriptor not implemented', Microdescriptor.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of Microdescriptor not implemented', Microdescriptor.create, sign = True)
 
   def test_unrecognized_line(self):
     """
@@ -205,4 +205,4 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEqual({}, desc.identifiers)
 
     exc_msg = "There can only be one 'id' line per a key type, but 'rsa1024' appeared multiple times"
-    self.assertRaisesRegexp(ValueError, exc_msg, Microdescriptor, desc_text, validate = True)
+    self.assertRaisesWith(ValueError, exc_msg, Microdescriptor, desc_text, validate = True)

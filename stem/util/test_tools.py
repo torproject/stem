@@ -266,6 +266,19 @@ class TimedTestRunner(unittest.TextTestRunner):
           else:
             return super(original_type, self).assertItemsEqual(expected, actual)
 
+        def assertRaisesWith(self, exc_type, exc_msg, func, *args, **kwargs):
+          """
+          Asserts the given invokation raises the expected excepiton. This is
+          similar to unittest's assertRaises and assertRaisesRegexp, but checks
+          for an exact match.
+
+          This method is **not** being vended to external users and may be
+          changed without notice. If you want this method to be part of our
+          vended API then please let us know.
+          """
+
+          return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), func, *args, **kwargs)
+
         def assertRaisesRegexp(self, exc_type, exc_msg, func, *args, **kwargs):
           if stem.prereq._is_python_26():
             try:

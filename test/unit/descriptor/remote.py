@@ -3,7 +3,6 @@ Unit tests for stem.descriptor.remote.
 """
 
 import io
-import re
 import socket
 import time
 import unittest
@@ -163,7 +162,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         validate = True,
       )
 
-      self.assertRaisesRegexp(stem.ProtocolError, "Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
+      self.assertRaisesWith(stem.ProtocolError, "Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
   @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
   def test_using_dirport(self):
@@ -382,8 +381,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     }
 
     for endpoints, error_suffix in invalid_endpoints.items():
-      expected_error = re.escape('Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. ' + error_suffix)
-      self.assertRaisesRegexp(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
+      expected_error = 'Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. ' + error_suffix
+      self.assertRaisesWith(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
 
   @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
   def test_can_iterate_multiple_times(self):

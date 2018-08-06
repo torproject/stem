@@ -534,7 +534,7 @@ class TestController(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
         exc_msg = "ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET"
-        self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
+        self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION)
@@ -658,7 +658,7 @@ class TestController(unittest.TestCase):
 
     with runner.get_tor_controller() as controller:
       exc_msg = "ADD_ONION response didn't have an OK status: No auth clients specified"
-      self.assertRaisesRegexp(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, basic_auth = {})
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, basic_auth = {})
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION)
@@ -789,8 +789,8 @@ class TestController(unittest.TestCase):
     """
 
     with test.runner.get_runner().get_tor_controller() as controller:
-      self.assertRaisesRegexp(stem.InvalidArguments, "DisableAllSwap cannot be changed while tor's running", controller.set_conf, 'DisableAllSwap', '1')
-      self.assertRaisesRegexp(stem.InvalidArguments, "DisableAllSwap, User cannot be changed while tor's running", controller.set_options, {'User': 'atagar', 'DisableAllSwap': '1'})
+      self.assertRaisesWith(stem.InvalidArguments, "DisableAllSwap cannot be changed while tor's running", controller.set_conf, 'DisableAllSwap', '1')
+      self.assertRaisesWith(stem.InvalidArguments, "DisableAllSwap, User cannot be changed while tor's running", controller.set_options, {'User': 'atagar', 'DisableAllSwap': '1'})
 
   @test.require.controller
   @test.require.version(Requirement.LOADCONF)
@@ -1294,7 +1294,7 @@ class TestController(unittest.TestCase):
       # try to fetch something that doesn't exist
 
       exc_msg = 'No running hidden service at m4cfuk6qp4lpu2g3.onion'
-      self.assertRaisesRegexp(stem.DescriptorUnavailable, exc_msg, controller.get_hidden_service_descriptor, 'm4cfuk6qp4lpu2g3')
+      self.assertRaisesWith(stem.DescriptorUnavailable, exc_msg, controller.get_hidden_service_descriptor, 'm4cfuk6qp4lpu2g3')
 
       # ... but shouldn't fail if we have a default argument or aren't awaiting the descriptor
 

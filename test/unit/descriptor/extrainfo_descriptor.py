@@ -4,7 +4,6 @@ Unit tests for stem.descriptor.extrainfo_descriptor.
 
 import datetime
 import functools
-import re
 import unittest
 
 import stem.descriptor
@@ -137,7 +136,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
   @test.require.cryptography
   def test_descriptor_signing(self):
     RelayExtraInfoDescriptor.create(sign = True)
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of BridgeExtraInfoDescriptor not implemented', BridgeExtraInfoDescriptor.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of BridgeExtraInfoDescriptor not implemented', BridgeExtraInfoDescriptor.create, sign = True)
 
   def test_multiple_metrics_bridge_descriptors(self):
     """
@@ -192,7 +191,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     with open(get_resource('unparseable/extrainfo_nonascii_v3_reqs'), 'rb') as descriptor_file:
       desc_generator = stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True)
       exc_msg = "'dirreq-v3-reqs' line had non-ascii content: S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,S?=4026597208,??=4026591624,6?=4026537520,6?=4026537520,6?=4026537520,us=8"
-      self.assertRaisesRegexp(ValueError, re.escape(exc_msg), next, desc_generator)
+      self.assertRaisesWith(ValueError, exc_msg, next, desc_generator)
 
   def test_minimal_extrainfo_descriptor(self):
     """

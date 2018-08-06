@@ -269,7 +269,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
   @test.require.cryptography
   def test_descriptor_signing(self):
     RelayDescriptor.create(sign = True)
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of BridgeDescriptor not implemented', BridgeDescriptor.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of BridgeDescriptor not implemented', BridgeDescriptor.create, sign = True)
 
   def test_router_status_entry(self):
     """
@@ -278,7 +278,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
 
     desc_without_fingerprint = RelayDescriptor.create()
     exc_msg = 'Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.'
-    self.assertRaisesRegexp(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
+    self.assertRaisesWith(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
 
     desc = RelayDescriptor.create(OrderedDict((
       ('router', 'caerSidi 71.35.133.197 9001 0 0'),
@@ -797,7 +797,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     exc_msg = "'proto' should be a series of 'key=value' pairs but was: Desc Link=1-4"
-    self.assertRaisesRegexp(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc Link=1-4'})
+    self.assertRaisesWith(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc Link=1-4'})
 
   def test_parse_with_non_int_version(self):
     """
@@ -805,7 +805,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     exc_msg = 'Protocol values should be a number or number range, but was: proto Desc=hi Link=1-4'
-    self.assertRaisesRegexp(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc=hi Link=1-4'})
+    self.assertRaisesWith(ValueError, exc_msg, RelayDescriptor.create, {'proto': 'Desc=hi Link=1-4'})
 
   def test_ntor_onion_key(self):
     """

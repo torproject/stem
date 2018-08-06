@@ -3,7 +3,6 @@ Unit testing code for the stem.util.proc functions.
 """
 
 import io
-import re
 import unittest
 
 import test
@@ -187,7 +186,7 @@ class TestProc(unittest.TestCase):
     listdir_mock.side_effect = OSError(error_msg)
 
     exc_msg = 'Unable to check number of file descriptors used: %s' % error_msg
-    self.assertRaisesRegexp(IOError, re.escape(exc_msg), proc.file_descriptors_used, 2118)
+    self.assertRaisesWith(IOError, exc_msg, proc.file_descriptors_used, 2118)
 
     # successful calls
 

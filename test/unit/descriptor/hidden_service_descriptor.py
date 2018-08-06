@@ -275,7 +275,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of HiddenServiceDescriptor not implemented', HiddenServiceDescriptor.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of HiddenServiceDescriptor not implemented', HiddenServiceDescriptor.create, sign = True)
 
   @test.require.cryptography
   def test_with_basic_auth(self):

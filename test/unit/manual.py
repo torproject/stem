@@ -4,7 +4,6 @@ Unit testing for the stem.manual module.
 
 import io
 import os
-import re
 import sqlite3
 import tempfile
 import unittest
@@ -108,7 +107,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name=?', 'CookieAuthFile').fetchone()[0])
 
   def test_query_on_failure(self):
-    self.assertRaisesRegexp(sqlite3.OperationalError, 'near "hello": syntax error', stem.manual.query, 'hello world')
+    self.assertRaisesWith(sqlite3.OperationalError, 'near "hello": syntax error', stem.manual.query, 'hello world')
 
   def test_has_all_summaries(self):
     """
@@ -243,12 +242,12 @@ class TestManual(unittest.TestCase):
 
   def test_download_man_page_without_arguments(self):
     exc_msg = "Either the path or file_handle we're saving to must be provided"
-    self.assertRaisesRegexp(ValueError, exc_msg, stem.manual.download_man_page)
+    self.assertRaisesWith(ValueError, exc_msg, stem.manual.download_man_page)
 
   @patch('stem.util.system.is_available', Mock(return_value = False))
   def test_download_man_page_requires_a2x(self):
     exc_msg = 'We require a2x from asciidoc to provide a man page'
-    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
+    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -256,7 +255,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
     exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
-    self.assertRaisesRegexp(IOError, re.escape(exc_msg), stem.manual.download_man_page, '/tmp/no_such_file')
+    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -265,7 +264,7 @@ class TestManual(unittest.TestCase):
   @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
-    self.assertRaisesRegexp(IOError, re.escape(exc_msg), stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -275,7 +274,7 @@ class TestManual(unittest.TestCase):
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
     exc_msg = "Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed"
-    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
   @patch('shutil.rmtree', Mock())
@@ -304,7 +303,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):
     exc_msg = "Unable to run 'man --encoding=ascii -P cat tor': man --encoding=ascii -P cat tor returned exit status 16"
-    self.assertRaisesRegexp(IOError, exc_msg, stem.manual.Manual.from_man)
+    self.assertRaisesWith(IOError, exc_msg, stem.manual.Manual.from_man)
 
   @patch('stem.util.system.call', Mock(return_value = []))
   def test_when_man_is_empty(self):

@@ -3,7 +3,6 @@ Unit tests for stem.client.Address.
 """
 
 import collections
-import re
 import unittest
 
 from stem.client.datatype import AddrType, Address
@@ -17,7 +16,7 @@ class TestAddress(unittest.TestCase):
     self.assertEqual(('IPv4', 4), AddrType.get(4))
 
     self.assertEqual(('UNKNOWN', 25), AddrType.get(25))
-    self.assertRaisesRegexp(ValueError, "Invalid enumeration 'boom', options are HOSTNAME, IPv4, IPv6, ERROR_TRANSIENT, ERROR_PERMANENT, UNKNOWN", AddrType.get, 'boom')
+    self.assertRaisesWith(ValueError, "Invalid enumeration 'boom', options are HOSTNAME, IPv4, IPv6, ERROR_TRANSIENT, ERROR_PERMANENT, UNKNOWN", AddrType.get, 'boom')
 
   def test_constructor(self):
     test_data = (
@@ -42,9 +41,9 @@ class TestAddress(unittest.TestCase):
     self.assertEqual(AddrType.IPv4, Address('127.0.0.1').type)
     self.assertEqual(AddrType.IPv6, Address('2001:0DB8:AC10:FE01::').type)
 
-    self.assertRaisesRegexp(ValueError, re.escape("Packed IPv4 addresses should be four bytes, but was: '\\x7f\\x00'"), Address, '\x7f\x00', 4)
-    self.assertRaisesRegexp(ValueError, re.escape("Packed IPv6 addresses should be sixteen bytes, but was: '\\x7f\\x00'"), Address, '\x7f\x00', 6)
-    self.assertRaisesRegexp(ValueError, re.escape("'nope' isn't an IPv4 or IPv6 address"), Address, 'nope')
+    self.assertRaisesWith(ValueError, "Packed IPv4 addresses should be four bytes, but was: '\\x7f\\x00'", Address, '\x7f\x00', 4)
+    self.assertRaisesWith(ValueError, "Packed IPv6 addresses should be sixteen bytes, but was: '\\x7f\\x00'", Address, '\x7f\x00', 6)
+    self.assertRaisesWith(ValueError, "'nope' isn't an IPv4 or IPv6 address", Address, 'nope')
 
   def test_unknown_type(self):
     addr = Address('hello', 12)

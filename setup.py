@@ -72,6 +72,7 @@ MANIFEST = """
 include cache_fallback_directories.py
 include cache_manual.py
 include LICENSE
+include README.md
 include MANIFEST.in
 include requirements.txt
 include run_tests.py

@@ -106,4 +106,4 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of NetworkStatusDocumentV2 not implemented', NetworkStatusDocumentV2.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of NetworkStatusDocumentV2 not implemented', NetworkStatusDocumentV2.create, sign = True)

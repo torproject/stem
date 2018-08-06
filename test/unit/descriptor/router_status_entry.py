@@ -168,9 +168,9 @@ class TestRouterStatusEntry(unittest.TestCase):
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of RouterStatusEntryV2 not implemented', RouterStatusEntryV2.create, sign = True)
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of RouterStatusEntryV3 not implemented', RouterStatusEntryV3.create, sign = True)
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of RouterStatusEntryMicroV3 not implemented', RouterStatusEntryMicroV3.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryV2 not implemented', RouterStatusEntryV2.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryV3 not implemented', RouterStatusEntryV3.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryMicroV3 not implemented', RouterStatusEntryMicroV3.create, sign = True)
 
   def test_without_ed25519(self):
     """

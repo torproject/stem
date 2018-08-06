@@ -102,7 +102,7 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(State.PENDING, task.status)
 
     task.run()
-    self.assertRaisesRegexp(RuntimeError, 'hello world', task.join)
+    self.assertRaisesWith(RuntimeError, 'hello world', task.join)
     self.assertEqual(State.FAILED, task.status)
     self.assertTrue(0 < task.runtime < 1.0)
 
@@ -531,7 +531,7 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(os.path.join(home_dir, 'foo'), stem.util.system.expand_path('~%s/foo' % username))
 
   def test_call_timeout(self):
-    self.assertRaisesRegexp(stem.util.system.CallTimeoutError, "Process didn't finish after 0.0 seconds", stem.util.system.call, 'sleep 1', timeout = 0.001)
+    self.assertRaisesWith(stem.util.system.CallTimeoutError, "Process didn't finish after 0.0 seconds", stem.util.system.call, 'sleep 1', timeout = 0.001)
 
   def test_call_time_tracked(self):
     """

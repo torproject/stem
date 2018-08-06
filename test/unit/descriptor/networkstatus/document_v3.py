@@ -4,7 +4,6 @@ Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 
 import datetime
 import io
-import re
 import unittest
 
 import stem.descriptor
@@ -367,7 +366,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of NetworkStatusDocumentV3 not implemented', NetworkStatusDocumentV3.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of NetworkStatusDocumentV3 not implemented', NetworkStatusDocumentV3.create, sign = True)
 
   def test_examples(self):
     """
@@ -413,7 +412,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     # change a relay's nickname in the consensus so it's no longer validly signed
 
     consensus = stem.descriptor.networkstatus.NetworkStatusDocumentV3(consensus_content.replace(b'test002r', b'different_nickname'))
-    self.assertRaisesRegexp(ValueError, 'Network Status Document has 0 valid signatures out of 2 total, needed 1', consensus.validate_signatures, certs)
+    self.assertRaisesWith(ValueError, 'Network Status Document has 0 valid signatures out of 2 total, needed 1', consensus.validate_signatures, certs)
 
   def test_handlers(self):
     """
@@ -1246,7 +1245,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     for attr, expected_exception in test_values:
       content = DirectoryAuthority.content(attr)
-      self.assertRaisesRegexp(ValueError, re.escape(expected_exception), DirectoryAuthority, content, True)
+      self.assertRaisesWith(ValueError, expected_exception, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
       self.assertEqual([], authority.shared_randomness_commitments)

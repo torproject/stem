@@ -5,7 +5,6 @@ Unit tests for the stem.client.cell.
 import datetime
 import hashlib
 import os
-import re
 import unittest
 
 from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
@@ -115,8 +114,8 @@ class TestCell(unittest.TestCase):
   def test_unimplemented_cell_methods(self):
     cell_instance = Cell()
 
-    self.assertRaisesRegexp(NotImplementedError, re.escape('Packing not yet implemented for UNKNOWN cells'), cell_instance.pack, 2)
-    self.assertRaisesRegexp(NotImplementedError, re.escape('Unpacking not yet implemented for UNKNOWN cells'), cell_instance._unpack, b'dummy', 0, 2)
+    self.assertRaisesWith(NotImplementedError, 'Packing not yet implemented for UNKNOWN cells', cell_instance.pack, 2)
+    self.assertRaisesWith(NotImplementedError, 'Unpacking not yet implemented for UNKNOWN cells', cell_instance._unpack, b'dummy', 0, 2)
 
   def test_payload_too_large(self):
     class OversizedCell(Cell):
@@ -130,20 +129,20 @@ class TestCell(unittest.TestCase):
     instance = OversizedCell()
 
     expected_message = 'Cell of type OVERSIZED is too large (%i bytes), must not be more than %i. Check payload size (was %i bytes)' % (FIXED_PAYLOAD_LEN + 4, FIXED_PAYLOAD_LEN + 3, FIXED_PAYLOAD_LEN + 1)
-    self.assertRaisesRegexp(ValueError, re.escape(expected_message), instance.pack, 2)
+    self.assertRaisesWith(ValueError, expected_message, instance.pack, 2)
 
   def test_circuit_id_validation(self):
     # only CircuitCell subclasses should provide a circ_id
 
-    self.assertRaisesRegexp(ValueError, 'PADDING cells should not specify a circuit identifier', PaddingCell._pack, 5, b'', circ_id = 12)
+    self.assertRaisesWith(ValueError, 'PADDING cells should not specify a circuit identifier', PaddingCell._pack, 5, b'', circ_id = 12)
 
     # CircuitCell should validate its circ_id
 
-    self.assertRaisesRegexp(ValueError, 'RELAY cells require a circuit identifier', RelayCell._pack, 5, b'', circ_id = None)
+    self.assertRaisesWith(ValueError, 'RELAY cells require a circuit identifier', RelayCell._pack, 5, b'', circ_id = None)
 
     for circ_id in (0, -1, -50):
       expected_msg = 'Circuit identifiers must a positive integer, not %s' % circ_id
-      self.assertRaisesRegexp(ValueError, expected_msg, RelayCell._pack, 5, b'', circ_id = circ_id)
+      self.assertRaisesWith(ValueError, expected_msg, RelayCell._pack, 5, b'', circ_id = circ_id)
 
   def test_unpack_for_new_link(self):
     expected_certs = (
@@ -212,7 +211,7 @@ class TestCell(unittest.TestCase):
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest.digest(), 564346860).digest)
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', 3257622417, 564346860).digest)
-    self.assertRaisesRegexp(ValueError, 'RELAY cell digest must be a hash, string, or int but was a list', RelayCell, 5, 'RELAY_BEGIN_DIR', '', [], 564346860)
+    self.assertRaisesWith(ValueError, 'RELAY cell digest must be a hash, string, or int but was a list', RelayCell, 5, 'RELAY_BEGIN_DIR', '', [], 564346860)
     self.assertRaisesRegexp(ValueError, "Invalid enumeration 'NO_SUCH_COMMAND', options are RELAY_BEGIN, RELAY_DATA", RelayCell, 5, 'NO_SUCH_COMMAND', '', 5, 564346860)
 
     mismatched_data_length_bytes = b''.join((
@@ -225,8 +224,8 @@ class TestCell(unittest.TestCase):
       b'\xFF\xFF',  # data len (65535, clearly invalid)
       ZERO * 498,  # data
     ))
-    expected_message = 'RELAY cell said it had 65535 bytes of data, but only had 498'
-    self.assertRaisesRegexp(ValueError, '^%s$' % re.escape(expected_message), Cell.pop, mismatched_data_length_bytes, 2)
+
+    self.assertRaisesWith(ValueError, 'RELAY cell said it had 65535 bytes of data, but only had 498', Cell.pop, mismatched_data_length_bytes, 2)
 
   def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int, unused, link_protocol) in DESTROY_CELLS.items():
@@ -257,7 +256,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(unused, cell.unused)
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
-    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
+    self.assertRaisesWith(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_created_fast_cell(self):
     for cell_bytes, (circ_id, key_material, derivative_key, unused, link_protocol) in CREATED_FAST_CELLS.items():
@@ -273,7 +272,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(unused, cell.unused)
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
-    self.assertRaisesRegexp(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
+    self.assertRaisesWith(ValueError, 'Key material should be 20 bytes, but was 3', CreateFastCell, 5, 'boo')
 
   def test_versions_cell(self):
     for cell_bytes, (versions, link_protocol) in VERSIONS_CELLS.items():
@@ -311,9 +310,9 @@ class TestCell(unittest.TestCase):
     self.assertEqual(VPADDING_CELL_EMPTY_PACKED, empty_constructed_cell.pack(2))
     self.assertEqual(b'', empty_constructed_cell.payload)
 
-    self.assertRaisesRegexp(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
-    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell size (-15) cannot be negative'), VPaddingCell, -15)
-    self.assertRaisesRegexp(ValueError, re.escape('VPaddingCell constructor must specify payload or size'), VPaddingCell)
+    self.assertRaisesWith(ValueError, 'VPaddingCell constructor specified both a size of 5 bytes and payload of 1 bytes', VPaddingCell, 5, '\x02')
+    self.assertRaisesWith(ValueError, 'VPaddingCell size (-15) cannot be negative', VPaddingCell, -15)
+    self.assertRaisesWith(ValueError, 'VPaddingCell constructor must specify payload or size', VPaddingCell)
 
   def test_certs_cell(self):
     for cell_bytes, (certs, unused, link_protocol) in CERTS_CELLS.items():
@@ -329,8 +328,8 @@ class TestCell(unittest.TestCase):
 
     # truncated or missing certificates should error
 
-    self.assertRaisesRegexp(ValueError, 'CERTS cell should have a certificate with 3 bytes, but only had 1 remaining', Cell.pop, b'\x00\x00\x81\x00\x05\x01\x01\x00\x03\x08', 2)
-    self.assertRaisesRegexp(ValueError, 'CERTS cell indicates it should have 2 certificates, but only contained 1', Cell.pop, b'\x00\x00\x81\x00\x05\x02\x01\x00\x01\x08', 2)
+    self.assertRaisesWith(ValueError, 'CERTS cell should have a certificate with 3 bytes, but only had 1 remaining', Cell.pop, b'\x00\x00\x81\x00\x05\x01\x01\x00\x03\x08', 2)
+    self.assertRaisesWith(ValueError, 'CERTS cell indicates it should have 2 certificates, but only contained 1', Cell.pop, b'\x00\x00\x81\x00\x05\x02\x01\x00\x01\x08', 2)
 
   def test_auth_challenge_cell(self):
     for cell_bytes, (challenge, methods, unused, link_protocol) in AUTH_CHALLENGE_CELLS.items():
@@ -345,5 +344,5 @@ class TestCell(unittest.TestCase):
       self.assertEqual(unused, cell.unused)
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
-    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
-    self.assertRaisesRegexp(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)
+    self.assertRaisesWith(ValueError, 'AUTH_CHALLENGE cell should have a payload of 38 bytes, but only had 16', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE[:10] + b'\x00\x02\x00\x01\x00\x03', 2)
+    self.assertRaisesWith(ValueError, 'AUTH_CHALLENGE should have 3 methods, but only had 4 bytes for it', Cell.pop, b'\x00\x00\x82\x00&' + CHALLENGE + b'\x00\x03\x00\x01\x00\x03', 2)

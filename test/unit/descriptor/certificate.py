@@ -47,9 +47,6 @@ def certificate(version = 1, cert_type = 4, extension_data = []):
 
 
 class TestEd25519Certificate(unittest.TestCase):
-  def assert_raises(self, parse_arg, exc_msg):
-    self.assertRaisesRegexp(ValueError, re.escape(exc_msg), Ed25519Certificate.parse, parse_arg)
-
   def test_basic_parsing(self):
     """
     Parse a basic test certificate.
@@ -98,15 +95,19 @@ class TestEd25519Certificate(unittest.TestCase):
     Parse data that isn't base64 encoded.
     """
 
-    self.assert_raises('\x02\x0323\x04', "Ed25519 certificate wasn't propoerly base64 encoded (Incorrect padding):")
+    exc_msg = re.escape("Ed25519 certificate wasn't propoerly base64 encoded (Incorrect padding):")
+    self.assertRaisesRegexp(ValueError, exc_msg, Ed25519Certificate.parse, '\x02\x0323\x04')
 
   def test_too_short(self):
     """
     Parse data that's too short to be a valid certificate.
     """
 
-    self.assert_raises('', "Ed25519 certificate wasn't propoerly base64 encoded (empty):")
-    self.assert_raises('AQQABhtZAaW2GoBED1IjY3A6', 'Ed25519 certificate was 18 bytes, but should be at least 104')
+    exc_msg = "Ed25519 certificate wasn't propoerly base64 encoded (empty):"
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, '')
+
+    exc_msg = 'Ed25519 certificate was 18 bytes, but should be at least 104'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, 'AQQABhtZAaW2GoBED1IjY3A6')
 
   def test_with_invalid_version(self):
     """
@@ -114,7 +115,8 @@ class TestEd25519Certificate(unittest.TestCase):
     Assert we raise if we don't handle a cert version yet.
     """
 
-    self.assert_raises(certificate(version = 2), 'Ed25519 certificate is version 2. Parser presently only supports version 1.')
+    exc_msg = 'Ed25519 certificate is version 2. Parser presently only supports version 1.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(version = 2))
 
   def test_with_invalid_cert_type(self):
     """
@@ -122,30 +124,38 @@ class TestEd25519Certificate(unittest.TestCase):
     are reserved.
     """
 
-    self.assert_raises(certificate(cert_type = 0), 'Ed25519 certificate cannot have a type of 0. This is reserved to avoid conflicts with tor CERTS cells.')
-    self.assert_raises(certificate(cert_type = 7), 'Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    exc_msg = 'Ed25519 certificate cannot have a type of 0. This is reserved to avoid conflicts with tor CERTS cells.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 0))
+
+    exc_msg = 'Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 7))
 
   def test_truncated_extension(self):
     """
     Include an extension without as much data as it specifies.
     """
 
-    self.assert_raises(certificate(extension_data = [b'']), 'Ed25519 extension is missing header field data')
-    self.assert_raises(certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']), "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2.")
+    exc_msg = 'Ed25519 extension is missing header field data'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'']))
+
+    exc_msg = "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2."
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']))
 
   def test_extra_extension_data(self):
     """
     Include an extension with more data than it specifies.
     """
 
-    self.assert_raises(certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']), "Ed25519 certificate had 1 bytes of unused extension data")
+    exc_msg = 'Ed25519 certificate had 1 bytes of unused extension data'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']))
 
   def test_truncated_signing_key(self):
     """
     Include an extension with an incorrect signing key size.
     """
 
-    self.assert_raises(certificate(extension_data = [b'\x00\x02\x04\x07\11\12']), "Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.")
+    exc_msg = 'Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x00\x02\x04\x07\11\12']))
 
   @test.require.pynacl
   def test_validation_with_descriptor_key(self):
@@ -182,4 +192,4 @@ class TestEd25519Certificate(unittest.TestCase):
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))
 
     cert = Ed25519Certificate.parse(certificate())
-    self.assertRaisesRegexp(ValueError, re.escape('Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)'), cert.validate, desc)
+    self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)', cert.validate, desc)

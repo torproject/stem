@@ -58,19 +58,19 @@ class TestControl(unittest.TestCase):
     msg_mock.return_value = ControlMessage.from_str('551 Address unknown\r\n')
 
     self.assertEqual(None, self.controller._last_address_exc)
-    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
+    self.assertRaisesWith(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
     self.assertEqual('Address unknown', str(self.controller._last_address_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
 
-    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
+    self.assertRaisesWith(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
     self.assertEqual(1, msg_mock.call_count)
 
     # invalidates the cache, transitioning from no address to having one
 
     msg_mock.return_value = ControlMessage.from_str('250-address=17.2.89.80\r\n250 OK\r\n', 'GETINFO')
-    self.assertRaisesRegexp(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
+    self.assertRaisesWith(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
     self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=17.2.89.80 METHOD=DIRSERV\r\n'))
     self.assertEqual('17.2.89.80', self.controller.get_info('address'))
 
@@ -88,19 +88,19 @@ class TestControl(unittest.TestCase):
     get_conf_mock.return_value = None
 
     self.assertEqual(None, self.controller._last_fingerprint_exc)
-    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertRaisesWith(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual('Not running in server mode', str(self.controller._last_fingerprint_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
 
-    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertRaisesWith(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual(1, msg_mock.call_count)
 
     # ... but if we become a relay we'll call it again
 
     get_conf_mock.return_value = '443'
-    self.assertRaisesRegexp(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
+    self.assertRaisesWith(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual(2, msg_mock.call_count)
 
   @patch('stem.control.Controller.get_info')
@@ -512,7 +512,7 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = ControllerError('nope, too bad')
 
     exc_msg = 'Unable to determine our own fingerprint: nope, too bad'
-    self.assertRaisesRegexp(ControllerError, exc_msg, self.controller.get_network_status)
+    self.assertRaisesWith(ControllerError, exc_msg, self.controller.get_network_status)
     self.assertEqual('boom', self.controller.get_network_status(default = 'boom'))
 
     # successful request
@@ -535,7 +535,7 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = InvalidArguments(None, 'GETINFO request contained unrecognized keywords: ns/id/5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
 
     exc_msg = "Tor was unable to provide the descriptor for '5AC9C5AA75BA1F18D8459B326B4B8111A856D290'"
-    self.assertRaisesRegexp(DescriptorUnavailable, exc_msg, self.controller.get_network_status, '5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
+    self.assertRaisesWith(DescriptorUnavailable, exc_msg, self.controller.get_network_status, '5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
 
   @patch('stem.control.Controller.get_info')
   def test_get_network_status(self, get_info_mock):
@@ -618,7 +618,7 @@ class TestControl(unittest.TestCase):
     that we raise a Timeout exception when it's elapsed.
     """
 
-    self.assertRaisesRegexp(stem.Timeout, 'Reached our 0.1 second timeout', self.controller.get_hidden_service_descriptor, '5g2upl4pq6kufc4m', await_result = True, timeout = 0.1)
+    self.assertRaisesWith(stem.Timeout, 'Reached our 0.1 second timeout', self.controller.get_hidden_service_descriptor, '5g2upl4pq6kufc4m', await_result = True, timeout = 0.1)
 
   def test_get_streams(self):
     """

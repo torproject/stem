@@ -2,7 +2,6 @@
 Unit tests for stem.client.Size.
 """
 
-import re
 import unittest
 
 from stem.client.datatype import Size
@@ -24,10 +23,10 @@ class TestSize(unittest.TestCase):
     self.assertEqual(b'\x00\x00\x00\x12', Size.LONG.pack(18))
     self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x12', Size.LONG_LONG.pack(18))
 
-    self.assertRaisesRegexp(ValueError, 'Size.pack encodes an integer, but was a str', Size.CHAR.pack, 'hi')
+    self.assertRaisesWith(ValueError, 'Size.pack encodes an integer, but was a str', Size.CHAR.pack, 'hi')
 
     bad_size = Size('BAD_SIZE', 1, '!H')
-    self.assertRaisesRegexp(ValueError, re.escape("'\\x00\\x12' is the wrong size for a BAD_SIZE field"), bad_size.pack, 18)
+    self.assertRaisesWith(ValueError, "'\\x00\\x12' is the wrong size for a BAD_SIZE field", bad_size.pack, 18)
 
   def test_unpack(self):
     self.assertEqual(18, Size.CHAR.unpack(b'\x12'))
@@ -38,7 +37,7 @@ class TestSize(unittest.TestCase):
     self.assertEqual(ord('a'), Size.CHAR.unpack(b'a'))
     self.assertEqual(24930, Size.SHORT.unpack(b'ab'))
 
-    self.assertRaisesRegexp(ValueError, re.escape("'\\x00\\x12' is the wrong size for a CHAR field"), Size.CHAR.unpack, '\x00\x12')
+    self.assertRaisesWith(ValueError, "'\\x00\\x12' is the wrong size for a CHAR field", Size.CHAR.unpack, '\x00\x12')
 
   def test_pop(self):
     self.assertEqual((18, b''), Size.CHAR.pop(b'\x12'))
@@ -46,5 +45,5 @@ class TestSize(unittest.TestCase):
     self.assertEqual((0, b'\x12'), Size.CHAR.pop(b'\x00\x12'))
     self.assertEqual((18, b''), Size.SHORT.pop(b'\x00\x12'))
 
-    self.assertRaisesRegexp(ValueError, "'' is the wrong size for a CHAR field", Size.CHAR.pop, '')
-    self.assertRaisesRegexp(ValueError, re.escape("'\\x12' is the wrong size for a SHORT field"), Size.SHORT.pop, '\x12')
+    self.assertRaisesWith(ValueError, "'' is the wrong size for a CHAR field", Size.CHAR.pop, '')
+    self.assertRaisesWith(ValueError, "'\\x12' is the wrong size for a SHORT field", Size.SHORT.pop, '\x12')

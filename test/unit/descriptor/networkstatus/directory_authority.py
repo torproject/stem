@@ -54,7 +54,7 @@ class TestDirectoryAuthority(unittest.TestCase):
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesRegexp(NotImplementedError, 'Signing of DirectoryAuthority not implemented', DirectoryAuthority.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of DirectoryAuthority not implemented', DirectoryAuthority.create, sign = True)
 
   def test_unrecognized_line(self):
     """

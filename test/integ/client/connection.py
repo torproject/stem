@@ -17,21 +17,21 @@ class TestConnection(unittest.TestCase):
     Provide invalid arguments to Relay.connect().
     """
 
-    self.assertRaisesRegexp(ValueError, "'nope' isn't an IPv4 or IPv6 address", Relay.connect, 'nope', 80)
-    self.assertRaisesRegexp(ValueError, "'-54' isn't a valid port", Relay.connect, '127.0.0.1', -54)
-    self.assertRaisesRegexp(ValueError, "Connection can't be established without a link protocol.", Relay.connect, '127.0.0.1', 54, [])
+    self.assertRaisesWith(ValueError, "'nope' isn't an IPv4 or IPv6 address", Relay.connect, 'nope', 80)
+    self.assertRaisesWith(ValueError, "'-54' isn't a valid port", Relay.connect, '127.0.0.1', -54)
+    self.assertRaisesWith(ValueError, "Connection can't be established without a link protocol.", Relay.connect, '127.0.0.1', 54, [])
 
   def test_not_orport(self):
     """
     Attempt to connect to an ORPort that doesn't exist.
     """
 
-    self.assertRaisesRegexp(stem.SocketError, "Failed to connect to 127.0.0.1:1587. Maybe it isn't an ORPort?", Relay.connect, '127.0.0.1', 1587)
+    self.assertRaisesWith(stem.SocketError, "Failed to connect to 127.0.0.1:1587. Maybe it isn't an ORPort?", Relay.connect, '127.0.0.1', 1587)
 
     # connect to our ControlPort like it's an ORPort
 
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      self.assertRaisesRegexp(stem.SocketError, "Failed to SSL authenticate to 127.0.0.1:1111. Maybe it isn't an ORPort?", Relay.connect, '127.0.0.1', test.runner.CONTROL_PORT)
+      self.assertRaisesWith(stem.SocketError, "Failed to SSL authenticate to 127.0.0.1:1111. Maybe it isn't an ORPort?", Relay.connect, '127.0.0.1', test.runner.CONTROL_PORT)
 
   def test_no_common_link_protocol(self):
     """
@@ -39,7 +39,7 @@ class TestConnection(unittest.TestCase):
     """
 
     for link_protocol in (1, 2, 6, 20):
-      self.assertRaisesRegexp(stem.SocketError, 'Unable to establish a common link protocol with 127.0.0.1:1113', Relay.connect, '127.0.0.1', test.runner.ORPORT, [link_protocol])
+      self.assertRaisesWith(stem.SocketError, 'Unable to establish a common link protocol with 127.0.0.1:1113', Relay.connect, '127.0.0.1', test.runner.ORPORT, [link_protocol])
 
   def test_connection_time(self):
     """
