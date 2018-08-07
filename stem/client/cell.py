@@ -109,7 +109,7 @@ class Cell(object):
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
-      if name == getattr(cls, 'NAME', UNDEFINED):
+      if name == getattr(cls, 'NAME', UNDEFINED) and not getattr(cls, 'CANNOT_DIRECTLY_UNPACK', False):
         return cls
 
     raise ValueError("'%s' isn't a valid cell type" % name)
@@ -125,7 +125,7 @@ class Cell(object):
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
-      if value == getattr(cls, 'VALUE', UNDEFINED):
+      if value == getattr(cls, 'VALUE', UNDEFINED) and not getattr(cls, 'CANNOT_DIRECTLY_UNPACK', False):
         return cls
 
     raise ValueError("'%s' isn't a valid cell value" % value)
@@ -371,6 +371,7 @@ class RelayCell(CircuitCell):
   NAME = 'RELAY'
   VALUE = 3
   IS_FIXED_SIZE = True
+  CANNOT_DIRECTLY_UNPACK = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
     if 'HASH' in str(type(digest)):
