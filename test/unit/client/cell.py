@@ -5,7 +5,6 @@ Unit tests for the stem.client.cell.
 import datetime
 import hashlib
 import os
-import struct
 import unittest
 
 from stem.client.datatype import ZERO, CertType, CloseReason, Address, Certificate
@@ -205,7 +204,8 @@ class TestCell(unittest.TestCase):
     self.assertEqual(cell, cell_2)
 
     # pack not possible, but easily callable
-    self.assertRaises(struct.error, cell.pack, even_more_arbitrary_link_protocol)
+    # lots of things cause a ValueError, so this check isn't very specific, but the wording comes from Size and so isn't under the purview of this unit
+    self.assertRaises(ValueError, cell.pack, even_more_arbitrary_link_protocol)
 
     # check other values and inequality
     for (circ_id, payload) in ((arbitrary_circ_id, ZERO * FIXED_PAYLOAD_LEN), (arbitrary_circ_id + 1, RANDOM_PAYLOAD)):
