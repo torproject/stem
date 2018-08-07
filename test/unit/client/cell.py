@@ -220,6 +220,8 @@ class TestCell(unittest.TestCase):
       self.assertRaisesWith(ValueError, expected_message_format % payload_len, BaseRelayCell, arbitrary_circ_id, ZERO * payload_len)
 
   def test_relay_cell(self):
+    self.assertEquals(True, RelayCell.CANNOT_DIRECTLY_UNPACK)
+
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest, unused, link_protocol) in RELAY_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(link_protocol))
