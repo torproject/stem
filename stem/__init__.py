@@ -601,7 +601,7 @@ class ORPort(Endpoint):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'link_protocols', parent = True)
+      self._hash = stem.util._hash_attr(self, 'link_protocols', parent = Endpoint)
 
     return self._hash
 

@@ -16,9 +16,7 @@ Parses replies from the control socket.
     |- from_str - provides a ControlMessage for the given string
     |- is_ok - response had a 250 status
     |- content - provides the parsed message content
-    |- raw_content - unparsed socket data
-    |- __str__ - content stripped of protocol formatting
-    +- __iter__ - ControlLine entries for the content of the message
+    +- raw_content - unparsed socket data
 
   ControlLine - String subclass with methods for parsing controller responses.
     |- remainder - provides the unparsed content
@@ -36,6 +34,7 @@ import re
 import threading
 
 import stem.socket
+import stem.util
 import stem.util.str_tools
 
 __all__ = [
@@ -129,6 +128,9 @@ class ControlMessage(object):
   Message from the control socket. This is iterable and can be stringified for
   individual message components stripped of protocol formatting. Messages are
   never empty.
+
+  .. versionchanged:: 1.7.0
+     Implemented equality and hashing.
   """
 
   @staticmethod
@@ -298,6 +300,15 @@ class ControlMessage(object):
       content = stem.util.str_tools._to_unicode(content)
 
     return ControlLine(content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, '_raw_content')
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, ControlMessage) else False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 class ControlLine(str):

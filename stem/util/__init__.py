@@ -130,10 +130,12 @@ def _hash_attr(obj, *attributes, **kwargs):
 
   :param Object obj: object to be hashed
   :param list attributes: attribute names to take into account
-  :param bool parent: include parent's hash value
+  :param class parent: include parent's hash value
   """
 
-  my_hash = super(type(obj), obj).__hash__() if kwargs.get('parent') else 0
+  parent_class = kwargs.get('parent')
+
+  my_hash = parent_class.__hash__(obj) if parent_class else 0
   my_hash = my_hash * 1024 + hash(str(type(obj)))
 
   for attr in attributes:

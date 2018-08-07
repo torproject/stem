@@ -168,6 +168,30 @@ class TestControlMessage(unittest.TestCase):
     control_socket_file = control_socket.makefile()
     self.assertRaises(stem.SocketClosed, stem.socket.recv_message, control_socket_file)
 
+  def test_equality(self):
+    msg = stem.response.ControlMessage.from_str(EVENT_BW)
+    event_msg = stem.response.ControlMessage.from_str(EVENT_BW, 'EVENT')
+
+    # basic check for identical and differing events
+
+    self.assertEqual(msg, stem.response.ControlMessage.from_str(EVENT_BW))
+    self.assertNotEqual(msg, stem.response.ControlMessage.from_str(EVENT_CIRC_TIMEOUT))
+
+    # casting to different message types should cause us to mismatch
+
+    self.assertNotEqual(event_msg, msg)
+    stem.response.convert('EVENT', msg)
+    self.assertEqual(event_msg, msg)
+
+    # events also take into account when they were received
+
+    event1 = stem.response.ControlMessage.from_str(EVENT_BW, 'EVENT', arrived_at = 123)
+    event2 = stem.response.ControlMessage.from_str(EVENT_BW, 'EVENT', arrived_at = 456)
+    event3 = stem.response.ControlMessage.from_str(EVENT_BW, 'EVENT', arrived_at = 123)
+
+    self.assertNotEqual(event1, event2)
+    self.assertEqual(event1, event3)
+
   def _assert_message_parses(self, controller_reply):
     """
     Performs some basic sanity checks that a reply mirrors its parsed result.

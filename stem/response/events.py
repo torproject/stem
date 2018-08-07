@@ -57,6 +57,7 @@ class Event(stem.response.ControlMessage):
 
     self.type = str(self).split()[0]
     self.arrived_at = arrived_at
+    self._hash = None
 
     # if we're a recognized event type then translate ourselves into that subclass
 
@@ -70,6 +71,12 @@ class Event(stem.response.ControlMessage):
       self._parse_standard_attr()
 
     self._parse()
+
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = stem.util._hash_attr(self, 'arrived_at', parent = stem.response.ControlMessage)
+
+    return self._hash
 
   def _parse_standard_attr(self):
     """
@@ -410,41 +417,15 @@ class CircuitEvent(Event):
     self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
   def _compare(self, other, method):
+    # sorting circuit events by their identifier
+
     if not isinstance(other, CircuitEvent):
       return False
 
-    for attr in ('id', 'status', 'path', 'build_flags', 'purpose', 'hs_state', 'rend_query', 'created', 'reason', 'remote_reason', 'socks_username', 'socks_password'):
-      my_attr = getattr(self, attr)
-      other_attr = getattr(other, attr)
+    my_id = getattr(self, 'id')
+    their_id = getattr(other, 'id')
 
-      # Our id attribute is technically a string, but Tor conventionally uses
-      # ints. Attempt to handle as ints if that's the case so we get numeric
-      # ordering.
-
-      if attr == 'id' and my_attr and other_attr:
-        if my_attr.isdigit() and other_attr.isdigit():
-          my_attr = int(my_attr)
-          other_attr = int(other_attr)
-
-      if my_attr is None:
-        my_attr = ''
-
-      if other_attr is None:
-        other_attr = ''
-
-      if my_attr != other_attr:
-        return method(my_attr, other_attr)
-
-    return True
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
+    return method(my_id, their_id) if my_id != their_id else method(hash(self), hash(other))
 
   def __gt__(self, other):
     return self._compare(other, lambda s, o: s > o)

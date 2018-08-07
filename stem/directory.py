@@ -316,7 +316,7 @@ class Authority(Directory):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = True)
+      self._hash = stem.util._hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = Directory)
 
     return self._hash
 
@@ -521,7 +521,7 @@ class Fallback(Directory):
 
   def __hash__(self):
     if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'has_extrainfo', 'header', parent = True)
+      self._hash = stem.util._hash_attr(self, 'has_extrainfo', 'header', parent = Directory)
 
     return self._hash
 

@@ -58,6 +58,7 @@ The following are only available within Stem's `git repository
   * Added the delivered_read, delivered_written, overhead_read, and overhead_written attributes to :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`fbb38ec`)
   * The *config* attribute of :class:`~stem.response.events.ConfChangedEvent` couldn't represent tor configuration options with multiple values. It has been replaced with new *changed* and *unset* attributes.
   * Replaced socket's :func:`~stem.socket.ControlPort.get_address`, :func:`~stem.socket.ControlPort.get_port`, and :func:`~stem.socket.ControlSocketFile.get_socket_path` with attributes
+  * :class:`~stem.response.ControlMessage` is now comparable and hashable
   * Removed 'raw' argument from :func:`~stem.socket.ControlSocket.send`
 
  * **Descriptors**
