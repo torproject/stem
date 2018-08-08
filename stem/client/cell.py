@@ -356,6 +356,11 @@ class BaseRelayCell(CircuitCell):
     return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
 
 
+class RawRelayCell(BaseRelayCell):
+  NAME = 'RELAY'
+  VALUE = 3
+
+
 class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
