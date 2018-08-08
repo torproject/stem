@@ -34,7 +34,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, LinkProtocol, Address, Size, KDF, split
+from stem.client.datatype import ZERO, LinkProtocol, Address, KDF
 
 __all__ = [
   'cell',
@@ -237,45 +237,33 @@ class Circuit(object):
       orig_digest = self.forward_digest.copy()
       orig_key = copy.copy(self.forward_key)
 
-      # Digests and such are computed using the RELAY cell payload. This
-      # doesn't include the initial circuit id and cell type fields.
-      # Circuit ids vary in length depending on the protocol version.
-
-      header_size = self.relay.link_protocol.circ_id_size.size + 1
-
       try:
+        # Digests and such are computed using the RELAY cell payload.
         cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
-        payload_without_digest = cell.pack(self.relay.link_protocol)[header_size:]
+        payload_without_digest = cell.pack(self.relay.link_protocol)[-stem.client.cell.FIXED_PAYLOAD_LEN:]
         self.forward_digest.update(payload_without_digest)
 
         cell = stem.client.cell.RelayCell(self.id, command, data, self.forward_digest, stream_id)
-        header, payload = split(cell.pack(self.relay.link_protocol), header_size)
-        encrypted_payload = header + self.forward_key.update(payload)
+        payload_with_digest = cell.pack(self.relay.link_protocol)[-stem.client.cell.FIXED_PAYLOAD_LEN:]
+        encrypted_payload = self.forward_key.update(payload_with_digest)
+        encrypted_cell = stem.client.cell.RawRelayCell(self.id, encrypted_payload)
 
         reply_cells = []
-        self.relay._orport.send(encrypted_payload)
+        self.relay._orport.send(encrypted_cell.pack(self.relay.link_protocol))
         reply = self.relay._orport.recv()
 
-        # Check that we got the correct number of bytes for a series of RELAY cells
-
-        relay_cell_size = header_size + stem.client.cell.FIXED_PAYLOAD_LEN
         relay_cell_cmd = stem.client.cell.RelayCell.VALUE
 
-        if len(reply) % relay_cell_size != 0:
-          raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
-
         while reply:
-          circ_id, reply = self.relay.link_protocol.circ_id_size.pop(reply)
-          command, reply = Size.CHAR.pop(reply)
-          payload, reply = split(reply, stem.client.cell.FIXED_PAYLOAD_LEN)
+          raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
 
-          if command != relay_cell_cmd:
-            raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, command))
-          elif circ_id != self.id:
-            raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, circ_id))
+          if raw_cell.VALUE != relay_cell_cmd:
+            raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, raw_cell.VALUE))
+          elif raw_cell.circ_id != self.id:
+            raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
 
-          decrypted = self.backward_key.update(payload)
-          reply_cells.append(stem.client.cell.RelayCell._unpack(decrypted, self.id, self.relay.link_protocol))
+          decrypted_payload = self.backward_key.update(raw_cell.payload)
+          reply_cells.append(stem.client.cell.RelayCell._unpack(decrypted_payload, self.id, self.relay.link_protocol))
 
         return reply_cells
       except:
