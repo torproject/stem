@@ -424,15 +424,9 @@ class RelayCell(CircuitCell):
     return digest
 
   def pack(self, link_protocol):
-    payload = bytearray()
-    payload += Size.CHAR.pack(self.command_int)
-    payload += Size.SHORT.pack(self.recognized)
-    payload += Size.SHORT.pack(self.stream_id)
-    payload += Size.LONG.pack(self.digest)
-    payload += Size.SHORT.pack(len(self.data))
-    payload += self.data
+    payload = RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data)
 
-    return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
+    return RelayCell._pack(link_protocol, payload, self.unused, self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -461,6 +455,31 @@ class RelayCell(CircuitCell):
     data, unused = split(content, data_len)
 
     return command, recognized, stream_id, digest, data_len, data, unused
+
+  @staticmethod
+  def _pack_payload(command_int, recognized, stream_id, digest, data_len, data):
+    """
+    Directly pack the payload without any validation beyond Size constraints.
+
+    :param int command_int: integer value of our command
+    :param int recognized: zero if cell is decrypted, otherwise mostly non-zero (can rarely be zero)
+    :param int stream_id: specific stream this concerns
+    :param HASH,str,int digest: running digest held with the relay
+    :param int data_len: length of body data
+    :param bytes data: body data of the cell
+
+    :returns: **bytes** with the packed payload
+    """
+
+    payload = bytearray()
+    payload += Size.CHAR.pack(command_int)
+    payload += Size.SHORT.pack(recognized)
+    payload += Size.SHORT.pack(stream_id)
+    payload += Size.LONG.pack(RelayCell._coerce_digest(digest))
+    payload += Size.SHORT.pack(data_len)
+    payload += data
+
+    return bytes(payload)
 
   def __hash__(self):
     return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
