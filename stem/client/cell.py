@@ -436,6 +436,23 @@ class RelayCell(CircuitCell):
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
+    command, recognized, stream_id, digest, data_len, data, unused = RelayCell._unpack_payload(content)
+
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+
+    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
+
+  @staticmethod
+  def _unpack_payload(content):
+    """
+    Directly interpret the payload without any validation.
+
+    :param bytes content: cell payload
+
+    :returns: (command, recognized, stream_id, digest, data_len, data, unused) tuple
+    """
+
     command, content = Size.CHAR.pop(content)
     recognized, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)
@@ -443,10 +460,7 @@ class RelayCell(CircuitCell):
     data_len, content = Size.SHORT.pop(content)
     data, unused = split(content, data_len)
 
-    if len(data) != data_len:
-      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
-
-    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
+    return command, recognized, stream_id, digest, data_len, data, unused
 
   def __hash__(self):
     return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
