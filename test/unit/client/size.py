@@ -2,6 +2,7 @@
 Unit tests for stem.client.Size.
 """
 
+import re
 import unittest
 
 from stem.client.datatype import Size
@@ -26,7 +27,7 @@ class TestSize(unittest.TestCase):
     self.assertRaisesWith(ValueError, 'Size.pack encodes an integer, but was a str', Size.CHAR.pack, 'hi')
 
     bad_size = Size('BAD_SIZE', 1, '!H')
-    self.assertRaisesWith(ValueError, "'\\x00\\x12' is the wrong size for a BAD_SIZE field", bad_size.pack, 18)
+    self.assertRaisesRegexp(ValueError, re.escape("'\\x00\\x12' is the wrong size for a BAD_SIZE field"), bad_size.pack, 18)
 
   def test_unpack(self):
     self.assertEqual(18, Size.CHAR.unpack(b'\x12'))
