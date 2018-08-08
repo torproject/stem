@@ -172,6 +172,7 @@ class ControlMessage(object):
     self._parsed_content = parsed_content
     self._raw_content = raw_content
     self._str = None
+    self._hash = stem.util._hash_attr(self, '_raw_content')
 
   def is_ok(self):
     """
@@ -302,7 +303,7 @@ class ControlMessage(object):
     return ControlLine(content)
 
   def __hash__(self):
-    return stem.util._hash_attr(self, '_raw_content')
+    return self._hash
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, ControlMessage) else False

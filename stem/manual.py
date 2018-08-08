@@ -187,13 +187,9 @@ class ConfigOption(object):
     self.usage = usage
     self.summary = summary
     self.description = description
-    self._hash = None
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'name', 'category', 'usage', 'summary', 'description')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'name', 'category', 'usage', 'summary', 'description', cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, ConfigOption) else False
@@ -383,7 +379,6 @@ class Manual(object):
     self.man_commit = None
     self.stem_commit = None
     self.schema = None
-    self._hash = None
 
   @staticmethod
   def from_cache(path = None):
@@ -657,10 +652,7 @@ class Manual(object):
     conf.save(path)
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options', cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Manual) else False

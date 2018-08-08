@@ -255,7 +255,6 @@ class Authority(Directory):
 
     self.v3ident = v3ident
     self.is_bandwidth_authority = is_bandwidth_authority
-    self._hash = None
 
   @staticmethod
   def from_cache():
@@ -315,10 +314,7 @@ class Authority(Directory):
     return section_lines
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = Directory)
-
-    return self._hash
+    return stem.util._hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = Directory, cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Authority) else False
@@ -370,7 +366,6 @@ class Fallback(Directory):
     super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     self.has_extrainfo = has_extrainfo
     self.header = OrderedDict(header) if header else OrderedDict()
-    self._hash = None
 
   @staticmethod
   def from_cache(path = FALLBACK_CACHE_PATH):
@@ -520,10 +515,7 @@ class Fallback(Directory):
     conf.save(path)
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'has_extrainfo', 'header', parent = Directory)
-
-    return self._hash
+    return stem.util._hash_attr(self, 'has_extrainfo', 'header', parent = Directory, cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Fallback) else False

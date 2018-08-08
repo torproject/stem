@@ -1057,7 +1057,6 @@ class MicroExitPolicyRule(ExitPolicyRule):
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
-    self._hash = None
     self._skip_rule = False
 
   def is_address_wildcard(self):
@@ -1073,10 +1072,7 @@ class MicroExitPolicyRule(ExitPolicyRule):
     return None
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'is_accept', 'min_port', 'max_port')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'is_accept', 'min_port', 'max_port', cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, MicroExitPolicyRule) else False

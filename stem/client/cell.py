@@ -95,7 +95,6 @@ class Cell(object):
   def __init__(self, unused = b''):
     super(Cell, self).__init__()
     self.unused = unused
-    self._hash = None
 
   @staticmethod
   def by_name(name):
@@ -253,9 +252,6 @@ class Cell(object):
 
     raise NotImplementedError('Unpacking not yet implemented for %s cells' % cls.NAME)
 
-  def __hash__(self):
-    return self._hash if self._hash else super(type(self), self).__hash__()
-
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Cell) else False
 
@@ -294,7 +290,6 @@ class PaddingCell(Cell):
 
     super(PaddingCell, self).__init__()
     self.payload = payload
-    self._hash = stem.util._hash_attr(self, 'payload')
 
   def pack(self, link_protocol):
     return PaddingCell._pack(link_protocol, self.payload)
@@ -302,6 +297,9 @@ class PaddingCell(Cell):
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
     return PaddingCell(content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'payload', cache = True)
 
 
 class CreateCell(CircuitCell):
@@ -360,7 +358,6 @@ class RelayCell(CircuitCell):
     self.stream_id = stream_id
     self.digest = digest
     self.data = str_tools._to_bytes(data)
-    self._hash = stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data')
 
     if digest == 0:
       if not stream_id and self.command in STREAM_ID_REQUIRED:
@@ -393,6 +390,9 @@ class RelayCell(CircuitCell):
 
     return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
 
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
+
 
 class DestroyCell(CircuitCell):
   """
@@ -409,7 +409,6 @@ class DestroyCell(CircuitCell):
   def __init__(self, circ_id, reason = CloseReason.NONE, unused = b''):
     super(DestroyCell, self).__init__(circ_id, unused)
     self.reason, self.reason_int = CloseReason.get(reason)
-    self._hash = stem.util._hash_attr(self, 'circ_id', 'reason_int')
 
   def pack(self, link_protocol):
     return DestroyCell._pack(link_protocol, Size.CHAR.pack(self.reason_int), self.unused, self.circ_id)
@@ -418,6 +417,9 @@ class DestroyCell(CircuitCell):
   def _unpack(cls, content, circ_id, link_protocol):
     reason, unused = Size.CHAR.pop(content)
     return DestroyCell(circ_id, reason, unused)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'circ_id', 'reason_int', cache = True)
 
 
 class CreateFastCell(CircuitCell):
@@ -440,7 +442,6 @@ class CreateFastCell(CircuitCell):
 
     super(CreateFastCell, self).__init__(circ_id, unused)
     self.key_material = key_material
-    self._hash = stem.util._hash_attr(self, 'circ_id', 'key_material')
 
   def pack(self, link_protocol):
     return CreateFastCell._pack(link_protocol, self.key_material, self.unused, self.circ_id)
@@ -453,6 +454,9 @@ class CreateFastCell(CircuitCell):
       raise ValueError('Key material should be %i bytes, but was %i' % (HASH_LEN, len(key_material)))
 
     return CreateFastCell(circ_id, key_material, unused)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'circ_id', 'key_material', cache = True)
 
 
 class CreatedFastCell(CircuitCell):
@@ -479,7 +483,6 @@ class CreatedFastCell(CircuitCell):
     super(CreatedFastCell, self).__init__(circ_id, unused)
     self.key_material = key_material
     self.derivative_key = derivative_key
-    self._hash = stem.util._hash_attr(self, 'circ_id', 'derivative_key', 'key_material')
 
   def pack(self, link_protocol):
     return CreatedFastCell._pack(link_protocol, self.key_material + self.derivative_key, self.unused, self.circ_id)
@@ -493,6 +496,9 @@ class CreatedFastCell(CircuitCell):
     derivative_key, content = split(content, HASH_LEN)
 
     return CreatedFastCell(circ_id, derivative_key, key_material, content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'circ_id', 'derivative_key', 'key_material', cache = True)
 
 
 class VersionsCell(Cell):
@@ -509,7 +515,6 @@ class VersionsCell(Cell):
   def __init__(self, versions):
     super(VersionsCell, self).__init__()
     self.versions = versions
-    self._hash = stem.util._hash_attr(self, 'versions')
 
   def pack(self, link_protocol):
     payload = b''.join([Size.SHORT.pack(v) for v in self.versions])
@@ -524,6 +529,9 @@ class VersionsCell(Cell):
       link_protocols.append(version)
 
     return VersionsCell(link_protocols)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'versions', cache = True)
 
 
 class NetinfoCell(Cell):
@@ -544,7 +552,6 @@ class NetinfoCell(Cell):
     self.timestamp = timestamp if timestamp else datetime.datetime.now()
     self.receiver_address = receiver_address
     self.sender_addresses = sender_addresses
-    self._hash = stem.util._hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses')
 
   def pack(self, link_protocol):
     payload = bytearray()
@@ -570,6 +577,9 @@ class NetinfoCell(Cell):
       sender_addresses.append(addr)
 
     return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp), unused = content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses', cache = True)
 
 
 class RelayEarlyCell(CircuitCell):
@@ -629,7 +639,6 @@ class VPaddingCell(Cell):
 
     super(VPaddingCell, self).__init__()
     self.payload = payload if payload is not None else os.urandom(size)
-    self._hash = stem.util._hash_attr(self, 'payload')
 
   def pack(self, link_protocol):
     return VPaddingCell._pack(link_protocol, self.payload)
@@ -637,6 +646,9 @@ class VPaddingCell(Cell):
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
     return VPaddingCell(payload = content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'payload', cache = True)
 
 
 class CertsCell(Cell):
@@ -653,7 +665,6 @@ class CertsCell(Cell):
   def __init__(self, certs, unused = b''):
     super(CertsCell, self).__init__(unused)
     self.certificates = certs
-    self._hash = stem.util._hash_attr(self, 'certificates')
 
   def pack(self, link_protocol):
     return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + b''.join([cert.pack() for cert in self.certificates]), self.unused)
@@ -671,6 +682,9 @@ class CertsCell(Cell):
       certs.append(cert)
 
     return CertsCell(certs, unused = content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'certificates', cache = True)
 
 
 class AuthChallengeCell(Cell):
@@ -695,7 +709,6 @@ class AuthChallengeCell(Cell):
     super(AuthChallengeCell, self).__init__(unused)
     self.challenge = challenge
     self.methods = methods
-    self._hash = stem.util._hash_attr(self, 'challenge', 'methods')
 
   def pack(self, link_protocol):
     payload = bytearray()
@@ -726,6 +739,9 @@ class AuthChallengeCell(Cell):
       methods.append(method)
 
     return AuthChallengeCell(methods, challenge, unused = content)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'challenge', 'methods', cache = True)
 
 
 class AuthenticateCell(Cell):

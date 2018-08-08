@@ -572,13 +572,9 @@ class Endpoint(object):
 
     self.address = address
     self.port = int(port)
-    self._hash = None
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'address', 'port')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'address', 'port', cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Endpoint) else False
@@ -597,13 +593,9 @@ class ORPort(Endpoint):
   def __init__(self, address, port, link_protocols = None):
     super(ORPort, self).__init__(address, port)
     self.link_protocols = link_protocols
-    self._hash = None
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'link_protocols', parent = Endpoint)
-
-    return self._hash
+    return stem.util._hash_attr(self, 'link_protocols', parent = Endpoint, cache = True)
 
 
 class DirPort(Endpoint):

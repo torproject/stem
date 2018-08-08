@@ -349,7 +349,6 @@ class Size(Field):
     self.name = name
     self.size = size
     self.format = pack_format
-    self._hash = None
 
   @staticmethod
   def pop(packed):
@@ -378,10 +377,7 @@ class Size(Field):
     return self.unpack(to_unpack), remainder
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'name', 'size', 'format')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'name', 'size', 'format', cache = True)
 
 
 class Address(Field):
@@ -404,7 +400,6 @@ class Address(Field):
         raise ValueError("'%s' isn't an IPv4 or IPv6 address" % value)
 
     self.type, self.type_int = AddrType.get(addr_type)
-    self._hash = None
 
     if self.type == AddrType.IPv4:
       if stem.util.connection.is_valid_ipv4_address(value):
@@ -454,10 +449,7 @@ class Address(Field):
     return Address(addr_value, addr_type), content
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'type_int', 'value_bin')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'type_int', 'value_bin', cache = True)
 
 
 class Certificate(Field):
@@ -472,7 +464,6 @@ class Certificate(Field):
   def __init__(self, cert_type, value):
     self.type, self.type_int = CertType.get(cert_type)
     self.value = value
-    self._hash = None
 
   def pack(self):
     cell = bytearray()
@@ -493,10 +484,7 @@ class Certificate(Field):
     return Certificate(cert_type, cert_bytes), content
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'type_int', 'value')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'type_int', 'value')
 
 
 class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):

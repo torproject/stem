@@ -57,7 +57,6 @@ class Event(stem.response.ControlMessage):
 
     self.type = str(self).split()[0]
     self.arrived_at = arrived_at
-    self._hash = None
 
     # if we're a recognized event type then translate ourselves into that subclass
 
@@ -73,10 +72,7 @@ class Event(stem.response.ControlMessage):
     self._parse()
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'arrived_at', parent = stem.response.ControlMessage)
-
-    return self._hash
+    return stem.util._hash_attr(self, 'arrived_at', parent = stem.response.ControlMessage, cache = True)
 
   def _parse_standard_attr(self):
     """

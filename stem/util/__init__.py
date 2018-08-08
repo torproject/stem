@@ -130,10 +130,16 @@ def _hash_attr(obj, *attributes, **kwargs):
 
   :param Object obj: object to be hashed
   :param list attributes: attribute names to take into account
+  :param bool cache: persists hash in a '_cached_hash' object attribute
   :param class parent: include parent's hash value
   """
 
-  parent_class = kwargs.get('parent')
+  is_cached = kwargs.get('cache', False)
+  parent_class = kwargs.get('parent', None)
+  cached_hash = getattr(obj, '_cached_hash', None)
+
+  if is_cached and cached_hash is not None:
+    return cached_hash
 
   my_hash = parent_class.__hash__(obj) if parent_class else 0
   my_hash = my_hash * 1024 + hash(str(type(obj)))
@@ -141,5 +147,8 @@ def _hash_attr(obj, *attributes, **kwargs):
   for attr in attributes:
     val = getattr(obj, attr)
     my_hash = my_hash * 1024 + _hash_value(val)
+
+  if is_cached:
+    setattr(obj, '_cached_hash', my_hash)
 
   return my_hash

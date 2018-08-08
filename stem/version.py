@@ -182,7 +182,6 @@ class Version(object):
   def __init__(self, version_str):
     self.version_str = version_str
     version_parts = VERSION_PATTERN.match(version_str)
-    self._hash = None
 
     if version_parts:
       major, minor, micro, patch, status, extra_str, _ = version_parts.groups()
@@ -251,10 +250,7 @@ class Version(object):
     return method(my_status, other_status)
 
   def __hash__(self):
-    if self._hash is None:
-      self._hash = stem.util._hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status')
-
-    return self._hash
+    return stem.util._hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status', cache = True)
 
   def __eq__(self, other):
     return self._compare(other, lambda s, o: s == o)
