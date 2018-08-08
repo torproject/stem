@@ -104,9 +104,9 @@ class Cell(object):
     """
     Provides cell attributes by its name.
 
-    :parm str name: cell command to fetch
+    :param str name: cell command to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
@@ -120,9 +120,9 @@ class Cell(object):
     """
     Provides cell attributes by its value.
 
-    :parm int value: cell value to fetch
+    :param int value: cell value to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
@@ -202,9 +202,9 @@ class Cell(object):
     :param bytes payload: cell payload
     :param int circ_id: circuit id, if a CircuitCell
 
-    :return: **bytes** with the encoded payload
+    :returns: **bytes** with the encoded payload
 
-    :raise: **ValueError** if cell type invalid or payload makes cell too large
+    :raises: **ValueError** if cell type invalid or payload makes cell too large
     """
 
     if issubclass(cls, CircuitCell):
@@ -369,7 +369,7 @@ class RelayCell(CircuitCell):
   :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if cell is decrypted, non-zero otherwise
+  :var int recognized: zero if cell is decrypted, otherwise mostly non-zero (can rarely be zero)
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """

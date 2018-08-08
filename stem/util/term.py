@@ -80,7 +80,7 @@ def encoding(*attrs):
     :data:`~stem.util.terminal.BgColor`, or :data:`~stem.util.terminal.Attr` to
     provide an ecoding for
 
-  :return: **str** of the ANSI escape sequence, **None** no attributes are
+  :returns: **str** of the ANSI escape sequence, **None** no attributes are
     recognized
   """
 
