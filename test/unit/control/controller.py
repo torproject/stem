@@ -5,6 +5,7 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import datetime
 import io
+import time
 import unittest
 
 import stem.descriptor.router_status_entry
@@ -25,6 +26,11 @@ except ImportError:
   from mock import Mock, patch
 
 NS_DESC = 'r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75'
+TEST_TIMESTAMP = 12345
+
+BW_EVENT = ControlMessage.from_str('650 BW 15 25', 'EVENT', normalize = True, arrived_at = TEST_TIMESTAMP)
+CIRC_EVENT = ControlMessage.from_str('650 CIRC 4 LAUNCHED', 'EVENT', normalize = True, arrived_at = TEST_TIMESTAMP)
+BAD_EVENT = ControlMessage.from_str('650 BW &15* 25', normalize = True, arrived_at = TEST_TIMESTAMP)
 
 
 class TestControl(unittest.TestCase):
@@ -36,6 +42,12 @@ class TestControl(unittest.TestCase):
 
     with patch('stem.control.BaseController.msg', Mock()):
       self.controller = Controller(socket)
+
+      self.circ_listener = Mock()
+      self.controller.add_event_listener(self.circ_listener, EventType.CIRC)
+
+      self.bw_listener = Mock()
+      self.controller.add_event_listener(self.bw_listener, EventType.BW)
 
   def test_event_description(self):
     self.assertEqual("Logging at the debug runlevel. This is low level, high volume information about tor's internals that generally isn't useful to users.", stem.control.event_description('DEBUG'))
@@ -586,7 +598,7 @@ class TestControl(unittest.TestCase):
   @patch('stem.control.Controller.is_authenticated', Mock(return_value = True))
   @patch('stem.control.Controller._attach_listeners', Mock(return_value = ([], [])))
   @patch('stem.control.Controller.get_version')
-  def test_event_listening(self, get_version_mock):
+  def test_add_event_listener(self, get_version_mock):
     """
     Exercises the add_event_listener and remove_event_listener methods.
     """
@@ -607,6 +619,64 @@ class TestControl(unittest.TestCase):
     # EventType.SIGNAL was added in tor version 0.2.3.1-alpha
 
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, Mock(), EventType.SIGNAL)
+
+  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
+  @patch('stem.control.Controller.is_alive', Mock(return_value = True))
+  def test_events_get_received(self):
+    """
+    Trigger an event, checking that our listeners get notified.
+    """
+
+    self.controller._launch_threads()
+
+    self._emit_event(CIRC_EVENT)
+    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.bw_listener.assert_not_called()
+
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
+
+  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
+  @patch('stem.control.Controller.is_alive', Mock(return_value = True))
+  def test_event_listing_with_error(self):
+    """
+    Raise an exception in an event listener to confirm it doesn't break our
+    event thread.
+    """
+
+    self.skipTest('BUG: stem not working in this regard, about to fix')
+    return
+
+    self.circ_listener.side_effect = ValueError('boom')
+
+    self.controller._launch_threads()
+
+    self._emit_event(CIRC_EVENT)
+    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.bw_listener.assert_not_called()
+
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
+
+  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
+  @patch('stem.control.Controller.is_alive', Mock(return_value = True))
+  def test_event_listing_with_malformed_event(self):
+    """
+    Attempt to parse a malformed event emitted from Tor. It's important this
+    doesn't break our event thread.
+    """
+
+    self.skipTest('BUG: stem not working in this regard, about to fix')
+    return
+
+    self.controller._launch_threads()
+
+    self._emit_event(BAD_EVENT)
+    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.bw_listener.assert_not_called()
+
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
 
   @patch('stem.control.Controller.get_version', Mock(return_value = stem.version.Version('0.5.0.14')))
   @patch('stem.control.Controller.msg', Mock(return_value = ControlMessage.from_str('250 OK\r\n')))
@@ -732,3 +802,16 @@ class TestControl(unittest.TestCase):
     with patch('stem.control.Controller.msg', Mock(return_value = None)):
       get_version_mock.return_value = stem.version.Version('0.2.5.2')
       self.controller.drop_guards()
+
+  def _emit_event(self, event):
+    # Converting an event back into an uncast ControlMessage, then feeding it
+    # into our controller's event queue.
+
+    uncast_event = ControlMessage.from_str(event.raw_content())
+    self.controller._event_queue.put(uncast_event)
+    self.controller._event_notice.set()
+
+    # doesn't seem necessary in practice, but since event processing is
+    # asynchronous giving it a tiny bit of time to get handled
+
+    time.sleep(0.005)
