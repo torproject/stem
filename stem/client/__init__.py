@@ -32,6 +32,7 @@ import threading
 import stem
 import stem.client.cell
 import stem.socket
+from stem.util import str_tools
 import stem.util.connection
 
 from stem.client.datatype import ZERO, LinkProtocol, Address, KDF
@@ -239,12 +240,15 @@ class Circuit(object):
 
       try:
         # Digests and such are computed using the RELAY cell payload.
-        cell = stem.client.cell.RelayCell(self.id, command, data, 0, stream_id)
-        payload_without_digest = cell.pack(self.relay.link_protocol)[-stem.client.cell.FIXED_PAYLOAD_LEN:]
-        self.forward_digest.update(payload_without_digest)
 
-        cell = stem.client.cell.RelayCell(self.id, command, data, self.forward_digest, stream_id)
-        payload_with_digest = cell.pack(self.relay.link_protocol)[-stem.client.cell.FIXED_PAYLOAD_LEN:]
+        _, command_int = stem.client.datatype.RelayCommand.get(command)
+        # coerce to bytes, just in case
+        data = str_tools._to_bytes(data)
+
+        payload_without_digest = stem.client.cell.RelayCell._pack_payload(command_int, 0, stream_id, 0, len(data), data)
+        self.forward_digest.update(payload_without_digest)
+        payload_with_digest = stem.client.cell.RelayCell._pack_payload(command_int, 0, stream_id, self.forward_digest, len(data), data)
+
         encrypted_payload = self.forward_key.update(payload_with_digest)
         encrypted_cell = stem.client.cell.RawRelayCell(self.id, encrypted_payload)
 
