@@ -424,9 +424,9 @@ class RelayCell(CircuitCell):
     return digest
 
   def pack(self, link_protocol):
-    payload = RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data)
+    payload = RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data, self.unused)
 
-    return RelayCell._pack(link_protocol, payload, self.unused, self.circ_id)
+    return RelayCell._pack(link_protocol, payload, unused = b'', circ_id = self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
@@ -457,7 +457,7 @@ class RelayCell(CircuitCell):
     return command, recognized, stream_id, digest, data_len, data, unused
 
   @staticmethod
-  def _pack_payload(command_int, recognized, stream_id, digest, data_len, data):
+  def _pack_payload(command_int, recognized, stream_id, digest, data_len, data, unused = b'', pad_remainder = True):
     """
     Directly pack the payload without any validation beyond Size constraints.
 
@@ -467,6 +467,8 @@ class RelayCell(CircuitCell):
     :param HASH,str,int digest: running digest held with the relay
     :param int data_len: length of body data
     :param bytes data: body data of the cell
+    :param bytes unused: padding bytes to include after data
+    :param bool pad_remaining: pads up to payload size if **True**
 
     :returns: **bytes** with the packed payload
     """
@@ -478,6 +480,16 @@ class RelayCell(CircuitCell):
     payload += Size.LONG.pack(RelayCell._coerce_digest(digest))
     payload += Size.SHORT.pack(data_len)
     payload += data
+    payload += unused
+
+    if len(payload) > FIXED_PAYLOAD_LEN:
+      raise ValueError('Payload is too large (%i bytes), must not be more than %i.' % (len(payload), FIXED_PAYLOAD_LEN))
+
+    if pad_remainder:
+      # right now, it is acceptable to pad the remaining portion with ZEROs instead of random
+      # this is done due to threat model and simplifying some implementation
+      # however: in the future (TODO), this may become against the spec; see prop 289
+      payload += ZERO * (FIXED_PAYLOAD_LEN - len(payload))
 
     return bytes(payload)
 
