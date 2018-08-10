@@ -380,6 +380,32 @@ class RelayCell(CircuitCell):
   CANNOT_DIRECTLY_UNPACK = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
+    digest = RelayCell._coerce_digest(digest)
+
+    super(RelayCell, self).__init__(circ_id, unused)
+    self.command, self.command_int = RelayCommand.get(command)
+    self.recognized = recognized
+    self.stream_id = stream_id
+    self.digest = digest
+    self.data = str_tools._to_bytes(data)
+
+    if digest == 0:
+      if not stream_id and self.command in STREAM_ID_REQUIRED:
+        raise ValueError('%s relay cells require a stream id' % self.command)
+      elif stream_id and self.command in STREAM_ID_DISALLOWED:
+        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+
+  @staticmethod
+  def _coerce_digest(digest):
+    """
+    Coerce any of HASH, str, int into the proper digest type for packing
+
+    :param HASH,str,int digest: digest to be coerced
+    :returns: digest in type appropriate for packing
+
+    :raises: **ValueError** if input digest type is unsupported
+    """
+
     if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
@@ -395,18 +421,7 @@ class RelayCell(CircuitCell):
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)
 
-    super(RelayCell, self).__init__(circ_id, unused)
-    self.command, self.command_int = RelayCommand.get(command)
-    self.recognized = recognized
-    self.stream_id = stream_id
-    self.digest = digest
-    self.data = str_tools._to_bytes(data)
-
-    if digest == 0:
-      if not stream_id and self.command in STREAM_ID_REQUIRED:
-        raise ValueError('%s relay cells require a stream id' % self.command)
-      elif stream_id and self.command in STREAM_ID_DISALLOWED:
-        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+    return digest
 
   def pack(self, link_protocol):
     payload = bytearray()
