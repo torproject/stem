@@ -15,7 +15,7 @@ import stem.util.system
 import stem.version
 
 from stem import ControllerError, DescriptorUnavailable, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
-from stem.control import _parse_circ_path, Listener, Controller, EventType
+from stem.control import MALFORMED_EVENTS, _parse_circ_path, Listener, Controller, EventType
 from stem.response import ControlMessage
 from stem.exit_policy import ExitPolicy
 
@@ -48,6 +48,9 @@ class TestControl(unittest.TestCase):
 
       self.bw_listener = Mock()
       self.controller.add_event_listener(self.bw_listener, EventType.BW)
+
+      self.malformed_listener = Mock()
+      self.controller.add_event_listener(self.malformed_listener, MALFORMED_EVENTS)
 
   def test_event_description(self):
     self.assertEqual("Logging at the debug runlevel. This is low level, high volume information about tor's internals that generally isn't useful to users.", stem.control.event_description('DEBUG'))
@@ -632,6 +635,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(CIRC_EVENT)
     self.circ_listener.assert_called_once_with(CIRC_EVENT)
     self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_not_called()
 
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
@@ -644,9 +648,6 @@ class TestControl(unittest.TestCase):
     event thread.
     """
 
-    self.skipTest('BUG: stem not working in this regard, about to fix')
-    return
-
     self.circ_listener.side_effect = ValueError('boom')
 
     self.controller._launch_threads()
@@ -654,6 +655,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(CIRC_EVENT)
     self.circ_listener.assert_called_once_with(CIRC_EVENT)
     self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_not_called()
 
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
@@ -666,14 +668,12 @@ class TestControl(unittest.TestCase):
     doesn't break our event thread.
     """
 
-    self.skipTest('BUG: stem not working in this regard, about to fix')
-    return
-
     self.controller._launch_threads()
 
     self._emit_event(BAD_EVENT)
-    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.circ_listener.assert_not_called()
     self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_called_once()
 
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
@@ -814,4 +814,4 @@ class TestControl(unittest.TestCase):
     # doesn't seem necessary in practice, but since event processing is
     # asynchronous giving it a tiny bit of time to get handled
 
-    time.sleep(0.005)
+    time.sleep(0.03)

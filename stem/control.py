@@ -286,6 +286,8 @@ from stem.util import log
 
 EVENTS_LISTENING_TIMEOUT = 0.1
 
+MALFORMED_EVENTS = 'MALFORMED_EVENTS'
+
 # state changes a control socket can have
 
 State = stem.util.enum.Enum('INIT', 'RESET', 'CLOSED')
@@ -3057,6 +3059,13 @@ class Controller(BaseController):
     If a new control connection is initialized then this listener will be
     reattached.
 
+    If tor emits a malformed event it can be received by listening for the
+    stem.control.MALFORMED_EVENTS constant.
+
+    .. versionchanged:: 1.7.0
+       Listener exceptions and malformed events no longer break further event
+       processing. Added the **MALFORMED_EVENTS** constant.
+
     :param functor listener: function to be called when an event is received
     :param stem.control.EventType events: event types to be listened for
 
@@ -3874,13 +3883,21 @@ class Controller(BaseController):
         log.warn('We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)' % response)
 
   def _handle_event(self, event_message):
-    stem.response.convert('EVENT', event_message, arrived_at = time.time())
+    try:
+      stem.response.convert('EVENT', event_message, arrived_at = time.time())
+      event_type = event_message.type
+    except stem.ProtocolError as exc:
+      log.error('Tor sent a malformed event (%s): %s' % (exc, event_message))
+      event_type = MALFORMED_EVENTS
 
     with self._event_listeners_lock:
-      for event_type, event_listeners in list(self._event_listeners.items()):
-        if event_type == event_message.type:
+      for listener_type, event_listeners in list(self._event_listeners.items()):
+        if listener_type == event_type:
           for listener in event_listeners:
-            listener(event_message)
+            try:
+              listener(event_message)
+            except Exception as exc:
+              log.warn('Event listener raised an uncaught exception (%s): %s' % (exc, event_message))
 
   def _attach_listeners(self):
     """
