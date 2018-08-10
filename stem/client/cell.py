@@ -424,7 +424,7 @@ class RelayCell(CircuitCell):
     return digest
 
   def pack(self, link_protocol):
-    payload = RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data, self.unused)
+    payload = self.pack_payload()
 
     return RelayCell._pack(link_protocol, payload, unused = b'', circ_id = self.circ_id)
 
@@ -455,6 +455,17 @@ class RelayCell(CircuitCell):
     data, unused = split(content, data_len)
 
     return command, recognized, stream_id, digest, data_len, data, unused
+
+  def pack_payload(self, **kwargs):
+    """
+    Convenience method for running _pack_payload on self.
+
+    :param bool pad_remaining: (optional, defaults to **True**) pads up to payload size if **True**
+
+    :returns: **bytes** with the packed payload
+    """
+
+    return RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data, self.unused, **kwargs)
 
   @staticmethod
   def _pack_payload(command_int, recognized, stream_id, digest, data_len, data, unused = b'', pad_remainder = True):
