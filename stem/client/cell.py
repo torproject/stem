@@ -456,6 +456,35 @@ class RelayCell(CircuitCell):
 
     return command, recognized, stream_id, digest, data_len, data, unused
 
+  def apply_digest(self, digest, prep_cell = True):
+    """
+    Calculates, updates, and applies the digest to the cell payload.
+
+    :param HASH digest: running digest held with the relay
+    :param bool prep_cell: preps the cell payload according to the spec, if **True** (default)
+      if **False**, the digest will be calculated as-is, namely:
+        the 'recognized' field will not be set to 0,
+        the digest field will not be set to 0,
+        and any 'unused' padding will be taken as-is.
+      Use with caution.
+
+    :sideeffect digest: this object will be updated via digest.update(payload)
+    :sideeffect self.recognized: this will be set to 0, if prep_cell is **True**
+    :sideeffect self.digest: this will be updated with the calculated digest
+    :sideeffect self.unused: this will be treated as padding and overwritten, if prep_cell is **True**
+    """
+
+    if prep_cell:
+      self.recognized = 0
+      self.digest = 0
+      self.unused = b''
+
+    payload_without_updated_digest = self.pack_payload()
+    digest.update(payload_without_updated_digest)
+    self.digest = RelayCell._coerce_digest(digest)
+
+    return
+
   def pack_payload(self, **kwargs):
     """
     Convenience method for running _pack_payload on self.
