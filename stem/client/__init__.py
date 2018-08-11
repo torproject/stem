@@ -227,7 +227,7 @@ class Circuit(object):
     """
     Sends a message over the circuit.
 
-    :param stem.client.RelayCommand command: command to be issued
+    :param stem.client.datatype.RelayCommand command: command to be issued
     :param bytes data: message payload
     :param int stream_id: specific stream this concerns
 
