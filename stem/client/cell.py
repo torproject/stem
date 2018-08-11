@@ -366,7 +366,7 @@ class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
-  :var stem.client.RelayCommand command: command to be issued
+  :var stem.client.datatype.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
   :var int recognized: zero if cell is decrypted, otherwise mostly non-zero (can rarely be zero)
