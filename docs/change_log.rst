@@ -46,8 +46,8 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
-  * Documented v3 hidden service support (:trac:`25124`, :spec:`6bd0a69`)
   * Listener exceptions and malformed events no longer break further event processing (:trac:`27053`)
+  * Documented v3 hidden service support (:trac:`25124`, :spec:`6bd0a69`)
   * Added the stem.control.MALFORMED_EVENTS event listener constant
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response (:trac:`26056`)
