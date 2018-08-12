@@ -826,7 +826,14 @@ class TestControl(unittest.TestCase):
     self.controller._event_queue.put(uncast_event)
     self.controller._event_notice.set()
 
-    # doesn't seem necessary in practice, but since event processing is
-    # asynchronous giving it a tiny bit of time to get handled
+    # Wait for the event to get asynchronously consumed. This should happen
+    # right away, but if the system is bogged down it may take quite a few
+    # milliseconds.
 
-    time.sleep(0.03)
+    event_sent_at = time.time()
+
+    while not self.controller._event_queue.empty():
+      time.sleep(0.01)
+
+      if time.time() - event_sent_at > 5:
+        self.fail('Event did not get processed after five seconds')
