@@ -10,6 +10,7 @@ import unittest
 
 import stem.descriptor.router_status_entry
 import stem.response
+import stem.response.events
 import stem.socket
 import stem.util.system
 import stem.version
@@ -681,11 +682,18 @@ class TestControl(unittest.TestCase):
     is_alive_mock.return_value = True
     self.controller._launch_threads()
 
+    # When stem.response.convert() encounters malformed content we still recast
+    # the message.
+
+    expected_bad_event = ControlMessage.from_str(BAD_EVENT.raw_content())
+    setattr(expected_bad_event, 'arrived_at', TEST_TIMESTAMP)
+    expected_bad_event.__class__ = stem.response.events.BandwidthEvent
+
     try:
       self._emit_event(BAD_EVENT)
       self.circ_listener.assert_not_called()
       self.bw_listener.assert_not_called()
-      self.malformed_listener.assert_called_once()
+      self.malformed_listener.assert_called_once_with(casted_bad_event)
 
       self._emit_event(BW_EVENT)
       self.bw_listener.assert_called_once_with(BW_EVENT)
