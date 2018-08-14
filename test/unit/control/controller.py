@@ -693,7 +693,7 @@ class TestControl(unittest.TestCase):
       self._emit_event(BAD_EVENT)
       self.circ_listener.assert_not_called()
       self.bw_listener.assert_not_called()
-      self.malformed_listener.assert_called_once_with(casted_bad_event)
+      self.malformed_listener.assert_called_once_with(expected_bad_event)
 
       self._emit_event(BW_EVENT)
       self.bw_listener.assert_called_once_with(BW_EVENT)
