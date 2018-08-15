@@ -625,30 +625,21 @@ class TestControl(unittest.TestCase):
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, Mock(), EventType.SIGNAL)
 
   @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
-  @patch('stem.control.Controller.is_alive')
-  def test_events_get_received(self, is_alive_mock):
+  def test_events_get_received(self):
     """
     Trigger an event, checking that our listeners get notified.
     """
 
-    is_alive_mock.return_value = True
-    self.controller._launch_threads()
+    self._emit_event(CIRC_EVENT)
+    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_not_called()
 
-    try:
-      self._emit_event(CIRC_EVENT)
-      self.circ_listener.assert_called_once_with(CIRC_EVENT)
-      self.bw_listener.assert_not_called()
-      self.malformed_listener.assert_not_called()
-
-      self._emit_event(BW_EVENT)
-      self.bw_listener.assert_called_once_with(BW_EVENT)
-    finally:
-      is_alive_mock.return_value = False
-      self.controller._close()
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
 
   @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
-  @patch('stem.control.Controller.is_alive')
-  def test_event_listing_with_error(self, is_alive_mock):
+  def test_event_listing_with_error(self):
     """
     Raise an exception in an event listener to confirm it doesn't break our
     event thread.
@@ -656,31 +647,20 @@ class TestControl(unittest.TestCase):
 
     self.circ_listener.side_effect = ValueError('boom')
 
-    is_alive_mock.return_value = True
-    self.controller._launch_threads()
+    self._emit_event(CIRC_EVENT)
+    self.circ_listener.assert_called_once_with(CIRC_EVENT)
+    self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_not_called()
 
-    try:
-      self._emit_event(CIRC_EVENT)
-      self.circ_listener.assert_called_once_with(CIRC_EVENT)
-      self.bw_listener.assert_not_called()
-      self.malformed_listener.assert_not_called()
-
-      self._emit_event(BW_EVENT)
-      self.bw_listener.assert_called_once_with(BW_EVENT)
-    finally:
-      is_alive_mock.return_value = False
-      self.controller._close()
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
 
   @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
-  @patch('stem.control.Controller.is_alive')
-  def test_event_listing_with_malformed_event(self, is_alive_mock):
+  def test_event_listing_with_malformed_event(self):
     """
     Attempt to parse a malformed event emitted from Tor. It's important this
     doesn't break our event thread.
     """
-
-    is_alive_mock.return_value = True
-    self.controller._launch_threads()
 
     # When stem.response.convert() encounters malformed content we still recast
     # the message.
@@ -689,17 +669,13 @@ class TestControl(unittest.TestCase):
     setattr(expected_bad_event, 'arrived_at', TEST_TIMESTAMP)
     expected_bad_event.__class__ = stem.response.events.BandwidthEvent
 
-    try:
-      self._emit_event(BAD_EVENT)
-      self.circ_listener.assert_not_called()
-      self.bw_listener.assert_not_called()
-      self.malformed_listener.assert_called_once_with(expected_bad_event)
+    self._emit_event(BAD_EVENT)
+    self.circ_listener.assert_not_called()
+    self.bw_listener.assert_not_called()
+    self.malformed_listener.assert_called_once_with(expected_bad_event)
 
-      self._emit_event(BW_EVENT)
-      self.bw_listener.assert_called_once_with(BW_EVENT)
-    finally:
-      is_alive_mock.return_value = False
-      self.controller._close()
+    self._emit_event(BW_EVENT)
+    self.bw_listener.assert_called_once_with(BW_EVENT)
 
   @patch('stem.control.Controller.get_version', Mock(return_value = stem.version.Version('0.5.0.14')))
   @patch('stem.control.Controller.msg', Mock(return_value = ControlMessage.from_str('250 OK\r\n')))
@@ -827,21 +803,26 @@ class TestControl(unittest.TestCase):
       self.controller.drop_guards()
 
   def _emit_event(self, event):
-    # Converting an event back into an uncast ControlMessage, then feeding it
-    # into our controller's event queue.
+    # Spins up our Controller's thread pool, emits an event, then shuts it
+    # down. This last part is important for a couple reasons...
+    #
+    #   1. So we don't leave any lingering threads.
+    #
+    #   2. To ensure our event handlers are done being executed. Events are
+    #      processed asynchronously, so the only way to endsure it's done
+    #      with its work is to join on the thread.
 
-    uncast_event = ControlMessage.from_str(event.raw_content())
-    self.controller._event_queue.put(uncast_event)
-    self.controller._event_notice.set()
+    with patch('stem.control.Controller.is_alive') as is_alive_mock:
+      is_alive_mock.return_value = True
+      self.controller._launch_threads()
 
-    # Wait for the event to get asynchronously consumed. This should happen
-    # right away, but if the system is bogged down it may take quite a few
-    # milliseconds.
+      try:
+        # Converting an event back into an uncast ControlMessage, then feeding it
+        # into our controller's event queue.
 
-    event_sent_at = time.time()
-
-    while not self.controller._event_queue.empty():
-      time.sleep(0.01)
-
-      if time.time() - event_sent_at > 5:
-        self.fail('Event did not get processed after five seconds')
+        uncast_event = ControlMessage.from_str(event.raw_content())
+        self.controller._event_queue.put(uncast_event)
+        self.controller._event_notice.set()
+      finally:
+        is_alive_mock.return_value = False
+        self.controller._close()
