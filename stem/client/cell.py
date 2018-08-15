@@ -458,7 +458,7 @@ class RelayCell(CircuitCell):
 
   def apply_digest(self, digest, prep_cell = True):
     """
-    Calculates, updates, and applies the digest to the cell payload.
+    Calculates, updates, and applies the digest to the cell payload, returning a new (cell, digest) tuple.
 
     :param HASH digest: running digest held with the relay
     :param bool prep_cell: preps the cell payload according to the spec, if **True** (default)
@@ -468,22 +468,31 @@ class RelayCell(CircuitCell):
         and any 'unused' padding will be taken as-is.
       Use with caution.
 
-    :sideeffect digest: this object will be updated via digest.update(payload)
-    :sideeffect self.recognized: this will be set to 0, if prep_cell is **True**
-    :sideeffect self.digest: this will be updated with the calculated digest
-    :sideeffect self.unused: this will be treated as padding and overwritten, if prep_cell is **True**
+    :returns: (:class:`~stem.client.cell.RelayCell`, HASH) tuple updated as follows:
+      digest: updated via digest.update(payload)
+      RelayCell: a copy of self, with the following updates:
+      RelayCell.recognized: set to 0, if prep_cell is **True**
+      RelayCell.digest: updated with the calculated digest
+      RelayCell.unused: treated as padding and overwritten, if prep_cell is **True**
     """
 
     if prep_cell:
-      self.recognized = 0
-      self.digest = 0
-      self.unused = b''
+      new_cell_recognized = 0
+      new_cell_digest = 0
+      new_cell_unused = b''
+    else:
+      new_cell_recognized = self.recognized
+      new_cell_digest = self.digest
+      new_cell_unused = self.unused
 
-    payload_without_updated_digest = self.pack_payload()
-    digest.update(payload_without_updated_digest)
-    self.digest = RelayCell._coerce_digest(digest)
+    new_digest = digest.copy()
+    new_cell = RelayCell(self.circ_id, self.command, self.data, digest = new_cell_digest, stream_id = self.stream_id, recognized = new_cell_recognized, unused = new_cell_unused)
 
-    return
+    payload_without_updated_digest = new_cell.pack_payload()
+    new_digest.update(payload_without_updated_digest)
+    new_cell.digest = RelayCell._coerce_digest(new_digest)
+
+    return new_cell, new_digest
 
   def pack_payload(self, **kwargs):
     """

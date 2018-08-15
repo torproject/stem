@@ -239,8 +239,8 @@ class Circuit(object):
 
       try:
         cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
-        cell.apply_digest(self.forward_digest)
-        payload_with_digest = cell.pack_payload()
+        cell_with_digest, self.forward_digest = cell.apply_digest(self.forward_digest)
+        payload_with_digest = cell_with_digest.pack_payload()
 
         encrypted_payload = self.forward_key.update(payload_with_digest)
         encrypted_cell = stem.client.cell.RawRelayCell(self.id, encrypted_payload)
