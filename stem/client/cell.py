@@ -369,7 +369,8 @@ class RelayCell(CircuitCell):
   :var stem.client.datatype.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if cell is decrypted, otherwise mostly non-zero (can rarely be zero)
+  :var int recognized: zero if cell is decrypted, otherwise mostly non-zero
+    (can rarely be zero)
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
@@ -458,22 +459,26 @@ class RelayCell(CircuitCell):
 
   def apply_digest(self, digest, prep_cell = True):
     """
-    Calculates, updates, and applies the digest to the cell payload, returning a new (cell, digest) tuple.
+    Calculates, updates, and applies the digest to the cell payload,
+    returning a new (cell, digest) tuple.
 
     :param HASH digest: running digest held with the relay
-    :param bool prep_cell: preps the cell payload according to the spec, if **True** (default)
+    :param bool prep_cell: preps the cell payload according to the spec, if
+      **True** (default)
       if **False**, the digest will be calculated as-is, namely:
-        the 'recognized' field will not be set to 0,
-        the digest field will not be set to 0,
-        and any 'unused' padding will be taken as-is.
-      Use with caution.
+        * the 'recognized' field will not be set to 0,
+        * the digest field will not be set to 0,
+        * and any 'unused' padding will be taken as-is.
+      Use **False** with caution.
 
-    :returns: (:class:`~stem.client.cell.RelayCell`, HASH) tuple updated as follows:
-      digest: updated via digest.update(payload)
-      RelayCell: a copy of self, with the following updates:
-      RelayCell.recognized: set to 0, if prep_cell is **True**
-      RelayCell.digest: updated with the calculated digest
-      RelayCell.unused: treated as padding and overwritten, if prep_cell is **True**
+    :returns: (:class:`~stem.client.cell.RelayCell`, HASH) tuple of object
+      copies updated as follows:
+        * digest: updated via digest.update(payload)
+        * RelayCell: a copy of self, with the following updates:
+          * RelayCell.recognized: set to 0, if prep_cell is **True**
+          * RelayCell.digest: updated with the calculated digest
+          * RelayCell.unused: treated as padding and overwritten, if prep_cell
+            is **True**
     """
 
     if prep_cell:
@@ -496,9 +501,11 @@ class RelayCell(CircuitCell):
 
   def pack_payload(self, **kwargs):
     """
-    Convenience method for running _pack_payload on self.
+    Convenience method for running
+    :func:`~stem.client.cell.RelayCell._pack_payload` on self.
 
-    :param bool pad_remaining: (optional, defaults to **True**) pads up to payload size if **True**
+    :param bool pad_remaining: (optional, defaults to **True**) pads up to
+      payload size if **True**
 
     :returns: **bytes** with the packed payload
     """
@@ -511,7 +518,8 @@ class RelayCell(CircuitCell):
     Directly pack the payload without any validation beyond Size constraints.
 
     :param int command_int: integer value of our command
-    :param int recognized: zero if cell is decrypted, otherwise mostly non-zero (can rarely be zero)
+    :param int recognized: zero if cell is decrypted, otherwise mostly non-zero
+      (can rarely be zero)
     :param int stream_id: specific stream this concerns
     :param HASH,str,int digest: running digest held with the relay
     :param int data_len: length of body data
