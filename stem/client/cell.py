@@ -39,6 +39,7 @@ Messages communicated over a Tor relay's ORPort.
     +- pop - decodes cell with remainder
 """
 
+import copy
 import datetime
 import inspect
 import os
@@ -498,6 +499,40 @@ class RelayCell(CircuitCell):
     new_cell.digest = RelayCell._coerce_digest(new_digest)
 
     return new_cell, new_digest
+
+  def encrypt(self, digest, encryptor, **kwargs):
+    """
+    Preps a cell payload, including calculating digest, and encrypts it,
+    returning a new (RawRelayCell, digest, encryptor) tuple.
+
+    The method name is technically a misnomer, as it also preps cell payload
+    and applies the digest, prior to encrypting. However, these operations
+    are defined per the spec as required for RELAY cells, and ...
+      (1) it is a natural mental extension to include them here;
+      (2) it would be a bit pointless to require method consumers to manually
+          call both, for pedantry.
+
+    :param HASH digest: running digest held with the relay
+    :param cryptography.hazmat.primitives.ciphers.CipherContext encryptor:
+      running stream cipher encryptor held with the relay
+
+    :param bool prep_cell: (optional, defaults to **True**) refer to
+      :func:`~stem.client.cell.RelayCell.apply_digest`
+
+    :returns: (:class:`~stem.client.cell.RawRelayCell`, HASH, CipherContext)
+      tuple of object copies updated as follows:
+        * RawRelayCell: updated as specified in
+          :func:`~stem.client.cell.RelayCell.apply_digest`, then encrypted
+        * digest: updated via digest.update(payload)
+        * encryptor: updated via encryptor.update(payload_with_digest)
+    """
+
+    unencrypted_cell, new_digest = self.apply_digest(digest, **kwargs)
+    new_encryptor = copy.copy(encryptor)
+    encrypted_payload = new_encryptor.update(unencrypted_cell.pack_payload())
+    encrypted_cell = RawRelayCell(unencrypted_cell.circ_id, encrypted_payload)
+
+    return encrypted_cell, new_digest, new_encryptor
 
   def pack_payload(self, **kwargs):
     """
