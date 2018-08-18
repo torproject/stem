@@ -354,6 +354,44 @@ class BaseRelayCell(CircuitCell):
     # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
     return cls(circ_id, content)
 
+  def check_digest(self, digest):
+    """
+    Calculates the running digest of the cell payload per the spec, returning
+    whether the cell's unpacked digest matched, along with the updated digest
+    if so.
+
+    :param HASH digest: running digest held with the relay
+
+    :returns: (digest_matches, digest) tuple of object copies updated as follows:
+      * digest_matches: **bool** indicating whether the digest matches
+      * digest: updated via digest.update(payload), if the digest matches;
+        otherwise a copy of the original
+
+    :raises: **ValueError** if payload is the wrong size
+    """
+
+    command, recognized, stream_id, digest_from_cell, data_len, data, unused = RelayCell._unpack_payload(self.payload)
+
+    # running digest is calculated using a zero'd digest field in the payload
+    prepared_payload = RelayCell._pack_payload(command, recognized, stream_id, 0, data_len, data, unused, pad_remainder = False)
+
+    if len(prepared_payload) != FIXED_PAYLOAD_LEN:
+      # this should never fail
+      # if it did, it indicates a programming error either within stem.client.cell or a consumer
+      raise ValueError('Payload should be %i bytes, but was %i' % (FIXED_PAYLOAD_LEN, len(prepared_payload)))
+
+    new_digest = digest.copy()
+    new_digest.update(prepared_payload)
+
+    digest_matches = (RelayCell._coerce_digest(new_digest) == digest_from_cell)
+
+    # only return the new_digest if the digest check passed
+    # even if not, return a copy of the original
+    # this allows a consumer to always assume the returned digest is a different object
+    digest_to_return = new_digest if digest_matches else digest.copy()
+
+    return digest_matches, digest_to_return
+
   def __hash__(self):
     return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
 
