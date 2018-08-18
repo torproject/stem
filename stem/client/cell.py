@@ -443,6 +443,71 @@ class BaseRelayCell(CircuitCell):
 
     return new_cell
 
+  def decrypt(self, digest, decryptor, interpret = False):
+    """
+    Decrypts a cell and checks whether it is fully decrypted,
+    returning a new (Cell, fully_decrypted, digest, decryptor) tuple.
+    Optionally also interprets the cell (not generally recommended).
+
+    The method name is technically a misnomer, as it also checks whether the
+    cell has been fully decrypted (after decrypting), updating the digest if so.
+    However, these operations are defined per the spec as required for RELAY
+    cells, and ...
+      (1) it is a natural mental extension to include them here;
+      (2) it would be a bit pointless to require method consumers to manually
+          do all of that, for pedantry.
+
+    :param HASH digest: running digest held with the relay
+    :param cryptography.hazmat.primitives.ciphers.CipherContext decryptor:
+      running stream cipher decryptor held with the relay
+
+    :param bool interpret: (optional, defaults to **False**) Use **True** with
+      caution. The spec indicates that a fully decrypted cell should be
+      accounted for in digest and decryptor, independent of cell validity. Using
+      **True**, while convenient, may cause an exception for a NYI relay
+      command, a malformed cell, or some other reason. This option should only
+      be used when the consumer will consider the circuit to have a fatal error
+      in such cases, and catches/handles the exception accordingly (e.g. sending
+      a DestroyCell).
+
+    :returns: (:class:`~stem.client.cell.Cell`, bool, HASH, CipherContext) tuple
+      of object copies updated as follows:
+        * Cell: either :class:`~stem.client.cell.RawRelayCell` with a decrypted
+          payload or :class:`~stem.client.cell.RelayCell` class or subclass, if
+          **interpret** is **True** and the cell was fully decrypted
+        * fully_decrypted: **bool** indicating whether the cell is fully
+          decrypted
+        * digest: updated via digest.update(payload), if the cell was fully
+          decrypted; otherwise a copy of the original
+        * decryptor: updated via decryptor.update(payload)
+    """
+
+    new_decryptor = copy.copy(decryptor)
+
+    # actually decrypt
+    decrypted_payload = new_decryptor.update(self.payload)
+    new_cell = self.__class__(self.circ_id, decrypted_payload)
+
+    # do post-decryption checks to ascertain whether cell is fully decrypted
+    if new_cell.check_recognized_field():
+      digest_matches, new_digest = new_cell.check_digest(digest)
+      fully_decrypted = digest_matches
+    else:
+      new_digest = None
+      fully_decrypted = False
+
+    # only return the new_digest if the digest check meant that the cell has been fully decrypted
+    #
+    # furthermore, even if the digest was not updated, return a copy
+    # this allows a consumer to always assume the returned digest is a different object
+    digest_to_return = new_digest if fully_decrypted else digest.copy()
+
+    if interpret and fully_decrypted:
+      # this might raise an exception; oh well, we did warn about that
+      new_cell = new_cell.interpret_cell()
+
+    return new_cell, fully_decrypted, digest_to_return, new_decryptor
+
   def __hash__(self):
     return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
 
