@@ -236,20 +236,27 @@ class Circuit(object):
     with self.relay._orport_lock:
       orig_forward_digest = self.forward_digest.copy()
       orig_forward_key = copy.copy(self.forward_key)
-      orig_backward_digest = self.backward_digest.copy()
-      orig_backward_key = copy.copy(self.backward_key)
 
       try:
         cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
         encrypted_cell, self.forward_digest, self.forward_key = cell.encrypt(self.forward_digest, self.forward_key)
 
-        reply_cells = []
         self.relay._orport.send(encrypted_cell.pack(self.relay.link_protocol))
-        reply = self.relay._orport.recv()
+      except:
+        self.forward_digest = orig_forward_digest
+        self.forward_key = orig_forward_key
+        raise
 
-        relay_cell_cmd = stem.client.cell.RelayCell.VALUE
+      reply = self.relay._orport.recv()
+      reply_cells = []
 
-        while reply:
+      relay_cell_cmd = stem.client.cell.RelayCell.VALUE
+
+      while reply:
+        orig_backward_digest = self.backward_digest.copy()
+        orig_backward_key = copy.copy(self.backward_key)
+
+        try:
           raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
 
           if raw_cell.VALUE != relay_cell_cmd:
@@ -260,16 +267,14 @@ class Circuit(object):
           decrypted_cell, fully_decrypted, self.backward_digest, self.backward_key = raw_cell.decrypt(self.backward_digest, self.backward_key, interpret = True)
           if not fully_decrypted:
             raise stem.ProtocolError('Response for circuit id %i was not fully decrypted, when expected to be' % self.id)
+        except:
+          self.backward_digest = orig_backward_digest
+          self.backward_key = orig_backward_key
+          raise
 
-          reply_cells.append(decrypted_cell)
+        reply_cells.append(decrypted_cell)
 
-        return reply_cells
-      except:
-        self.forward_digest = orig_forward_digest
-        self.forward_key = orig_forward_key
-        self.backward_digest = orig_backward_digest
-        self.backward_key = orig_backward_key
-        raise
+      return reply_cells
 
   def close(self):
     with self.relay._orport_lock:
