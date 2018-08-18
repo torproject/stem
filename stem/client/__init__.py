@@ -255,8 +255,11 @@ class Circuit(object):
           elif raw_cell.circ_id != self.id:
             raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
 
-          decrypted_payload = self.backward_key.update(raw_cell.payload)
-          reply_cells.append(stem.client.cell.RelayCell._unpack(decrypted_payload, self.id, self.relay.link_protocol))
+          decrypted_cell, fully_decrypted, self.backward_digest, self.backward_key = raw_cell.decrypt(self.backward_digest, self.backward_key, interpret = True)
+          if not fully_decrypted:
+            raise stem.ProtocolError('Response for circuit id %i was not fully decrypted, when expected to be' % self.id)
+
+          reply_cells.append(decrypted_cell)
 
         return reply_cells
       except:
