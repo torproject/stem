@@ -234,8 +234,10 @@ class Circuit(object):
     """
 
     with self.relay._orport_lock:
-      orig_digest = self.forward_digest.copy()
-      orig_key = copy.copy(self.forward_key)
+      orig_forward_digest = self.forward_digest.copy()
+      orig_forward_key = copy.copy(self.forward_key)
+      orig_backward_digest = self.backward_digest.copy()
+      orig_backward_key = copy.copy(self.backward_key)
 
       try:
         cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
@@ -263,8 +265,10 @@ class Circuit(object):
 
         return reply_cells
       except:
-        self.forward_digest = orig_digest
-        self.forward_key = orig_key
+        self.forward_digest = orig_forward_digest
+        self.forward_key = orig_forward_key
+        self.backward_digest = orig_backward_digest
+        self.backward_key = orig_backward_key
         raise
 
   def close(self):
