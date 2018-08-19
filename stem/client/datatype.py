@@ -349,6 +349,7 @@ class Size(Field):
     self.name = name
     self.size = size
     self.format = pack_format
+    self.unsigned = pack_format.isupper()
 
   @staticmethod
   def pop(packed):
@@ -357,6 +358,8 @@ class Size(Field):
   def pack(self, content):
     if not stem.util._is_int(content):
       raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
+    if content < 0 and self.unsigned:
+      raise ValueError('A %s field cannot pack negative values, but %i was tried' % (self.name, content))
 
     packed = struct.pack(self.format, content)
 

@@ -12,31 +12,34 @@ Messages communicated over a Tor relay's ORPort.
 
   Cell - Base class for ORPort messages.
     |- CircuitCell - Circuit management.
-    |  |- CreateCell - Create a circuit.              (section 5.1)
-    |  |- CreatedCell - Acknowledge create.           (section 5.1)
-    |  |- RelayCell - End-to-end data.                (section 6.1)
-    |  |- DestroyCell - Stop using a circuit.         (section 5.4)
-    |  |- CreateFastCell - Create a circuit, no PK.   (section 5.1)
-    |  |- CreatedFastCell - Circuit created, no PK.   (section 5.1)
-    |  |- RelayEarlyCell - End-to-end data; limited.  (section 5.6)
-    |  |- Create2Cell - Extended CREATE cell.         (section 5.1)
-    |  +- Created2Cell - Extended CREATED cell.       (section 5.1)
+    |  |- CreateCell - Create a circuit.                                          (section 5.1)
+    |  |- CreatedCell - Acknowledge create.                                       (section 5.1)
+    |  |- BaseRelayCell - End-to-end data; abstract.                              (section 6.1)
+    |  |  +- RawRelayCell - End-to-end data. Payload not unpacked.                (section 5.5.2.1, 5.5.3)
+    |  |- RelayCell - End-to-end data.                                            (section 6.1)
+    |  |- DestroyCell - Stop using a circuit.                                     (section 5.4)
+    |  |- CreateFastCell - Create a circuit, no PK.                               (section 5.1)
+    |  |- CreatedFastCell - Circuit created, no PK.                               (section 5.1)
+    |  |- RelayEarlyCell - End-to-end data; limited.                              (section 5.6)
+    |  |- Create2Cell - Extended CREATE cell.                                     (section 5.1)
+    |  +- Created2Cell - Extended CREATED cell.                                   (section 5.1)
     |
-    |- PaddingCell - Padding negotiation.             (section 7.2)
-    |- VersionsCell - Negotiate proto version.        (section 4)
-    |- NetinfoCell - Time and address info.           (section 4.5)
-    |- PaddingNegotiateCell - Padding negotiation.    (section 7.2)
-    |- VPaddingCell - Variable-length padding.        (section 7.2)
-    |- CertsCell - Relay certificates.                (section 4.2)
-    |- AuthChallengeCell - Challenge value.           (section 4.3)
-    |- AuthenticateCell - Client authentication.      (section 4.5)
-    |- AuthorizeCell - Client authorization.          (not yet used)
+    |- PaddingCell - Padding negotiation.                                         (section 7.2)
+    |- VersionsCell - Negotiate proto version.                                    (section 4)
+    |- NetinfoCell - Time and address info.                                       (section 4.5)
+    |- PaddingNegotiateCell - Padding negotiation.                                (section 7.2)
+    |- VPaddingCell - Variable-length padding.                                    (section 7.2)
+    |- CertsCell - Relay certificates.                                            (section 4.2)
+    |- AuthChallengeCell - Challenge value.                                       (section 4.3)
+    |- AuthenticateCell - Client authentication.                                  (section 4.5)
+    |- AuthorizeCell - Client authorization.                                      (not yet used)
     |
     |- pack - encodes cell into bytes
     |- unpack - decodes series of cells
     +- pop - decodes cell with remainder
 """
 
+import copy
 import datetime
 import inspect
 import os
@@ -83,6 +86,7 @@ class Cell(object):
   The following cell types explicitly don't have *unused* content:
     * PaddingCell (we consider all content part of payload)
     * VersionsCell (all content is unpacked and treated as a version specification)
+    * BaseRelayCell (we don't parse cell beyond header/body)
     * VPaddingCell (we consider all content part of payload)
 
   :var bytes unused: unused filler that padded the cell to the expected size
@@ -101,13 +105,13 @@ class Cell(object):
     """
     Provides cell attributes by its name.
 
-    :parm str name: cell command to fetch
+    :param str name: cell command to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
-      if name == getattr(cls, 'NAME', UNDEFINED):
+      if name == getattr(cls, 'NAME', UNDEFINED) and not getattr(cls, 'CANNOT_DIRECTLY_UNPACK', False):
         return cls
 
     raise ValueError("'%s' isn't a valid cell type" % name)
@@ -117,13 +121,13 @@ class Cell(object):
     """
     Provides cell attributes by its value.
 
-    :parm int value: cell value to fetch
+    :param int value: cell value to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
-      if value == getattr(cls, 'VALUE', UNDEFINED):
+      if value == getattr(cls, 'VALUE', UNDEFINED) and not getattr(cls, 'CANNOT_DIRECTLY_UNPACK', False):
         return cls
 
     raise ValueError("'%s' isn't a valid cell value" % value)
@@ -199,9 +203,9 @@ class Cell(object):
     :param bytes payload: cell payload
     :param int circ_id: circuit id, if a CircuitCell
 
-    :return: **bytes** with the encoded payload
+    :returns: **bytes** with the encoded payload
 
-    :raise: **ValueError** if cell type invalid or payload makes cell too large
+    :raises: **ValueError** if cell type invalid or payload makes cell too large
     """
 
     if issubclass(cls, CircuitCell):
@@ -320,14 +324,208 @@ class CreatedCell(CircuitCell):
     super(CreatedCell, self).__init__()  # TODO: implement
 
 
+class BaseRelayCell(CircuitCell):
+  """
+  Cell whose subclasses are relayed over circuits.
+
+  :var bytes payload: raw payload, quite possibly encrypted
+  """
+
+  NAME = 'INTERNAL_BASE_RELAY'  # defined for error/other strings
+  IS_FIXED_SIZE = True  # all relay cells are fixed-size
+
+  # other attributes are deferred to subclasses, since this class cannot be directly unpacked
+
+  def __init__(self, circ_id, payload):
+    if not payload:
+      raise ValueError('Relay cells require a payload')
+    if len(payload) != FIXED_PAYLOAD_LEN:
+      raise ValueError('Payload should be %i bytes, but was %i' % (FIXED_PAYLOAD_LEN, len(payload)))
+
+    super(BaseRelayCell, self).__init__(circ_id, unused = b'')
+    self.payload = payload
+
+  def pack(self, link_protocol):
+    # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
+    return type(self)._pack(link_protocol, self.payload, circ_id = self.circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_protocol):
+    # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
+    return cls(circ_id, content)
+
+  def check_recognized_field(self):
+    """
+    Checks the 'recognized' field of the cell payload, which indicates whether
+    it is **probably** fully decrypted.
+
+    :returns: **bool** indicating whether the 'recognized' field indicates
+      likely decryption. Per the spec:
+        * **False** guarantees the cell *not* to be fully decrypted.
+        * **True** does *not* guarantee the cell to be fully decrypted, and it
+          must be checked further. See also
+          :func:`~stem.client.cell.BaseRelayCell.check_digest`
+    """
+
+    _, recognized_from_cell, _, _, _, _, _ = RelayCell._unpack_payload(self.payload)
+    return recognized_from_cell == 0
+
+  def check_digest(self, digest):
+    """
+    Calculates the running digest of the cell payload per the spec, returning
+    whether the cell's unpacked digest matched, along with the updated digest
+    if so.
+
+    :param HASH digest: running digest held with the relay
+
+    :returns: (digest_matches, digest) tuple of object copies updated as follows:
+      * digest_matches: **bool** indicating whether the digest matches
+      * digest: updated via digest.update(payload), if the digest matches;
+        otherwise a copy of the original
+
+    :raises: **ValueError** if payload is the wrong size
+    """
+
+    command, recognized, stream_id, digest_from_cell, data_len, data, unused = RelayCell._unpack_payload(self.payload)
+
+    # running digest is calculated using a zero'd digest field in the payload
+    prepared_payload = RelayCell._pack_payload(command, recognized, stream_id, 0, data_len, data, unused, pad_remainder = False)
+
+    if len(prepared_payload) != FIXED_PAYLOAD_LEN:
+      # this should never fail
+      # if it did, it indicates a programming error either within stem.client.cell or a consumer
+      raise ValueError('Payload should be %i bytes, but was %i' % (FIXED_PAYLOAD_LEN, len(prepared_payload)))
+
+    new_digest = digest.copy()
+    new_digest.update(prepared_payload)
+
+    digest_matches = (RelayCell._coerce_digest(new_digest) == digest_from_cell)
+
+    # only return the new_digest if the digest check passed
+    # even if not, return a copy of the original
+    # this allows a consumer to always assume the returned digest is a different object
+    digest_to_return = new_digest if digest_matches else digest.copy()
+
+    return digest_matches, digest_to_return
+
+  def interpret_cell(self):
+    """
+    Interprets the cell payload, returning a new
+    :class:`~stem.client.cell.RelayCell` class or subclass according to its
+    contents.
+
+    This method should only be used on fully decrypted cells, but that
+    responsibility is relegated to the caller.
+
+    Furthermore, this interpretation may cause an exception for a NYI relay
+    command, a malformed cell, or some other reason.
+
+    :returns: :class:`~stem.client.cell.RelayCell` class or subclass
+    """
+
+    # TODO: this mapping is quite hardcoded right now, but probably needs to be
+    # completely reworked once the Cell class hierarchy is better fleshed out.
+    #
+    # (It doesn't really make sense to have anything beyond this hack in the
+    # interim.)
+    #
+    # At that time, it would probably be modeled after Cell.by_value(), albeit
+    # specialized for the multiple types of RELAY / RELAY_EARLY cells.
+
+    relay_cells_by_value = {
+      RawRelayCell.VALUE: RelayCell,
+      RelayEarlyCell.VALUE: RelayEarlyCell,
+    }
+    new_cls = relay_cells_by_value[self.VALUE]
+
+    dummy_link_protocol = None
+    new_cell = new_cls._unpack(self.payload, self.circ_id, dummy_link_protocol)
+
+    return new_cell
+
+  def decrypt(self, digest, decryptor, interpret = False):
+    """
+    Decrypts a cell and checks whether it is fully decrypted,
+    returning a new (Cell, fully_decrypted, digest, decryptor) tuple.
+    Optionally also interprets the cell (not generally recommended).
+
+    The method name is technically a misnomer, as it also checks whether the
+    cell has been fully decrypted (after decrypting), updating the digest if so.
+    However, these operations are defined per the spec as required for RELAY
+    cells, and ...
+      (1) it is a natural mental extension to include them here;
+      (2) it would be a bit pointless to require method consumers to manually
+          do all of that, for pedantry.
+
+    :param HASH digest: running digest held with the relay
+    :param cryptography.hazmat.primitives.ciphers.CipherContext decryptor:
+      running stream cipher decryptor held with the relay
+
+    :param bool interpret: (optional, defaults to **False**) Use **True** with
+      caution. The spec indicates that a fully decrypted cell should be
+      accounted for in digest and decryptor, independent of cell validity. Using
+      **True**, while convenient, may cause an exception for a NYI relay
+      command, a malformed cell, or some other reason. This option should only
+      be used when the consumer will consider the circuit to have a fatal error
+      in such cases, and catches/handles the exception accordingly (e.g. sending
+      a DestroyCell).
+
+    :returns: (:class:`~stem.client.cell.Cell`, bool, HASH, CipherContext) tuple
+      of object copies updated as follows:
+        * Cell: either :class:`~stem.client.cell.RawRelayCell` with a decrypted
+          payload or :class:`~stem.client.cell.RelayCell` class or subclass, if
+          **interpret** is **True** and the cell was fully decrypted
+        * fully_decrypted: **bool** indicating whether the cell is fully
+          decrypted
+        * digest: updated via digest.update(payload), if the cell was fully
+          decrypted; otherwise a copy of the original
+        * decryptor: updated via decryptor.update(payload)
+    """
+
+    new_decryptor = copy.copy(decryptor)
+
+    # actually decrypt
+    decrypted_payload = new_decryptor.update(self.payload)
+    new_cell = self.__class__(self.circ_id, decrypted_payload)
+
+    # do post-decryption checks to ascertain whether cell is fully decrypted
+    if new_cell.check_recognized_field():
+      digest_matches, new_digest = new_cell.check_digest(digest)
+      fully_decrypted = digest_matches
+    else:
+      new_digest = None
+      fully_decrypted = False
+
+    # only return the new_digest if the digest check meant that the cell has been fully decrypted
+    #
+    # furthermore, even if the digest was not updated, return a copy
+    # this allows a consumer to always assume the returned digest is a different object
+    digest_to_return = new_digest if fully_decrypted else digest.copy()
+
+    if interpret and fully_decrypted:
+      # this might raise an exception; oh well, we did warn about that
+      new_cell = new_cell.interpret_cell()
+
+    return new_cell, fully_decrypted, digest_to_return, new_decryptor
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
+
+
+class RawRelayCell(BaseRelayCell):
+  NAME = 'RELAY'
+  VALUE = 3
+
+
 class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
-  :var stem.client.RelayCommand command: command to be issued
+  :var stem.client.datatype.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if cell is decrypted, non-zero otherwise
+  :var int recognized: zero if cell is decrypted, otherwise mostly non-zero
+    (can rarely be zero)
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
@@ -335,8 +533,35 @@ class RelayCell(CircuitCell):
   NAME = 'RELAY'
   VALUE = 3
   IS_FIXED_SIZE = True
+  CANNOT_DIRECTLY_UNPACK = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
+    digest = RelayCell._coerce_digest(digest)
+
+    super(RelayCell, self).__init__(circ_id, unused)
+    self.command, self.command_int = RelayCommand.get(command)
+    self.recognized = recognized
+    self.stream_id = stream_id
+    self.digest = digest
+    self.data = str_tools._to_bytes(data)
+
+    if digest == 0:
+      if not stream_id and self.command in STREAM_ID_REQUIRED:
+        raise ValueError('%s relay cells require a stream id' % self.command)
+      elif stream_id and self.command in STREAM_ID_DISALLOWED:
+        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+
+  @staticmethod
+  def _coerce_digest(digest):
+    """
+    Coerce any of HASH, str, int into the proper digest type for packing
+
+    :param HASH,str,int digest: digest to be coerced
+    :returns: digest in type appropriate for packing
+
+    :raises: **ValueError** if input digest type is unsupported
+    """
+
     if 'HASH' in str(type(digest)):
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
@@ -352,32 +577,32 @@ class RelayCell(CircuitCell):
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)
 
-    super(RelayCell, self).__init__(circ_id, unused)
-    self.command, self.command_int = RelayCommand.get(command)
-    self.recognized = recognized
-    self.stream_id = stream_id
-    self.digest = digest
-    self.data = str_tools._to_bytes(data)
-
-    if digest == 0:
-      if not stream_id and self.command in STREAM_ID_REQUIRED:
-        raise ValueError('%s relay cells require a stream id' % self.command)
-      elif stream_id and self.command in STREAM_ID_DISALLOWED:
-        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+    return digest
 
   def pack(self, link_protocol):
-    payload = bytearray()
-    payload += Size.CHAR.pack(self.command_int)
-    payload += Size.SHORT.pack(self.recognized)
-    payload += Size.SHORT.pack(self.stream_id)
-    payload += Size.LONG.pack(self.digest)
-    payload += Size.SHORT.pack(len(self.data))
-    payload += self.data
+    payload = self.pack_payload()
 
-    return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
+    return RelayCell._pack(link_protocol, payload, unused = b'', circ_id = self.circ_id)
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
+    command, recognized, stream_id, digest, data_len, data, unused = RelayCell._unpack_payload(content)
+
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+
+    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
+
+  @staticmethod
+  def _unpack_payload(content):
+    """
+    Directly interpret the payload without any validation.
+
+    :param bytes content: cell payload
+
+    :returns: (command, recognized, stream_id, digest, data_len, data, unused) tuple
+    """
+
     command, content = Size.CHAR.pop(content)
     recognized, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)
@@ -385,10 +610,134 @@ class RelayCell(CircuitCell):
     data_len, content = Size.SHORT.pop(content)
     data, unused = split(content, data_len)
 
-    if len(data) != data_len:
-      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+    return command, recognized, stream_id, digest, data_len, data, unused
 
-    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
+  def apply_digest(self, digest, prep_cell = True):
+    """
+    Calculates, updates, and applies the digest to the cell payload,
+    returning a new (cell, digest) tuple.
+
+    :param HASH digest: running digest held with the relay
+    :param bool prep_cell: preps the cell payload according to the spec, if
+      **True** (default)
+      if **False**, the digest will be calculated as-is, namely:
+        * the 'recognized' field will not be set to 0,
+        * the digest field will not be set to 0,
+        * and any 'unused' padding will be taken as-is.
+      Use **False** with caution.
+
+    :returns: (:class:`~stem.client.cell.RelayCell`, HASH) tuple of object
+      copies updated as follows:
+        * digest: updated via digest.update(payload)
+        * RelayCell: a copy of self, with the following updates:
+          * RelayCell.recognized: set to 0, if prep_cell is **True**
+          * RelayCell.digest: updated with the calculated digest
+          * RelayCell.unused: treated as padding and overwritten, if prep_cell
+            is **True**
+    """
+
+    if prep_cell:
+      new_cell_recognized = 0
+      new_cell_digest = 0
+      new_cell_unused = b''
+    else:
+      new_cell_recognized = self.recognized
+      new_cell_digest = self.digest
+      new_cell_unused = self.unused
+
+    new_digest = digest.copy()
+    new_cell = RelayCell(self.circ_id, self.command, self.data, digest = new_cell_digest, stream_id = self.stream_id, recognized = new_cell_recognized, unused = new_cell_unused)
+
+    payload_without_updated_digest = new_cell.pack_payload()
+    new_digest.update(payload_without_updated_digest)
+    new_cell.digest = RelayCell._coerce_digest(new_digest)
+
+    return new_cell, new_digest
+
+  def encrypt(self, digest, encryptor, **kwargs):
+    """
+    Preps a cell payload, including calculating digest, and encrypts it,
+    returning a new (RawRelayCell, digest, encryptor) tuple.
+
+    The method name is technically a misnomer, as it also preps cell payload
+    and applies the digest, prior to encrypting. However, these operations
+    are defined per the spec as required for RELAY cells, and ...
+      (1) it is a natural mental extension to include them here;
+      (2) it would be a bit pointless to require method consumers to manually
+          call both, for pedantry.
+
+    :param HASH digest: running digest held with the relay
+    :param cryptography.hazmat.primitives.ciphers.CipherContext encryptor:
+      running stream cipher encryptor held with the relay
+
+    :param bool prep_cell: (optional, defaults to **True**) refer to
+      :func:`~stem.client.cell.RelayCell.apply_digest`
+
+    :returns: (:class:`~stem.client.cell.RawRelayCell`, HASH, CipherContext)
+      tuple of object copies updated as follows:
+        * RawRelayCell: updated as specified in
+          :func:`~stem.client.cell.RelayCell.apply_digest`, then encrypted
+        * digest: updated via digest.update(payload)
+        * encryptor: updated via encryptor.update(payload_with_digest)
+    """
+
+    unencrypted_cell, new_digest = self.apply_digest(digest, **kwargs)
+    new_encryptor = copy.copy(encryptor)
+    encrypted_payload = new_encryptor.update(unencrypted_cell.pack_payload())
+    encrypted_cell = RawRelayCell(unencrypted_cell.circ_id, encrypted_payload)
+
+    return encrypted_cell, new_digest, new_encryptor
+
+  def pack_payload(self, **kwargs):
+    """
+    Convenience method for running
+    :func:`~stem.client.cell.RelayCell._pack_payload` on self.
+
+    :param bool pad_remaining: (optional, defaults to **True**) pads up to
+      payload size if **True**
+
+    :returns: **bytes** with the packed payload
+    """
+
+    return RelayCell._pack_payload(self.command_int, self.recognized, self.stream_id, self.digest, len(self.data), self.data, self.unused, **kwargs)
+
+  @staticmethod
+  def _pack_payload(command_int, recognized, stream_id, digest, data_len, data, unused = b'', pad_remainder = True):
+    """
+    Directly pack the payload without any validation beyond Size constraints.
+
+    :param int command_int: integer value of our command
+    :param int recognized: zero if cell is decrypted, otherwise mostly non-zero
+      (can rarely be zero)
+    :param int stream_id: specific stream this concerns
+    :param HASH,str,int digest: running digest held with the relay
+    :param int data_len: length of body data
+    :param bytes data: body data of the cell
+    :param bytes unused: padding bytes to include after data
+    :param bool pad_remaining: pads up to payload size if **True**
+
+    :returns: **bytes** with the packed payload
+    """
+
+    payload = bytearray()
+    payload += Size.CHAR.pack(command_int)
+    payload += Size.SHORT.pack(recognized)
+    payload += Size.SHORT.pack(stream_id)
+    payload += Size.LONG.pack(RelayCell._coerce_digest(digest))
+    payload += Size.SHORT.pack(data_len)
+    payload += data
+    payload += unused
+
+    if len(payload) > FIXED_PAYLOAD_LEN:
+      raise ValueError('Payload is too large (%i bytes), must not be more than %i.' % (len(payload), FIXED_PAYLOAD_LEN))
+
+    if pad_remainder:
+      # right now, it is acceptable to pad the remaining portion with ZEROs instead of random
+      # this is done due to threat model and simplifying some implementation
+      # however: in the future (TODO), this may become against the spec; see prop 289
+      payload += ZERO * (FIXED_PAYLOAD_LEN - len(payload))
+
+    return bytes(payload)
 
   def __hash__(self):
     return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
