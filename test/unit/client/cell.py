@@ -235,12 +235,12 @@ class TestCell(unittest.TestCase):
         self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id, unused = unused).pack(link_protocol))
         self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id, unused = unused).pack(link_protocol))
 
-      # TODO - temporarily, we hack the interim tests by unpacking info via RawRelayCell
+      # first unpack via RawRelayCell, then interpret into RelayCell
       raw_cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, raw_cell.circ_id)
       self.assertEqual(cell_bytes[-FIXED_PAYLOAD_LEN:], raw_cell.payload)
 
-      cell = RelayCell._unpack(raw_cell.payload, raw_cell.circ_id, link_protocol)
+      cell = raw_cell.interpret_cell()
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(command, cell.command)
       self.assertEqual(command_int, cell.command_int)

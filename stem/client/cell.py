@@ -408,6 +408,41 @@ class BaseRelayCell(CircuitCell):
 
     return digest_matches, digest_to_return
 
+  def interpret_cell(self):
+    """
+    Interprets the cell payload, returning a new
+    :class:`~stem.client.cell.RelayCell` class or subclass according to its
+    contents.
+
+    This method should only be used on fully decrypted cells, but that
+    responsibility is relegated to the caller.
+
+    Furthermore, this interpretation may cause an exception for a NYI relay
+    command, a malformed cell, or some other reason.
+
+    :returns: :class:`~stem.client.cell.RelayCell` class or subclass
+    """
+
+    # TODO: this mapping is quite hardcoded right now, but probably needs to be
+    # completely reworked once the Cell class hierarchy is better fleshed out.
+    #
+    # (It doesn't really make sense to have anything beyond this hack in the
+    # interim.)
+    #
+    # At that time, it would probably be modeled after Cell.by_value(), albeit
+    # specialized for the multiple types of RELAY / RELAY_EARLY cells.
+
+    relay_cells_by_value = {
+      RawRelayCell.VALUE: RelayCell,
+      RelayEarlyCell.VALUE: RelayEarlyCell,
+    }
+    new_cls = relay_cells_by_value[self.VALUE]
+
+    dummy_link_protocol = None
+    new_cell = new_cls._unpack(self.payload, self.circ_id, dummy_link_protocol)
+
+    return new_cell
+
   def __hash__(self):
     return stem.util._hash_attr(self, 'circ_id', 'payload', cache = True)
 
