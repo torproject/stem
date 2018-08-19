@@ -354,6 +354,22 @@ class BaseRelayCell(CircuitCell):
     # unlike everywhere else, we actually want to use the subclass type, NOT *this* class
     return cls(circ_id, content)
 
+  def check_recognized_field(self):
+    """
+    Checks the 'recognized' field of the cell payload, which indicates whether
+    it is **probably** fully decrypted.
+
+    :returns: **bool** indicating whether the 'recognized' field indicates
+      likely decryption. Per the spec:
+        * **False** guarantees the cell *not* to be fully decrypted.
+        * **True** does *not* guarantee the cell to be fully decrypted, and it
+          must be checked further. See also
+          :func:`~stem.client.cell.BaseRelayCell.check_digest`
+    """
+
+    _, recognized_from_cell, _, _, _, _, _ = RelayCell._unpack_payload(self.payload)
+    return recognized_from_cell == 0
+
   def check_digest(self, digest):
     """
     Calculates the running digest of the cell payload per the spec, returning
