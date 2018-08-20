@@ -358,7 +358,7 @@ def is_bsd():
   :returns: **bool** to indicate if we're on a BSD OS
   """
 
-  return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD')
+  return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD', 'NetBSD')
 
 
 def is_available(command, cached=True):
