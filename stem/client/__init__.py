@@ -25,7 +25,6 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- close - closes this circuit
 """
 
-import copy
 import hashlib
 import threading
 
@@ -234,18 +233,16 @@ class Circuit(object):
     """
 
     with self.relay._orport_lock:
-      orig_forward_digest = self.forward_digest.copy()
-      orig_forward_key = copy.copy(self.forward_key)
+      cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
+      encrypted_cell, new_forward_digest, new_forward_key = cell.encrypt(self.forward_digest, self.forward_key)
 
-      try:
-        cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
-        encrypted_cell, self.forward_digest, self.forward_key = cell.encrypt(self.forward_digest, self.forward_key)
+      self.relay._orport.send(encrypted_cell.pack(self.relay.link_protocol))
 
-        self.relay._orport.send(encrypted_cell.pack(self.relay.link_protocol))
-      except:
-        self.forward_digest = orig_forward_digest
-        self.forward_key = orig_forward_key
-        raise
+      # Only recoding our new digest/key if the cell's successfully sent. If
+      # the above raises we should leave them alone.
+
+      self.forward_digest = new_forward_digest
+      self.forward_key = new_forward_key
 
       reply = self.relay._orport.recv()
       reply_cells = []
@@ -253,24 +250,22 @@ class Circuit(object):
       relay_cell_cmd = stem.client.cell.RelayCell.VALUE
 
       while reply:
-        orig_backward_digest = self.backward_digest.copy()
-        orig_backward_key = copy.copy(self.backward_key)
+        raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
 
-        try:
-          raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
+        if raw_cell.VALUE != relay_cell_cmd:
+          raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, raw_cell.VALUE))
+        elif raw_cell.circ_id != self.id:
+          raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
 
-          if raw_cell.VALUE != relay_cell_cmd:
-            raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, raw_cell.VALUE))
-          elif raw_cell.circ_id != self.id:
-            raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
+        decrypted_cell, fully_decrypted, new_backward_digest, new_backward_key = raw_cell.decrypt(self.backward_digest, self.backward_key, interpret = True)
 
-          decrypted_cell, fully_decrypted, self.backward_digest, self.backward_key = raw_cell.decrypt(self.backward_digest, self.backward_key, interpret = True)
-          if not fully_decrypted:
-            raise stem.ProtocolError('Response for circuit id %i was not fully decrypted, when expected to be' % self.id)
-        except:
-          self.backward_digest = orig_backward_digest
-          self.backward_key = orig_backward_key
-          raise
+        if not fully_decrypted:
+          raise stem.ProtocolError('Response for circuit id %i was not fully decrypted, when expected to be' % self.id)
+
+        # Again, if the above raises the digest/key should remain unchanged.
+
+        self.backward_digest = new_backward_digest
+        self.backward_key = new_backward_key
 
         reply_cells.append(decrypted_cell)
 
