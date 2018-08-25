@@ -116,6 +116,7 @@ import collections
 import hashlib
 import struct
 
+import stem.client.cell
 import stem.prereq
 import stem.util
 import stem.util.connection
@@ -246,8 +247,10 @@ class LinkProtocol(int):
     protocol = int.__new__(cls, version)
     protocol.version = version
     protocol.circ_id_size = Size.LONG if version > 3 else Size.SHORT
-    protocol.fixed_cell_length = 514 if version > 3 else 512
     protocol.first_circ_id = 0x80000000 if version > 3 else 0x01
+
+    cell_header_size = protocol.circ_id_size.size + 1  # circuit id (2 or 4 bytes) + command (1 byte)
+    protocol.fixed_cell_length = cell_header_size + stem.client.cell.FIXED_PAYLOAD_LEN
 
     return protocol
 

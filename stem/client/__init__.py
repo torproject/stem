@@ -243,16 +243,20 @@ class Circuit(object):
       self.forward_digest = forward_digest
       self.forward_key = forward_key
 
+      # Decrypt relay cells received in response. Again, our digest/key only
+      # updates when handled successfully.
+
       reply = self.relay._orport.recv()
       reply_cells = []
 
-      relay_cell_cmd = stem.client.cell.RelayCell.VALUE
+      if len(reply) % self.relay.link_protocol.fixed_cell_length != 0:
+        raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
 
       while reply:
         raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
 
-        if raw_cell.VALUE != relay_cell_cmd:
-          raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (relay_cell_cmd, raw_cell.VALUE))
+        if raw_cell.VALUE != stem.client.cell.RelayCell.VALUE:
+          raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (stem.client.cell.RelayCell.VALUE, raw_cell.VALUE))
         elif raw_cell.circ_id != self.id:
           raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
 
