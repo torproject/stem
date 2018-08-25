@@ -33,7 +33,7 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, LinkProtocol, Address, KDF
+from stem.client.datatype import ZERO, LinkProtocol, Address, KDF, split
 
 __all__ = [
   'cell',
@@ -253,22 +253,14 @@ class Circuit(object):
         raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
 
       while reply:
-        raw_cell, reply = stem.client.cell.Cell.pop(reply, self.relay.link_protocol)
+        encrypted_cell, reply = split(reply, self.relay.link_protocol.fixed_cell_length)
+        decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(encrypted_cell, self.backward_key, self.backward_digest)
 
-        if raw_cell.VALUE != stem.client.cell.RelayCell.VALUE:
-          raise stem.ProtocolError('RELAY cell responses should be %i but was %i' % (stem.client.cell.RelayCell.VALUE, raw_cell.VALUE))
-        elif raw_cell.circ_id != self.id:
-          raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, raw_cell.circ_id))
+        if self.id != decrypted_cell.circ_id:
+          raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, decrypted_cell.circ_id))
 
-        decrypted_cell, fully_decrypted, new_backward_digest, new_backward_key = raw_cell.decrypt(self.backward_digest, self.backward_key, interpret = True)
-
-        if not fully_decrypted:
-          raise stem.ProtocolError('Response for circuit id %i was not fully decrypted, when expected to be' % self.id)
-
-        # Again, if the above raises the digest/key should remain unchanged.
-
-        self.backward_digest = new_backward_digest
-        self.backward_key = new_backward_key
+        self.backward_digest = backward_digest
+        self.backward_key = backward_key
 
         reply_cells.append(decrypted_cell)
 

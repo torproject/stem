@@ -551,6 +551,36 @@ class RelayCell(CircuitCell):
       elif stream_id and self.command in STREAM_ID_DISALLOWED:
         raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
+  @classmethod
+  def decrypt(link_protocol, content, digest, key):
+    """
+    Parse the given content as an encrypted RELAY cell.
+    """
+
+    # TODO: Fill in the above pydocs, deduplicate with the other decrypt
+    # method, yadda yadda. Starting with a minimal stub to see if this makes
+    # the Circuit class better. I'll circle back to clean up this module if it
+    # works.
+
+    if len(content) != link_protocol.fixed_cell_length:
+      raise stem.ProtocolError('RELAY cells should be %i bytes, but received %i' % (link_protocol.fixed_cell_length, len(content)))
+
+    circ_id, content = link_protocol.circ_id_size.pop(content)
+    command, payload = Size.CHAR.pop(content)
+
+    if command != RelayCell.VALUE:
+      raise stem.ProtocolError('Cannot decrypt as a RELAY cell. This had command %i instead.' % command)
+
+    key = copy.copy(key)
+    decrypted = key.update(payload)
+
+    # TODO: Integrate with check_digest() and flag for integrating if we're
+    # fully decrypted. For the moment we only handle direct responses (ie. all
+    # the cells we receive can be fully decrypted) but if we attempt to support
+    # relaying we'll need to pass along cells we can only partially decrypt.
+
+    return RelayCell._unpack(decrypted, circ_id, link_protocol), key, digest
+
   @staticmethod
   def _coerce_digest(digest):
     """
