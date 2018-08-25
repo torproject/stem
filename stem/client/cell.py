@@ -364,7 +364,7 @@ class BaseRelayCell(CircuitCell):
           :func:`~stem.client.cell.BaseRelayCell.check_digest`
     """
 
-    _, recognized_from_cell, _, _, _, _, _ = RelayCell._unpack_payload(self.payload)
+    _, recognized_from_cell, _, _, _, _, _ = AlternateRelayCell._unpack_payload(self.payload)
     return recognized_from_cell == 0
 
   def check_digest(self, digest):
@@ -383,10 +383,10 @@ class BaseRelayCell(CircuitCell):
     :raises: **ValueError** if payload is the wrong size
     """
 
-    command, recognized, stream_id, digest_from_cell, data_len, data, unused = RelayCell._unpack_payload(self.payload)
+    command, recognized, stream_id, digest_from_cell, data_len, data, unused = AlternateRelayCell._unpack_payload(self.payload)
 
     # running digest is calculated using a zero'd digest field in the payload
-    prepared_payload = RelayCell._pack_payload(command, recognized, stream_id, 0, data_len, data, unused, pad_remainder = False)
+    prepared_payload = AlternateRelayCell._pack_payload(command, recognized, stream_id, 0, data_len, data, unused, pad_remainder = False)
 
     if len(prepared_payload) != FIXED_PAYLOAD_LEN:
       # this should never fail
@@ -396,7 +396,7 @@ class BaseRelayCell(CircuitCell):
     new_digest = digest.copy()
     new_digest.update(prepared_payload)
 
-    digest_matches = (RelayCell._coerce_digest(new_digest) == digest_from_cell)
+    digest_matches = (AlternateRelayCell._coerce_digest(new_digest) == digest_from_cell)
 
     # only return the new_digest if the digest check passed
     # even if not, return a copy of the original
@@ -515,6 +515,82 @@ class RawRelayCell(BaseRelayCell):
 
 
 class RelayCell(CircuitCell):
+  """
+  Command concerning a relay circuit.
+
+  :var stem.client.RelayCommand command: command to be issued
+  :var int command_int: integer value of our command
+  :var bytes data: payload of the cell
+  :var int recognized: zero if cell is decrypted, non-zero otherwise
+  :var int digest: running digest held with the relay
+  :var int stream_id: specific stream this concerns
+  """
+
+  NAME = 'RELAY'
+  VALUE = 3
+  IS_FIXED_SIZE = True
+
+  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
+    if 'HASH' in str(type(digest)):
+      # Unfortunately hashlib generates from a dynamic private class so
+      # isinstance() isn't such a great option. With python2/python3 the
+      # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH'.
+
+      digest_packed = digest.digest()[:RELAY_DIGEST_SIZE.size]
+      digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
+    elif stem.util._is_str(digest):
+      digest_packed = digest[:RELAY_DIGEST_SIZE.size]
+      digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
+    elif stem.util._is_int(digest):
+      pass
+    else:
+      raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)
+
+    super(RelayCell, self).__init__(circ_id, unused)
+    self.command, self.command_int = RelayCommand.get(command)
+    self.recognized = recognized
+    self.stream_id = stream_id
+    self.digest = digest
+    self.data = str_tools._to_bytes(data)
+
+    if digest == 0:
+      if not stream_id and self.command in STREAM_ID_REQUIRED:
+        raise ValueError('%s relay cells require a stream id' % self.command)
+      elif stream_id and self.command in STREAM_ID_DISALLOWED:
+        raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
+
+  def pack(self, link_protocol):
+    payload = bytearray()
+    payload += Size.CHAR.pack(self.command_int)
+    payload += Size.SHORT.pack(self.recognized)
+    payload += Size.SHORT.pack(self.stream_id)
+    payload += Size.LONG.pack(self.digest)
+    payload += Size.SHORT.pack(len(self.data))
+    payload += self.data
+
+    return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
+
+  @classmethod
+  def _unpack(cls, content, circ_id, link_protocol):
+    command, content = Size.CHAR.pop(content)
+    recognized, content = Size.SHORT.pop(content)  # 'recognized' field
+    stream_id, content = Size.SHORT.pop(content)
+    digest, content = Size.LONG.pop(content)
+    data_len, content = Size.SHORT.pop(content)
+    data, unused = split(content, data_len)
+
+    if len(data) != data_len:
+      raise ValueError('%s cell said it had %i bytes of data, but only had %i' % (cls.NAME, data_len, len(data)))
+
+    return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
+
+
+# TODO: merge the below with the RelayCell
+
+class AlternateRelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
