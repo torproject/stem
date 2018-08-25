@@ -518,10 +518,16 @@ class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
+  Our 'recognized' attribute provides a cheap (but incomplete) check for if our
+  cell payload is encrypted. If non-zero our payload *IS* encrypted, but if
+  zero we're *PROBABLY* fully decrypted. This uncertainty is because encrypted
+  cells have a small chance of coincidently producing zero for this value as
+  well.
+
   :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if cell is decrypted, non-zero otherwise
+  :var int recognized: non-zero if payload is encrypted
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
