@@ -654,7 +654,7 @@ class RelayCell(CircuitCell):
 
     return new_cell, new_digest
 
-  def encrypt(self, digest, encryptor, **kwargs):
+  def encrypt(self, link_protocol, digest, encryptor, **kwargs):
     """
     Preps a cell payload, including calculating digest, and encrypts it,
     returning a new (RawRelayCell, digest, encryptor) tuple.
@@ -666,6 +666,7 @@ class RelayCell(CircuitCell):
       (2) it would be a bit pointless to require method consumers to manually
           call both, for pedantry.
 
+    :param int link_protocol: link protocol version
     :param HASH digest: running digest held with the relay
     :param cryptography.hazmat.primitives.ciphers.CipherContext encryptor:
       running stream cipher encryptor held with the relay
@@ -673,10 +674,9 @@ class RelayCell(CircuitCell):
     :param bool prep_cell: (optional, defaults to **True**) refer to
       :func:`~stem.client.cell.RelayCell.apply_digest`
 
-    :returns: (:class:`~stem.client.cell.RawRelayCell`, HASH, CipherContext)
+    :returns: (bytes, HASH, CipherContext)
       tuple of object copies updated as follows:
-        * RawRelayCell: updated as specified in
-          :func:`~stem.client.cell.RelayCell.apply_digest`, then encrypted
+        * bytes: encrypted cell payload
         * digest: updated via digest.update(payload)
         * encryptor: updated via encryptor.update(payload_with_digest)
     """
@@ -686,7 +686,7 @@ class RelayCell(CircuitCell):
     encrypted_payload = new_encryptor.update(unencrypted_cell.pack_payload())
     encrypted_cell = RawRelayCell(unencrypted_cell.circ_id, encrypted_payload)
 
-    return encrypted_cell, new_digest, new_encryptor
+    return encrypted_cell.pack(link_protocol), new_digest, new_encryptor
 
   def pack_payload(self, **kwargs):
     """

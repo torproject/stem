@@ -233,16 +233,15 @@ class Circuit(object):
     """
 
     with self.relay._orport_lock:
+      # Encrypt and send the cell. Our digest/key only updates if the cell is
+      # successfully sent.
+
       cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
-      encrypted_cell, new_forward_digest, new_forward_key = cell.encrypt(self.forward_digest, self.forward_key)
+      payload, forward_digest, forward_key = cell.encrypt(self.relay.link_protocol, self.forward_digest, self.forward_key)
+      self.relay._orport.send(payload)
 
-      self.relay._orport.send(encrypted_cell.pack(self.relay.link_protocol))
-
-      # Only recoding our new digest/key if the cell's successfully sent. If
-      # the above raises we should leave them alone.
-
-      self.forward_digest = new_forward_digest
-      self.forward_key = new_forward_key
+      self.forward_digest = forward_digest
+      self.forward_key = forward_key
 
       reply = self.relay._orport.recv()
       reply_cells = []
