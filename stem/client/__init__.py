@@ -237,7 +237,7 @@ class Circuit(object):
       # successfully sent.
 
       cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
-      payload, forward_digest, forward_key = cell.encrypt(self.relay.link_protocol, self.forward_key, self.forward_digest)
+      payload, forward_key, forward_digest = cell.encrypt(self.relay.link_protocol, self.forward_key, self.forward_digest)
       self.relay._orport.send(payload)
 
       self.forward_digest = forward_digest
@@ -254,7 +254,7 @@ class Circuit(object):
 
       while reply:
         encrypted_cell, reply = split(reply, self.relay.link_protocol.fixed_cell_length)
-        decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(encrypted_cell, self.backward_key, self.backward_digest)
+        decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(self.relay.link_protocol, encrypted_cell, self.backward_key, self.backward_digest)
 
         if self.id != decrypted_cell.circ_id:
           raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, decrypted_cell.circ_id))

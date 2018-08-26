@@ -383,7 +383,7 @@ class RelayCell(CircuitCell):
 
     return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
 
-  @classmethod
+  @staticmethod
   def decrypt(link_protocol, content, key, digest):
     """
     Decrypts content as a relay cell addressed to us. This provides back a
@@ -428,7 +428,7 @@ class RelayCell(CircuitCell):
     #   # Our updated digest is calculated based on this cell with a blanked
     #   # digest field.
     #
-    #   digest_cell = RelayCell(self.id, self.command, self.data, 0, self.stream_id, self.recognized, self.unused)
+    #   digest_cell = RelayCell(self.circ_id, self.command, self.data, 0, self.stream_id, self.recognized, self.unused)
     #   new_digest.update(digest_cell.pack(link_protocol))
     #
     #   is_encrypted == cell.recognized != 0 or self.digest == new_digest
@@ -468,7 +468,7 @@ class RelayCell(CircuitCell):
     # Pack a copy of ourselves with our newly calculated digest, and encrypt
     # the payload. Header remains plaintext.
 
-    cell = RelayCell(self.id, self.command, self.data, new_digest, self.stream_id, self.recognized, self.unused)
+    cell = RelayCell(self.circ_id, self.command, self.data, new_digest, self.stream_id, self.recognized, self.unused)
     header, payload = split(cell.pack(link_protocol), header_size)
 
     return header + new_key.update(payload), new_key, new_digest
