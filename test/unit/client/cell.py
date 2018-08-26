@@ -14,9 +14,6 @@ from stem.client.cell import (
   FIXED_PAYLOAD_LEN,
   Cell,
   PaddingCell,
-  BaseRelayCell,
-  RawRelayCell,
-  AlternateRelayCell,
   RelayCell,
   DestroyCell,
   CreateFastCell,
@@ -95,24 +92,20 @@ AUTH_CHALLENGE_CELLS = {
 
 class TestCell(unittest.TestCase):
   def test_by_name(self):
-    for (expected_class, name, value, is_fixed_size) in ((NetinfoCell, 'NETINFO', 8, True), (RawRelayCell, 'RELAY', 3, True)):
-      cls = Cell.by_name(name)
-      self.assertEqual(expected_class, cls)
-      self.assertEqual(name, cls.NAME)
-      self.assertEqual(value, cls.VALUE)
-      self.assertEqual(is_fixed_size, cls.IS_FIXED_SIZE)
+    cls = Cell.by_name('NETINFO')
+    self.assertEqual('NETINFO', cls.NAME)
+    self.assertEqual(8, cls.VALUE)
+    self.assertEqual(True, cls.IS_FIXED_SIZE)
 
     self.assertRaises(ValueError, Cell.by_name, 'NOPE')
     self.assertRaises(ValueError, Cell.by_name, 85)
     self.assertRaises(ValueError, Cell.by_name, None)
 
   def test_by_value(self):
-    for (expected_class, name, value, is_fixed_size) in ((NetinfoCell, 'NETINFO', 8, True), (RawRelayCell, 'RELAY', 3, True)):
-      cls = Cell.by_value(value)
-      self.assertEqual(expected_class, cls)
-      self.assertEqual(name, cls.NAME)
-      self.assertEqual(value, cls.VALUE)
-      self.assertEqual(is_fixed_size, cls.IS_FIXED_SIZE)
+    cls = Cell.by_value(8)
+    self.assertEqual('NETINFO', cls.NAME)
+    self.assertEqual(8, cls.VALUE)
+    self.assertEqual(True, cls.IS_FIXED_SIZE)
 
     self.assertRaises(ValueError, Cell.by_value, 'NOPE')
     self.assertRaises(ValueError, Cell.by_value, 85)
@@ -195,39 +188,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(b'', cell.unused)  # always empty
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
-  def test_base_relay_cell(self):
-    arbitrary_circ_id = 123
-    even_more_arbitrary_link_protocol = 1234
-
-    cell = BaseRelayCell(arbitrary_circ_id, RANDOM_PAYLOAD)
-    self.assertEqual(RANDOM_PAYLOAD, cell.payload)
-    self.assertEqual(arbitrary_circ_id, cell.circ_id)
-    self.assertEqual(True, cell.IS_FIXED_SIZE)
-
-    # Cell.unpack not reachable - won't be tested
-    # but we can at least directly test _unpack, although it's a pretty simple method
-    cell_2 = BaseRelayCell._unpack(RANDOM_PAYLOAD, arbitrary_circ_id, even_more_arbitrary_link_protocol)
-    self.assertEqual(cell, cell_2)
-
-    # pack not possible, but easily callable
-    # lots of things cause a ValueError, so this check isn't very specific, but the wording comes from Size and so isn't under the purview of this unit
-    self.assertRaises(ValueError, cell.pack, even_more_arbitrary_link_protocol)
-
-    # check other values and inequality
-    for (circ_id, payload) in ((arbitrary_circ_id, ZERO * FIXED_PAYLOAD_LEN), (arbitrary_circ_id + 1, RANDOM_PAYLOAD)):
-      unequal_cell = BaseRelayCell(circ_id, payload)
-      self.assertEqual(payload, unequal_cell.payload)
-      self.assertNotEqual(cell, unequal_cell)
-
-    # invalid constructions
-    self.assertRaisesWith(ValueError, 'Relay cells require a payload', BaseRelayCell, arbitrary_circ_id, None)
-    expected_message_format = 'Payload should be %i bytes, but was ' % FIXED_PAYLOAD_LEN + '%i'
-    for payload_len in (FIXED_PAYLOAD_LEN - 1, FIXED_PAYLOAD_LEN + 1):
-      self.assertRaisesWith(ValueError, expected_message_format % payload_len, BaseRelayCell, arbitrary_circ_id, ZERO * payload_len)
-
   def test_relay_cell(self):
-    self.assertEquals(True, AlternateRelayCell.CANNOT_DIRECTLY_UNPACK)
-
     for cell_bytes, (command, command_int, circ_id, stream_id, data, digest, unused, link_protocol) in RELAY_CELLS.items():
       if not unused.strip(ZERO):
         self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id).pack(link_protocol))
@@ -236,12 +197,7 @@ class TestCell(unittest.TestCase):
         self.assertEqual(cell_bytes, RelayCell(circ_id, command, data, digest, stream_id, unused = unused).pack(link_protocol))
         self.assertEqual(cell_bytes, RelayCell(circ_id, command_int, data, digest, stream_id, unused = unused).pack(link_protocol))
 
-      # first unpack via RawRelayCell, then interpret into RelayCell
-      raw_cell = Cell.pop(cell_bytes, link_protocol)[0]
-      self.assertEqual(circ_id, raw_cell.circ_id)
-      self.assertEqual(cell_bytes[-FIXED_PAYLOAD_LEN:], raw_cell.payload)
-
-      cell = raw_cell.interpret_cell()
+      cell = Cell.pop(cell_bytes, link_protocol)[0]
       self.assertEqual(circ_id, cell.circ_id)
       self.assertEqual(command, cell.command)
       self.assertEqual(command_int, cell.command_int)
@@ -251,7 +207,6 @@ class TestCell(unittest.TestCase):
       self.assertEqual(unused, cell.unused)
 
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
-      self.assertEqual(cell_bytes, raw_cell.pack(link_protocol))
 
     digest = hashlib.sha1(b'hi')
     self.assertEqual(3257622417, RelayCell(5, 'RELAY_BEGIN_DIR', '', digest, 564346860).digest)
@@ -271,9 +226,7 @@ class TestCell(unittest.TestCase):
       ZERO * 498,  # data
     ))
 
-    # TODO - temporarily, we hack the interim tests by unpacking info via RawRelayCell
-    raw_cell = Cell.pop(mismatched_data_length_bytes, 2)[0]
-    self.assertRaisesWith(ValueError, 'RELAY cell said it had 65535 bytes of data, but only had 498', RelayCell._unpack, raw_cell.payload, raw_cell.circ_id, 2)
+    self.assertRaisesWith(ValueError, 'RELAY cell said it had 65535 bytes of data, but only had 498', Cell.pop, mismatched_data_length_bytes, 2)
 
   def test_destroy_cell(self):
     for cell_bytes, (circ_id, reason, reason_int, unused, link_protocol) in DESTROY_CELLS.items():
