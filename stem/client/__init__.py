@@ -237,7 +237,7 @@ class Circuit(object):
       # successfully sent.
 
       cell = stem.client.cell.RelayCell(self.id, command, data, stream_id = stream_id)
-      payload, forward_digest, forward_key = cell.encrypt(self.relay.link_protocol, self.forward_digest, self.forward_key)
+      payload, forward_digest, forward_key = cell.encrypt(self.relay.link_protocol, self.forward_key, self.forward_digest)
       self.relay._orport.send(payload)
 
       self.forward_digest = forward_digest

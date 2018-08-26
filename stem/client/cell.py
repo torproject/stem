@@ -576,6 +576,41 @@ class RelayCell(CircuitCell):
 
     return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
 
+  def encrypt(self, link_protocol, key, digest):
+    """
+    Encrypts our cell content to be sent with the given key. This provides back
+    a tuple of the form...
+
+    ::
+
+      (payload (bytes), new_key (CipherContext), new_digest (HASH))
+
+    :param int link_protocol: link protocol version
+    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
+      key established with the relay we're sending this cell to
+    :param HASH digest: running digest held with the relay
+
+    :returns: **tuple** with our encrypted payload and updated key/digest
+    """
+
+    new_key = copy.copy(key)
+    new_digest = digest.copy()
+
+    # Digests are computed from our payload, not including our header's circuit
+    # id (2 or 4 bytes) and command (1 byte).
+
+    header_size = link_protocol.circ_id_size.size + 1
+    payload_without_digest = self.pack(link_protocol)[header_size:]
+    new_digest.update(payload_without_digest)
+
+    # Pack a copy of ourselves with our newly calculated digest, and encrypt
+    # the payload. Header remains plaintext.
+
+    cell = RelayCell(self.id, self.command, self.data, new_digest, self.stream_id, self.recognized, self.unused)
+    header, payload = split(cell.pack(link_protocol), header_size)
+
+    return header + new_key.update(payload), new_key, new_digest
+
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):
     command, content = Size.CHAR.pop(content)
