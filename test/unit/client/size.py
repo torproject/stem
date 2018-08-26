@@ -25,6 +25,7 @@ class TestSize(unittest.TestCase):
     self.assertEqual(b'\x00\x00\x00\x00\x00\x00\x00\x12', Size.LONG_LONG.pack(18))
 
     self.assertRaisesWith(ValueError, 'Size.pack encodes an integer, but was a str', Size.CHAR.pack, 'hi')
+    self.assertRaisesWith(ValueError, 'Packed values must be positive (attempted to pack -1 as a CHAR)', Size.CHAR.pack, -1)
 
     bad_size = Size('BAD_SIZE', 1, '!H')
     self.assertRaisesRegexp(ValueError, re.escape("'\\x00\\x12' is the wrong size for a BAD_SIZE field"), bad_size.pack, 18)

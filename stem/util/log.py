@@ -103,7 +103,7 @@ def get_logger():
   """
   Provides the stem logger.
 
-  :return: **logging.Logger** for stem
+  :returns: **logging.Logger** for stem
   """
 
   return LOGGER

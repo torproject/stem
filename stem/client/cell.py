@@ -37,6 +37,7 @@ Messages communicated over a Tor relay's ORPort.
     +- pop - decodes cell with remainder
 """
 
+import copy
 import datetime
 import inspect
 import os
@@ -101,9 +102,9 @@ class Cell(object):
     """
     Provides cell attributes by its name.
 
-    :parm str name: cell command to fetch
+    :param str name: cell command to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
@@ -117,9 +118,9 @@ class Cell(object):
     """
     Provides cell attributes by its value.
 
-    :parm int value: cell value to fetch
+    :param int value: cell value to fetch
 
-    :raise: **ValueError** if cell type is invalid
+    :raises: **ValueError** if cell type is invalid
     """
 
     for _, cls in inspect.getmembers(sys.modules[__name__]):
@@ -199,9 +200,9 @@ class Cell(object):
     :param bytes payload: cell payload
     :param int circ_id: circuit id, if a CircuitCell
 
-    :return: **bytes** with the encoded payload
+    :returns: **bytes** with the encoded payload
 
-    :raise: **ValueError** if cell type invalid or payload makes cell too large
+    :raises: **ValueError** if cell type invalid or payload makes cell too large
     """
 
     if issubclass(cls, CircuitCell):
@@ -324,10 +325,16 @@ class RelayCell(CircuitCell):
   """
   Command concerning a relay circuit.
 
+  Our 'recognized' attribute provides a cheap (but incomplete) check for if our
+  cell payload is encrypted. If non-zero our payload *IS* encrypted, but if
+  zero we're *PROBABLY* fully decrypted. This uncertainty is because encrypted
+  cells have a small chance of coincidently producing zero for this value as
+  well.
+
   :var stem.client.RelayCommand command: command to be issued
   :var int command_int: integer value of our command
   :var bytes data: payload of the cell
-  :var int recognized: zero if cell is decrypted, non-zero otherwise
+  :var int recognized: non-zero if payload is encrypted
   :var int digest: running digest held with the relay
   :var int stream_id: specific stream this concerns
   """
@@ -375,6 +382,96 @@ class RelayCell(CircuitCell):
     payload += self.data
 
     return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
+
+  @staticmethod
+  def decrypt(link_protocol, content, key, digest):
+    """
+    Decrypts content as a relay cell addressed to us. This provides back a
+    tuple of the form...
+
+    ::
+
+      (cell (RelayCell), new_key (CipherContext), new_digest (HASH))
+
+    :param int link_protocol: link protocol version
+    :param bytes content: cell content to be decrypted
+    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
+      key established with the relay we received this cell from
+    :param HASH digest: running digest held with the relay
+
+    :returns: **tuple** with our decrypted cell and updated key/digest
+
+    :raises: :class:`stem.ProtocolError` if content doesn't belong to a relay
+      cell
+    """
+
+    new_key = copy.copy(key)
+    new_digest = digest.copy()
+
+    if len(content) != link_protocol.fixed_cell_length:
+      raise stem.ProtocolError('RELAY cells should be %i bytes, but received %i' % (link_protocol.fixed_cell_length, len(content)))
+
+    circ_id, content = link_protocol.circ_id_size.pop(content)
+    command, encrypted_payload = Size.CHAR.pop(content)
+
+    if command != RelayCell.VALUE:
+      raise stem.ProtocolError('Cannot decrypt as a RELAY cell. This had command %i instead.' % command)
+
+    payload = new_key.update(encrypted_payload)
+
+    cell = RelayCell._unpack(payload, circ_id, link_protocol)
+
+    # TODO: Implement our decryption digest. It is used to support relaying
+    # within multi-hop circuits. On first glance this should go something
+    # like...
+    #
+    #   # Our updated digest is calculated based on this cell with a blanked
+    #   # digest field.
+    #
+    #   digest_cell = RelayCell(self.circ_id, self.command, self.data, 0, self.stream_id, self.recognized, self.unused)
+    #   new_digest.update(digest_cell.pack(link_protocol))
+    #
+    #   is_encrypted == cell.recognized != 0 or self.digest == new_digest
+    #
+    # ... or something like that. Until we attempt to support relaying this is
+    # both moot and difficult to exercise in order to ensure we get it right.
+
+    return cell, new_key, new_digest
+
+  def encrypt(self, link_protocol, key, digest):
+    """
+    Encrypts our cell content to be sent with the given key. This provides back
+    a tuple of the form...
+
+    ::
+
+      (payload (bytes), new_key (CipherContext), new_digest (HASH))
+
+    :param int link_protocol: link protocol version
+    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
+      key established with the relay we're sending this cell to
+    :param HASH digest: running digest held with the relay
+
+    :returns: **tuple** with our encrypted payload and updated key/digest
+    """
+
+    new_key = copy.copy(key)
+    new_digest = digest.copy()
+
+    # Digests are computed from our payload, not including our header's circuit
+    # id (2 or 4 bytes) and command (1 byte).
+
+    header_size = link_protocol.circ_id_size.size + 1
+    payload_without_digest = self.pack(link_protocol)[header_size:]
+    new_digest.update(payload_without_digest)
+
+    # Pack a copy of ourselves with our newly calculated digest, and encrypt
+    # the payload. Header remains plaintext.
+
+    cell = RelayCell(self.circ_id, self.command, self.data, new_digest, self.stream_id, self.recognized, self.unused)
+    header, payload = split(cell.pack(link_protocol), header_size)
+
+    return header + new_key.update(payload), new_key, new_digest
 
   @classmethod
   def _unpack(cls, content, circ_id, link_protocol):

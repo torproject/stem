@@ -205,6 +205,7 @@ class TestCell(unittest.TestCase):
       self.assertEqual(digest, cell.digest)
       self.assertEqual(stream_id, cell.stream_id)
       self.assertEqual(unused, cell.unused)
+
       self.assertEqual(cell_bytes, cell.pack(link_protocol))
 
     digest = hashlib.sha1(b'hi')

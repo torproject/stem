@@ -5,7 +5,6 @@ integ tests, but a few bits lend themselves to unit testing.
 
 import datetime
 import io
-import time
 import unittest
 
 import stem.descriptor.router_status_entry
