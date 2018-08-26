@@ -576,6 +576,61 @@ class RelayCell(CircuitCell):
 
     return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
 
+  @classmethod
+  def decrypt(link_protocol, content, key, digest):
+    """
+    Decrypts content as a relay cell addressed to us. This provides back a
+    tuple of the form...
+
+    ::
+
+      (cell (RelayCell), new_key (CipherContext), new_digest (HASH))
+
+    :param int link_protocol: link protocol version
+    :param bytes content: cell content to be decrypted
+    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
+      key established with the relay we received this cell from
+    :param HASH digest: running digest held with the relay
+
+    :returns: **tuple** with our decrypted cell and updated key/digest
+
+    :raises: :class:`stem.ProtocolError` if content doesn't belong to a relay
+      cell
+    """
+
+    new_key = copy.copy(key)
+    new_digest = digest.copy()
+
+    if len(content) != link_protocol.fixed_cell_length:
+      raise stem.ProtocolError('RELAY cells should be %i bytes, but received %i' % (link_protocol.fixed_cell_length, len(content)))
+
+    circ_id, content = link_protocol.circ_id_size.pop(content)
+    command, encrypted_payload = Size.CHAR.pop(content)
+
+    if command != RelayCell.VALUE:
+      raise stem.ProtocolError('Cannot decrypt as a RELAY cell. This had command %i instead.' % command)
+
+    payload = new_key.update(encrypted_payload)
+
+    cell = RelayCell._unpack(payload, circ_id, link_protocol)
+
+    # TODO: Implement our decryption digest. It is used to support relaying
+    # within multi-hop circuits. On first glance this should go something
+    # like...
+    #
+    #   # Our updated digest is calculated based on this cell with a blanked
+    #   # digest field.
+    #
+    #   digest_cell = RelayCell(self.id, self.command, self.data, 0, self.stream_id, self.recognized, self.unused)
+    #   new_digest.update(digest_cell.pack(link_protocol))
+    #
+    #   is_encrypted == cell.recognized != 0 or self.digest == new_digest
+    #
+    # ... or something like that. Until we attempt to support relaying this is
+    # both moot and difficult to exercise in order to ensure we get it right.
+
+    return cell, new_key, new_digest
+
   def encrypt(self, link_protocol, key, digest):
     """
     Encrypts our cell content to be sent with the given key. This provides back
