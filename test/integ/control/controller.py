@@ -446,6 +446,7 @@ class TestController(unittest.TestCase):
             'HiddenServiceVersion': '2',
           },
           service2_path: {
+            'HiddenServiceVersion': '2',
             'HiddenServiceAuthorizeClient': 'stealth a, b',
             'HiddenServicePort': [
               (8030, '127.0.0.1', 8030),

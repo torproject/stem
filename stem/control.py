@@ -2669,6 +2669,17 @@ class Controller(BaseController):
       hsac = "%s %s" % (auth_type, ','.join(client_names))
       conf[path]['HiddenServiceAuthorizeClient'] = hsac
 
+    # Tor 0.3.5 changes its default for HS creation from v2 to v3. This is
+    # fine, but there's a couple options that are incompatible with v3. If
+    # creating a service with one of those we should explicitly create a v2
+    # service instead.
+    #
+    #   https://trac.torproject.org/projects/tor/ticket/27446
+
+    for path in conf:
+      if 'HiddenServiceAuthorizeClient' in conf[path] or 'RendPostPeriod' in conf[path]:
+        conf[path]['HiddenServiceVersion'] = '2'
+
     self.set_hidden_service_conf(conf)
 
     hostname, hostname_for_client = None, {}
