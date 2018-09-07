@@ -79,6 +79,7 @@ The following are only available within Stem's `git repository
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26 and Bifroest, which are authorities that frequently timeout
   * `stem.descriptor.remote <api/descriptor/remote.html>`_  now consistently defaults **fall_back_to_authority** to false
+  * Deprecated `stem.descriptor.export <api/descriptor/export.html>`_. If you use it please `let us know <https://www.atagar.com/contact/>`_.
   * Added :func:`~stem.descriptor.remote.their_server_descriptor`
   * Added the reply_headers attribute to :class:`~stem.descriptor.remote.Query`
   * Supplying a User-Agent when downloading descriptors
