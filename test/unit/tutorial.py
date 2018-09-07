@@ -128,7 +128,7 @@ class TestTutorial(unittest.TestCase):
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
-    downloader_mock().get_consensus().run.return_value = [RouterStatusEntryV2.create({
+    downloader_mock().get_consensus.return_value = [RouterStatusEntryV2.create({
       'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
     })]
 

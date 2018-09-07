@@ -53,7 +53,7 @@ The following are only available within Stem's `git repository
   * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response (:trac:`26056`)
   * Stacktrace if :func:`stem.connection.connect` had a string port argument
   * More reliable ExitPolicy resolution (:trac:`25739`)
-  * More reliable caching during configuration changes, especially in multiple-controller situations (:trac:`25821`)
+  * Fixed cache invalidation when another contorller calls SETCONF (:trac:`25821`)
   * :func:`~stem.control.COntroller.create_hidden_service` failed when creating services with v2 options (:trac:`27446`)
   * :func:`~stem.control.Controller.get_info` commonly raised :class:`stem.ProtocolError` when it should provide :class:`stem.OperationFailed`
   * :func:`~stem.control.Controller.get_microdescriptors` reads descriptors from the control port if available (:spec:`b5396d5`)

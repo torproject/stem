@@ -67,22 +67,36 @@ and so belong to the first camp.
 Where can I get the current descriptors?
 ----------------------------------------
 
-To work Tor needs to have up-to-date information about relays within the
-network. As such getting current descriptors is easy: *just download it like
-Tor does*.
+To work Tor needs up-to-date relay information. As such getting the current
+descriptors is easy: *just download it like Tor does*.
 
-The `stem.descriptor.remote <../api/descriptor/remote.html>`_ module downloads
-descriptors from the tor directory authorities and mirrors. **Please show
-some restraint when doing this**! This adds load to the network, and hence an
-irresponsible script can make Tor worse for everyone.
-
-Listing the current relays in the Tor network is as easy as...
+Every tor relay provides an **ORPort** and many provide a **DirPort** as well
+which can both be downloaded from using Stem's `stem.descriptor.remote
+<../api/descriptor/remote.html>`_ module. Listing relays for instance is as
+easy as...
 
 .. literalinclude:: /_static/example/current_descriptors.py
    :language: python
 
-If you want to see what the raw descriptors look like you can also curl this
-information from the DirPort of directory authorities and mirrors...
+**Please remember that Tor is a shared resource!** If you're going to
+contribute much load please consider `running a relay
+<https://www.torproject.org/docs/tor-doc-relay.html.en>`_ to offset your use.
+
+**ORPorts** communicate through the `tor protocol
+<https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_, and can be
+downloaded from by specifying it as the endpoint... 
+
+.. literalinclude:: /_static/example/descriptor_from_orport.py
+   :language: python
+
+**DirPorts** by contrast are simpler and specially designed to offer descriptor
+information, but not all relays offer one. If no endpoint is specified we
+default to downloading from the DirPorts of tor's directory authorities.
+
+If you would like to see what raw descriptors look like try curling a relay's
+DirPort. Section 6.2 of `tor's directory specification
+<https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_ lists the
+urls you can try.
 
 ::
 
