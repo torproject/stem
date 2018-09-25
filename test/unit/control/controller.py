@@ -218,7 +218,7 @@ class TestControl(unittest.TestCase):
       'reject 192.168.0.0/16:*',
       'reject 10.0.0.0/8:*',
       'reject 172.16.0.0/12:*',
-      'reject 127.0.1.1:*',
+      'reject 1.2.3.4:*',
       'accept *:80',
       'accept *:443',
       'accept 43.5.5.5:*',
@@ -233,7 +233,7 @@ class TestControl(unittest.TestCase):
 
     def getinfo_response(param, default = None):
       if param == 'address':
-        return default
+        return '1.2.3.4'
       elif param == 'exit-policy/default':
         return ''
       elif param == 'exit-policy/full' and exit_policy_exception:
