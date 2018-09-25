@@ -199,9 +199,55 @@ class TestControl(unittest.TestCase):
     self.assertEqual(expected, self.controller.get_exit_policy())
 
   @patch('stem.control.Controller.get_info')
-  def test_get_exit_policy_if_not_relaying(self, get_info_mock):
-    get_info_mock.side_effect = stem.OperationFailed('552', 'Not running in server mode')
-    self.assertEqual(None, self.controller.get_exit_policy())
+  @patch('stem.control.Controller.get_conf')
+  def test_get_exit_policy_if_not_relaying(self, get_conf_mock, get_info_mock):
+    # If tor lacks an ORPort, resolved extrnal address, hasn't finished making
+    # our server descriptor (ie. tor just started), etc 'GETINFO
+    # exit-policy/full' will fail.
+
+    get_conf_mock.side_effect = lambda param, **kwargs: {
+      'ExitRelay': '1',
+      'ExitPolicyRejectPrivate': '1',
+      'ExitPolicy': ['accept *:80,   accept *:443', 'accept 43.5.5.5,reject *:22'],
+    }[param]
+
+    expected = ExitPolicy(
+      'reject 0.0.0.0/8:*',
+      'reject 169.254.0.0/16:*',
+      'reject 127.0.0.0/8:*',
+      'reject 192.168.0.0/16:*',
+      'reject 10.0.0.0/8:*',
+      'reject 172.16.0.0/12:*',
+      'reject 127.0.1.1:*',
+      'accept *:80',
+      'accept *:443',
+      'accept 43.5.5.5:*',
+      'reject *:22',
+    )
+
+    # Unfortunate it's a bit tricky to have a mock that raises exceptions in
+    # response to some arguments, and returns a response for others. As such
+    # mapping it to the following function.
+
+    exit_policy_exception = None
+
+    def getinfo_response(param, default = None):
+      if param == 'address':
+        return default
+      elif param == 'exit-policy/default':
+        return ''
+      elif param == 'exit-policy/full' and exit_policy_exception:
+        raise exit_policy_exception
+      else:
+        raise ValueError("Unmocked request for 'GETINFO %s'" % param)
+
+    get_info_mock.side_effect = getinfo_response
+
+    exit_policy_exception = stem.OperationFailed('552', 'Not running in server mode')
+    self.assertEqual(expected, self.controller.get_exit_policy())
+
+    exit_policy_exception = stem.OperationFailed('551', 'Descriptor still rebuilding - not ready yet')
+    self.assertEqual(expected, self.controller.get_exit_policy())
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')
