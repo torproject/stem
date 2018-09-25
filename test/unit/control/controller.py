@@ -196,7 +196,7 @@ class TestControl(unittest.TestCase):
       'accept *:*',
     )
 
-    self.assertEqual(expected, self.controller.get_exit_policy())
+    self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')
@@ -244,10 +244,10 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = getinfo_response
 
     exit_policy_exception = stem.OperationFailed('552', 'Not running in server mode')
-    self.assertEqual(expected, self.controller.get_exit_policy())
+    self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
 
     exit_policy_exception = stem.OperationFailed('551', 'Descriptor still rebuilding - not ready yet')
-    self.assertEqual(expected, self.controller.get_exit_policy())
+    self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')
