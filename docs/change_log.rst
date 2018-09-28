@@ -51,6 +51,7 @@ The following are only available within Stem's `git repository
   * Added the stem.control.MALFORMED_EVENTS event listener constant
   * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response (:trac:`26056`)
+  * Added a close_output argument to :class:`~stem.process.launch_tor`
   * Stacktrace if :func:`stem.connection.connect` had a string port argument
   * More reliable ExitPolicy resolution (:trac:`25739`)
   * Fixed cache invalidation when another contorller calls SETCONF (:trac:`25821`)

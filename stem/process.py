@@ -34,7 +34,7 @@ NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
 
 
-def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, stdin = None):
+def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, close_output = True, stdin = None):
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -54,6 +54,9 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   .. versionchanged:: 1.6.0
      Allowing the timeout argument to be a float.
 
+  .. versionchanged:: 1.7.0
+     Added the **close_output** argument.
+
   :param str tor_cmd: command for starting tor
   :param list args: additional arguments for tor
   :param str torrc_path: location of the torrc for us to use
@@ -66,6 +69,8 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
   :param bool take_ownership: asserts ownership over the tor process so it
     aborts if this python process terminates or a :class:`~stem.control.Controller`
     we establish to it disconnects
+  :param bool close_output: closes tor's stdout and stderr streams when
+    bootstrapping is complete if true
   :param str stdin: content to provide on stdin
 
   :returns: **subprocess.Popen** instance for the tor subprocess
@@ -182,11 +187,12 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
     if timeout:
       signal.alarm(0)  # stop alarm
 
-    if tor_process and tor_process.stdout:
-      tor_process.stdout.close()
+    if tor_process and close_output:
+      if tor_process.stdout:
+        tor_process.stdout.close()
 
-    if tor_process and tor_process.stderr:
-      tor_process.stderr.close()
+      if tor_process.stderr:
+        tor_process.stderr.close()
 
     if temp_file:
       try:
@@ -195,7 +201,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
         pass
 
 
-def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False):
+def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, close_output = True):
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
@@ -215,6 +221,9 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
       },
     )
 
+  .. versionchanged:: 1.7.0
+     Added the **close_output** argument.
+
   :param dict config: configuration options, such as "{'ControlPort': '9051'}",
     values can either be a **str** or **list of str** if for multiple values
   :param str tor_cmd: command for starting tor
@@ -227,6 +236,8 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
   :param bool take_ownership: asserts ownership over the tor process so it
     aborts if this python process terminates or a :class:`~stem.control.Controller`
     we establish to it disconnects
+  :param bool close_output: closes tor's stdout and stderr streams when
+    bootstrapping is complete if true
 
   :returns: **subprocess.Popen** instance for the tor subprocess
 
@@ -271,7 +282,7 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
         config_str += '%s %s\n' % (key, value)
 
   if use_stdin:
-    return launch_tor(tor_cmd, ['-f', '-'], None, completion_percent, init_msg_handler, timeout, take_ownership, stdin = config_str)
+    return launch_tor(tor_cmd, ['-f', '-'], None, completion_percent, init_msg_handler, timeout, take_ownership, close_output, stdin = config_str)
   else:
     torrc_descriptor, torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)
 

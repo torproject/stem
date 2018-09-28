@@ -287,6 +287,9 @@ class Runner(object):
         except OSError:
           pass
 
+        self._tor_process.stdout.close()
+        self._tor_process.stderr.close()
+
         self._tor_process.wait()  # blocks until the process is done
 
       # if we've made a temporary data directory then clean it up
@@ -490,6 +493,21 @@ class Runner(object):
 
     return os.path.basename(self._get('_tor_cmd')) if base_cmd else self._get('_tor_cmd')
 
+  def assert_tor_is_running(self):
+    """
+    Checks if our tor process is running. If not, this prints an error and
+    provides **False**.
+    """
+
+    process_status = self._tor_process.poll()  # None if running
+
+    if process_status is None:
+      return True
+    else:
+      process_output = (self._tor_process.stdout.read() + '\n\n' + self._tor_process.stderr.read()).strip()
+      println('\n%s\nOur tor process ended prematurely with exit status %s\n%s\n\n%s' % ('=' * 60, process_status, '=' * 60, process_output), ERROR)
+      return False
+
   def _get(self, attr):
     """
     Fetches one of our attributes in a thread safe manner, raising if we aren't
@@ -611,6 +629,7 @@ class Runner(object):
         completion_percent = 100 if test.Target.ONLINE in self.attribute_targets else 0,
         init_msg_handler = lambda line: println('  %s' % line, SUBSTATUS),
         take_ownership = True,
+        close_output = False,
       )
 
       runtime = time.time() - start_time
