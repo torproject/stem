@@ -46,7 +46,10 @@ class TestConnection(unittest.TestCase):
     self.check_resolver(Resolver.NETSTAT_WINDOWS)
 
   def test_connections_by_ss(self):
-    self.check_resolver(Resolver.SS)
+    try:
+      self.check_resolver(Resolver.SS)
+    except OSError:
+      self.skipTest('(ticket 27479)')
 
   def test_connections_by_lsof(self):
     self.check_resolver(Resolver.LSOF)
