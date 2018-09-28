@@ -386,7 +386,7 @@ class DescriptorReader(object):
         raise ValueError('Already running, you need to call stop() first')
       else:
         self._is_stopped.clear()
-        self._reader_thread = threading.Thread(target = self._read_descriptor_files, name='Descriptor Reader')
+        self._reader_thread = threading.Thread(target = self._read_descriptor_files, name='Descriptor reader')
         self._reader_thread.setDaemon(True)
         self._reader_thread.start()
 

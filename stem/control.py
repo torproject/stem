@@ -894,10 +894,9 @@ class BaseController(object):
 
         for listener, spawn in self._status_listeners:
           if spawn:
-            name = '%s notification' % state
             args = (self, state, change_timestamp)
 
-            notice_thread = threading.Thread(target = listener, args = args, name = name)
+            notice_thread = threading.Thread(target = listener, args = args, name = '%s notification' % state)
             notice_thread.setDaemon(True)
             notice_thread.start()
             self._state_change_threads.append(notice_thread)
@@ -915,12 +914,12 @@ class BaseController(object):
 
     with self._socket._get_send_lock():
       if not self._reader_thread or not self._reader_thread.is_alive():
-        self._reader_thread = threading.Thread(target = self._reader_loop, name = 'Tor Listener')
+        self._reader_thread = threading.Thread(target = self._reader_loop, name = 'Tor listener')
         self._reader_thread.setDaemon(True)
         self._reader_thread.start()
 
       if not self._event_thread or not self._event_thread.is_alive():
-        self._event_thread = threading.Thread(target = self._event_loop, name = 'Event Notifier')
+        self._event_thread = threading.Thread(target = self._event_loop, name = 'Event notifier')
         self._event_thread.setDaemon(True)
         self._event_thread.start()
 

@@ -116,7 +116,7 @@ def skip(msg):
 
 def asynchronous(func):
   test = stem.util.test_tools.AsyncTest(func)
-  ASYNC_TESTS['%s.%s' % (func.__module__, func.__name__)] = test
+  ASYNC_TESTS[test.name] = test
   return test.method
 
 
@@ -143,6 +143,8 @@ class AsyncTest(object):
   """
 
   def __init__(self, runner, args = None, threaded = False):
+    self.name = '%s.%s' % (runner.__module__, runner.__name__)
+
     self._runner = runner
     self._runner_args = args
     self._threaded = threaded
@@ -186,7 +188,13 @@ class AsyncTest(object):
         self._process_pipe, child_pipe = multiprocessing.Pipe()
 
         if self._threaded:
-          self._process = threading.Thread(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
+          self._process = threading.Thread(
+            target = _wrapper,
+            args = (child_pipe, self._runner, self._runner_args),
+            name = 'Background test of %s' % self.name,
+          )
+
+          self._process.setDaemon(True)
         else:
           self._process = multiprocessing.Process(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
 

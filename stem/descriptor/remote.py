@@ -414,7 +414,7 @@ class Query(object):
     with self._downloader_thread_lock:
       if self._downloader_thread is None:
         self._downloader_thread = threading.Thread(
-          name = 'Descriptor Query',
+          name = 'Descriptor query',
           target = self._download_descriptors,
           args = (self.retries, self.timeout)
         )
