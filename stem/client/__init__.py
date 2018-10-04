@@ -82,10 +82,18 @@ class Relay(object):
     except stem.SocketError as exc:
       if 'Connection refused' in str(exc):
         raise stem.SocketError("Failed to connect to %s:%i. Maybe it isn't an ORPort?" % (address, port))
-      elif 'SSL: ' in str(exc):
+
+      # If not an ORPort (for instance, mistakenly connecting to a ControlPort
+      # instead) we'll likely fail during SSL negotiation. This can result
+      # in a variety of responses so normalizing what we can...
+      #
+      #   Ubuntu 16.04:   [SSL: UNKNOWN_PROTOCOL] unknown protocol (_ssl.c:590)
+      #   Ubuntu 12.04:   [Errno 1] _ssl.c:504: error:140770FC:SSL routines:SSL23_GET_SERVER_HELLO:unknown protocol
+
+      if 'unknown protocol' in str(exc):
         raise stem.SocketError("Failed to SSL authenticate to %s:%i. Maybe it isn't an ORPort?" % (address, port))
-      else:
-        raise
+
+      raise
 
     # To negotiate our link protocol the first VERSIONS cell is expected to use
     # a circuit ID field size from protocol version 1-3 for backward

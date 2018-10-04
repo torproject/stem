@@ -31,21 +31,7 @@ class TestConnection(unittest.TestCase):
     # connect to our ControlPort like it's an ORPort
 
     if test.runner.Torrc.PORT in test.runner.get_runner().get_options():
-      try:
-        Relay.connect('127.0.0.1', test.runner.CONTROL_PORT)
-        self.fail('Connecting to a non-ORPort should raise a stem.SocketError')
-      except stem.SocketError as exc:
-        if str(exc) == "Failed to SSL authenticate to 127.0.0.1:1111. Maybe it isn't an ORPort?":
-          pass  # good, this is the usual response
-        elif 'SSL23_GET_SERVER_HELLO:unknown protocol' in str(exc):
-          # Less common, but still ok. This arises on older systems that do not
-          # support tor's ssl version. The full response is...
-          #
-          #   [Errno 1] _ssl.c:504: error:140770FC:SSL routines:SSL23_GET_SERVER_HELLO:unknown protocol
-
-          pass
-        else:
-          self.fail('Unexpected response when connecting to a non-ORPort: %s' % exc)
+      self.assertRaisesWith(stem.SocketError, "Failed to SSL authenticate to 127.0.0.1:1111. Maybe it isn't an ORPort?", Relay.connect, '127.0.0.1', test.runner.CONTROL_PORT)
 
   def test_no_common_link_protocol(self):
     """
