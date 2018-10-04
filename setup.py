@@ -7,9 +7,42 @@
 #
 # * Recache latest information (cache_manual.py and cache_fallback_directories.py)
 #
-# * Run 'run_tests.py --all --target RUN_ALL,ONLINE' with python2.6, python2.7,
-#   python3, and pypy.
-#   +- or 'tox -- --all --target RUN_ALL,ONLINE'
+# * Test with python2.6, python2.7, python3, and pypy.
+#   |- If using tox run...
+#   |
+#   |    % tox -- --all --target RUN_ALL,ONLINE
+#   |
+#   |  Otherwise, for each interpreter run...
+#   |
+#   |    % [python_interpreter] run_tests.py --all --target RUN_ALL,ONLINE
+#   |
+#   |- Pypy test instructions for ubuntu are...
+#   |
+#   |    % sudo apt-get install pypy
+#   |    % wget https://bootstrap.pypa.io/get-pip.py
+#   |    % pypy get-pip.py --user
+#   |    % ~/.local/bin/pip install mock pycodestyle pyflakes --user
+#   |    % pypy ./run_tests.py --all
+#   |
+#   +- Some version of python 3.x should be available in your platform's
+#      repositories. To test against a specific version on ubuntu try the
+#      following. In this example, Python 3.7...
+#
+#        % sudo apt-get install build-essential python-dev python-setuptools python-pip python-smbus
+#        % sudo apt-get install libncursesw5-dev libgdbm-dev libc6-dev
+#        % sudo apt-get install zlib1g-dev libsqlite3-dev tk-dev
+#        % sudo apt-get install libssl-dev openssl libffi-dev
+#
+#        % wget https://www.python.org/ftp/python/3.7.0/Python-3.7.0.tgz
+#        % tar -xzf Python-3.7.0.tgz
+#        % mv Python-3.7.0 ~
+#
+#        % cd ~/Python-3.7.0
+#        % ./configure
+#        % make
+#
+#        % cd /path/to/stem
+#        % ~/Python-3.7.0/python ./run_tests.py --all
 #
 # * Tag the release
 #   |- Bump stem's version (in stem/__init__.py and docs/index.rst).
