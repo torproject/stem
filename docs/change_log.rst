@@ -49,20 +49,20 @@ The following are only available within Stem's `git repository
   * Listener exceptions and malformed events no longer break further event processing (:trac:`27053`)
   * Documented v3 hidden service support (:trac:`25124`, :spec:`6bd0a69`)
   * Added the stem.control.MALFORMED_EVENTS event listener constant
-  * Added support for limiting the maximum number of streams to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
+  * Added support for limiting the maximum number of streams for :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
   * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response (:trac:`26056`)
   * Added a close_output argument to :class:`~stem.process.launch_tor`
-  * Stacktrace if :func:`stem.connection.connect` had a string port argument
+  * :func:`stem.connection.connect` crashed if its port argument was a string
   * More reliable ExitPolicy resolution (:trac:`25739`)
   * Fixed cache invalidation when another contorller calls SETCONF (:trac:`25821`)
   * :func:`~stem.control.COntroller.create_hidden_service` failed when creating services with v2 options (:trac:`27446`)
-  * :func:`~stem.control.Controller.get_info` commonly raised :class:`stem.ProtocolError` when it should provide :class:`stem.OperationFailed`
-  * :func:`~stem.control.Controller.get_microdescriptors` reads descriptors from the control port if available (:spec:`b5396d5`)
+  * :func:`~stem.control.Controller.get_info` commonly raised :class:`stem.ProtocolError` when it should provide a :class:`stem.OperationFailed`
+  * :func:`~stem.control.Controller.get_microdescriptors` now reads microdescriptors from the control port rather than disk when available (:spec:`b5396d5`)
   * Added the delivered_read, delivered_written, overhead_read, and overhead_written attributes to :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`fbb38ec`)
   * The *config* attribute of :class:`~stem.response.events.ConfChangedEvent` couldn't represent tor configuration options with multiple values. It has been replaced with new *changed* and *unset* attributes.
   * Replaced socket's :func:`~stem.socket.ControlPort.get_address`, :func:`~stem.socket.ControlPort.get_port`, and :func:`~stem.socket.ControlSocketFile.get_socket_path` with attributes
   * :class:`~stem.response.ControlMessage` is now comparable and hashable
-  * Removed 'raw' argument from :func:`~stem.socket.ControlSocket.send`
+  * Removed the 'raw' argument from :func:`~stem.socket.ControlSocket.send`
 
  * **Descriptors**
 
@@ -77,7 +77,8 @@ The following are only available within Stem's `git repository
   * Added the network status vote's new bandwidth_file attribute (:spec:`84591df`)
   * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e8`)
   * Don't retry downloading descriptors when we've timed out
-  * Don't download from tor26 and Bifroest, which are authorities that frequently timeout
+  * Don't download from tor26, an authority that frequently timeout
+  * Replaced Bifroest bridge authority with Serge (:trac:`26771`)
   * `stem.descriptor.remote <api/descriptor/remote.html>`_  now consistently defaults **fall_back_to_authority** to false
   * Deprecated `stem.descriptor.export <api/descriptor/export.html>`_. If you use it please `let us know <https://www.atagar.com/contact/>`_.
   * Added :func:`~stem.descriptor.remote.their_server_descriptor`
@@ -86,7 +87,6 @@ The following are only available within Stem's `git repository
   * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:trac:`24743`)
   * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute (:trac:`25046`)
   * Allow 'proto' line to have blank values (:spec:`a8455f4`)
-  * Replaced Bifroest bridge authority with Serge (:trac:`26771`)
 
  * **Utilities**
 
