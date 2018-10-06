@@ -87,10 +87,11 @@ class Relay(object):
       # instead) we'll likely fail during SSL negotiation. This can result
       # in a variety of responses so normalizing what we can...
       #
+      #   Debian 9.5:     [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:661)
       #   Ubuntu 16.04:   [SSL: UNKNOWN_PROTOCOL] unknown protocol (_ssl.c:590)
       #   Ubuntu 12.04:   [Errno 1] _ssl.c:504: error:140770FC:SSL routines:SSL23_GET_SERVER_HELLO:unknown protocol
 
-      if 'unknown protocol' in str(exc):
+      if 'unknown protocol' in str(exc) or 'wrong version number' in str(exc):
         raise stem.SocketError("Failed to SSL authenticate to %s:%i. Maybe it isn't an ORPort?" % (address, port))
 
       raise
