@@ -7,9 +7,10 @@
 ::
 
   Initialization Tasks
-  |- STEM_VERSION - checks our version of stem
-  |- TOR_VERSION - checks our version of tor
-  |- PYTHON_VERSION - checks our version of python
+  |- STEM_VERSION - checks our stem version
+  |- TOR_VERSION - checks our tor version
+  |- PYTHON_VERSION - checks our python version
+  |- PLATFORM_VERSION - checks our operating system version
   |- CRYPTO_VERSION - checks our version of cryptography
   |- PYNACL_VERSION - checks our version of pynacl
   |- MOCK_VERSION - checks our version of mock
@@ -23,6 +24,7 @@
 """
 
 import os
+import platform
 import re
 import sys
 import time
@@ -71,6 +73,19 @@ PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or lat
 
 def _check_tor_version(tor_path):
   return str(test.tor_version(tor_path)).split()[0]
+
+
+def _check_platform_version():
+  if platform.system() == 'Windows':
+    extra = platform.release()
+  elif platform.system() == 'Darwin':
+    extra = platform.release()
+  elif platform.system() == 'Linux':
+    extra = ' '.join(platform.linux_distribution()[:2])
+  else:
+    extra = None
+
+  return '%s (%s)' % (platform.system(), extra) if extra else platform.system()
 
 
 def _clean_orphaned_pyc(paths):
@@ -254,14 +269,15 @@ class StaticCheckTask(Task):
       println('unavailable', STATUS)
 
 
-STEM_VERSION = Task('checking stem version', lambda: stem.__version__)
-TOR_VERSION = Task('checking tor version', _check_tor_version)
-PYTHON_VERSION = Task('checking python version', lambda: '.'.join(map(str, sys.version_info[:3])))
-CRYPTO_VERSION = ModuleVersion('checking cryptography version', 'cryptography', stem.prereq.is_crypto_available)
-PYNACL_VERSION = ModuleVersion('checking pynacl version', 'nacl', stem.prereq._is_pynacl_available)
-MOCK_VERSION = ModuleVersion('checking mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
-PYFLAKES_VERSION = ModuleVersion('checking pyflakes version', 'pyflakes')
-PYCODESTYLE_VERSION = ModuleVersion('checking pycodestyle version', ['pycodestyle', 'pep8'])
+STEM_VERSION = Task('stem version', lambda: stem.__version__)
+TOR_VERSION = Task('tor version', _check_tor_version)
+PYTHON_VERSION = Task('python version', lambda: platform.python_version())
+PLATFORM_VERSION = Task('operating system version', _check_platform_version)
+CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
+PYNACL_VERSION = ModuleVersion('pynacl version', 'nacl', stem.prereq._is_pynacl_available)
+MOCK_VERSION = ModuleVersion('mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
+PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
+PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)
 IMPORT_TESTS = Task('importing test modules', _import_tests, print_runtime = True)
 

@@ -161,6 +161,7 @@ def main():
     test.task.STEM_VERSION,
     test.task.TOR_VERSION if args.run_integ else None,
     test.task.PYTHON_VERSION,
+    test.task.PLATFORM_VERSION,
     test.task.CRYPTO_VERSION,
     test.task.PYNACL_VERSION,
     test.task.MOCK_VERSION,
