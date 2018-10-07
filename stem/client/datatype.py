@@ -358,6 +358,29 @@ class Size(Field):
     raise NotImplementedError("Use our constant's unpack() and pop() instead")
 
   def pack(self, content):
+    # TODO: Python 2.6's struct module behaves a little differently in a couple
+    # respsects...
+    #
+    #   * Invalid types raise a TypeError rather than a struct.error.
+    #
+    #   * Negative values are happily packed despite being unsigned fields with
+    #     a message printed to stdout (!) that says...
+    #
+    #       stem/client/datatype.py:362: DeprecationWarning: struct integer overflow masking is deprecated
+    #         packed = struct.pack(self.format, content)
+    #       stem/client/datatype.py:362: DeprecationWarning: 'B' format requires 0 <= number <= 255
+    #         packed = struct.pack(self.format, content)
+    #
+    # Rather than adjust this method to account for these differences doing
+    # duplicate upfront checks just for python 2.6. When we drop 2.6 support
+    # this can obviously be dropped.
+
+    if stem.prereq._is_python_26():
+      if not stem.util._is_int(content):
+        raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
+      elif content < 0:
+        raise ValueError('Packed values must be positive (attempted to pack %i as a %s)' % (content, self.name))
+
     try:
       packed = struct.pack(self.format, content)
     except struct.error:
