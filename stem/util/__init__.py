@@ -119,7 +119,8 @@ def datetime_to_unix(timestamp):
   """
 
   if stem.prereq._is_python_26():
-    return int(timestamp.strftime('%s')) - int(datetime.datetime(1970, 1, 1).strftime('%s')) + 3600
+    delta = (timestamp - datetime.datetime(1970, 1, 1))
+    return delta.days * 86400 + delta.seconds
   else:
     return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
 
