@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.7`
 * :ref:`version_1.6`
 * :ref:`version_1.5`
 * :ref:`version_1.4`
@@ -43,6 +44,17 @@ Unreleased
 
 The following are only available within Stem's `git repository
 <download.html>`_.
+
+.. _version_1.7:
+
+Version 1.7 (October 7th, 2018)
+-------------------------------
+
+`Stem 1.7 <http://blog.atagar.com/stem-release-1-7/>`_ is a full year of
+improments. Most notably this adds the ability to `download descriptors through
+ORPorts
+<tutorials/mirror_mirror_on_the_wall.html#where-can-i-get-the-current-descriptors>`_
+and the `stem.directory module <api/directory.html>`_.
 
  * **Controller**
 
