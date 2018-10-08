@@ -75,6 +75,13 @@ def _check_tor_version(tor_path):
   return str(test.tor_version(tor_path)).split()[0]
 
 
+def _check_python_version():
+  interpreter = platform.python_implementation()
+  version = platform.python_version()
+
+  return version if interpreter == 'CPython' else '%s (%s)' % (interpreter, version)
+
+
 def _check_platform_version():
   if platform.system() == 'Windows':
     extra = platform.release()
@@ -271,7 +278,7 @@ class StaticCheckTask(Task):
 
 STEM_VERSION = Task('stem version', lambda: stem.__version__)
 TOR_VERSION = Task('tor version', _check_tor_version)
-PYTHON_VERSION = Task('python version', lambda: platform.python_version())
+PYTHON_VERSION = Task('python version', _check_python_version)
 PLATFORM_VERSION = Task('operating system version', _check_platform_version)
 CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
 PYNACL_VERSION = ModuleVersion('pynacl version', 'nacl', stem.prereq._is_pynacl_available)
