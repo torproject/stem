@@ -1409,6 +1409,8 @@ def set_process_name(process_name):
   best-effort, not necessarily working on all platforms.
 
   :param str process_name: new name for our process
+
+  :raises: **IOError** if the process cannot be renamed
   """
 
   # This is mostly based on...
