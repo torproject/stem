@@ -65,11 +65,30 @@ def _has_port():
   return test.runner.Torrc.PORT in test.runner.get_runner().get_options()
 
 
-require_single_tor_instance = test.require.needs(_is_single_tor_running, 'multiple tor instances')
 require_control_port = test.require.needs(_has_port, 'test instance has no port')
 require_linux = test.require.needs(_is_linux, 'linux only')
 require_bsd = test.require.needs(stem.util.system.is_bsd, 'bsd only')
 require_path = test.require.needs(lambda: 'PATH' in os.environ, 'requires PATH')
+
+
+def require_single_tor_instance(func):
+  # Checking both before and after the test to see if we're running only a
+  # single tor instance. We do both to narrow the possability of the test
+  # failing due to a race.
+
+  def wrapped(self, *args, **kwargs):
+    if _is_single_tor_running():
+      try:
+        return func(self, *args, **kwargs)
+      except:
+        if _is_single_tor_running():
+          raise
+        else:
+          self.skipTest('(multiple tor instances)')
+    else:
+      self.skipTest('(multiple tor instances)')
+
+  return wrapped
 
 
 class TestSystem(unittest.TestCase):
