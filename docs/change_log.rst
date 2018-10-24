@@ -49,6 +49,10 @@ The following are only available within Stem's `git repository
 
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
 
+ * **Descriptors**
+
+  * Don't download from Serge, a bridge authority that frequently timeout
+
 .. _version_1.7:
 
 Version 1.7 (October 7th, 2018)
