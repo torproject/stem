@@ -45,6 +45,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
+
 .. _version_1.7:
 
 Version 1.7 (October 7th, 2018)

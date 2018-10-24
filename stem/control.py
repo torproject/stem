@@ -966,6 +966,7 @@ class BaseController(object):
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
+        self._event_queue.task_done()
 
         # Attempt to finish processing enqueued events when our controller closes
 
@@ -978,7 +979,7 @@ class BaseController(object):
         if not self.is_alive():
           break
 
-        self._event_notice.wait()
+        self._event_notice.wait(0.05)
         self._event_notice.clear()
 
 

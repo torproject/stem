@@ -866,6 +866,7 @@ class TestControl(unittest.TestCase):
           uncast_event = ControlMessage.from_str(event.raw_content())
           self.controller._event_queue.put(uncast_event)
           self.controller._event_notice.set()
+          self.controller._event_queue.join()  # block until the event is consumed
         finally:
           is_alive_mock.return_value = False
           self.controller._close()
