@@ -669,7 +669,6 @@ class TestControl(unittest.TestCase):
 
     self.assertRaises(InvalidRequest, self.controller.add_event_listener, Mock(), EventType.SIGNAL)
 
-  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
   def test_events_get_received(self):
     """
     Trigger an event, checking that our listeners get notified.
@@ -683,7 +682,6 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
-  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
   def test_event_listing_with_error(self):
     """
     Raise an exception in an event listener to confirm it doesn't break our
@@ -700,7 +698,6 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
-  @patch('time.time', Mock(return_value = TEST_TIMESTAMP))
   def test_event_listing_with_malformed_event(self):
     """
     Attempt to parse a malformed event emitted from Tor. It's important this
@@ -857,17 +854,18 @@ class TestControl(unittest.TestCase):
     #      processed asynchronously, so the only way to endsure it's done
     #      with its work is to join on the thread.
 
-    with patch('stem.control.Controller.is_alive') as is_alive_mock:
-      is_alive_mock.return_value = True
-      self.controller._launch_threads()
+    with patch('time.time', Mock(return_value = TEST_TIMESTAMP)):
+      with patch('stem.control.Controller.is_alive') as is_alive_mock:
+        is_alive_mock.return_value = True
+        self.controller._launch_threads()
 
-      try:
-        # Converting an event back into an uncast ControlMessage, then feeding it
-        # into our controller's event queue.
+        try:
+          # Converting an event back into an uncast ControlMessage, then feeding it
+          # into our controller's event queue.
 
-        uncast_event = ControlMessage.from_str(event.raw_content())
-        self.controller._event_queue.put(uncast_event)
-        self.controller._event_notice.set()
-      finally:
-        is_alive_mock.return_value = False
-        self.controller._close()
+          uncast_event = ControlMessage.from_str(event.raw_content())
+          self.controller._event_queue.put(uncast_event)
+          self.controller._event_notice.set()
+        finally:
+          is_alive_mock.return_value = False
+          self.controller._close()
