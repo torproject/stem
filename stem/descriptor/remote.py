@@ -297,6 +297,10 @@ class Query(object):
      Avoid downloading from Bifroest. This is the bridge authority so it
      doesn't vote in the consensus, and apparently times out frequently.
 
+  .. versionchanged:: 1.8.0
+     Serge has replaced Bifroest as our bridge authority. Avoiding descriptor
+     downloads from it instead.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -497,7 +501,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Bifroest')])
+      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Serge')])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
