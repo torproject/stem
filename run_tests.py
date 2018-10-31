@@ -236,11 +236,11 @@ def main():
         println('Running tests...\n', STATUS)
 
         for test_class in get_integ_tests(args.specific_test):
-          if integ_runner.assert_tor_is_running():
-            run_result = _run_test(args, test_class, output_filters)
-            test.output.print_logging(logging_buffer)
-            skipped_tests += len(getattr(run_result, 'skipped', []))
-          else:
+          run_result = _run_test(args, test_class, output_filters)
+          test.output.print_logging(logging_buffer)
+          skipped_tests += len(getattr(run_result, 'skipped', []))
+
+          if not integ_runner.assert_tor_is_running():
             # our tor process died
 
             error_tracker.register_error()
