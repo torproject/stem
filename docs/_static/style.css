@@ -15,3 +15,8 @@ span.green {
     color: green;
     font-weight: bold;
 }
+
+img {
+    max-width: none !important;
+}
+
