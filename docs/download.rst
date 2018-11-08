@@ -55,6 +55,10 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/openbsd.png
    
+   * NetBSD
+     Source: https://www.netbsd.org/gallery/logos.html
+     License: https://www.netbsd.org/about/redistribution.html
+   
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
@@ -200,6 +204,14 @@ Download
        ::
 
            % pkg_add py-stem
+
+   * - .. image:: /_static/section/download/netbsd.png
+          :target: http://pkgsrc.se/net/py-stem
+
+     - .. image:: /_static/label/netbsd.png
+          :target: http://pkgsrc.se/net/py-stem
+
+       Port by Riastradh for NetBSD.
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git

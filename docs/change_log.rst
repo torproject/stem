@@ -53,6 +53,10 @@ The following are only available within Stem's `git repository
 
   * Don't download from Serge, a bridge authority that frequently timeout
 
+ * **Website**
+
+  * Added NetBSD to our `download page <download.html>`_
+
 .. _version_1.7:
 
 Version 1.7 (October 7th, 2018)
