@@ -213,6 +213,10 @@ Download
 
        Port by Riastradh for NetBSD.
 
+       ::
+
+           % pkg_add py37-stem
+
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
 
