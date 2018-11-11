@@ -580,7 +580,7 @@ class DescriptorDownloader(object):
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
     for desc in consensus.routers.values():
-      if stem.Flag.V2DIR in desc.flags:
+      if stem.Flag.V2DIR in desc.flags and desc.dir_port:
         new_endpoints.add((desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
