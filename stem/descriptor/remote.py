@@ -221,17 +221,16 @@ class Query(object):
 
     query = Query(
       '/tor/server/all',
-      block = True,
       timeout = 30,
     )
 
     print('Current relays:')
 
-    if not query.error:
-      for desc in query:
+    try:
+      for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
         print(desc.fingerprint)
-    else:
-      print('Unable to retrieve the server descriptors: %s' % query.error)
+    except Exception as exc:
+      print('Unable to retrieve the server descriptors: %s' % exc)
 
   ... while iterating fails silently...
 
