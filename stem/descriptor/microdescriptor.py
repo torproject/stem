@@ -233,6 +233,8 @@ class Microdescriptor(Descriptor):
      Added the protocols attribute.
   """
 
+  TYPE_ANNOTATION_NAME = 'microdescriptor'
+
   ATTRIBUTES = {
     'onion_key': (None, _parse_onion_key_line),
     'ntor_onion_key': (None, _parse_ntor_onion_key_line),

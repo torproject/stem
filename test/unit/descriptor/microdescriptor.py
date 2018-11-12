@@ -74,6 +74,8 @@ class TestMicrodescriptor(unittest.TestCase):
       self.assertEqual({b'@last-listed': b'2013-02-24 00:18:36'}, router.get_annotations())
       self.assertEqual([b'@last-listed 2013-02-24 00:18:36'], router.get_annotation_lines())
 
+      self.assertEqual('@type microdescriptor 1.0', str(router.type_annotation()))
+
   def test_minimal_microdescriptor(self):
     """
     Basic sanity check that we can parse a microdescriptor with minimal

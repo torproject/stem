@@ -793,6 +793,8 @@ class RelayDescriptor(ServerDescriptor):
      Added the **skip_crypto_validation** constructor argument.
   """
 
+  TYPE_ANNOTATION_NAME = 'server-descriptor'
+
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'certificate': (None, _parse_identity_ed25519_line),
     'ed25519_certificate': (None, _parse_identity_ed25519_line),
@@ -996,6 +998,8 @@ class BridgeDescriptor(ServerDescriptor):
      Also added ntor_onion_key (previously this only belonged to unsanitized
      descriptors).
   """
+
+  TYPE_ANNOTATION_NAME = 'bridge-server-descriptor'
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'ed25519_certificate_hash': (None, _parse_master_key_ed25519_for_hash_line),

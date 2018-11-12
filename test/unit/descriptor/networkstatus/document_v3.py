@@ -121,6 +121,7 @@ ci356fosgLiM1sVqCUkNdA==
       self.assertEqual([], document.consensus_methods)
       self.assertEqual(None, document.published)
       self.assertEqual([], document.get_unrecognized_lines())
+      self.assertEqual('@type network-status-consensus-3 1.0', str(document.type_annotation()))
 
       router = document.routers['348225F83C854796B2DD6364E65CB189B33BD696']
       self.assertEqual('test002r', router.nickname)
@@ -254,6 +255,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEqual('178.218.213.229', router.address)
       self.assertEqual(80, router.or_port)
       self.assertEqual(None, router.dir_port)
+      self.assertEqual('@type network-status-vote-3 1.0', str(document.type_annotation()))
 
       authority = document.directory_authorities[0]
       self.assertEqual(1, len(document.directory_authorities))
@@ -1142,6 +1144,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     self.assertTrue(entry1 in document.routers.values())
     self.assertTrue(entry2 in document.routers.values())
+
+    self.assertEqual('@type network-status-microdesc-consensus-3 1.0', str(document.type_annotation()))
 
     # try with an invalid RouterStatusEntry
 

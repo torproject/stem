@@ -65,6 +65,7 @@ import stem.version
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  TypeAnnotation,
   DocumentHandler,
   _descriptor_content,
   _descriptor_components,
@@ -441,6 +442,8 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-2'
 
   ATTRIBUTES = {
     'version': (None, _parse_network_status_version_line),
@@ -1088,6 +1091,16 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
     self._footer(document_file, validate)
 
+  def type_annotation(self):
+    if not self.is_microdescriptor:
+      return TypeAnnotation('network-status-consensus-3' if not self.is_vote else 'network-status-vote-3', 1, 0)
+    else:
+      # Directory authorities do not issue a 'microdescriptor consensus' vote,
+      # so unlike the above there isn't a 'network-status-microdesc-vote-3'
+      # counterpart here.
+
+      return TypeAnnotation('network-status-microdesc-consensus-3', 1, 0)
+
   def validate_signatures(self, key_certs):
     """
     Validates we're properly signed by the signing certificates.
@@ -1613,6 +1626,8 @@ class KeyCertificate(Descriptor):
   **\*** mandatory attribute
   """
 
+  TYPE_ANNOTATION_NAME = 'dir-key-certificate-3'
+
   ATTRIBUTES = {
     'version': (None, _parse_dir_key_certificate_version_line),
     'address': (None, _parse_dir_address_line),
@@ -1765,6 +1780,8 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     mapping for relays contained in the document
   :var datetime published: time when the document was published
   """
+
+  TYPE_ANNOTATION_NAME = 'bridge-network-status'
 
   def __init__(self, raw_content, validate = False):
     super(BridgeNetworkStatusDocument, self).__init__(raw_content)

@@ -155,6 +155,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual([], desc.get_unrecognized_lines())
     self.assertEqual('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest())
 
+    self.assertEqual('@type server-descriptor 1.0', str(desc.type_annotation()))
     self.assertEqual(['2'], desc.hidden_service_dir)  # obsolete field
 
   def test_metrics_descriptor_multiple(self):
@@ -436,6 +437,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertFalse(hasattr(desc, 'ed25519_certificate'))
     self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
     self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
+    self.assertEqual('@type bridge-server-descriptor 1.0', str(desc.type_annotation()))
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_cr_in_contact_line(self):

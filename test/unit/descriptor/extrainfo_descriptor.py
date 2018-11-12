@@ -72,6 +72,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     dir_write_values_start = [0, 0, 0, 227328, 349184, 382976, 738304]
     self.assertEqual(dir_write_values_start, desc.dir_write_history_values[:7])
 
+    self.assertEqual('@type extra-info 1.0', str(desc.type_annotation()))
+
   def test_metrics_bridge_descriptor(self):
     """
     Parses and checks our results against an extrainfo bridge descriptor from
@@ -132,6 +134,8 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     self.assertEqual({}, desc.dir_v2_responses_unknown)
     self.assertEqual({}, desc.dir_v2_responses_unknown)
+
+    self.assertEqual('@type bridge-extra-info 1.0', str(desc.type_annotation()))
 
   @test.require.cryptography
   def test_descriptor_signing(self):

@@ -51,6 +51,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Added :func:`~stem.descriptor.Descriptor.type_annotation` method (:trac:`28397`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
 

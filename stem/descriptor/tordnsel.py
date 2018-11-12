@@ -60,6 +60,8 @@ class TorDNSEL(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
+  TYPE_ANNOTATION_NAME = 'tordnsel'
+
   def __init__(self, raw_contents, validate):
     super(TorDNSEL, self).__init__(raw_contents)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)

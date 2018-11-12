@@ -903,6 +903,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
      Added the ed25519_certificate and ed25519_signature attributes.
   """
 
+  TYPE_ANNOTATION_NAME = 'extra-info'
+
   ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
     'ed25519_certificate': (None, _parse_identity_ed25519_line),
     'ed25519_signature': (None, _parse_router_sig_ed25519_line),
@@ -962,6 +964,8 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   .. versionchanged:: 1.5.0
      Added the ed25519_certificate_hash and router_digest_sha256 attributes.
   """
+
+  TYPE_ANNOTATION_NAME = 'bridge-extra-info'
 
   ATTRIBUTES = dict(ExtraInfoDescriptor.ATTRIBUTES, **{
     'ed25519_certificate_hash': (None, _parse_master_key_ed25519_line),

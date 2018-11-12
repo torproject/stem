@@ -213,6 +213,8 @@ class HiddenServiceDescriptor(Descriptor):
      Added the **skip_crypto_validation** constructor argument.
   """
 
+  TYPE_ANNOTATION_NAME = 'hidden-service-descriptor'
+
   ATTRIBUTES = {
     'descriptor_id': (None, _parse_rendezvous_service_descriptor_line),
     'version': (None, _parse_version_line),

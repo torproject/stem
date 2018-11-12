@@ -125,6 +125,24 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
 )
 
 
+class TypeAnnotation(collections.namedtuple('TypeAnnotation', ['name', 'major_version', 'minor_version'])):
+  """
+  `Tor metrics type annotation
+  <https://metrics.torproject.org/collector.html#relay-descriptors>`_. The
+  string representation is the header annotation, for example "@type
+  server-descriptor 1.0".
+
+  .. versionadded:: 1.8.0
+
+  :var str name: name of the descriptor type
+  :var int major_version: major version number
+  :var int minor_version: minor version number
+  """
+
+  def __str__(self):
+    return '@type %s %s.%s' % (self.name, self.major_version, self.minor_version)
+
+
 class SigningKey(collections.namedtuple('SigningKey', ['private', 'public', 'public_digest'])):
   """
   Key used by relays to sign their server and extrainfo descriptors.
@@ -333,30 +351,30 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
 
-  if descriptor_type == 'server-descriptor' and major_version == 1:
+  if descriptor_type == stem.descriptor.server_descriptor.RelayDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-server-descriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.server_descriptor.BridgeDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'extra-info' and major_version == 1:
+  elif descriptor_type == stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'microdescriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.microdescriptor.Microdescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.microdescriptor._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-extra-info' and major_version == 1:
+  elif descriptor_type == stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     # version 1.1 introduced a 'transport' field...
     # https://trac.torproject.org/6257
 
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'network-status-2' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.NetworkStatusDocumentV2.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'dir-key-certificate-3' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.KeyCertificate.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate, **kwargs):
       yield desc
   elif descriptor_type in ('network-status-consensus-3', 'network-status-vote-3') and major_version == 1:
@@ -369,17 +387,17 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-network-status' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.BridgeNetworkStatusDocument.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'tordnsel' and major_version == 1:
+  elif descriptor_type == stem.descriptor.tordnsel.TorDNSEL.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.tordnsel.TorDNSEL
 
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'hidden-service-descriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor
 
     for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
@@ -617,6 +635,7 @@ class Descriptor(object):
 
   ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
   PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
+  TYPE_ANNOTATION_NAME = None
 
   def __init__(self, contents, lazy_load = False):
     self._path = None
@@ -674,6 +693,26 @@ class Descriptor(object):
     """
 
     return cls(cls.content(attr, exclude, sign), validate = validate)
+
+  def type_annotation(self):
+    """
+    Provides the `Tor metrics annotation
+    <https://metrics.torproject.org/collector.html#relay-descriptors>`_ of this
+    descriptor type. For example, "@type server-descriptor 1.0" for server
+    descriptors.
+
+    Please note that the version number component is specific to CollecTor,
+    and for the moment hardcode as 1.0. This may change in the future.
+
+    .. versionadded:: 1.8.0
+
+    :returns: :class:`~stem.descriptor.TypeAnnotation` with our type information
+    """
+
+    if self.TYPE_ANNOTATION_NAME is not None:
+      return TypeAnnotation(self.TYPE_ANNOTATION_NAME, 1, 0)
+    else:
+      raise NotImplementedError('%s does not have a @type annotation' % type(self).__name__)
 
   def get_path(self):
     """
