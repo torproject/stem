@@ -67,6 +67,7 @@ Extra-info descriptors are available from a few sources...
   ===================== ===========
 """
 
+import base64
 import functools
 import hashlib
 import re
@@ -79,6 +80,7 @@ import stem.util.str_tools
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHashType,
   create_signing_key,
   _descriptor_content,
   _read_until_keywords,
@@ -866,10 +868,15 @@ class ExtraInfoDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self):
+  def digest(self, hash_type = DigestHashType.SHA1):
     """
     Provides the upper-case hex encoded sha1 of our content. This value is part
     of the server descriptor entry for this relay.
+
+    .. versionchanged:: 1.8.0
+       Added the hash_type argument.
+
+    :param stem.descriptor.DigestHashType hash_type: digest hashing algorithm
 
     :returns: **str** with the upper-case hex digest value for this server
       descriptor
@@ -946,11 +953,20 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate)
 
   @lru_cache()
-  def digest(self):
+  def digest(self, hash_type = DigestHashType.SHA1):
     # our digest is calculated from everything except our signature
     raw_content, ending = str(self), '\nrouter-signature\n'
-    raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-    return hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
+    raw_content = stem.util.str_tools._to_bytes(raw_content[:raw_content.find(ending) + len(ending)])
+
+    if hash_type == DigestHashType.SHA1:
+      return hashlib.sha1(raw_content).hexdigest().upper()
+    elif hash_type == DigestHashType.SHA256:
+      # descriptors drop '=' hash padding from its fields (such as our server
+      # descriptor's extra-info-digest), so doing the same here so we match
+
+      return base64.b64encode(hashlib.sha256(raw_content).digest()).rstrip('=')
+    else:
+      raise NotImplementedError('Extrainfo descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
@@ -991,8 +1007,13 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       ('router-digest', _random_fingerprint()),
     ))
 
-  def digest(self):
-    return self._digest
+  def digest(self, hash_type = DigestHashType.SHA1):
+    if hash_type == DigestHashType.SHA1:
+      return self._digest
+    elif hash_type == DigestHashType.SHA256:
+      return self.router_digest_sha256
+    else:
+      raise NotImplementedError('Bridge extrainfo digests are only available in sha1 and sha256, not %s' % hash_type)
 
   def _required_fields(self):
     excluded_fields = [

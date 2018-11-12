@@ -118,6 +118,11 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
+DigestHashType = stem.util.enum.UppercaseEnum(
+  'SHA1',
+  'SHA256',
+)
+
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
   'DOCUMENT',
