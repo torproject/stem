@@ -19,6 +19,20 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
+.. data:: DigestHashType (enum)
+
+  .. versionadded:: 1.8.0
+
+  Hashing algorithm used by tor for descriptor digests. We drop trailing '='
+  hash padding to match Tor.
+
+  =================== ===========
+  DigestHashType      Description
+  =================== ===========
+  SHA1                SHA1 hash
+  SHA256              SHA256 hash
+  =================== ===========
+
 .. data:: DocumentHandler (enum)
 
   Ways in which we can parse a
