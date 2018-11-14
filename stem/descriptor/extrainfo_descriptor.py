@@ -954,17 +954,23 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
 
   @lru_cache()
   def digest(self, hash_type = DigestHashType.SHA1):
-    # our digest is calculated from everything except our signature
-    raw_content, ending = str(self), '\nrouter-signature\n'
-    raw_content = stem.util.str_tools._to_bytes(raw_content[:raw_content.find(ending) + len(ending)])
-
     if hash_type == DigestHashType.SHA1:
+      # our digest is calculated from everything except our signature
+
+      raw_content, ending = str(self), '\nrouter-signature\n'
+      raw_content = stem.util.str_tools._to_bytes(raw_content[:raw_content.find(ending) + len(ending)])
       return hashlib.sha1(raw_content).hexdigest().upper()
     elif hash_type == DigestHashType.SHA256:
-      # descriptors drop '=' hash padding from its fields (such as our server
-      # descriptor's extra-info-digest), so doing the same here so we match
+      # Due to a tor bug sha256 digests are calculated from the
+      # whole descriptor rather than ommiting the signature...
+      #
+      #   https://trac.torproject.org/projects/tor/ticket/28415
+      #
+      # Descriptors drop '=' hash padding from its fields (such
+      # as our server descriptor's extra-info-digest), so doing
+      # the same here so we match.
 
-      return base64.b64encode(hashlib.sha256(raw_content).digest()).rstrip('=')
+      return base64.b64encode(hashlib.sha256(str(self)).digest()).rstrip('=')
     else:
       raise NotImplementedError('Extrainfo descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
