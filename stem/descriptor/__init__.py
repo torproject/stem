@@ -19,6 +19,33 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
+.. data:: DigestHash (enum)
+
+  .. versionadded:: 1.8.0
+
+  Hash function used by tor for descriptor digests.
+
+  =========== ===========
+  DigestHash  Description
+  =========== ===========
+  SHA1        SHA1 hash
+  SHA256      SHA256 hash
+  =========== ===========
+
+.. data:: DigestEncoding (enum)
+
+  .. versionadded:: 1.8.0
+
+  Encoding of descriptor digests.
+
+  ================= ===========
+  DigestEncoding    Description
+  ================= ===========
+  RAW               hash object
+  HEX               uppercase hexidecimal encoding
+  BASE64            base64 encoding `without trailing '=' padding <https://en.wikipedia.org/wiki/Base64#Decoding_Base64_without_padding>`_
+  ================= ===========
+
 .. data:: DocumentHandler (enum)
 
   Ways in which we can parse a
@@ -60,7 +87,6 @@ import base64
 import codecs
 import collections
 import copy
-import hashlib
 import os
 import random
 import re
@@ -117,6 +143,17 @@ MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
+
+DigestHash = stem.util.enum.UppercaseEnum(
+  'SHA1',
+  'SHA256',
+)
+
+DigestEncoding = stem.util.enum.UppercaseEnum(
+  'RAW',
+  'HEX',
+  'BASE64',
+)
 
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
@@ -628,6 +665,21 @@ def _copy(default):
     return copy.copy(default)
 
 
+def _encode_digest(hash_value, encoding):
+  """
+  Encodes a hash value with the given HashEncoding.
+  """
+
+  if encoding == DigestEncoding.RAW:
+    return hash_value
+  elif encoding == DigestEncoding.HEX:
+    return stem.util.str_tools._to_unicode(hash_value.hexdigest().upper())
+  elif encoding == DigestEncoding.BASE64:
+    return stem.util.str_tools._to_unicode(base64.b64encode(hash_value.digest()).rstrip(b'='))
+  else:
+    raise NotImplementedError('BUG: stem.descriptor._encode_digest should recognize all DigestEncoding, lacked %s' % encoding)
+
+
 class Descriptor(object):
   """
   Common parent for all types of descriptors.
@@ -864,31 +916,34 @@ class Descriptor(object):
     digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
     return stem.util.str_tools._to_unicode(digest_hex.upper())
 
-  def _digest_for_content(self, start, end):
+  def _content_range(self, start = None, end = None):
     """
-    Provides the digest of our descriptor's content in a given range.
+    Provides the descriptor content inclusively between two substrings.
 
-    :param bytes start: start of the range to generate a digest for
-    :param bytes end: end of the range to generate a digest for
+    :param bytes start: start of the content range to get
+    :param bytes end: end of the content range to get
 
-    :returns: the digest string encoded in uppercase hex
-
-    :raises: ValueError if the digest canot be calculated
+    :raises: ValueError if either the start or end substring are not within our content
     """
 
-    raw_descriptor = self.get_bytes()
+    content = self.get_bytes()
+    start_index, end_index = None, None
 
-    start_index = raw_descriptor.find(start)
-    end_index = raw_descriptor.find(end, start_index)
+    if start is not None:
+      start_index = content.find(stem.util.str_tools._to_bytes(start))
 
-    if start_index == -1:
-      raise ValueError("Digest is for the range starting with '%s' but that isn't in our descriptor" % start)
-    elif end_index == -1:
-      raise ValueError("Digest is for the range ending with '%s' but that isn't in our descriptor" % end)
+      if start_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % start)
 
-    digest_content = raw_descriptor[start_index:end_index + len(end)]
-    digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
-    return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
+    if end is not None:
+      end_index = content.find(stem.util.str_tools._to_bytes(end), start_index)
+
+      if end_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % end)
+
+      end_index += len(end)  # make the ending index inclusive
+
+    return content[start_index:end_index]
 
   def __getattr__(self, name):
     # We can't use standard hasattr() since it calls this function, recursing.

@@ -79,6 +79,8 @@ import stem.util.str_tools
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHash,
+  DigestEncoding,
   create_signing_key,
   _descriptor_content,
   _read_until_keywords,
@@ -866,13 +868,27 @@ class ExtraInfoDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self):
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
-    Provides the upper-case hex encoded sha1 of our content. This value is part
-    of the server descriptor entry for this relay.
+    Digest of this descriptor's content. These are referenced by...
 
-    :returns: **str** with the upper-case hex digest value for this server
-      descriptor
+      * **Server Descriptors**
+
+        * Referer: :class:`~stem.descriptor.server_descriptor.ServerDescriptor` **extra_info_digest** attribute
+        * Format: **SHA1/HEX**
+
+      * **Server Descriptors**
+
+        * Referer: :class:`~stem.descriptor.server_descriptor.ServerDescriptor` **extra_info_sha256_digest** attribute
+        * Format: **SHA256/BASE64**
+
+    .. versionchanged:: 1.8.0
+       Added the hash_type and encoding arguments.
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass')
@@ -946,11 +962,21 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate)
 
   @lru_cache()
-  def digest(self):
-    # our digest is calculated from everything except our signature
-    raw_content, ending = str(self), '\nrouter-signature\n'
-    raw_content = raw_content[:raw_content.find(ending) + len(ending)]
-    return hashlib.sha1(stem.util.str_tools._to_bytes(raw_content)).hexdigest().upper()
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    if hash_type == DigestHash.SHA1:
+      # our digest is calculated from everything except our signature
+
+      content = self._content_range(end = '\nrouter-signature\n')
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
+    elif hash_type == DigestHash.SHA256:
+      # Due to a tor bug sha256 digests are calculated from the
+      # whole descriptor rather than ommiting the signature...
+      #
+      #   https://trac.torproject.org/projects/tor/ticket/28415
+
+      return stem.descriptor._encode_digest(hashlib.sha256(self.get_bytes()), encoding)
+    else:
+      raise NotImplementedError('Extrainfo descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
 
 class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
@@ -991,8 +1017,13 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       ('router-digest', _random_fingerprint()),
     ))
 
-  def digest(self):
-    return self._digest
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    if hash_type == DigestHash.SHA1 and encoding == DigestEncoding.HEX:
+      return self._digest
+    elif hash_type == DigestHash.SHA256 and encoding == DigestEncoding.BASE64:
+      return self.router_digest_sha256
+    else:
+      raise NotImplementedError('Bridge extrainfo digests are only available as sha1/hex and sha256/base64, not %s/%s' % (hash_type, encoding))
 
   def _required_fields(self):
     excluded_fields = [

@@ -55,6 +55,7 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 """
 
 import collections
+import hashlib
 import io
 
 import stem.descriptor.router_status_entry
@@ -1115,7 +1116,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     # sha1 hash of the body and header
 
-    local_digest = self._digest_for_content(b'network-status-version', b'directory-signature ')
+    digest_content = self._content_range('network-status-version', 'directory-signature ')
+    local_digest = hashlib.sha1(digest_content).hexdigest().upper()
 
     valid_digests, total_digests = 0, 0
     required_digests = len(self.signatures) / 2.0

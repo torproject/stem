@@ -280,7 +280,8 @@ class HiddenServiceDescriptor(Descriptor):
 
       if not skip_crypto_validation and stem.prereq.is_crypto_available():
         signed_digest = self._digest_for_signature(self.permanent_key, self.signature)
-        content_digest = self._digest_for_content(b'rendezvous-service-descriptor ', b'\nsignature\n')
+        digest_content = self._content_range('rendezvous-service-descriptor ', '\nsignature\n')
+        content_digest = hashlib.sha1(digest_content).hexdigest().upper()
 
         if signed_digest != content_digest:
           raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, content_digest))
