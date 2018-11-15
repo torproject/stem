@@ -68,6 +68,8 @@ from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHash,
+  DigestEncoding,
   create_signing_key,
   _descriptor_content,
   _descriptor_components,
@@ -654,12 +656,22 @@ class ServerDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self):
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
-    Provides the hex encoded sha1 of our content. This value is part of the
-    network status entry for this relay.
+    Digest of this descriptor's content. These are referenced by...
 
-    :returns: **unicode** with the upper-case hex digest value for this server descriptor
+      * **Consensus**
+
+        * Referer: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` **digest** attribute
+        * Format: **SHA1/BASE64**
+
+    .. versionchanged:: 1.8.0
+       Added the hash_type and encoding arguments.
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
@@ -890,7 +902,7 @@ class RelayDescriptor(ServerDescriptor):
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
-  def digest(self):
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
     Provides the digest of our descriptor's content.
 
@@ -899,7 +911,14 @@ class RelayDescriptor(ServerDescriptor):
     :raises: ValueError if the digest cannot be calculated
     """
 
-    return self._digest_for_content(b'router ', b'\nrouter-signature\n')
+    content = self._content_range(start = 'router', end = '\nrouter-signature\n')
+
+    if hash_type == DigestHash.SHA1:
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
+    elif hash_type == DigestHash.SHA256:
+      return stem.descriptor._encode_digest(hashlib.sha256(content), encoding)
+    else:
+      raise NotImplementedError('Server descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
   def make_router_status_entry(self):
     """
@@ -1026,8 +1045,11 @@ class BridgeDescriptor(ServerDescriptor):
       ('reject', '*:*'),
     ))
 
-  def digest(self):
-    return self._digest
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    if hash_type == DigestHash.SHA1 and encoding == DigestEncoding.HEX:
+      return self._digest
+    else:
+      raise NotImplementedError('Bridge server descriptor digests are only available as sha1/hex, not %s/%s' % (hash_type, encoding))
 
   def is_scrubbed(self):
     """

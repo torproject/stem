@@ -966,9 +966,8 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
     if hash_type == DigestHash.SHA1:
       # our digest is calculated from everything except our signature
 
-      raw_content, ending = str(self), '\nrouter-signature\n'
-      raw_content = stem.util.str_tools._to_bytes(raw_content[:raw_content.find(ending) + len(ending)])
-      return stem.descriptor._encode_digest(hashlib.sha1(raw_content), encoding)
+      content = self._content_range(end = '\nrouter-signature\n')
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
     elif hash_type == DigestHash.SHA256:
       # Due to a tor bug sha256 digests are calculated from the
       # whole descriptor rather than ommiting the signature...
