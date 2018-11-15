@@ -54,7 +54,7 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
     self.assertEqual(900, desc.dir_write_history_interval)
     self.assertEqual(expected_signature, desc.signature)
     self.assertEqual('00A57A9AAB5EA113898E2DD02A755E31AFC27227', desc.digest(stem.descriptor.DigestHash.SHA1))
-    self.assertEqual('n2+wh6uM+lbKnhbkOog2jv9X5tPytlrFdO+I+auSmME', desc.digest(stem.descriptor.DigestHash.SHA256))
+    self.assertEqual('n2+wh6uM+lbKnhbkOog2jv9X5tPytlrFdO+I+auSmME', desc.digest(stem.descriptor.DigestHash.SHA256, stem.descriptor.DigestEncoding.BASE64))
     self.assertEqual([], desc.get_unrecognized_lines())
 
     # The read-history, write-history, dirreq-read-history, and

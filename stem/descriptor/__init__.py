@@ -23,15 +23,28 @@ Package for parsing and processing descriptor data.
 
   .. versionadded:: 1.8.0
 
-  Hashing algorithm used by tor for descriptor digests. We drop trailing '='
-  hash padding to match Tor.
+  Hash function used by tor for descriptor digests.
 
-  =================== ===========
-  DigestHash          Description
-  =================== ===========
-  SHA1                SHA1 hash
-  SHA256              SHA256 hash
-  =================== ===========
+  =========== ===========
+  DigestHash  Description
+  =========== ===========
+  SHA1        SHA1 hash
+  SHA256      SHA256 hash
+  =========== ===========
+
+.. data:: DigestEncoding (enum)
+
+  .. versionadded:: 1.8.0
+
+  Encoding of descriptor digests.
+
+  ================= ===========
+  DigestEncoding    Description
+  ================= ===========
+  RAW               hash object
+  HEX               uppercase hexidecimal encoding
+  BASE64            base64 encoding `without trailing '=' padding <https://en.wikipedia.org/wiki/Base64#Decoding_Base64_without_padding>`_
+  ================= ===========
 
 .. data:: DocumentHandler (enum)
 
@@ -135,6 +148,12 @@ WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 DigestHash = stem.util.enum.UppercaseEnum(
   'SHA1',
   'SHA256',
+)
+
+DigestEncoding = stem.util.enum.UppercaseEnum(
+  'RAW',
+  'HEX',
+  'BASE64',
 )
 
 DocumentHandler = stem.util.enum.UppercaseEnum(
@@ -645,6 +664,21 @@ def _copy(default):
     return type(default)()  # collection construction tad faster than copy
   else:
     return copy.copy(default)
+
+
+def _encode_digest(hash_value, encoding):
+  """
+  Encodes a hash value with the given HashEncoding.
+  """
+
+  if encoding == DigestEncoding.RAW:
+    return hash_value
+  elif encoding == DigestEncoding.HEX:
+    return hash_value.hexdigest().upper()
+  elif encoding == DigestEncoding.BASE64:
+    return base64.b64encode(hash_value.digest()).rstrip('=')
+  else:
+    raise NotImplementedError('BUG: stem.descriptor._encode_digest should recognize all DigestEncoding, lacked %s' % encoding)
 
 
 class Descriptor(object):
