@@ -87,7 +87,6 @@ import base64
 import codecs
 import collections
 import copy
-import hashlib
 import os
 import random
 import re
@@ -674,9 +673,9 @@ def _encode_digest(hash_value, encoding):
   if encoding == DigestEncoding.RAW:
     return hash_value
   elif encoding == DigestEncoding.HEX:
-    return hash_value.hexdigest().upper()
+    return stem.util.str_tools._to_unicode(hash_value.hexdigest().upper())
   elif encoding == DigestEncoding.BASE64:
-    return base64.b64encode(hash_value.digest()).rstrip('=')
+    return stem.util.str_tools._to_unicode(base64.b64encode(hash_value.digest()).rstrip(b'='))
   else:
     raise NotImplementedError('BUG: stem.descriptor._encode_digest should recognize all DigestEncoding, lacked %s' % encoding)
 
@@ -917,22 +916,6 @@ class Descriptor(object):
     digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
     return stem.util.str_tools._to_unicode(digest_hex.upper())
 
-  def _digest_for_content(self, start, end):
-    """
-    Provides the digest of our descriptor's content in a given range.
-
-    :param bytes start: start of the range to generate a digest for
-    :param bytes end: end of the range to generate a digest for
-
-    :returns: the digest string encoded in uppercase hex
-
-    :raises: ValueError if the digest canot be calculated
-    """
-
-    digest_content = self._content_range(start, end)
-    digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
-    return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
-
   def _content_range(self, start = None, end = None):
     """
     Provides the descriptor content inclusively between two substrings.
@@ -947,13 +930,13 @@ class Descriptor(object):
     start_index, end_index = None, None
 
     if start is not None:
-      start_index = content.find(start)
+      start_index = content.find(stem.util.str_tools._to_bytes(start))
 
       if start_index == -1:
         raise ValueError("'%s' is not present within our descriptor content" % start)
 
     if end is not None:
-      end_index = content.find(end, start_index)
+      end_index = content.find(stem.util.str_tools._to_bytes(end), start_index)
 
       if end_index == -1:
         raise ValueError("'%s' is not present within our descriptor content" % end)

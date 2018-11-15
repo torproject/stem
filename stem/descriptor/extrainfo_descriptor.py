@@ -974,7 +974,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       #
       #   https://trac.torproject.org/projects/tor/ticket/28415
 
-      return stem.descriptor._encode_digest(hashlib.sha256(str(self)), encoding)
+      return stem.descriptor._encode_digest(hashlib.sha256(self.get_bytes()), encoding)
     else:
       raise NotImplementedError('Extrainfo descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
