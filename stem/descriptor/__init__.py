@@ -19,7 +19,7 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
-.. data:: DigestHashType (enum)
+.. data:: DigestHash (enum)
 
   .. versionadded:: 1.8.0
 
@@ -27,7 +27,7 @@ Package for parsing and processing descriptor data.
   hash padding to match Tor.
 
   =================== ===========
-  DigestHashType      Description
+  DigestHash          Description
   =================== ===========
   SHA1                SHA1 hash
   SHA256              SHA256 hash
@@ -132,7 +132,7 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
-DigestHashType = stem.util.enum.UppercaseEnum(
+DigestHash = stem.util.enum.UppercaseEnum(
   'SHA1',
   'SHA256',
 )
