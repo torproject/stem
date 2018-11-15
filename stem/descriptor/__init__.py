@@ -929,19 +929,38 @@ class Descriptor(object):
     :raises: ValueError if the digest canot be calculated
     """
 
-    raw_descriptor = self.get_bytes()
-
-    start_index = raw_descriptor.find(start)
-    end_index = raw_descriptor.find(end, start_index)
-
-    if start_index == -1:
-      raise ValueError("Digest is for the range starting with '%s' but that isn't in our descriptor" % start)
-    elif end_index == -1:
-      raise ValueError("Digest is for the range ending with '%s' but that isn't in our descriptor" % end)
-
-    digest_content = raw_descriptor[start_index:end_index + len(end)]
+    digest_content = self._content_range(start, end)
     digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
     return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
+
+  def _content_range(self, start = None, end = None):
+    """
+    Provides the descriptor content inclusively between two substrings.
+
+    :param bytes start: start of the content range to get
+    :param bytes end: end of the content range to get
+
+    :raises: ValueError if either the start or end substring are not within our content
+    """
+
+    content = self.get_bytes()
+    start_index, end_index = None, None
+
+    if start is not None:
+      start_index = content.find(start)
+
+      if start_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % start)
+
+    if end is not None:
+      end_index = content.find(end, start_index)
+
+      if end_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % end)
+
+      end_index += len(end)  # make the ending index inclusive
+
+    return content[start_index:end_index]
 
   def __getattr__(self, name):
     # We can't use standard hasattr() since it calls this function, recursing.
