@@ -227,7 +227,7 @@ class Query(object):
     print('Current relays:')
 
     try:
-      for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
+      for desc in Query('/tor/server/all', 'server-descriptor 1.0').run():
         print(desc.fingerprint)
     except Exception as exc:
       print('Unable to retrieve the server descriptors: %s' % exc)
