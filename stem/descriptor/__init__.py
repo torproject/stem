@@ -676,6 +676,8 @@ def _encode_digest(hash_value, encoding):
     return stem.util.str_tools._to_unicode(hash_value.hexdigest().upper())
   elif encoding == DigestEncoding.BASE64:
     return stem.util.str_tools._to_unicode(base64.b64encode(hash_value.digest()).rstrip(b'='))
+  elif encoding not in DigestEncoding:
+    raise ValueError('Digest encodings should be among our DigestEncoding enumeration (%s), not %s' % (', '.join(DigestEncoding), encoding))
   else:
     raise NotImplementedError('BUG: stem.descriptor._encode_digest should recognize all DigestEncoding, lacked %s' % encoding)
 
