@@ -157,19 +157,16 @@ Download
          % sudo emerge stem
 
    * - .. image:: /_static/section/download/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem/
+          :target: https://www.archlinux.org/packages/community/any/python-stem/
 
      - .. image:: /_static/label/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem/
+          :target: https://www.archlinux.org/packages/community/any/python-stem/
 
-       Package by Sjon for `Arch Linux
-       <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_.
+       Package by Sjon for `Arch Linux...
 
        ::
 
-           % wget https://aur.archlinux.org/cgit/aur.git/snapshot/stem.tar.gz
-           % tar -xvf stem.tar.gz
-           % cd stem; makepkg --install
+           % pacman -S python-stem
 
    * - .. image:: /_static/section/download/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
