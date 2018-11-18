@@ -687,6 +687,12 @@ class ServerDescriptor(Descriptor):
       @downloaded-at 2012-03-18 21:18:29
       @source "173.254.216.66"
 
+    .. deprecated:: 1.8.0
+       Users very rarely read from cached descriptor files any longer. This
+       method will be removed in Stem 2.x. If you have some need for us to keep
+       this please `let me know
+       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
+
     :returns: **dict** with the key/value pairs in our annotations
     """
 
@@ -707,6 +713,12 @@ class ServerDescriptor(Descriptor):
     is the same as the
     :func:`~stem.descriptor.server_descriptor.ServerDescriptor.get_annotations`
     results, but with the unparsed lines and ordering retained.
+
+    .. deprecated:: 1.8.0
+       Users very rarely read from cached descriptor files any longer. This
+       method will be removed in Stem 2.x. If you have some need for us to keep
+       this please `let me know
+       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
 
     :returns: **list** with the lines of annotation that came before this descriptor
     """
