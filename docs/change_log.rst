@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
 
   * Added :func:`~stem.descriptor.Descriptor.type_annotation` method (:trac:`28397`)
   * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods (:trac:`28398`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:trac:`28448`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
 

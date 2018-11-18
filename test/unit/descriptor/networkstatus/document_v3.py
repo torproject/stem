@@ -664,6 +664,34 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(None, document.published)
 
+  def test_is_valid(self):
+    """
+    Checks our time against both a valid and expired descriptor.
+    """
+
+    past = '2012-09-02 22:00:00'
+    future = '2212-09-02 22:00:00'
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'valid-until': future})
+    self.assertTrue(document.is_valid())
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'valid-until': past})
+    self.assertFalse(document.is_valid())
+
+  def test_is_fresh(self):
+    """
+    Checks our time against both a fresh and unfresh descriptor.
+    """
+
+    past = '2012-09-02 22:00:00'
+    future = '2212-09-02 22:00:00'
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'fresh-until': future})
+    self.assertTrue(document.is_fresh())
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'fresh-until': past})
+    self.assertFalse(document.is_fresh())
+
   def test_voting_delay(self):
     """
     Parses the voting-delay field.

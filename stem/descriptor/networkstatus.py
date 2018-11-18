@@ -55,6 +55,7 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 """
 
 import collections
+import datetime
 import hashlib
 import io
 
@@ -1101,6 +1102,34 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       # counterpart here.
 
       return TypeAnnotation('network-status-microdesc-consensus-3', 1, 0)
+
+  def is_valid(self):
+    """
+    Checks if the current time is between this document's **valid_after** and
+    **valid_until** timestamps. To be valid means the information within this
+    document reflects the current network state.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **True** if this consensus is presently valid and **False**
+      otherwise
+    """
+
+    return self.valid_after < datetime.datetime.utcnow() < self.valid_until
+
+  def is_fresh(self):
+    """
+    Checks if the current time is between this document's **valid_after** and
+    **fresh_until** timestamps. To be fresh means this should be the latest
+    consensus.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **True** if this consensus is presently fresh and **False**
+      otherwise
+    """
+
+    return self.valid_after < datetime.datetime.utcnow() < self.fresh_until
 
   def validate_signatures(self, key_certs):
     """
