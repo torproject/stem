@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
 
   * Added :func:`~stem.descriptor.Descriptor.type_annotation` method (:trac:`28397`)
   * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods (:trac:`28398`)
+  * Added the network status vote's new bandwidth_file_digest attribute (:spec:`1b686ef`)
   * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:trac:`28448`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
@@ -102,7 +103,7 @@ and the `stem.directory module <api/directory.html>`_.
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
-  * Added the network status vote's new bandwidth_file attribute (:spec:`84591df`)
+  * Added the network status vote's new bandwidth_file_headers attribute (:spec:`84591df`)
   * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e8`)
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26, an authority that frequently timeout

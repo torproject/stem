@@ -135,6 +135,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('shared-rand-previous-value', True, True, False),
   ('shared-rand-current-value', True, True, False),
   ('bandwidth-file-headers', True, False, False),
+  ('bandwidth-file-digest', True, False, False),
   ('recommended-client-protocols', True, True, False),
   ('recommended-relay-protocols', True, True, False),
   ('required-client-protocols', True, True, False),
@@ -796,6 +797,18 @@ def _parse_bandwidth_file_headers(descriptor, entries):
   descriptor.bandwidth_file_headers = results
 
 
+def _parse_bandwidth_file_digest(descriptor, entries):
+  # "bandwidth-file-digest" 1*(SP algorithm "=" digest)
+
+  value = _value('bandwidth-file-digest', entries)
+  results = {}
+
+  for key, val in _mappings_for('bandwidth-file-digest', value):
+    results[key] = val
+
+  descriptor.bandwidth_file_digest = results
+
+
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
 _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
@@ -867,6 +880,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var dict required_relay_protocols: required protocols for relays
   :var dict bandwidth_file_headers: headers from the bandwidth authority that
     generated this vote
+  :var dict bandwidth_file_digest: hashes of the bandwidth authority file used
+    to generate this vote, this is a mapping of hash functions to their resulting
+    digest value
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -898,6 +914,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   .. versionchanged:: 1.7.0
      Added the bandwidth_file_headers attributbute.
+
+  .. versionchanged:: 1.8.0
+     Added the bandwidth_file_digest attributbute.
   """
 
   ATTRIBUTES = {
@@ -929,6 +948,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
     'bandwidth_file_headers': ({}, _parse_bandwidth_file_headers),
+    'bandwidth_file_digest': ({}, _parse_bandwidth_file_digest),
 
     'signatures': ([], _parse_footer_directory_signature_line),
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
@@ -957,6 +977,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared-rand-previous-value': _parse_shared_rand_previous_value,
     'shared-rand-current-value': _parse_shared_rand_current_value,
     'bandwidth-file-headers': _parse_bandwidth_file_headers,
+    'bandwidth-file-digest': _parse_bandwidth_file_digest,
   }
 
   FOOTER_PARSER_FOR_LINE = {

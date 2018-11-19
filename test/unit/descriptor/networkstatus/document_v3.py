@@ -1312,6 +1312,31 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual({}, document.bandwidth_file_headers)
 
+  def test_bandwidth_file_digest(self):
+    """
+    Parses a 'bandwidth-file-digest' line of votes.
+    """
+
+    test_values = {
+      '': {},
+      'sha1=': {'sha1': ''},
+      'sha1=abc=def': {'sha1': 'abc=def'},
+      'sha1=123': {'sha1': '123'},
+      'sha1=123 sha256=456': {'sha1': '123', 'sha256': '456'},
+    }
+
+    for test_value, expected_value in test_values.items():
+      document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'bandwidth-file-digest': test_value})
+      self.assertEqual(expected_value, document.bandwidth_file_digest)
+
+    # field must be key=value mappings
+
+    content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file-digest': 'key_without_value'})
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
+
+    document = NetworkStatusDocumentV3(content, False)
+    self.assertEqual({}, document.bandwidth_file_digest)
+
   def test_with_legacy_directory_authorities(self):
     """
     Includes both normal authorities and those following the '-legacy' format.
