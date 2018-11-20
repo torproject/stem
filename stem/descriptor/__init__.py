@@ -210,7 +210,7 @@ def parse_bytes(descriptor_bytes, **kwargs):
     * **TypeError** if we can't match the contents of the file to a descriptor type
     * **IOError** if unable to read from the descriptor_file
   """
-  return parse_file(io.BytesIO(descriptor_bytes))
+  return parse_file(io.BytesIO(descriptor_bytes), **kwargs)
 
 
 def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = None, **kwargs):
