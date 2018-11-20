@@ -13,6 +13,7 @@ Package for parsing and processing descriptor data.
   create_signing_key - Cretes a signing key that can be used for creating descriptors.
 
   Descriptor - Common parent for all descriptor file types.
+    |- from_str - provides a parsed descriptor for the given string
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_archive_path - location of the descriptor within the archive it came from
     |- get_bytes - similar to str(), but provides our original bytes content
@@ -87,6 +88,7 @@ import base64
 import codecs
 import collections
 import copy
+import io
 import os
 import random
 import re
@@ -120,10 +122,10 @@ __all__ = [
 ]
 
 UNSEEKABLE_MSG = """\
-File object isn't seekable. Try wrapping it with a BytesIO instead...
+File object isn't seekable. Try using Descriptor.from_str() instead:
 
   content = my_file.read()
-  parsed_descriptors = stem.descriptor.parse_file(io.BytesIO(content))
+  parsed_descriptors = stem.descriptor.Descriptor.from_str(content)
 """
 
 KEYWORD_CHAR = 'a-zA-Z0-9-'
@@ -698,6 +700,55 @@ class Descriptor(object):
     self._lazy_loading = lazy_load
     self._entries = {}
     self._unrecognized_lines = []
+
+  @classmethod
+  def from_str(cls, content, **kwargs):
+    """
+    Provides a :class:`~stem.descriptor.__init__.Descriptor` for the given content.
+
+    To parse a descriptor we must know its type. There are three ways to
+    convey this...
+
+    ::
+
+      # use a descriptor_type argument
+      desc = Descriptor.from_str(content, descriptor_type = 'server-descriptor 1.0')
+
+      # prefixing the content with a "@type" annotation
+      desc = Descriptor.from_str('@type server-descriptor 1.0\\n' + content)
+
+      # use this method from a subclass
+      desc = stem.descriptor.server_descriptor.RelayDescriptor.from_str(content)
+
+    .. versionadded:: 1.8.0
+
+    :param bytes content: string to construct the descriptor from
+    :param bool multiple: if provided with **True** this provides a list of
+      descriptors rather than a single one
+    :param dict kwargs: additional arguments for :func:`~stem.descriptor.__init__.parse_file`
+
+    :returns: :class:`~stem.descriptor.__init__.Descriptor` subclass for the
+      given content, or a **list** of descriptors if **multiple = True** is
+      provided
+
+    :raises:
+      * **ValueError** if the contents is malformed and validate is True
+      * **TypeError** if we can't match the contents of the file to a descriptor type
+      * **IOError** if unable to read from the descriptor_file
+    """
+
+    if 'descriptor_type' not in kwargs and cls.TYPE_ANNOTATION_NAME is not None:
+      kwargs['descriptor_type'] = str(TypeAnnotation(cls.TYPE_ANNOTATION_NAME, 1, 0))[6:]
+
+    is_multiple = kwargs.pop('multiple', False)
+    results = list(parse_file(io.BytesIO(content), **kwargs))
+
+    if is_multiple:
+      return results
+    elif len(results) == 1:
+      return results[0]
+    else:
+      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
