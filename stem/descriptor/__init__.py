@@ -8,6 +8,7 @@ Package for parsing and processing descriptor data.
 
 ::
 
+  parse_bytes - Parses the descriptors in a :class:`bytes`.
   parse_file - Parses the descriptors in a file.
   create - Creates a new custom descriptor.
   create_signing_key - Cretes a signing key that can be used for creating descriptors.
@@ -87,6 +88,7 @@ import base64
 import codecs
 import collections
 import copy
+import io
 import os
 import random
 import re
@@ -115,15 +117,16 @@ __all__ = [
   'networkstatus',
   'router_status_entry',
   'tordnsel',
+  'parse_bytes',
   'parse_file',
   'Descriptor',
 ]
 
 UNSEEKABLE_MSG = """\
-File object isn't seekable. Try wrapping it with a BytesIO instead...
+File object isn't seekable. Try using parse_bytes() instead:
 
   content = my_file.read()
-  parsed_descriptors = stem.descriptor.parse_file(io.BytesIO(content))
+  parsed_descriptors = stem.descriptor.parse_bytes(content)
 """
 
 KEYWORD_CHAR = 'a-zA-Z0-9-'
@@ -190,6 +193,24 @@ class SigningKey(collections.namedtuple('SigningKey', ['private', 'public', 'pub
   :var cryptography.hazmat.backends.openssl.rsa._RSAPublicKey public: public key
   :var bytes public_digest: block that can be used for the a server descrptor's 'signing-key' field
   """
+
+
+def parse_bytes(descriptor_bytes, **kwargs):
+  """
+  Read the descriptor contents from a :class:`bytes`, providing an iterator
+  for its :class:`~stem.descriptor.__init__.Descriptor` contents.
+
+  :param bytes descriptor_bytes: Raw descriptor
+  :param dict kwargs: Keyword arguments as used for :func:`parse_file`.
+
+  :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
+
+  :raises:
+    * **ValueError** if the contents is malformed and validate is True
+    * **TypeError** if we can't match the contents of the file to a descriptor type
+    * **IOError** if unable to read from the descriptor_file
+  """
+  return parse_file(io.BytesIO(descriptor_bytes))
 
 
 def parse_file(descriptor_file, descriptor_type = None, validate = False, document_handler = DocumentHandler.ENTRIES, normalize_newlines = None, **kwargs):
