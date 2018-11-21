@@ -948,9 +948,9 @@ def _decompress(data, encoding):
   """
 
   if encoding == Compression.PLAINTEXT:
-    return data.strip()
+    return data
   elif encoding in (Compression.GZIP, 'deflate'):
-    return zlib.decompress(data, zlib.MAX_WBITS | 32).strip()
+    return zlib.decompress(data, zlib.MAX_WBITS | 32)
   elif encoding == Compression.ZSTD:
     if not stem.prereq.is_zstd_available():
       raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
@@ -961,13 +961,13 @@ def _decompress(data, encoding):
     with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
       decompressor.write(data)
 
-    return output_buffer.getvalue().strip()
+    return output_buffer.getvalue()
   elif encoding == Compression.LZMA:
     if not stem.prereq.is_lzma_available():
       raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
 
     import lzma
-    return lzma.decompress(data).strip()
+    return lzma.decompress(data)
   else:
     raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
 

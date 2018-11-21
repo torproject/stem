@@ -320,7 +320,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('moria1', desc.nickname)
     self.assertEqual('128.31.0.34', desc.address)
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
-    self.assertEqual(TEST_DESCRIPTOR.strip(), desc.get_bytes())
+    self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
 
   @patch(URL_OPEN, _dirport_mock(b'some malformed stuff'))
   def test_query_with_malformed_content(self):
