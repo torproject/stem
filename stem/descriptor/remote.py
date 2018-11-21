@@ -59,6 +59,7 @@ content. For example...
     |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
+    |- get_microdescriptors - provides present microdescriptors with the given digests
     |- get_consensus - provides the present consensus or router status entries
     |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
@@ -189,6 +190,18 @@ def get_extrainfo_descriptors(fingerprints = None, **query_args):
   """
 
   return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
+
+
+def get_microdescriptors(hashes, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors`
+  on our singleton instance.
+
+  .. versionadded:: 1.8.0
+  """
+
+  return get_instance().get_microdescriptors(hashes, **query_args)
 
 
 def get_consensus(authority_v3ident = None, microdescriptor = False, **query_args):
@@ -662,19 +675,32 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  # TODO: drop in stem 2.x
-
   def get_microdescriptors(self, hashes, **query_args):
     """
     Provides the microdescriptors with the given hashes. To get these see the
-    'microdescriptor_hashes' attribute of
-    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`. Note
-    that these are only provided via a microdescriptor consensus (such as
-    'cached-microdesc-consensus' in your data directory).
+    **microdescriptor_digest** attribute of
+    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`.
+    Note that these are only provided via the **microdescriptor consensus**.
+    For exampe...
 
-    .. deprecated:: 1.5.0
-       This function has never worked, as it was never implemented in tor
-       (:trac:`9271`).
+    ::
+
+      >>> import stem.descriptor.remote
+      >>> consensus = stem.descriptor.remote.get_consensus(microdescriptor = True).run()
+      >>> my_router_status_entry = filter(lambda desc: desc.nickname == 'caersidi', consensus)[0]
+      >>> print(my_router_status_entry.microdescriptor_digest)
+      IQI5X2A5p0WVN/MgwncqOaHF2f0HEGFEaxSON+uKRhU
+
+      >>> my_microdescriptor = stem.descriptor.remote.get_microdescriptors([my_router_status_entry.microdescriptor_digest]).run()[0]
+      >>> print(my_microdescriptor)
+      onion-key
+      -----BEGIN RSA PUBLIC KEY-----
+      MIGJAoGBAOJo9yyVgG8ksEHQibqPIEbLieI6rh1EACRPiDiV21YObb+9QEHaR3Cf
+      FNAzDbGhbvADLBB7EzuViL8w+eXQUOaIsJRdymh/wuUJ78bv5oEIJhthKq/Uqa4P
+      wKHXSZixwAHfy8NASTX3kxu9dAHWU3Owb+4W4lR2hYM0ZpoYYkThAgMBAAE=
+      -----END RSA PUBLIC KEY-----
+      ntor-onion-key kWOHNd+2uBlMpcIUbbpFLiq/rry66Ep6MlwmNpwzcBg=
+      id ed25519 xE/GeYImYAIB0RbzJXFL8kDLpDrj/ydCuCdvOgC4F/4
 
     :param str,list hashes: microdescriptor hash or list of hashes to be
       retrieved
