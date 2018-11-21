@@ -342,6 +342,10 @@ def _parse_microdescriptor_m_line(descriptor, entries):
   # "m" digest
   # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
 
+  descriptor.microdescriptor_digest = _value('m', entries)
+
+  # TODO: drop the following in stem 2.x
+
   descriptor.digest = _base64_to_hex(_value('m', entries), check_if_fingerprint = False)
 
 
@@ -672,13 +676,18 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     information that isn't yet recognized
   :var dict protocols: mapping of protocols to their supported versions
 
-  :var str digest: **\*** router's hex encoded digest of our corresponding microdescriptor
+  :var str digest: **\*** router's hex encoded digest of our corresponding
+    microdescriptor (**deprecated**, use microdescriptor_digest instead)
+  :var str microdescriptor_digest: **\*** router's base64 encoded digest of our corresponding microdescriptor
 
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
 
   .. versionchanged:: 1.7.0
      Added the or_addresses attribute.
+
+  .. versionchanged:: 1.7.0
+     Added the microdescriptor_digest attribute to replace our now deprecated digest attribute.
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -692,6 +701,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     'unrecognized_bandwidth_entries': ([], _parse_w_line),
     'protocols': ({}, _parse_pr_line),
 
+    'microdescriptor_digest': (None, _parse_microdescriptor_m_line),
     'digest': (None, _parse_microdescriptor_m_line),
   })
 

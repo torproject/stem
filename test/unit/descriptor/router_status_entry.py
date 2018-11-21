@@ -163,6 +163,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(expected_flags, set(entry.flags))
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
+    self.assertEqual('aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70', entry.microdescriptor_digest)
     self.assertEqual('6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
