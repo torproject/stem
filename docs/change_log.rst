@@ -58,6 +58,7 @@ The following are only available within Stem's `git repository
   * Added the network status vote's new bandwidth_file_digest attribute (:spec:`1b686ef`)
   * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:trac:`28448`)
   * Replaced :func:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` hex encoded **digest** attribute with a base64 encoded **microdescriptor_digest**
+  * Replaced the **digest** attribute of :class:`~stem.descriptor.microdescriptor.Microdescriptor` with a method by the same name (:trac:`28398`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
 
