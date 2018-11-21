@@ -21,6 +21,7 @@ sources...
 
 import base64
 import binascii
+import io
 
 import stem.exit_policy
 import stem.prereq
@@ -427,6 +428,27 @@ class RouterStatusEntry(Descriptor):
     's': _parse_s_line,
     'v': _parse_v_line,
   }
+
+  @classmethod
+  def from_str(cls, content, **kwargs):
+    # Router status entries don't have their own @type annotation, so to make
+    # our subclass from_str() work we need to do the type inferencing ourself.
+
+    if cls == RouterStatusEntry:
+      raise NotImplementedError('Please use the from_str() method from RouterStatusEntry subclasses, not RouterStatusEntry itself')
+    elif 'descriptor_type' in kwargs:
+      raise ValueError("Router status entries don't have their own @type annotation. As such providing a 'descriptor_type' argument with RouterStatusEntry.from_str() does not work. Please drop the 'descriptor_type' argument when using this these subclasses' from_str() method.")
+
+    is_multiple = kwargs.pop('multiple', False)
+    validate = kwargs.pop('validate', False)
+    results = list(_parse_file(io.BytesIO(stem.util.str_tools._to_bytes(content)), validate, cls, **kwargs))
+
+    if is_multiple:
+      return results
+    elif len(results) == 1:
+      return results[0]
+    else:
+      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   def __init__(self, content, validate = False, document = None):
     """
