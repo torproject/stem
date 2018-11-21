@@ -30,7 +30,7 @@ class TestDescriptor(unittest.TestCase):
     desc = Descriptor.from_str(desc_text, descriptor_type = 'server-descriptor 1.0')
     self.assertEqual('caerSidi', desc.nickname)
 
-    desc = Descriptor.from_str('@type server-descriptor 1.0\n' + desc_text)
+    desc = Descriptor.from_str(b'@type server-descriptor 1.0\n' + desc_text)
     self.assertEqual('caerSidi', desc.nickname)
 
     desc = RelayDescriptor.from_str(desc_text)
@@ -39,8 +39,8 @@ class TestDescriptor(unittest.TestCase):
     self.assertRaisesWith(TypeError, "Unable to determine the descriptor's type. filename: '<undefined>', first line: 'router caerSidi 71.35.133.197 9001 0 0'", Descriptor.from_str, desc_text)
 
   def test_from_str_multiple(self):
-    desc_text = '\n'.join((
-      '@type server-descriptor 1.0',
+    desc_text = b'\n'.join((
+      b'@type server-descriptor 1.0',
       RelayDescriptor.content({'router': 'relay1 71.35.133.197 9001 0 0'}),
       RelayDescriptor.content({'router': 'relay2 71.35.133.197 9001 0 0'}),
     ))

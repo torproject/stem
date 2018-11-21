@@ -722,7 +722,7 @@ class Descriptor(object):
 
     .. versionadded:: 1.8.0
 
-    :param bytes content: string to construct the descriptor from
+    :param str,bytes content: string to construct the descriptor from
     :param bool multiple: if provided with **True** this provides a list of
       descriptors rather than a single one
     :param dict kwargs: additional arguments for :func:`~stem.descriptor.__init__.parse_file`
@@ -741,7 +741,7 @@ class Descriptor(object):
       kwargs['descriptor_type'] = str(TypeAnnotation(cls.TYPE_ANNOTATION_NAME, 1, 0))[6:]
 
     is_multiple = kwargs.pop('multiple', False)
-    results = list(parse_file(io.BytesIO(content), **kwargs))
+    results = list(parse_file(io.BytesIO(stem.util.str_tools._to_bytes(content)), **kwargs))
 
     if is_multiple:
       return results
