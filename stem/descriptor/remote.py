@@ -687,7 +687,7 @@ class DescriptorDownloader(object):
 
       >>> import stem.descriptor.remote
       >>> consensus = stem.descriptor.remote.get_consensus(microdescriptor = True).run()
-      >>> my_router_status_entry = filter(lambda desc: desc.nickname == 'caersidi', consensus)[0]
+      >>> my_router_status_entry = list(filter(lambda desc: desc.nickname == 'caersidi', consensus))[0]
       >>> print(my_router_status_entry.microdescriptor_digest)
       IQI5X2A5p0WVN/MgwncqOaHF2f0HEGFEaxSON+uKRhU
 
