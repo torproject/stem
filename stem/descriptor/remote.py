@@ -102,6 +102,7 @@ import zlib
 import stem
 import stem.client
 import stem.descriptor
+import stem.descriptor.networkstatus
 import stem.directory
 import stem.prereq
 import stem.util.enum
@@ -129,6 +130,14 @@ MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 90
 
 SINGLETON_DOWNLOADER = None
+
+# Detached signatures do *not* have a specified type annotation. But our
+# parsers expect that all descriptors have a type. As such making one up.
+# This may change in the future if these ever get an official @type.
+#
+#   https://trac.torproject.org/projects/tor/ticket/28615
+
+DETACHED_SIGNATURE_TYPE = 'detached-signature'
 
 
 def get_instance():
@@ -216,6 +225,18 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
+def get_detached_signatures(**query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_detached_signatures`
+  on our singleton instance.
+
+  .. versionadded:: 1.8.0
+  """
+
+  return get_instance().get_detached_signatures(**query_args)
+
+
 class Query(object):
   """
   Asynchronous request for descriptor content from a directory authority or
@@ -271,6 +292,7 @@ class Query(object):
   /tor/micro/d/<hash1>-<hash2>                    microdescriptors with the given hashes
   /tor/status-vote/current/consensus              present consensus
   /tor/status-vote/current/consensus-microdesc    present microdescriptor consensus
+  /tor/status-vote/next/consensus-signatures      detached signature, used for making the next consenus
   /tor/keys/all                                   key certificates for the authorities
   /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
   =============================================== ===========
@@ -479,13 +501,24 @@ class Query(object):
           raise ValueError('BUG: _download_descriptors() finished without either results or an error')
 
         try:
-          results = stem.descriptor.parse_file(
-            io.BytesIO(self.content),
-            self.descriptor_type,
-            validate = self.validate,
-            document_handler = self.document_handler,
-            **self.kwargs
-          )
+          # TODO: special handling until we have an official detatched
+          # signature @type...
+          #
+          #   https://trac.torproject.org/projects/tor/ticket/28615
+
+          if self.descriptor_type.startswith(DETACHED_SIGNATURE_TYPE):
+            results = stem.descriptor.networkstatus._parse_file_detached_sigs(
+              io.BytesIO(self.content),
+              validate = self.validate,
+            )
+          else:
+            results = stem.descriptor.parse_file(
+              io.BytesIO(self.content),
+              self.descriptor_type,
+              validate = self.validate,
+              document_handler = self.document_handler,
+              **self.kwargs
+            )
 
           for desc in results:
             yield desc
@@ -813,6 +846,24 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
+  def get_detached_signatures(self, **query_args):
+    """
+    Provides the detached signatures that will be used to make the next
+    consensus. Please note that **these are only available during minutes 55-60
+    each hour**. If requested during minutes 0-55 tor will not service these
+    requests, and this will fail with a 404.
+
+    .. versionadded:: 1.8.0
+
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the detached
+      signatures
+    """
+
+    return self.query('/tor/status-vote/next/consensus-signatures', **query_args)
+
   def query(self, resource, **query_args):
     """
     Issues a request for the given resource.
@@ -982,6 +1033,8 @@ def _guess_descriptor_type(resource):
     return 'extra-info 1.0'
   elif resource.startswith('/tor/micro/'):
     return 'microdescriptor 1.0'
+  elif resource.startswith('/tor/status-vote/next/consensus-signatures'):
+    return '%s 1.0' % DETACHED_SIGNATURE_TYPE
   elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
     return 'network-status-microdesc-consensus-3 1.0'
   elif resource.startswith('/tor/status-vote/'):
