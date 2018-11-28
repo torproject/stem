@@ -985,12 +985,6 @@ class RelayDescriptor(ServerDescriptor):
     data = signing_key_digest + base64.b64decode(stem.util.str_tools._to_bytes(self.ed25519_master_key) + b'=')
     return stem.util.str_tools._to_unicode(binascii.hexlify(data).upper())
 
-  def _compare(self, other, method):
-    if not isinstance(other, RelayDescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
   def _check_constraints(self, entries):
     super(RelayDescriptor, self)._check_constraints(entries)
 
@@ -999,21 +993,6 @@ class RelayDescriptor(ServerDescriptor):
         raise ValueError("Descriptor must have a 'onion-key-crosscert' when identity-ed25519 is present")
       elif not self.ed25519_signature:
         raise ValueError("Descriptor must have a 'router-sig-ed25519' when identity-ed25519 is present")
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class BridgeDescriptor(ServerDescriptor):
@@ -1131,24 +1110,3 @@ class BridgeDescriptor(ServerDescriptor):
 
   def _last_keyword(self):
     return None
-
-  def _compare(self, other, method):
-    if not isinstance(other, BridgeDescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)

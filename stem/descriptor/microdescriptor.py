@@ -364,24 +364,3 @@ class Microdescriptor(Descriptor):
 
   def _name(self, is_plural = False):
     return 'microdescriptors' if is_plural else 'microdescriptor'
-
-  def _compare(self, other, method):
-    if not isinstance(other, Microdescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)

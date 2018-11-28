@@ -1294,12 +1294,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     else:
       return False  # malformed document
 
-  def _compare(self, other, method):
-    if not isinstance(other, NetworkStatusDocumentV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
   def _header(self, document_file, validate):
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     entries = _descriptor_components(content, validate)
@@ -1383,21 +1377,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 def _check_for_missing_and_disallowed_fields(document, entries, fields):
@@ -1691,27 +1670,6 @@ class DirectoryAuthority(Descriptor):
 
     self.fingerprint = self.v3ident
 
-  def _compare(self, other, method):
-    if not isinstance(other, DirectoryAuthority):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 def _parse_dir_address_line(descriptor, entries):
   # "dir-address" IPPort
@@ -1827,27 +1785,6 @@ class KeyCertificate(Descriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
-
-  def _compare(self, other, method):
-    if not isinstance(other, KeyCertificate):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class DocumentSignature(object):
@@ -2006,27 +1943,6 @@ class DetachedSignature(Descriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
-
-  def _compare(self, other, method):
-    if not isinstance(other, DetachedSignature):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class BridgeNetworkStatusDocument(NetworkStatusDocument):

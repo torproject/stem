@@ -699,6 +699,7 @@ class Descriptor(object):
     self._raw_contents = contents
     self._lazy_loading = lazy_load
     self._entries = {}
+    self._hash = None
     self._unrecognized_lines = []
 
   @classmethod
@@ -1039,6 +1040,30 @@ class Descriptor(object):
       return stem.util.str_tools._to_unicode(self._raw_contents)
     else:
       return self._raw_contents
+
+  def _compare(self, other, method):
+    if type(self) != type(other):
+      return False
+
+    return method(str(self).strip(), str(other).strip())
+
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = hash(str(self).strip())
+
+    return self._hash
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __ne__(self, other):
+    return not self == other
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class NewlineNormalizer(object):

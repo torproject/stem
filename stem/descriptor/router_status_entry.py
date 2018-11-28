@@ -503,27 +503,6 @@ class RouterStatusEntry(Descriptor):
 
     return ()
 
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntry):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 class RouterStatusEntryV2(RouterStatusEntry):
   """
@@ -557,27 +536,6 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v')
-
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryV2):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV3(RouterStatusEntry):
@@ -661,27 +619,6 @@ class RouterStatusEntryV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'p', 'pr')
 
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 class RouterStatusEntryMicroV3(RouterStatusEntry):
   """
@@ -753,24 +690,3 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'm', 'pr')
-
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryMicroV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
