@@ -49,6 +49,10 @@ Library for working with the tor process.
   .. versionchanged:: 1.3.0
      Added the HEARTBEAT signal.
 
+  .. versionchanged:: 1.8.0
+     Added the ACTIVE and DORMANT signals. You can check for Tor support for
+     these signals with the **DORMANT_MODE** :data:`~stem.version.Requirement`
+
   ========================= ===========
   Signal                    Description
   ========================= ===========
@@ -60,6 +64,8 @@ Library for working with the tor process.
   **NEWNYM**                switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
   **CLEARDNSCACHE**         clears cached DNS results
   **HEARTBEAT**             trigger a heartbeat log message
+  **DORMANT**               enables *dormant mode*, during which tor will avoid cpu and network usage
+  **ACTIVE**                disables *dormant mode*
   ========================= ===========
 
 .. data:: Flag (enum)

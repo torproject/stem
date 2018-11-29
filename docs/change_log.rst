@@ -48,6 +48,7 @@ The following are only available within Stem's `git repository
  * **Controller**
 
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
+  * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
 
  * **Descriptors**
 
