@@ -120,6 +120,7 @@ ci356fosgLiM1sVqCUkNdA==
       self.assertEqual(expected_bandwidth_weights, document.bandwidth_weights)
       self.assertEqual([], document.consensus_methods)
       self.assertEqual(None, document.published)
+      self.assertEqual('270D2E02D8E6AD83DD87BD56CF8B7874F75063A9', document.digest())
       self.assertEqual([], document.get_unrecognized_lines())
       self.assertEqual('@type network-status-consensus-3 1.0', str(document.type_annotation()))
 

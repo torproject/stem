@@ -68,6 +68,8 @@ import stem.version
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHash,
+  DigestEncoding,
   TypeAnnotation,
   DocumentHandler,
   _descriptor_content,
@@ -420,6 +422,32 @@ class NetworkStatusDocument(Descriptor):
   """
   Common parent for network status documents.
   """
+
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    """
+    Digest of this descriptor's content. These are referenced by...
+
+      * **DetachedSignature**
+
+        * Referer: :class:`~stem.descriptor.networkstatus.DetachedSignature` **consensus_digest** attribute
+        * Format: **SHA1/HEX**
+
+    .. versionadded:: 1.8.0
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
+    """
+
+    content = self._content_range(end = '\ndirectory-signature ')
+
+    if hash_type == DigestHash.SHA1:
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
+    elif hash_type == DigestHash.SHA256:
+      return stem.descriptor._encode_digest(hashlib.sha256(content), encoding)
+    else:
+      raise NotImplementedError('Network status document digests are only available in sha1 and sha256, not %s' % hash_type)
 
 
 def _parse_version_line(keyword, attribute, expected_version):
