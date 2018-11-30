@@ -48,6 +48,7 @@ The following are only available within Stem's `git repository
  * **Controller**
 
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
+  * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
 
  * **Descriptors**
@@ -56,6 +57,7 @@ The following are only available within Stem's `git repository
   * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
   * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method (:trac:`28450`)
   * Added :func:`~stem.descriptor.__init__.Descriptor.type_annotation` method (:trac:`28397`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocument.digest` method (:trac:`28398`)
   * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods (:trac:`28398`)
   * Added the network status vote's new bandwidth_file_digest attribute (:spec:`1b686ef`)
   * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:trac:`28448`)
