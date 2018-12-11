@@ -853,6 +853,41 @@ class DescriptorDownloader(object):
     each hour**. If requested during minutes 0-55 tor will not service these
     requests, and this will fail with a 404.
 
+    For example...
+
+    ::
+
+      import stem.descriptor.remote
+
+      detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
+
+      for i, sig in enumerate(detached_sigs.signatures):
+        print('Signature %i is from %s' % (i + 1, sig.identity))
+
+    **When available (minutes 55-60 of the hour)**
+
+    ::
+
+      % python demo.py
+      Signature 1 is from 0232AF901C31A04EE9848595AF9BB7620D4C5B2E
+      Signature 2 is from 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4
+      Signature 3 is from 23D15D965BC35114467363C165C4F724B64B4F66
+      ...
+
+    **When unavailable (minutes 0-55 of the hour)**
+
+    ::
+
+      % python demo.py
+      Traceback (most recent call last):
+        File "demo.py", line 3, in
+          detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 476, in run
+          return list(self._run(suppress))
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 487, in _run
+          raise self.error
+      urllib2.HTTPError: HTTP Error 404: Not found
+
     .. versionadded:: 1.8.0
 
     :param query_args: additional arguments for the
