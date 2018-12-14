@@ -310,7 +310,7 @@ def main():
   if new_capabilities:
     println(NEW_CAPABILITIES_FOUND, ERROR)
 
-    for capability_type, msg in new_capabilities:
+    for capability_type, msg in sorted(new_capabilities, key = lambda x: x[1]):
       println('  [%s] %s' % (capability_type, msg), ERROR)
 
   sys.exit(1 if error_tracker.has_errors_occured() else 0)
