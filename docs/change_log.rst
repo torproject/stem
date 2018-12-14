@@ -117,6 +117,9 @@ and the `stem.directory module <api/directory.html>`_.
   * Added a `descriptor download example <tutorials/examples/download_descriptor.html>`_
   * Added a `relay connection summary example <tutorials/examples/relay_connections.html>`_
 
+ * **Version 1.7.1** (December 26th, 2018) - :func:`~stem.process.launch_tor`
+   compatibility with an upcoming log format change (:trac:`28731`)
+
 .. _version_1.6:
 
 Version 1.6 (November 5th, 2017)
