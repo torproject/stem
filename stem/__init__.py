@@ -744,6 +744,8 @@ Signal = stem.util.enum.UppercaseEnum(
   'NEWNYM',
   'CLEARDNSCACHE',
   'HEARTBEAT',
+  'ACTIVE',
+  'DORMANT',
 )
 
 CircStatus = stem.util.enum.UppercaseEnum(
