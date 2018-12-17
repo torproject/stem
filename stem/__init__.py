@@ -78,6 +78,9 @@ Library for working with the tor process.
   .. versionchanged:: 1.5.0
      Added the NO_ED_CONSENSUS flag.
 
+  .. versionchanged:: 1.8.0
+     Added the STALE_DESC flag.
+
   =================== ===========
   Flag                Description
   =================== ===========
@@ -92,6 +95,7 @@ Library for working with the tor process.
   **NO_ED_CONSENSUS** relay's Ed25519 doesn't reflrect the consensus
   **RUNNING**         relay is currently usable
   **STABLE**          relay's suitable for long-lived circuits
+  **STALE_DESC**      relay descriptor is outdated and should be re-uploaded
   **UNNAMED**         relay isn't currently bound to a nickname
   **V2DIR**           relay supports the v2 directory protocol
   **VALID**           relay has been validated
@@ -724,6 +728,7 @@ Flag = stem.util.enum.Enum(
   ('NO_ED_CONSENSUS', 'NoEdConsensus'),
   ('RUNNING', 'Running'),
   ('STABLE', 'Stable'),
+  ('STALE_DESC', 'StaleDesc'),
   ('UNNAMED', 'Unnamed'),
   ('V2DIR', 'V2Dir'),
   ('V3DIR', 'V3Dir'),
