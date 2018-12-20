@@ -195,6 +195,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
 
   while True:
     annotations = _read_until_keywords('router', descriptor_file)
+    annotations = map(bytes.strip, annotations)                      # strip newlines
+    annotations = map(stem.util.str_tools._to_unicode, annotations)  # convert to unicode
+    annotations = list(filter(lambda x: x != '', annotations))       # drop any blanks
 
     if not is_bridge:
       descriptor_content = _read_until_keywords('router-signature', descriptor_file)
@@ -210,9 +213,6 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       if descriptor_content[0].startswith(b'@type'):
         descriptor_content = descriptor_content[1:]
 
-      # strip newlines from annotations
-      annotations = list(map(bytes.strip, annotations))
-
       descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
@@ -221,8 +221,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
         yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
       if validate and annotations:
-        orphaned_annotations = stem.util.str_tools._to_unicode(b'\n'.join(annotations))
-        raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
+        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
 
       break  # done parsing descriptors
 
