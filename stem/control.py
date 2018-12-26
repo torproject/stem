@@ -966,6 +966,7 @@ class BaseController(object):
       try:
         event_message = self._event_queue.get_nowait()
         self._handle_event(event_message)
+        self._event_queue.task_done()
 
         # Attempt to finish processing enqueued events when our controller closes
 
@@ -978,7 +979,7 @@ class BaseController(object):
         if not self.is_alive():
           break
 
-        self._event_notice.wait()
+        self._event_notice.wait(0.05)
         self._event_notice.clear()
 
 
@@ -1782,27 +1783,34 @@ class Controller(BaseController):
     else:
       # TODO: remove when tor versions that require this are obsolete
 
-      try:
-        data_directory = self.get_conf('DataDirectory')
-      except stem.ControllerError as exc:
-        raise stem.OperationFailed(message = 'Unable to determine the data directory (%s)' % exc)
+      data_directory = self.get_conf('DataDirectory', None)
 
-      cached_descriptor_path = os.path.join(data_directory, 'cached-microdescs')
+      if data_directory is None:
+        raise stem.OperationFailed(message = "Unable to determine tor's data directory")
 
       if not os.path.exists(data_directory):
         raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
-      elif not os.path.exists(cached_descriptor_path):
-        raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % cached_descriptor_path)
 
-      with stem.descriptor.reader.DescriptorReader([cached_descriptor_path]) as reader:
-        for desc in reader:
-          # It shouldn't be possible for these to be something other than
-          # microdescriptors but as the saying goes: trust but verify.
+      microdescriptor_file = None
 
-          if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
-            raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
+      for filename in ('cached-microdescs', 'cached-microdescs.new'):
+        cached_descriptors = os.path.join(data_directory, filename)
 
-          yield desc
+        if os.path.exists(cached_descriptors):
+          microdescriptor_file = cached_descriptors
+          break
+
+      if microdescriptor_file is None:
+        raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % data_directory)
+
+      for desc in stem.descriptor.parse_file(microdescriptor_file):
+        # It shouldn't be possible for these to be something other than
+        # microdescriptors but as the saying goes: trust but verify.
+
+        if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
+          raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
+
+        yield desc
 
   @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):

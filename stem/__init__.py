@@ -49,6 +49,10 @@ Library for working with the tor process.
   .. versionchanged:: 1.3.0
      Added the HEARTBEAT signal.
 
+  .. versionchanged:: 1.8.0
+     Added the ACTIVE and DORMANT signals. You can check for Tor support for
+     these signals with the **DORMANT_MODE** :data:`~stem.version.Requirement`
+
   ========================= ===========
   Signal                    Description
   ========================= ===========
@@ -60,6 +64,8 @@ Library for working with the tor process.
   **NEWNYM**                switch to new circuits, so new application requests don't share any circuits with old ones (this also clears our DNS cache)
   **CLEARDNSCACHE**         clears cached DNS results
   **HEARTBEAT**             trigger a heartbeat log message
+  **DORMANT**               enables *dormant mode*, during which tor will avoid cpu and network usage
+  **ACTIVE**                disables *dormant mode*
   ========================= ===========
 
 .. data:: Flag (enum)
@@ -71,6 +77,9 @@ Library for working with the tor process.
 
   .. versionchanged:: 1.5.0
      Added the NO_ED_CONSENSUS flag.
+
+  .. versionchanged:: 1.8.0
+     Added the STALE_DESC flag.
 
   =================== ===========
   Flag                Description
@@ -86,6 +95,7 @@ Library for working with the tor process.
   **NO_ED_CONSENSUS** relay's Ed25519 doesn't reflrect the consensus
   **RUNNING**         relay is currently usable
   **STABLE**          relay's suitable for long-lived circuits
+  **STALE_DESC**      relay descriptor is outdated and should be re-uploaded
   **UNNAMED**         relay isn't currently bound to a nickname
   **V2DIR**           relay supports the v2 directory protocol
   **VALID**           relay has been validated
@@ -488,7 +498,7 @@ Library for working with the tor process.
 import stem.util
 import stem.util.enum
 
-__version__ = '1.7.1'
+__version__ = '1.7.1-dev'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
 __url__ = 'https://stem.torproject.org/'
@@ -718,6 +728,7 @@ Flag = stem.util.enum.Enum(
   ('NO_ED_CONSENSUS', 'NoEdConsensus'),
   ('RUNNING', 'Running'),
   ('STABLE', 'Stable'),
+  ('STALE_DESC', 'StaleDesc'),
   ('UNNAMED', 'Unnamed'),
   ('V2DIR', 'V2Dir'),
   ('V3DIR', 'V3Dir'),
@@ -738,6 +749,8 @@ Signal = stem.util.enum.UppercaseEnum(
   'NEWNYM',
   'CLEARDNSCACHE',
   'HEARTBEAT',
+  'ACTIVE',
+  'DORMANT',
 )
 
 CircStatus = stem.util.enum.UppercaseEnum(

@@ -21,6 +21,7 @@ sources...
 
 import base64
 import binascii
+import io
 
 import stem.exit_policy
 import stem.prereq
@@ -342,6 +343,10 @@ def _parse_microdescriptor_m_line(descriptor, entries):
   # "m" digest
   # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
 
+  descriptor.microdescriptor_digest = _value('m', entries)
+
+  # TODO: drop the following in stem 2.x
+
   descriptor.digest = _base64_to_hex(_value('m', entries), check_if_fingerprint = False)
 
 
@@ -424,6 +429,27 @@ class RouterStatusEntry(Descriptor):
     'v': _parse_v_line,
   }
 
+  @classmethod
+  def from_str(cls, content, **kwargs):
+    # Router status entries don't have their own @type annotation, so to make
+    # our subclass from_str() work we need to do the type inferencing ourself.
+
+    if cls == RouterStatusEntry:
+      raise NotImplementedError('Please use the from_str() method from RouterStatusEntry subclasses, not RouterStatusEntry itself')
+    elif 'descriptor_type' in kwargs:
+      raise ValueError("Router status entries don't have their own @type annotation. As such providing a 'descriptor_type' argument with RouterStatusEntry.from_str() does not work. Please drop the 'descriptor_type' argument when using this these subclasses' from_str() method.")
+
+    is_multiple = kwargs.pop('multiple', False)
+    validate = kwargs.pop('validate', False)
+    results = list(_parse_file(io.BytesIO(stem.util.str_tools._to_bytes(content)), validate, cls, **kwargs))
+
+    if is_multiple:
+      return results
+    elif len(results) == 1:
+      return results[0]
+    else:
+      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
+
   def __init__(self, content, validate = False, document = None):
     """
     Parse a router descriptor in a network status document.
@@ -477,27 +503,6 @@ class RouterStatusEntry(Descriptor):
 
     return ()
 
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntry):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 class RouterStatusEntryV2(RouterStatusEntry):
   """
@@ -531,27 +536,6 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v')
-
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryV2):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class RouterStatusEntryV3(RouterStatusEntry):
@@ -635,27 +619,6 @@ class RouterStatusEntryV3(RouterStatusEntry):
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'p', 'pr')
 
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 class RouterStatusEntryMicroV3(RouterStatusEntry):
   """
@@ -672,13 +635,18 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     information that isn't yet recognized
   :var dict protocols: mapping of protocols to their supported versions
 
-  :var str digest: **\*** router's hex encoded digest of our corresponding microdescriptor
+  :var str digest: **\*** router's hex encoded digest of our corresponding
+    microdescriptor (**deprecated**, use microdescriptor_digest instead)
+  :var str microdescriptor_digest: **\*** router's base64 encoded digest of our corresponding microdescriptor
 
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
 
   .. versionchanged:: 1.7.0
      Added the or_addresses attribute.
+
+  .. versionchanged:: 1.7.0
+     Added the microdescriptor_digest attribute to replace our now deprecated digest attribute.
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -692,6 +660,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
     'unrecognized_bandwidth_entries': ([], _parse_w_line),
     'protocols': ({}, _parse_pr_line),
 
+    'microdescriptor_digest': (None, _parse_microdescriptor_m_line),
     'digest': (None, _parse_microdescriptor_m_line),
   })
 
@@ -721,24 +690,3 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v', 'w', 'm', 'pr')
-
-  def _compare(self, other, method):
-    if not isinstance(other, RouterStatusEntryMicroV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)

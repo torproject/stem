@@ -75,6 +75,11 @@ and picks up where it left off if run again...
     |- UnrecognizedType - File extension indicates non-descriptor data
     +- ReadFailed - Wraps an error that was raised while reading the file
        +- FileMissing - File does not exist
+
+.. deprecated:: 1.8.0
+
+   This module will likely be removed in Stem 2.0 due to lack of usage. If you
+   use this modle please `let me know <https://www.atagar.com/contact/>`_.
 """
 
 import mimetypes

@@ -89,6 +89,7 @@ PPc3r7zKlL/jEGHwz+C7kE88HIvkVnKLLn//40b6HxitHSOCkZ1vtp8YyXae6xnU
       self.assertEqual(expected_signing_key, cert.signing_key)
       self.assertEqual(expected_crosscert, cert.crosscert)
       self.assertEqual(expected_key_cert, cert.certification)
+      self.assertEqual('@type dir-key-certificate-3 1.0', str(cert.type_annotation()))
       self.assertEqual([], cert.get_unrecognized_lines())
 
   def test_metrics_certificate(self):

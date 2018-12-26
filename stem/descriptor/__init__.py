@@ -13,11 +13,39 @@ Package for parsing and processing descriptor data.
   create_signing_key - Cretes a signing key that can be used for creating descriptors.
 
   Descriptor - Common parent for all descriptor file types.
+    |- from_str - provides a parsed descriptor for the given string
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_archive_path - location of the descriptor within the archive it came from
     |- get_bytes - similar to str(), but provides our original bytes content
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
+
+.. data:: DigestHash (enum)
+
+  .. versionadded:: 1.8.0
+
+  Hash function used by tor for descriptor digests.
+
+  =========== ===========
+  DigestHash  Description
+  =========== ===========
+  SHA1        SHA1 hash
+  SHA256      SHA256 hash
+  =========== ===========
+
+.. data:: DigestEncoding (enum)
+
+  .. versionadded:: 1.8.0
+
+  Encoding of descriptor digests.
+
+  ================= ===========
+  DigestEncoding    Description
+  ================= ===========
+  RAW               hash object
+  HEX               uppercase hexidecimal encoding
+  BASE64            base64 encoding `without trailing '=' padding <https://en.wikipedia.org/wiki/Base64#Decoding_Base64_without_padding>`_
+  ================= ===========
 
 .. data:: DocumentHandler (enum)
 
@@ -60,7 +88,7 @@ import base64
 import codecs
 import collections
 import copy
-import hashlib
+import io
 import os
 import random
 import re
@@ -94,10 +122,10 @@ __all__ = [
 ]
 
 UNSEEKABLE_MSG = """\
-File object isn't seekable. Try wrapping it with a BytesIO instead...
+File object isn't seekable. Try using Descriptor.from_str() instead:
 
   content = my_file.read()
-  parsed_descriptors = stem.descriptor.parse_file(io.BytesIO(content))
+  parsed_descriptors = stem.descriptor.Descriptor.from_str(content)
 """
 
 KEYWORD_CHAR = 'a-zA-Z0-9-'
@@ -118,11 +146,40 @@ skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
 
+DigestHash = stem.util.enum.UppercaseEnum(
+  'SHA1',
+  'SHA256',
+)
+
+DigestEncoding = stem.util.enum.UppercaseEnum(
+  'RAW',
+  'HEX',
+  'BASE64',
+)
+
 DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
   'DOCUMENT',
   'BARE_DOCUMENT',
 )
+
+
+class TypeAnnotation(collections.namedtuple('TypeAnnotation', ['name', 'major_version', 'minor_version'])):
+  """
+  `Tor metrics type annotation
+  <https://metrics.torproject.org/collector.html#relay-descriptors>`_. The
+  string representation is the header annotation, for example "@type
+  server-descriptor 1.0".
+
+  .. versionadded:: 1.8.0
+
+  :var str name: name of the descriptor type
+  :var int major_version: major version number
+  :var int minor_version: minor version number
+  """
+
+  def __str__(self):
+    return '@type %s %s.%s' % (self.name, self.major_version, self.minor_version)
 
 
 class SigningKey(collections.namedtuple('SigningKey', ['private', 'public', 'public_digest'])):
@@ -333,30 +390,30 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
 
-  if descriptor_type == 'server-descriptor' and major_version == 1:
+  if descriptor_type == stem.descriptor.server_descriptor.RelayDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-server-descriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.server_descriptor.BridgeDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'extra-info' and major_version == 1:
+  elif descriptor_type == stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'microdescriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.microdescriptor.Microdescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.microdescriptor._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-extra-info' and major_version == 1:
+  elif descriptor_type == stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     # version 1.1 introduced a 'transport' field...
     # https://trac.torproject.org/6257
 
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'network-status-2' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.NetworkStatusDocumentV2.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV2
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'dir-key-certificate-3' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.KeyCertificate.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate, **kwargs):
       yield desc
   elif descriptor_type in ('network-status-consensus-3', 'network-status-vote-3') and major_version == 1:
@@ -369,17 +426,17 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'bridge-network-status' and major_version == 1:
+  elif descriptor_type == stem.descriptor.networkstatus.BridgeNetworkStatusDocument.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.networkstatus.BridgeNetworkStatusDocument
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
-  elif descriptor_type == 'tordnsel' and major_version == 1:
+  elif descriptor_type == stem.descriptor.tordnsel.TorDNSEL.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.tordnsel.TorDNSEL
 
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == 'hidden-service-descriptor' and major_version == 1:
+  elif descriptor_type == stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor
 
     for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
@@ -610,6 +667,23 @@ def _copy(default):
     return copy.copy(default)
 
 
+def _encode_digest(hash_value, encoding):
+  """
+  Encodes a hash value with the given HashEncoding.
+  """
+
+  if encoding == DigestEncoding.RAW:
+    return hash_value
+  elif encoding == DigestEncoding.HEX:
+    return stem.util.str_tools._to_unicode(hash_value.hexdigest().upper())
+  elif encoding == DigestEncoding.BASE64:
+    return stem.util.str_tools._to_unicode(base64.b64encode(hash_value.digest()).rstrip(b'='))
+  elif encoding not in DigestEncoding:
+    raise ValueError('Digest encodings should be among our DigestEncoding enumeration (%s), not %s' % (', '.join(DigestEncoding), encoding))
+  else:
+    raise NotImplementedError('BUG: stem.descriptor._encode_digest should recognize all DigestEncoding, lacked %s' % encoding)
+
+
 class Descriptor(object):
   """
   Common parent for all types of descriptors.
@@ -617,6 +691,7 @@ class Descriptor(object):
 
   ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
   PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
+  TYPE_ANNOTATION_NAME = None
 
   def __init__(self, contents, lazy_load = False):
     self._path = None
@@ -624,7 +699,57 @@ class Descriptor(object):
     self._raw_contents = contents
     self._lazy_loading = lazy_load
     self._entries = {}
+    self._hash = None
     self._unrecognized_lines = []
+
+  @classmethod
+  def from_str(cls, content, **kwargs):
+    """
+    Provides a :class:`~stem.descriptor.__init__.Descriptor` for the given content.
+
+    To parse a descriptor we must know its type. There are three ways to
+    convey this...
+
+    ::
+
+      # use a descriptor_type argument
+      desc = Descriptor.from_str(content, descriptor_type = 'server-descriptor 1.0')
+
+      # prefixing the content with a "@type" annotation
+      desc = Descriptor.from_str('@type server-descriptor 1.0\\n' + content)
+
+      # use this method from a subclass
+      desc = stem.descriptor.server_descriptor.RelayDescriptor.from_str(content)
+
+    .. versionadded:: 1.8.0
+
+    :param str,bytes content: string to construct the descriptor from
+    :param bool multiple: if provided with **True** this provides a list of
+      descriptors rather than a single one
+    :param dict kwargs: additional arguments for :func:`~stem.descriptor.__init__.parse_file`
+
+    :returns: :class:`~stem.descriptor.__init__.Descriptor` subclass for the
+      given content, or a **list** of descriptors if **multiple = True** is
+      provided
+
+    :raises:
+      * **ValueError** if the contents is malformed and validate is True
+      * **TypeError** if we can't match the contents of the file to a descriptor type
+      * **IOError** if unable to read from the descriptor_file
+    """
+
+    if 'descriptor_type' not in kwargs and cls.TYPE_ANNOTATION_NAME is not None:
+      kwargs['descriptor_type'] = str(TypeAnnotation(cls.TYPE_ANNOTATION_NAME, 1, 0))[6:]
+
+    is_multiple = kwargs.pop('multiple', False)
+    results = list(parse_file(io.BytesIO(stem.util.str_tools._to_bytes(content)), **kwargs))
+
+    if is_multiple:
+      return results
+    elif len(results) == 1:
+      return results[0]
+    else:
+      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False):
@@ -674,6 +799,26 @@ class Descriptor(object):
     """
 
     return cls(cls.content(attr, exclude, sign), validate = validate)
+
+  def type_annotation(self):
+    """
+    Provides the `Tor metrics annotation
+    <https://metrics.torproject.org/collector.html#relay-descriptors>`_ of this
+    descriptor type. For example, "@type server-descriptor 1.0" for server
+    descriptors.
+
+    Please note that the version number component is specific to CollecTor,
+    and for the moment hardcode as 1.0. This may change in the future.
+
+    .. versionadded:: 1.8.0
+
+    :returns: :class:`~stem.descriptor.TypeAnnotation` with our type information
+    """
+
+    if self.TYPE_ANNOTATION_NAME is not None:
+      return TypeAnnotation(self.TYPE_ANNOTATION_NAME, 1, 0)
+    else:
+      raise NotImplementedError('%s does not have a @type annotation' % type(self).__name__)
 
   def get_path(self):
     """
@@ -825,31 +970,34 @@ class Descriptor(object):
     digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
     return stem.util.str_tools._to_unicode(digest_hex.upper())
 
-  def _digest_for_content(self, start, end):
+  def _content_range(self, start = None, end = None):
     """
-    Provides the digest of our descriptor's content in a given range.
+    Provides the descriptor content inclusively between two substrings.
 
-    :param bytes start: start of the range to generate a digest for
-    :param bytes end: end of the range to generate a digest for
+    :param bytes start: start of the content range to get
+    :param bytes end: end of the content range to get
 
-    :returns: the digest string encoded in uppercase hex
-
-    :raises: ValueError if the digest canot be calculated
+    :raises: ValueError if either the start or end substring are not within our content
     """
 
-    raw_descriptor = self.get_bytes()
+    content = self.get_bytes()
+    start_index, end_index = None, None
 
-    start_index = raw_descriptor.find(start)
-    end_index = raw_descriptor.find(end, start_index)
+    if start is not None:
+      start_index = content.find(stem.util.str_tools._to_bytes(start))
 
-    if start_index == -1:
-      raise ValueError("Digest is for the range starting with '%s' but that isn't in our descriptor" % start)
-    elif end_index == -1:
-      raise ValueError("Digest is for the range ending with '%s' but that isn't in our descriptor" % end)
+      if start_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % start)
 
-    digest_content = raw_descriptor[start_index:end_index + len(end)]
-    digest_hash = hashlib.sha1(stem.util.str_tools._to_bytes(digest_content))
-    return stem.util.str_tools._to_unicode(digest_hash.hexdigest().upper())
+    if end is not None:
+      end_index = content.find(stem.util.str_tools._to_bytes(end), start_index)
+
+      if end_index == -1:
+        raise ValueError("'%s' is not present within our descriptor content" % end)
+
+      end_index += len(end)  # make the ending index inclusive
+
+    return content[start_index:end_index]
 
   def __getattr__(self, name):
     # We can't use standard hasattr() since it calls this function, recursing.
@@ -892,6 +1040,30 @@ class Descriptor(object):
       return stem.util.str_tools._to_unicode(self._raw_contents)
     else:
       return self._raw_contents
+
+  def _compare(self, other, method):
+    if type(self) != type(other):
+      return False
+
+    return method(str(self).strip(), str(other).strip())
+
+  def __hash__(self):
+    if self._hash is None:
+      self._hash = hash(str(self).strip())
+
+    return self._hash
+
+  def __eq__(self, other):
+    return self._compare(other, lambda s, o: s == o)
+
+  def __ne__(self, other):
+    return not self == other
+
+  def __lt__(self, other):
+    return self._compare(other, lambda s, o: s < o)
+
+  def __le__(self, other):
+    return self._compare(other, lambda s, o: s <= o)
 
 
 class NewlineNormalizer(object):

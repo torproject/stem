@@ -71,6 +71,8 @@ import stem.prereq
 
 from stem.descriptor import (
   Descriptor,
+  DigestHash,
+  DigestEncoding,
   _descriptor_content,
   _descriptor_components,
   _read_until_keywords,
@@ -183,10 +185,6 @@ def _parse_id_line(descriptor, entries):
   descriptor.identifiers = identities
 
 
-def _parse_digest(descriptor, entries):
-  setattr(descriptor, 'digest', hashlib.sha256(descriptor.get_bytes()).hexdigest().upper())
-
-
 _parse_onion_key_line = _parse_key_block('onion-key', 'onion_key', 'RSA PUBLIC KEY')
 _parse_ntor_onion_key_line = _parse_simple_line('ntor-onion-key', 'ntor_onion_key')
 _parse_family_line = _parse_simple_line('family', 'family', func = lambda v: v.split(' '))
@@ -199,9 +197,6 @@ class Microdescriptor(Descriptor):
   Microdescriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
-  :var str digest: **\*** hex digest for this microdescriptor, this can be used
-    to match against the corresponding digest attribute of a
-    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`
   :var str onion_key: **\*** key used to encrypt EXTEND cells
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
   :var list or_addresses: **\*** alternative for our address/or_port attributes, each
@@ -231,7 +226,16 @@ class Microdescriptor(Descriptor):
 
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
+
+  .. versionchanged:: 1.8.0
+     Replaced our **digest** attribute with a much more flexible **digest()**
+     method. Unfortunately I cannot do this in a backward compatible way
+     because of the name conflict. The old digest had multiple problems (for
+     instance, being hex rather than base64 encoded), so hopefully no one was
+     using it. Very sorry if this causes trouble for anyone.
   """
+
+  TYPE_ANNOTATION_NAME = 'microdescriptor'
 
   ATTRIBUTES = {
     'onion_key': (None, _parse_onion_key_line),
@@ -244,7 +248,6 @@ class Microdescriptor(Descriptor):
     'identifier': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifiers': ({}, _parse_id_line),
     'protocols': ({}, _parse_pr_line),
-    'digest': (None, _parse_digest),
   }
 
   PARSER_FOR_LINE = {
@@ -273,11 +276,34 @@ class Microdescriptor(Descriptor):
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
-      self.digest = hashlib.sha256(self.get_bytes()).hexdigest().upper()
       self._parse(entries, validate)
       self._check_constraints(entries)
     else:
       self._entries = entries
+
+  def digest(self, hash_type = DigestHash.SHA256, encoding = DigestEncoding.BASE64):
+    """
+    Digest of this microdescriptor. These are referenced by...
+
+      * **Microdescriptor Consensus**
+
+        * Referer: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` **digest** attribute
+        * Format: **SHA256/BASE64**
+
+    .. versionadded:: 1.8.0
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
+    """
+
+    if hash_type == DigestHash.SHA1:
+      return stem.descriptor._encode_digest(hashlib.sha1(self.get_bytes()), encoding)
+    elif hash_type == DigestHash.SHA256:
+      return stem.descriptor._encode_digest(hashlib.sha256(self.get_bytes()), encoding)
+    else:
+      raise NotImplementedError('Microdescriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
   @lru_cache()
   def get_annotations(self):
@@ -338,24 +364,3 @@ class Microdescriptor(Descriptor):
 
   def _name(self, is_plural = False):
     return 'microdescriptors' if is_plural else 'microdescriptor'
-
-  def _compare(self, other, method):
-    if not isinstance(other, Microdescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)

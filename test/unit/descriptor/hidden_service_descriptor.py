@@ -424,6 +424,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     self.assertEqual([], desc.introduction_points_auth)
     self.assertEqual(b'', desc.introduction_points_content)
     self.assertEqual([], desc.introduction_points())
+    self.assertEqual('@type hidden-service-descriptor 1.0', str(desc.type_annotation()))
 
   def test_unrecognized_line(self):
     """

@@ -56,6 +56,7 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
       self.assertEqual([], document.get_unrecognized_lines())
 
       self.assertEqual(3, len(document.routers))
+      self.assertEqual('@type network-status-2 1.0', str(document.type_annotation()))
 
       router1 = document.routers['719BE45DE224B607C53707D0E2143E2D423E74CF']
       self.assertEqual('moria2', router1.nickname)

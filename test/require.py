@@ -49,7 +49,7 @@ def only_run_once(func):
 
 def needs(condition, message):
   """
-  Skips teh test unless the conditional evaluates to 'true'.
+  Skips the test unless the conditional evaluates to 'true'.
   """
 
   def decorator(func):

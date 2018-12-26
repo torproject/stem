@@ -1408,9 +1408,9 @@ def set_process_name(process_name):
   Renames our current process from "python <args>" to a custom name. This is
   best-effort, not necessarily working on all platforms.
 
-  **Note:** This might have issues on FreeBSD (:trac:`9804`).
-
   :param str process_name: new name for our process
+
+  :raises: **IOError** if the process cannot be renamed
   """
 
   # This is mostly based on...

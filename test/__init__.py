@@ -61,7 +61,7 @@ STEM_BASE = os.path.sep.join(__file__.split(os.path.sep)[:-2])
 
 # Store new capabilities (events, descriptor entries, etc.)
 
-NEW_CAPABILITIES = []
+NEW_CAPABILITIES = set()
 NEW_CAPABILITIES_SUPPRESSION_TOKENS = set()
 
 # File extensions of contents that should be ignored.
@@ -84,7 +84,7 @@ def get_new_capabilities():
   Provides a list of capabilities tor supports but stem doesn't, as discovered
   while running our tests.
 
-  :returns: **list** of (type, message) tuples for the capabilities
+  :returns: **set** of (type, message) tuples for the capabilities
   """
 
   return NEW_CAPABILITIES
@@ -101,7 +101,7 @@ def register_new_capability(capability_type, msg, suppression_token = None):
   """
 
   if suppression_token not in NEW_CAPABILITIES_SUPPRESSION_TOKENS:
-    NEW_CAPABILITIES.append((capability_type, msg))
+    NEW_CAPABILITIES.add((capability_type, msg))
 
     if suppression_token:
       NEW_CAPABILITIES_SUPPRESSION_TOKENS.add(suppression_token)

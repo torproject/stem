@@ -34,6 +34,26 @@ ADD_ONION_RESPONSE = """\
 250 OK
 """
 
+CONSENSUS_ENTRY = """\
+r caersidi O7NMYwctnRDoNu5ClocT97kyX2Y 2018-11-21 05:25:24 208.113.135.162 1443 1444
+m IQI5X2A5p0WVN/MgwncqOaHF2f0HEGFEaxSON+uKRhU
+s Fast Guard HSDir Running Stable V2Dir Valid
+v Tor 0.3.4.0-alpha-dev
+pr Cons=1-2 Desc=1-2 DirCache=1-2 HSDir=1-2 HSIntro=3-4 HSRend=1-2 Link=1-5 LinkAuth=1,3 Microdesc=1-2 Relay=1-2
+w Bandwidth=8360
+"""
+
+MICRODESCRIPTOR_ENTRY = """\
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAOJo9yyVgG8ksEHQibqPIEbLieI6rh1EACRPiDiV21YObb+9QEHaR3Cf
+FNAzDbGhbvADLBB7EzuViL8w+eXQUOaIsJRdymh/wuUJ78bv5oEIJhthKq/Uqa4P
+wKHXSZixwAHfy8NASTX3kxu9dAHWU3Owb+4W4lR2hYM0ZpoYYkThAgMBAAE=
+-----END RSA PUBLIC KEY-----
+ntor-onion-key kWOHNd+2uBlMpcIUbbpFLiq/rry66Ep6MlwmNpwzcBg=
+id ed25519 xE/GeYImYAIB0RbzJXFL8kDLpDrj/ydCuCdvOgC4F/4
+""".rstrip()
+
 
 class TestDocumentation(unittest.TestCase):
   def test_examples(self):
@@ -51,6 +71,16 @@ class TestDocumentation(unittest.TestCase):
           get_config_mock.return_value = config
 
           test_run = doctest.testfile(path, **args)
+      elif path.endswith('/stem/descriptor/remote.py'):
+        consensus_query = Mock()
+        consensus_query.run.return_value = [stem.descriptor.router_status_entry.RouterStatusEntryMicroV3.from_str(CONSENSUS_ENTRY)]
+
+        microdescriptor_query = Mock()
+        microdescriptor_query.run.return_value = [stem.descriptor.microdescriptor.Microdescriptor.from_str(MICRODESCRIPTOR_ENTRY)]
+
+        with patch('stem.descriptor.remote.get_consensus', Mock(return_value = consensus_query)):
+          with patch('stem.descriptor.remote.get_microdescriptors', Mock(return_value = microdescriptor_query)):
+            test_run = doctest.testfile(path, **args)
       elif path.endswith('/stem/descriptor/router_status_entry.py'):
         args['globs'] = {
           '_base64_to_hex': stem.descriptor.router_status_entry._base64_to_hex,

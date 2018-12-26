@@ -51,6 +51,7 @@ class TestBridgeNetworkStatusDocument(unittest.TestCase):
     self.assertEqual(datetime.datetime(2012, 6, 1, 4, 7, 4), document.published)
     self.assertEqual({}, document.routers)
     self.assertEqual([], document.get_unrecognized_lines())
+    self.assertEqual('@type bridge-network-status 1.0', str(document.type_annotation()))
 
   def test_document(self):
     """

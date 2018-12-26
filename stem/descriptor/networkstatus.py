@@ -51,10 +51,13 @@ For more information see :func:`~stem.descriptor.__init__.DocumentHandler`...
 
   KeyCertificate - Certificate used to authenticate an authority
   DocumentSignature - Signature of a document by a directory authority
+  DetachedSignature - Stand alone signature used when making the consensus
   DirectoryAuthority - Directory authority as defined in a v3 network status document
 """
 
 import collections
+import datetime
+import hashlib
 import io
 
 import stem.descriptor.router_status_entry
@@ -65,11 +68,15 @@ import stem.version
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHash,
+  DigestEncoding,
+  TypeAnnotation,
   DocumentHandler,
   _descriptor_content,
   _descriptor_components,
   _read_until_keywords,
   _value,
+  _values,
   _parse_simple_line,
   _parse_if_present,
   _parse_timestamp_line,
@@ -132,6 +139,7 @@ HEADER_STATUS_DOCUMENT_FIELDS = (
   ('shared-rand-previous-value', True, True, False),
   ('shared-rand-current-value', True, True, False),
   ('bandwidth-file-headers', True, False, False),
+  ('bandwidth-file-digest', True, False, False),
   ('recommended-client-protocols', True, True, False),
   ('recommended-relay-protocols', True, True, False),
   ('required-client-protocols', True, True, False),
@@ -188,6 +196,19 @@ KEY_CERTIFICATE_PARAMS = (
   ('dir-signing-key', True),
   ('dir-key-crosscert', False),
   ('dir-key-certification', True),
+)
+
+# DetchedSignature fields, tuple is of the form...
+# (keyword, is_mandatory, is_multiple)
+
+DETACHED_SIGNATURE_PARAMS = (
+  ('consensus-digest', True, False),
+  ('valid-after', True, False),
+  ('fresh-until', True, False),
+  ('valid-until', True, False),
+  ('additional-digest', False, True),
+  ('additional-signature', False, True),
+  ('directory-signature', False, True),
 )
 
 # all parameters are constrained to int32 range
@@ -252,6 +273,18 @@ class SharedRandomnessCommitment(collections.namedtuple('SharedRandomnessCommitm
   :var str commit: base64 encoded commitment hash to the shared random value
   :var str reveal: base64 encoded commitment to the shared random value,
     **None** of not provided
+  """
+
+
+class DocumentDigest(collections.namedtuple('DocumentDigest', ['flavor', 'algorithm', 'digest'])):
+  """
+  Digest of a consensus document.
+
+  .. versionadded:: 1.8.0
+
+  :var str flavor: consensus type this digest is for (for example, 'microdesc')
+  :var str algorithm: hash algorithm used to make the digest
+  :var str digest: digest value of the consensus
   """
 
 
@@ -340,11 +373,10 @@ def _parse_file_key_certs(certificate_file, validate = False):
     **True**, skips these checks otherwise
 
   :returns: iterator for :class:`stem.descriptor.networkstatus.KeyCertificate`
-    instance in the file
+    instances in the file
 
   :raises:
-    * **ValueError** if the key certificate content is invalid and validate is
-      **True**
+    * **ValueError** if the key certificates are invalid and validate is **True**
     * **IOError** if the file can't be read
   """
 
@@ -361,10 +393,61 @@ def _parse_file_key_certs(certificate_file, validate = False):
       break  # done parsing file
 
 
+def _parse_file_detached_sigs(detached_signature_file, validate = False):
+  """
+  Parses a file containing one or more detached signatures.
+
+  :param file detached_signature_file: file with detached signatures
+  :param bool validate: checks the validity of the detached signature's
+    contents if **True**, skips these checks otherwise
+
+  :returns: iterator for :class:`stem.descriptor.networkstatus.DetachedSignature`
+    instances in the file
+
+  :raises:
+    * **ValueError** if the detached signatures are invalid and validate is **True**
+    * **IOError** if the file can't be read
+  """
+
+  while True:
+    detached_sig_content = _read_until_keywords('consensus-digest', detached_signature_file, ignore_first = True)
+
+    if detached_sig_content:
+      yield stem.descriptor.networkstatus.DetachedSignature(bytes.join(b'', detached_sig_content), validate = validate)
+    else:
+      break  # done parsing file
+
+
 class NetworkStatusDocument(Descriptor):
   """
   Common parent for network status documents.
   """
+
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    """
+    Digest of this descriptor's content. These are referenced by...
+
+      * **DetachedSignature**
+
+        * Referer: :class:`~stem.descriptor.networkstatus.DetachedSignature` **consensus_digest** attribute
+        * Format: **SHA1/HEX**
+
+    .. versionadded:: 1.8.0
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
+    """
+
+    content = self._content_range(end = '\ndirectory-signature ')
+
+    if hash_type == DigestHash.SHA1:
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
+    elif hash_type == DigestHash.SHA256:
+      return stem.descriptor._encode_digest(hashlib.sha256(content), encoding)
+    else:
+      raise NotImplementedError('Network status document digests are only available in sha1 and sha256, not %s' % hash_type)
 
 
 def _parse_version_line(keyword, attribute, expected_version):
@@ -402,6 +485,36 @@ def _parse_dir_source_line(descriptor, entries):
   descriptor.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
 
 
+def _parse_additional_digests(descriptor, entries):
+  digests = []
+
+  for val in _values('additional-digest', entries):
+    comp = val.split(' ')
+
+    if len(comp) < 3:
+      raise ValueError("additional-digest lines should be of the form 'additional-digest [flavor] [algname] [digest]' but was: %s" % val)
+
+    digests.append(DocumentDigest(*comp[:3]))
+
+  descriptor.additional_digests = digests
+
+
+def _parse_additional_signatures(descriptor, entries):
+  signatures = []
+
+  for val, block_type, block_contents in entries['additional-signature']:
+    comp = val.split(' ')
+
+    if len(comp) < 4:
+      raise ValueError("additional-signature lines should be of the form 'additional-signature [flavor] [algname] [identity] [signing_key_digest]' but was: %s" % val)
+    elif not block_contents or block_type != 'SIGNATURE':
+      raise ValueError("'additional-signature' should be followed by a SIGNATURE block, but was a %s" % block_type)
+
+    signatures.append(DocumentSignature(comp[1], comp[2], comp[3], block_contents, flavor = comp[0], validate = True))
+
+  descriptor.additional_signatures = signatures
+
+
 _parse_network_status_version_line = _parse_version_line('network-status-version', 'version', 2)
 _parse_fingerprint_line = _parse_forty_character_hex('fingerprint', 'fingerprint')
 _parse_contact_line = _parse_simple_line('contact', 'contact')
@@ -411,6 +524,7 @@ _parse_server_versions_line = _parse_simple_line('server-versions', 'server_vers
 _parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_dir_options_line = _parse_simple_line('dir-options', 'options', func = lambda v: v.split())
 _parse_directory_signature_line = _parse_key_block('directory-signature', 'signature', 'SIGNATURE', value_attribute = 'signing_authority')
+_parse_consensus_digest_line = _parse_simple_line('consensus-digest', 'consensus_digest')
 
 
 class NetworkStatusDocumentV2(NetworkStatusDocument):
@@ -441,6 +555,8 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-2'
 
   ATTRIBUTES = {
     'version': (None, _parse_network_status_version_line),
@@ -702,7 +818,7 @@ def _parse_footer_directory_signature_line(descriptor, entries):
     else:
       method, fingerprint, key_digest = sig_value.split(' ', 2)
 
-    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, True))
+    signatures.append(DocumentSignature(method, fingerprint, key_digest, block_contents, validate = True))
 
   descriptor.signatures = signatures
 
@@ -791,6 +907,18 @@ def _parse_bandwidth_file_headers(descriptor, entries):
   descriptor.bandwidth_file_headers = results
 
 
+def _parse_bandwidth_file_digest(descriptor, entries):
+  # "bandwidth-file-digest" 1*(SP algorithm "=" digest)
+
+  value = _value('bandwidth-file-digest', entries)
+  results = {}
+
+  for key, val in _mappings_for('bandwidth-file-digest', value):
+    results[key] = val
+
+  descriptor.bandwidth_file_digest = results
+
+
 _parse_header_valid_after_line = _parse_timestamp_line('valid-after', 'valid_after')
 _parse_header_fresh_until_line = _parse_timestamp_line('fresh-until', 'fresh_until')
 _parse_header_valid_until_line = _parse_timestamp_line('valid-until', 'valid_until')
@@ -862,6 +990,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var dict required_relay_protocols: required protocols for relays
   :var dict bandwidth_file_headers: headers from the bandwidth authority that
     generated this vote
+  :var dict bandwidth_file_digest: hashes of the bandwidth authority file used
+    to generate this vote, this is a mapping of hash functions to their resulting
+    digest value
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
@@ -893,6 +1024,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   .. versionchanged:: 1.7.0
      Added the bandwidth_file_headers attributbute.
+
+  .. versionchanged:: 1.8.0
+     Added the bandwidth_file_digest attributbute.
   """
 
   ATTRIBUTES = {
@@ -924,6 +1058,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared_randomness_current_reveal_count': (None, _parse_shared_rand_current_value),
     'shared_randomness_current_value': (None, _parse_shared_rand_current_value),
     'bandwidth_file_headers': ({}, _parse_bandwidth_file_headers),
+    'bandwidth_file_digest': ({}, _parse_bandwidth_file_digest),
 
     'signatures': ([], _parse_footer_directory_signature_line),
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
@@ -952,6 +1087,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'shared-rand-previous-value': _parse_shared_rand_previous_value,
     'shared-rand-current-value': _parse_shared_rand_current_value,
     'bandwidth-file-headers': _parse_bandwidth_file_headers,
+    'bandwidth-file-digest': _parse_bandwidth_file_digest,
   }
 
   FOOTER_PARSER_FOR_LINE = {
@@ -1088,6 +1224,44 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
     self._footer(document_file, validate)
 
+  def type_annotation(self):
+    if not self.is_microdescriptor:
+      return TypeAnnotation('network-status-consensus-3' if not self.is_vote else 'network-status-vote-3', 1, 0)
+    else:
+      # Directory authorities do not issue a 'microdescriptor consensus' vote,
+      # so unlike the above there isn't a 'network-status-microdesc-vote-3'
+      # counterpart here.
+
+      return TypeAnnotation('network-status-microdesc-consensus-3', 1, 0)
+
+  def is_valid(self):
+    """
+    Checks if the current time is between this document's **valid_after** and
+    **valid_until** timestamps. To be valid means the information within this
+    document reflects the current network state.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **True** if this consensus is presently valid and **False**
+      otherwise
+    """
+
+    return self.valid_after < datetime.datetime.utcnow() < self.valid_until
+
+  def is_fresh(self):
+    """
+    Checks if the current time is between this document's **valid_after** and
+    **fresh_until** timestamps. To be fresh means this should be the latest
+    consensus.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **True** if this consensus is presently fresh and **False**
+      otherwise
+    """
+
+    return self.valid_after < datetime.datetime.utcnow() < self.fresh_until
+
   def validate_signatures(self, key_certs):
     """
     Validates we're properly signed by the signing certificates.
@@ -1102,7 +1276,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     # sha1 hash of the body and header
 
-    local_digest = self._digest_for_content(b'network-status-version', b'directory-signature ')
+    digest_content = self._content_range('network-status-version', 'directory-signature ')
+    local_digest = hashlib.sha1(digest_content).hexdigest().upper()
 
     valid_digests, total_digests = 0, 0
     required_digests = len(self.signatures) / 2.0
@@ -1146,12 +1321,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       return bool([x for x in self.consensus_methods if x >= method])
     else:
       return False  # malformed document
-
-  def _compare(self, other, method):
-    if not isinstance(other, NetworkStatusDocumentV3):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
 
   def _header(self, document_file, validate):
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
@@ -1236,21 +1405,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
       if value < minimum or value > maximum:
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 def _check_for_missing_and_disallowed_fields(document, entries, fields):
@@ -1544,27 +1698,6 @@ class DirectoryAuthority(Descriptor):
 
     self.fingerprint = self.v3ident
 
-  def _compare(self, other, method):
-    if not isinstance(other, DirectoryAuthority):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 def _parse_dir_address_line(descriptor, entries):
   # "dir-address" IPPort
@@ -1612,6 +1745,8 @@ class KeyCertificate(Descriptor):
 
   **\*** mandatory attribute
   """
+
+  TYPE_ANNOTATION_NAME = 'dir-key-certificate-3'
 
   ATTRIBUTES = {
     'version': (None, _parse_dir_key_certificate_version_line),
@@ -1679,27 +1814,6 @@ class KeyCertificate(Descriptor):
     else:
       self._entries = entries
 
-  def _compare(self, other, method):
-    if not isinstance(other, KeyCertificate):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
-
 
 class DocumentSignature(object):
   """
@@ -1709,12 +1823,14 @@ class DocumentSignature(object):
   :var str identity: fingerprint of the authority that made the signature
   :var str key_digest: digest of the signing key
   :var str signature: document signature
+  :var str flavor: consensus type this signature is for (such as 'microdesc'),
+    **None** if for the standard consensus
   :param bool validate: checks validity if **True**
 
   :raises: **ValueError** if a validity check fails
   """
 
-  def __init__(self, method, identity, key_digest, signature, validate = False):
+  def __init__(self, method, identity, key_digest, signature, flavor = None, validate = False):
     # Checking that these attributes are valid. Technically the key
     # digest isn't a fingerprint, but it has the same characteristics.
 
@@ -1729,12 +1845,13 @@ class DocumentSignature(object):
     self.identity = identity
     self.key_digest = key_digest
     self.signature = signature
+    self.flavor = flavor
 
   def _compare(self, other, method):
     if not isinstance(other, DocumentSignature):
       return False
 
-    for attr in ('method', 'identity', 'key_digest', 'signature'):
+    for attr in ('method', 'identity', 'key_digest', 'signature', 'flavor'):
       if getattr(self, attr) != getattr(other, attr):
         return method(getattr(self, attr), getattr(other, attr))
 
@@ -1756,6 +1873,106 @@ class DocumentSignature(object):
     return self._compare(other, lambda s, o: s <= o)
 
 
+class DetachedSignature(Descriptor):
+  """
+  Stand alone signature of the consensus. These are exchanged between directory
+  authorities when determining the next hour's consensus.
+
+  Detached signatures are defined in section 3.10 of the dir-spec, and only
+  available to be downloaded for five minutes between minute 55 until the end
+  of the hour.
+
+  .. versionadded:: 1.8.0
+
+  :var str consensus_digest: **\*** digest of the consensus being signed
+  :var datetime valid_after: **\*** time when the consensus became valid
+  :var datetime fresh_until: **\*** time when the next consensus should be produced
+  :var datetime valid_until: **\*** time when this consensus becomes obsolete
+  :var list additional_digests: **\***
+    :class:`~stem.descriptor.networkstatus.DocumentDigest` for additional
+    consensus flavors
+  :var list additional_signatures: **\***
+    :class:`~stem.descriptor.networkstatus.DocumentSignature` for additional
+    consensus flavors
+  :var list signatures: **\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
+    of the authorities that have signed the document
+
+  **\*** mandatory attribute
+  """
+
+  ATTRIBUTES = {
+    'consensus_digest': (None, _parse_consensus_digest_line),
+    'valid_after': (None, _parse_header_valid_after_line),
+    'fresh_until': (None, _parse_header_fresh_until_line),
+    'valid_until': (None, _parse_header_valid_until_line),
+    'additional_digests': ([], _parse_additional_digests),
+    'additional_signatures': ([], _parse_additional_signatures),
+    'signatures': ([], _parse_footer_directory_signature_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'consensus-digest': _parse_consensus_digest_line,
+    'valid-after': _parse_header_valid_after_line,
+    'fresh-until': _parse_header_fresh_until_line,
+    'valid-until': _parse_header_valid_until_line,
+    'additional-digest': _parse_additional_digests,
+    'additional-signature': _parse_additional_signatures,
+    'directory-signature': _parse_footer_directory_signature_line,
+  }
+
+  @classmethod
+  def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
+    return _descriptor_content(attr, exclude, (
+      ('consensus-digest', '6D3CC0EFA408F228410A4A8145E1B0BB0670E442'),
+      ('valid-after', _random_date()),
+      ('fresh-until', _random_date()),
+      ('valid-until', _random_date()),
+    ))
+
+  @classmethod
+  def from_str(cls, content, **kwargs):
+    # Detached signatures don't have their own @type annotation, so to make
+    # our subclass from_str() work we need to do the type inferencing ourself.
+
+    if 'descriptor_type' in kwargs:
+      raise ValueError("Detached signatures don't have their own @type annotation. As such providing a 'descriptor_type' argument with DetachedSignature.from_str() does not work. Please drop the 'descriptor_type' argument when using this method.")
+
+    is_multiple = kwargs.pop('multiple', False)
+    results = list(_parse_file_detached_sigs(io.BytesIO(stem.util.str_tools._to_bytes(content)), **kwargs))
+
+    if is_multiple:
+      return results
+    elif len(results) == 1:
+      return results[0]
+    else:
+      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
+
+  def __init__(self, raw_content, validate = False):
+    super(DetachedSignature, self).__init__(raw_content, lazy_load = not validate)
+    entries = _descriptor_components(raw_content, validate)
+
+    if validate:
+      if 'consensus-digest' != list(entries.keys())[0]:
+        raise ValueError("Detached signatures must start with a 'consensus-digest' line:\n%s" % (raw_content))
+
+      # check that we have mandatory fields and certain fields only appear once
+
+      for keyword, is_mandatory, is_multiple in DETACHED_SIGNATURE_PARAMS:
+        if is_mandatory and keyword not in entries:
+          raise ValueError("Detached signatures must have a '%s' line:\n%s" % (keyword, raw_content))
+
+        entry_count = len(entries.get(keyword, []))
+        if not is_multiple and entry_count > 1:
+          raise ValueError("Detached signatures can only have a single '%s' line, got %i:\n%s" % (keyword, entry_count, raw_content))
+
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
+
+
 class BridgeNetworkStatusDocument(NetworkStatusDocument):
   """
   Network status document containing bridges. This is only available through
@@ -1765,6 +1982,8 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
     mapping for relays contained in the document
   :var datetime published: time when the document was published
   """
+
+  TYPE_ANNOTATION_NAME = 'bridge-network-status'
 
   def __init__(self, raw_content, validate = False):
     super(BridgeNetworkStatusDocument, self).__init__(raw_content)

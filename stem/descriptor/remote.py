@@ -59,6 +59,7 @@ content. For example...
     |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
+    |- get_microdescriptors - provides present microdescriptors with the given digests
     |- get_consensus - provides the present consensus or router status entries
     |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
@@ -101,6 +102,7 @@ import zlib
 import stem
 import stem.client
 import stem.descriptor
+import stem.descriptor.networkstatus
 import stem.directory
 import stem.prereq
 import stem.util.enum
@@ -128,6 +130,14 @@ MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 90
 
 SINGLETON_DOWNLOADER = None
+
+# Detached signatures do *not* have a specified type annotation. But our
+# parsers expect that all descriptors have a type. As such making one up.
+# This may change in the future if these ever get an official @type.
+#
+#   https://trac.torproject.org/projects/tor/ticket/28615
+
+DETACHED_SIGNATURE_TYPE = 'detached-signature'
 
 
 def get_instance():
@@ -191,6 +201,18 @@ def get_extrainfo_descriptors(fingerprints = None, **query_args):
   return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
 
 
+def get_microdescriptors(hashes, **query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors`
+  on our singleton instance.
+
+  .. versionadded:: 1.8.0
+  """
+
+  return get_instance().get_microdescriptors(hashes, **query_args)
+
+
 def get_consensus(authority_v3ident = None, microdescriptor = False, **query_args):
   """
   Shorthand for
@@ -201,6 +223,18 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   """
 
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
+
+
+def get_detached_signatures(**query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_detached_signatures`
+  on our singleton instance.
+
+  .. versionadded:: 1.8.0
+  """
+
+  return get_instance().get_detached_signatures(**query_args)
 
 
 class Query(object):
@@ -221,17 +255,16 @@ class Query(object):
 
     query = Query(
       '/tor/server/all',
-      block = True,
       timeout = 30,
     )
 
     print('Current relays:')
 
-    if not query.error:
-      for desc in query:
+    try:
+      for desc in Query('/tor/server/all', 'server-descriptor 1.0').run():
         print(desc.fingerprint)
-    else:
-      print('Unable to retrieve the server descriptors: %s' % query.error)
+    except Exception as exc:
+      print('Unable to retrieve the server descriptors: %s' % exc)
 
   ... while iterating fails silently...
 
@@ -259,6 +292,7 @@ class Query(object):
   /tor/micro/d/<hash1>-<hash2>                    microdescriptors with the given hashes
   /tor/status-vote/current/consensus              present consensus
   /tor/status-vote/current/consensus-microdesc    present microdescriptor consensus
+  /tor/status-vote/next/consensus-signatures      detached signature, used for making the next consenus
   /tor/keys/all                                   key certificates for the authorities
   /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
   =============================================== ===========
@@ -296,6 +330,10 @@ class Query(object):
   .. versionchanged:: 1.7.0
      Avoid downloading from Bifroest. This is the bridge authority so it
      doesn't vote in the consensus, and apparently times out frequently.
+
+  .. versionchanged:: 1.8.0
+     Serge has replaced Bifroest as our bridge authority. Avoiding descriptor
+     downloads from it instead.
 
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
@@ -463,13 +501,24 @@ class Query(object):
           raise ValueError('BUG: _download_descriptors() finished without either results or an error')
 
         try:
-          results = stem.descriptor.parse_file(
-            io.BytesIO(self.content),
-            self.descriptor_type,
-            validate = self.validate,
-            document_handler = self.document_handler,
-            **self.kwargs
-          )
+          # TODO: special handling until we have an official detatched
+          # signature @type...
+          #
+          #   https://trac.torproject.org/projects/tor/ticket/28615
+
+          if self.descriptor_type.startswith(DETACHED_SIGNATURE_TYPE):
+            results = stem.descriptor.networkstatus._parse_file_detached_sigs(
+              io.BytesIO(self.content),
+              validate = self.validate,
+            )
+          else:
+            results = stem.descriptor.parse_file(
+              io.BytesIO(self.content),
+              self.descriptor_type,
+              validate = self.validate,
+              document_handler = self.document_handler,
+              **self.kwargs
+            )
 
           for desc in results:
             yield desc
@@ -497,7 +546,7 @@ class Query(object):
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Bifroest')])
+      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Serge')])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
@@ -576,7 +625,7 @@ class DescriptorDownloader(object):
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
     for desc in consensus.routers.values():
-      if stem.Flag.V2DIR in desc.flags:
+      if stem.Flag.V2DIR in desc.flags and desc.dir_port:
         new_endpoints.add((desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
@@ -659,19 +708,32 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  # TODO: drop in stem 2.x
-
   def get_microdescriptors(self, hashes, **query_args):
     """
     Provides the microdescriptors with the given hashes. To get these see the
-    'microdescriptor_hashes' attribute of
-    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`. Note
-    that these are only provided via a microdescriptor consensus (such as
-    'cached-microdesc-consensus' in your data directory).
+    **microdescriptor_digest** attribute of
+    :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3`.
+    Note that these are only provided via the **microdescriptor consensus**.
+    For exampe...
 
-    .. deprecated:: 1.5.0
-       This function has never worked, as it was never implemented in tor
-       (:trac:`9271`).
+    ::
+
+      >>> import stem.descriptor.remote
+      >>> consensus = stem.descriptor.remote.get_consensus(microdescriptor = True).run()
+      >>> my_router_status_entry = list(filter(lambda desc: desc.nickname == 'caersidi', consensus))[0]
+      >>> print(my_router_status_entry.microdescriptor_digest)
+      IQI5X2A5p0WVN/MgwncqOaHF2f0HEGFEaxSON+uKRhU
+
+      >>> my_microdescriptor = stem.descriptor.remote.get_microdescriptors([my_router_status_entry.microdescriptor_digest]).run()[0]
+      >>> print(my_microdescriptor)
+      onion-key
+      -----BEGIN RSA PUBLIC KEY-----
+      MIGJAoGBAOJo9yyVgG8ksEHQibqPIEbLieI6rh1EACRPiDiV21YObb+9QEHaR3Cf
+      FNAzDbGhbvADLBB7EzuViL8w+eXQUOaIsJRdymh/wuUJ78bv5oEIJhthKq/Uqa4P
+      wKHXSZixwAHfy8NASTX3kxu9dAHWU3Owb+4W4lR2hYM0ZpoYYkThAgMBAAE=
+      -----END RSA PUBLIC KEY-----
+      ntor-onion-key kWOHNd+2uBlMpcIUbbpFLiq/rry66Ep6MlwmNpwzcBg=
+      id ed25519 xE/GeYImYAIB0RbzJXFL8kDLpDrj/ydCuCdvOgC4F/4
 
     :param str,list hashes: microdescriptor hash or list of hashes to be
       retrieved
@@ -783,6 +845,59 @@ class DescriptorDownloader(object):
       resource = '/tor/keys/fp/%s' % '+'.join(authority_v3idents)
 
     return self.query(resource, **query_args)
+
+  def get_detached_signatures(self, **query_args):
+    """
+    Provides the detached signatures that will be used to make the next
+    consensus. Please note that **these are only available during minutes 55-60
+    each hour**. If requested during minutes 0-55 tor will not service these
+    requests, and this will fail with a 404.
+
+    For example...
+
+    ::
+
+      import stem.descriptor.remote
+
+      detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
+
+      for i, sig in enumerate(detached_sigs.signatures):
+        print('Signature %i is from %s' % (i + 1, sig.identity))
+
+    **When available (minutes 55-60 of the hour)**
+
+    ::
+
+      % python demo.py
+      Signature 1 is from 0232AF901C31A04EE9848595AF9BB7620D4C5B2E
+      Signature 2 is from 14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4
+      Signature 3 is from 23D15D965BC35114467363C165C4F724B64B4F66
+      ...
+
+    **When unavailable (minutes 0-55 of the hour)**
+
+    ::
+
+      % python demo.py
+      Traceback (most recent call last):
+        File "demo.py", line 3, in
+          detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 476, in run
+          return list(self._run(suppress))
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 487, in _run
+          raise self.error
+      urllib2.HTTPError: HTTP Error 404: Not found
+
+    .. versionadded:: 1.8.0
+
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the detached
+      signatures
+    """
+
+    return self.query('/tor/status-vote/next/consensus-signatures', **query_args)
 
   def query(self, resource, **query_args):
     """
@@ -919,9 +1034,9 @@ def _decompress(data, encoding):
   """
 
   if encoding == Compression.PLAINTEXT:
-    return data.strip()
+    return data
   elif encoding in (Compression.GZIP, 'deflate'):
-    return zlib.decompress(data, zlib.MAX_WBITS | 32).strip()
+    return zlib.decompress(data, zlib.MAX_WBITS | 32)
   elif encoding == Compression.ZSTD:
     if not stem.prereq.is_zstd_available():
       raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
@@ -932,13 +1047,13 @@ def _decompress(data, encoding):
     with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
       decompressor.write(data)
 
-    return output_buffer.getvalue().strip()
+    return output_buffer.getvalue()
   elif encoding == Compression.LZMA:
     if not stem.prereq.is_lzma_available():
       raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
 
     import lzma
-    return lzma.decompress(data).strip()
+    return lzma.decompress(data)
   else:
     raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
 
@@ -953,6 +1068,8 @@ def _guess_descriptor_type(resource):
     return 'extra-info 1.0'
   elif resource.startswith('/tor/micro/'):
     return 'microdescriptor 1.0'
+  elif resource.startswith('/tor/status-vote/next/consensus-signatures'):
+    return '%s 1.0' % DETACHED_SIGNATURE_TYPE
   elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
     return 'network-status-microdesc-consensus-3 1.0'
   elif resource.startswith('/tor/status-vote/'):

@@ -86,3 +86,5 @@ class TestTorDNSELDescriptor(unittest.TestCase):
     self.assertTrue(is_valid_fingerprint(desc.fingerprint))
     self.assertEqual('030B22437D99B2DB2908B747B6962EAD13AB4038', desc.fingerprint)
     self.assertEqual(0, len(desc.exit_addresses))
+
+    self.assertEqual('@type tordnsel 1.0', str(desc.type_annotation()))

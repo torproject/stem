@@ -4,6 +4,7 @@ Unit tests for stem.descriptor.server_descriptor.
 
 import datetime
 import functools
+import hashlib
 import io
 import pickle
 import tarfile
@@ -19,6 +20,7 @@ import stem.version
 import stem.util.str_tools
 import test.require
 
+from stem.descriptor import DigestHash, DigestEncoding
 from stem.descriptor.certificate import CertType, ExtensionType
 from stem.descriptor.server_descriptor import BridgeDistribution, RelayDescriptor, BridgeDescriptor
 
@@ -155,6 +157,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual([], desc.get_unrecognized_lines())
     self.assertEqual('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest())
 
+    self.assertEqual('@type server-descriptor 1.0', str(desc.type_annotation()))
     self.assertEqual(['2'], desc.hidden_service_dir)  # obsolete field
 
   def test_metrics_descriptor_multiple(self):
@@ -436,6 +439,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertFalse(hasattr(desc, 'ed25519_certificate'))
     self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
     self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
+    self.assertEqual('@type bridge-server-descriptor 1.0', str(desc.type_annotation()))
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_cr_in_contact_line(self):
@@ -527,6 +531,23 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('caerSidi', desc.nickname)
     self.assertEqual('71.35.133.197', desc.address)
     self.assertEqual(None, desc.fingerprint)
+
+  def test_digest(self):
+    with open(get_resource('example_descriptor'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0'))
+
+    self.assertEqual('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest(DigestHash.SHA1, DigestEncoding.HEX))
+    self.assertEqual('55F87C93AA5C16311308D09B94315DD1435174A95020E4FD47A70F82338BE9EA', desc.digest(DigestHash.SHA256, DigestEncoding.HEX))
+
+    self.assertEqual('LHsnvqsEtOJFnYnKbVzRzF+Vpok', desc.digest(DigestHash.SHA1, DigestEncoding.BASE64))
+    self.assertEqual('Vfh8k6pcFjETCNCblDFd0UNRdKlQIOT9R6cPgjOL6eo', desc.digest(DigestHash.SHA256, DigestEncoding.BASE64))
+
+    digested_content = desc._content_range(start = 'router', end = '\nrouter-signature\n')
+    self.assertEqual(hashlib.sha1(digested_content).digest(), desc.digest(DigestHash.SHA1, DigestEncoding.RAW).digest())
+    self.assertEqual(hashlib.sha256(digested_content).digest(), desc.digest(DigestHash.SHA256, DigestEncoding.RAW).digest())
+
+    self.assertRaisesWith(NotImplementedError, 'Server descriptor digests are only available in sha1 and sha256, not bad-hash', desc.digest, 'bad-hash')
+    self.assertRaisesWith(ValueError, 'Digest encodings should be among our DigestEncoding enumeration (RAW, HEX, BASE64), not BAD_ENCODING', desc.digest, DigestHash.SHA1, 'BAD_ENCODING')
 
   def test_with_opt(self):
     """

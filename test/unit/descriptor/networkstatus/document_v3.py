@@ -120,7 +120,9 @@ ci356fosgLiM1sVqCUkNdA==
       self.assertEqual(expected_bandwidth_weights, document.bandwidth_weights)
       self.assertEqual([], document.consensus_methods)
       self.assertEqual(None, document.published)
+      self.assertEqual('270D2E02D8E6AD83DD87BD56CF8B7874F75063A9', document.digest())
       self.assertEqual([], document.get_unrecognized_lines())
+      self.assertEqual('@type network-status-consensus-3 1.0', str(document.type_annotation()))
 
       router = document.routers['348225F83C854796B2DD6364E65CB189B33BD696']
       self.assertEqual('test002r', router.nickname)
@@ -254,6 +256,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       self.assertEqual('178.218.213.229', router.address)
       self.assertEqual(80, router.or_port)
       self.assertEqual(None, router.dir_port)
+      self.assertEqual('@type network-status-vote-3 1.0', str(document.type_annotation()))
 
       authority = document.directory_authorities[0]
       self.assertEqual(1, len(document.directory_authorities))
@@ -661,6 +664,34 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
       document = NetworkStatusDocumentV3(content, False)
       self.assertEqual(None, document.published)
+
+  def test_is_valid(self):
+    """
+    Checks our time against both a valid and expired descriptor.
+    """
+
+    past = '2012-09-02 22:00:00'
+    future = '2212-09-02 22:00:00'
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'valid-until': future})
+    self.assertTrue(document.is_valid())
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'valid-until': past})
+    self.assertFalse(document.is_valid())
+
+  def test_is_fresh(self):
+    """
+    Checks our time against both a fresh and unfresh descriptor.
+    """
+
+    past = '2012-09-02 22:00:00'
+    future = '2212-09-02 22:00:00'
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'fresh-until': future})
+    self.assertTrue(document.is_fresh())
+
+    document = NetworkStatusDocumentV3.create({'valid-after': past, 'fresh-until': past})
+    self.assertFalse(document.is_fresh())
 
   def test_voting_delay(self):
     """
@@ -1143,6 +1174,8 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertTrue(entry1 in document.routers.values())
     self.assertTrue(entry2 in document.routers.values())
 
+    self.assertEqual('@type network-status-microdesc-consensus-3 1.0', str(document.type_annotation()))
+
     # try with an invalid RouterStatusEntry
 
     entry3 = RouterStatusEntryMicroV3(RouterStatusEntryMicroV3.content({'r': 'ugabuga'}), False)
@@ -1279,6 +1312,31 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual({}, document.bandwidth_file_headers)
+
+  def test_bandwidth_file_digest(self):
+    """
+    Parses a 'bandwidth-file-digest' line of votes.
+    """
+
+    test_values = {
+      '': {},
+      'sha1=': {'sha1': ''},
+      'sha1=abc=def': {'sha1': 'abc=def'},
+      'sha1=123': {'sha1': '123'},
+      'sha1=123 sha256=456': {'sha1': '123', 'sha256': '456'},
+    }
+
+    for test_value, expected_value in test_values.items():
+      document = NetworkStatusDocumentV3.create({'vote-status': 'vote', 'bandwidth-file-digest': test_value})
+      self.assertEqual(expected_value, document.bandwidth_file_digest)
+
+    # field must be key=value mappings
+
+    content = NetworkStatusDocumentV3.content({'vote-status': 'vote', 'bandwidth-file-digest': 'key_without_value'})
+    self.assertRaises(ValueError, NetworkStatusDocumentV3, content, True)
+
+    document = NetworkStatusDocumentV3(content, False)
+    self.assertEqual({}, document.bandwidth_file_digest)
 
   def test_with_legacy_directory_authorities(self):
     """

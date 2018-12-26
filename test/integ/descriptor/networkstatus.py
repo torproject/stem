@@ -58,7 +58,7 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag and flag not in reported_flags:
-            test.register_new_capability('Flag', flag)
+            test.register_new_capability('Flag (consensus)', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():
@@ -91,7 +91,7 @@ class TestNetworkStatus(unittest.TestCase):
 
         for flag in router.flags:
           if flag not in stem.Flag:
-            test.register_new_capability('Flag (microdescriptor)', flag)
+            test.register_new_capability('Flag (microdescriptor consensus)', flag)
             reported_flags.append(flag)
 
         for line in router.get_unrecognized_lines():

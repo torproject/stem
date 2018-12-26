@@ -20,6 +20,7 @@ from test.unit.descriptor import (
 )
 
 from stem.descriptor.router_status_entry import (
+  RouterStatusEntry,
   RouterStatusEntryV2,
   RouterStatusEntryV3,
   RouterStatusEntryMicroV3,
@@ -83,6 +84,19 @@ def vote_document():
 
 
 class TestRouterStatusEntry(unittest.TestCase):
+  def test_from_str(self):
+    """
+    Exercise our RouterStatusEntry.from_str().
+    """
+
+    desc = RouterStatusEntryV3.create()
+    content = desc.get_bytes()
+
+    self.assertEqual(desc, RouterStatusEntryV3.from_str(content))
+
+    self.assertRaisesWith(NotImplementedError, 'Please use the from_str() method from RouterStatusEntry subclasses, not RouterStatusEntry itself', RouterStatusEntry.from_str, content)
+    self.assertRaisesWith(ValueError, "Router status entries don't have their own @type annotation. As such providing a 'descriptor_type' argument with RouterStatusEntry.from_str() does not work. Please drop the 'descriptor_type' argument when using this these subclasses' from_str() method.", RouterStatusEntryV3.from_str, content, descriptor_type = 'network-status-consensus-3 1.0')
+
   def test_fingerprint_decoding(self):
     """
     Tests for the _base64_to_hex() helper.
@@ -163,6 +177,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(expected_flags, set(entry.flags))
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
+    self.assertEqual('aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70', entry.microdescriptor_digest)
     self.assertEqual('6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 

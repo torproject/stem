@@ -132,3 +132,8 @@ Descriptors
 
   Example for writing a Tor consensus to disk, and reading it back.
 
+* `Checking Digests <examples/check_digests.html>`_
+
+  Looking for additional integrity that your descriptor is properly signed?
+  Digests embedded in parent documents provide transitive validation.
+

@@ -68,6 +68,8 @@ from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
+  DigestHash,
+  DigestEncoding,
   create_signing_key,
   _descriptor_content,
   _descriptor_components,
@@ -193,6 +195,9 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
 
   while True:
     annotations = _read_until_keywords('router', descriptor_file)
+    annotations = map(bytes.strip, annotations)                      # strip newlines
+    annotations = map(stem.util.str_tools._to_unicode, annotations)  # convert to unicode
+    annotations = list(filter(lambda x: x != '', annotations))       # drop any blanks
 
     if not is_bridge:
       descriptor_content = _read_until_keywords('router-signature', descriptor_file)
@@ -208,9 +213,6 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       if descriptor_content[0].startswith(b'@type'):
         descriptor_content = descriptor_content[1:]
 
-      # strip newlines from annotations
-      annotations = list(map(bytes.strip, annotations))
-
       descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
@@ -219,8 +221,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
         yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
     else:
       if validate and annotations:
-        orphaned_annotations = stem.util.str_tools._to_unicode(b'\n'.join(annotations))
-        raise ValueError('Content conform to being a server descriptor:\n%s' % orphaned_annotations)
+        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
 
       break  # done parsing descriptors
 
@@ -654,12 +655,22 @@ class ServerDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self):
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
-    Provides the hex encoded sha1 of our content. This value is part of the
-    network status entry for this relay.
+    Digest of this descriptor's content. These are referenced by...
 
-    :returns: **unicode** with the upper-case hex digest value for this server descriptor
+      * **Consensus**
+
+        * Referer: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` **digest** attribute
+        * Format: **SHA1/BASE64**
+
+    .. versionchanged:: 1.8.0
+       Added the hash_type and encoding arguments.
+
+    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
+    :param stem.descriptor.DigestEncoding encoding: digest encoding
+
+    :returns: **hashlib.HASH** or **str** based on our encoding argument
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
@@ -674,6 +685,12 @@ class ServerDescriptor(Descriptor):
 
       @downloaded-at 2012-03-18 21:18:29
       @source "173.254.216.66"
+
+    .. deprecated:: 1.8.0
+       Users very rarely read from cached descriptor files any longer. This
+       method will be removed in Stem 2.x. If you have some need for us to keep
+       this please `let me know
+       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
 
     :returns: **dict** with the key/value pairs in our annotations
     """
@@ -695,6 +712,12 @@ class ServerDescriptor(Descriptor):
     is the same as the
     :func:`~stem.descriptor.server_descriptor.ServerDescriptor.get_annotations`
     results, but with the unparsed lines and ordering retained.
+
+    .. deprecated:: 1.8.0
+       Users very rarely read from cached descriptor files any longer. This
+       method will be removed in Stem 2.x. If you have some need for us to keep
+       this please `let me know
+       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
 
     :returns: **list** with the lines of annotation that came before this descriptor
     """
@@ -793,6 +816,8 @@ class RelayDescriptor(ServerDescriptor):
      Added the **skip_crypto_validation** constructor argument.
   """
 
+  TYPE_ANNOTATION_NAME = 'server-descriptor'
+
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'certificate': (None, _parse_identity_ed25519_line),
     'ed25519_certificate': (None, _parse_identity_ed25519_line),
@@ -888,7 +913,7 @@ class RelayDescriptor(ServerDescriptor):
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
-  def digest(self):
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
     Provides the digest of our descriptor's content.
 
@@ -897,7 +922,14 @@ class RelayDescriptor(ServerDescriptor):
     :raises: ValueError if the digest cannot be calculated
     """
 
-    return self._digest_for_content(b'router ', b'\nrouter-signature\n')
+    content = self._content_range(start = 'router', end = '\nrouter-signature\n')
+
+    if hash_type == DigestHash.SHA1:
+      return stem.descriptor._encode_digest(hashlib.sha1(content), encoding)
+    elif hash_type == DigestHash.SHA256:
+      return stem.descriptor._encode_digest(hashlib.sha256(content), encoding)
+    else:
+      raise NotImplementedError('Server descriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
   def make_router_status_entry(self):
     """
@@ -952,12 +984,6 @@ class RelayDescriptor(ServerDescriptor):
     data = signing_key_digest + base64.b64decode(stem.util.str_tools._to_bytes(self.ed25519_master_key) + b'=')
     return stem.util.str_tools._to_unicode(binascii.hexlify(data).upper())
 
-  def _compare(self, other, method):
-    if not isinstance(other, RelayDescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
   def _check_constraints(self, entries):
     super(RelayDescriptor, self)._check_constraints(entries)
 
@@ -966,21 +992,6 @@ class RelayDescriptor(ServerDescriptor):
         raise ValueError("Descriptor must have a 'onion-key-crosscert' when identity-ed25519 is present")
       elif not self.ed25519_signature:
         raise ValueError("Descriptor must have a 'router-sig-ed25519' when identity-ed25519 is present")
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)
 
 
 class BridgeDescriptor(ServerDescriptor):
@@ -996,6 +1007,8 @@ class BridgeDescriptor(ServerDescriptor):
      Also added ntor_onion_key (previously this only belonged to unsanitized
      descriptors).
   """
+
+  TYPE_ANNOTATION_NAME = 'bridge-server-descriptor'
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'ed25519_certificate_hash': (None, _parse_master_key_ed25519_for_hash_line),
@@ -1022,8 +1035,11 @@ class BridgeDescriptor(ServerDescriptor):
       ('reject', '*:*'),
     ))
 
-  def digest(self):
-    return self._digest
+  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+    if hash_type == DigestHash.SHA1 and encoding == DigestEncoding.HEX:
+      return self._digest
+    else:
+      raise NotImplementedError('Bridge server descriptor digests are only available as sha1/hex, not %s/%s' % (hash_type, encoding))
 
   def is_scrubbed(self):
     """
@@ -1093,24 +1109,3 @@ class BridgeDescriptor(ServerDescriptor):
 
   def _last_keyword(self):
     return None
-
-  def _compare(self, other, method):
-    if not isinstance(other, BridgeDescriptor):
-      return False
-
-    return method(str(self).strip(), str(other).strip())
-
-  def __hash__(self):
-    return hash(str(self).strip())
-
-  def __eq__(self, other):
-    return self._compare(other, lambda s, o: s == o)
-
-  def __ne__(self, other):
-    return not self == other
-
-  def __lt__(self, other):
-    return self._compare(other, lambda s, o: s < o)
-
-  def __le__(self, other):
-    return self._compare(other, lambda s, o: s <= o)

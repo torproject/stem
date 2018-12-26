@@ -55,6 +55,10 @@ Download
      License: GPL v2
      File: NuoveXT/128x128/apps/openbsd.png
    
+   * NetBSD
+     Source: https://www.netbsd.org/gallery/logos.html
+     License: https://www.netbsd.org/about/redistribution.html
+   
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
@@ -153,19 +157,16 @@ Download
          % sudo emerge stem
 
    * - .. image:: /_static/section/download/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem/
+          :target: https://www.archlinux.org/packages/community/any/python-stem/
 
      - .. image:: /_static/label/archlinux.png
-          :target: https://aur.archlinux.org/packages/stem/
+          :target: https://www.archlinux.org/packages/community/any/python-stem/
 
-       Package by Sjon for `Arch Linux
-       <https://wiki.archlinux.org/index.php/AUR#Installing_packages>`_.
+       Package by Sjon for `Arch Linux...
 
        ::
 
-           % wget https://aur.archlinux.org/cgit/aur.git/snapshot/stem.tar.gz
-           % tar -xvf stem.tar.gz
-           % cd stem; makepkg --install
+           % pacman -S python-stem
 
    * - .. image:: /_static/section/download/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
@@ -200,6 +201,18 @@ Download
        ::
 
            % pkg_add py-stem
+
+   * - .. image:: /_static/section/download/netbsd.png
+          :target: http://pkgsrc.se/net/py-stem
+
+     - .. image:: /_static/label/netbsd.png
+          :target: http://pkgsrc.se/net/py-stem
+
+       Port by Riastradh for NetBSD.
+
+       ::
+
+           % pkg_add py37-stem
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git

@@ -45,6 +45,31 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
+  * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
+  * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
+
+ * **Descriptors**
+
+  * Added :func:`stem.descriptor.remote.get_microdescriptors`
+  * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
+  * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method (:trac:`28450`)
+  * Added :func:`~stem.descriptor.__init__.Descriptor.type_annotation` method (:trac:`28397`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocument.digest` method (:trac:`28398`)
+  * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods (:trac:`28398`)
+  * Added the network status vote's new bandwidth_file_digest attribute (:spec:`1b686ef`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:trac:`28448`)
+  * Replaced :func:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` hex encoded **digest** attribute with a base64 encoded **microdescriptor_digest**
+  * Replaced the **digest** attribute of :class:`~stem.descriptor.microdescriptor.Microdescriptor` with a method by the same name (:trac:`28398`)
+  * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
+  * Don't download from Serge, a bridge authority that frequently timeout
+
+ * **Website**
+
+  * Added NetBSD to our `download page <download.html>`_
+
 .. _version_1.7:
 
 Version 1.7 (October 7th, 2018)
@@ -86,7 +111,7 @@ and the `stem.directory module <api/directory.html>`_.
   * `Fallback directory v2 support <https://lists.torproject.org/pipermail/tor-dev/2017-December/012721.html>`_, which adds *nickname* and *extrainfo*
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
-  * Added the network status vote's new bandwidth_file attribute (:spec:`84591df`)
+  * Added the network status vote's new bandwidth_file_headers attribute (:spec:`84591df`)
   * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e8`)
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26, an authority that frequently timeout
