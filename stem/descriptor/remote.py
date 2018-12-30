@@ -97,6 +97,7 @@ import random
 import sys
 import threading
 import time
+import traceback
 import zlib
 
 import stem
@@ -465,6 +466,13 @@ class Query(object):
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
 
+    .. versionchanged:: 1.8.0
+       Overwriting exceptions to include the originating traceback.
+
+       In Stem 2.x (when we no longer need Python 2.x compatibility) this will
+       revert back to re-raising the originating exception, but with its
+       stacktrace preserved.
+
     :param bool suppress: avoids raising exceptions if **True**
 
     :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
@@ -474,6 +482,7 @@ class Query(object):
       **False**...
 
         * **ValueError** if the descriptor contents is malformed
+        * **stem.ProtocolError** if unable to parse an ORPort response
         * **socket.timeout** if our request timed out
         * **urllib2.URLError** for most request failures
 
@@ -492,7 +501,27 @@ class Query(object):
         if suppress:
           return
 
-        raise self.error
+        # TODO: Unfortunately the proper way to retain a stacktrace differs
+        # between python 2.x and 3.x in a syntactic way...
+        #
+        #   Python 2.x
+        #
+        #     raise exc_type, exc_value, exc_traceback
+        #
+        #   Python 3.x
+        #
+        #     raise WrapperException('foo') from exc_value
+        #
+        # Because this is syntactic we cannot do an 'if python2, else python3'
+        # for this. As such re-encoding the stacktrace as part of the message.
+        #
+        # When we drop python 2.x support we should replace this with the
+        # 'raise from' option above.
+
+        exc_type, exc_value, exc_traceback = self.error
+        stacktrace = 'Original traceback:\n' + ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)[1:])
+
+        raise exc_type(str(exc_value) + '\n\n' + stacktrace)
       else:
         if self.content is None:
           if suppress:
@@ -523,7 +552,7 @@ class Query(object):
           for desc in results:
             yield desc
         except ValueError as exc:
-          self.error = exc  # encountered a parsing error
+          self.error = sys.exc_info()  # encountered a parsing error
 
           if suppress:
             return
@@ -577,7 +606,7 @@ class Query(object):
         return self._download_descriptors(retries - 1, timeout)
       else:
         log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
-        self.error = exc
+        self.error = sys.exc_info()
     finally:
       self.is_done = True
 
