@@ -258,10 +258,12 @@ class Circuit(object):
       reply = self.relay._orport.recv()
       reply_cells = []
 
-      if len(reply) % self.relay.link_protocol.fixed_cell_length != 0:
-        raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected size for a response: %i' % len(reply))
-
       while reply:
+        reply_cmd = stem.client.datatype.Size.CHAR.pop(reply[self.relay.link_protocol.circ_id_size.size:])[0]
+
+        if reply_cmd != stem.client.cell.RelayCell.VALUE:
+          raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected %s (%i)' % (stem.client.cell.Cell.by_value(reply_cmd), reply_cmd))
+
         encrypted_cell, reply = split(reply, self.relay.link_protocol.fixed_cell_length)
         decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(self.relay.link_protocol, encrypted_cell, self.backward_key, self.backward_digest)
 
