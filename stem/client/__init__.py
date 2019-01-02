@@ -130,6 +130,38 @@ class Relay(object):
 
     return Relay(conn, link_protocol)
 
+  def _msg(self, cell):
+    """
+    Sends a cell on the ORPort and provides the response we receive in reply.
+
+    Unfortunately unlike control sockets, ORPorts don't have generalized rules
+    for predictable message IO. With control sockets...
+
+      * Each message we send receives a single reply.
+      * We may also receive asynchronous events marked with a 650 status.
+
+    ORPorts by contrast receive variable length cells with differing rules on
+    their arrival. As such making a best effort attempt at a send-and-receive
+    method in which we do the following...
+
+      * Discard any existing unread data from the socket.
+      * Send our request.
+      * Await up to a second for a reply.
+
+    It's quite possible this is a stupid approach. If so, patches welcome.
+
+    :param stem.client.cell.Cell cell: cell to be sent
+
+    :returns: **generator** with the cells received in reply
+    """
+
+    self._orport.recv(timeout = 0)  # discard unread data
+    self._orport.send(cell.pack(self.link_protocol))
+    response = self._orport.recv(timeout = 1)
+
+    for received_cell in stem.client.cell.Cell.pop(response, self.link_protocol):
+      yield received_cell
+
   def is_alive(self):
     """
     Checks if our socket is currently connected. This is a pass-through for our
@@ -170,15 +202,16 @@ class Relay(object):
       circ_id = max(self._circuits) + 1 if self._circuits else self.link_protocol.first_circ_id
 
       create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
-      self._orport.send(create_fast_cell.pack(self.link_protocol))
+      created_fast_cell = None
 
-      response = stem.client.cell.Cell.unpack(self._orport.recv(), self.link_protocol)
-      created_fast_cells = filter(lambda cell: isinstance(cell, stem.client.cell.CreatedFastCell), response)
+      for cell in self._msg(create_fast_cell):
+        if isinstance(cell, stem.client.cell.CreatedFastCell):
+          created_fast_cell = cell
+          break
 
-      if not created_fast_cells:
+      if not created_fast_cell:
         raise ValueError('We should get a CREATED_FAST response from a CREATE_FAST request')
 
-      created_fast_cell = list(created_fast_cells)[0]
       kdf = KDF.from_value(create_fast_cell.key_material + created_fast_cell.key_material)
 
       if created_fast_cell.derivative_key != kdf.key_hash:

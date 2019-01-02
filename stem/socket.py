@@ -91,10 +91,6 @@ ERROR_MSG = 'Error while receiving a control message (%s): %s'
 
 TRUNCATE_LOGS = 10
 
-# maximum number of bytes to read at a time from a relay socket
-
-MAX_READ_BUFFER_LEN = 10 * 1024 * 1024
-
 
 class BaseSocket(object):
   """
@@ -389,9 +385,12 @@ class RelaySocket(BaseSocket):
 
     self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
 
-  def recv(self):
+  def recv(self, timeout = None):
     """
     Receives a message from the relay.
+
+    :param float timeout: maxiumum number of seconds to await a response, this
+      blocks indefinitely if **None**
 
     :returns: bytes for the message received
 
@@ -400,10 +399,21 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    # TODO: Is MAX_READ_BUFFER_LEN defined in the spec? Not sure where it came
-    # from.
+    def wrapped_recv(s, sf):
+      if timeout is None:
+        return s.recv()
+      else:
+        s.setblocking(0)
+        s.settimeout(timeout)
 
-    return self._recv(lambda s, sf: s.recv(MAX_READ_BUFFER_LEN))
+        try:
+          return s.recv()
+        except ssl.SSLWantReadError:
+          return None
+        finally:
+          s.setblocking(1)
+
+    return self._recv(wrapped_recv)
 
   def is_localhost(self):
     return self.address == '127.0.0.1'
