@@ -162,7 +162,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         validate = True,
       )
 
-      self.assertRaisesWith(stem.ProtocolError, "Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
+      self.assertRaisesRegexp(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
   @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
   def test_using_dirport(self):

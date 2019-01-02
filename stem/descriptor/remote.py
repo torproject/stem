@@ -423,7 +423,8 @@ class Query(object):
     self.fall_back_to_authority = fall_back_to_authority
 
     self.content = None
-    self.error = None
+    self.error = None  # TODO: maybe remove in favor of error_attr in stem 2.x
+    self._error_attr = None
     self.is_done = False
     self.download_url = None
 
@@ -518,7 +519,7 @@ class Query(object):
         # When we drop python 2.x support we should replace this with the
         # 'raise from' option above.
 
-        exc_type, exc_value, exc_traceback = self.error
+        exc_type, exc_value, exc_traceback = self._error_attr
         stacktrace = 'Original traceback:\n' + ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback)[1:])
 
         raise exc_type(str(exc_value) + '\n\n' + stacktrace)
@@ -552,7 +553,8 @@ class Query(object):
           for desc in results:
             yield desc
         except ValueError as exc:
-          self.error = sys.exc_info()  # encountered a parsing error
+          self.error = exc  # encountered a parsing error
+          self._error_attr = sys.exc_info()
 
           if suppress:
             return
@@ -606,7 +608,8 @@ class Query(object):
         return self._download_descriptors(retries - 1, timeout)
       else:
         log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
-        self.error = sys.exc_info()
+        self.error = exc
+        self._error_attr = sys.exc_info()
     finally:
       self.is_done = True
 
