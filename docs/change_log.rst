@@ -66,6 +66,10 @@ The following are only available within Stem's `git repository
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
 
+ * **Client**
+
+  * Sockets with ORPorts errored if responses exceeded a hardcoded buffer size (:trac:`28961`)
+
  * **Website**
 
   * Added NetBSD to our `download page <download.html>`_
