@@ -5,6 +5,7 @@ Unit tests for stem.descriptor.
 import os
 
 __all__ = [
+  'bandwidth_metric',
   'export',
   'extrainfo_descriptor',
   'microdescriptor',
