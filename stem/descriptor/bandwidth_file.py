@@ -15,10 +15,13 @@ Parsing for Bandwidth Authority metrics as described in Tor's
 """
 
 import datetime
+import time
 
 import stem.util.str_tools
 
 from stem.descriptor import Descriptor
+
+HEADER_DIV = '====='
 
 
 # Converters header attributes to a given type. Malformed fields should be
@@ -93,7 +96,7 @@ def _parse_header(descriptor, entries):
     lines = lines[1:]
 
   for line in lines:
-    if line == '=====':
+    if line == HEADER_DIV:
       break
     elif line.startswith('node_id='):
       break  # version 1.0 measurement
@@ -155,8 +158,61 @@ class BandwidthFile(Descriptor):
 
   ATTRIBUTES.update(dict([(k, (None, _parse_header)) for k in HEADER_ATTR.keys()]))
 
+  @classmethod
+  def content(cls, attr = None, exclude = (), sign = False):
+    """
+    Creates descriptor content with the given attributes. This descriptor type
+    differs somewhat from others and treats our attr/exclude attributes as
+    follows...
+
+      * 'timestamp' is a reserved key for our mandatory header unix timestamp.
+
+      * 'content' is a reserved key for a list of our bandwidth measurements.
+
+      * All other keys are treated as header fields.
+
+    For example...
+
+    ::
+
+      BandwidthFile.content({
+        'timestamp': '12345',
+        'version': '1.2.0',
+        'content': [],
+      })
+    """
+
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
+    header = dict(attr) if attr is not None else {}
+    timestamp = header.pop('timestamp', str(int(time.time())))
+    content = header.pop('content', [])
+    version = header.get('version', HEADER_DEFAULT.get('version'))
+
+    lines = []
+
+    if 'timestamp' not in exclude:
+      lines.append(timestamp)
+
+    if version == '1.0.0' and header:
+      raise ValueError('Headers require BandwidthFile version 1.1 or later')
+    elif version != '1.0.0':
+      for k, v in header.items():
+        lines.append('%s=%s' % (k, v))
+
+      lines.append(HEADER_DIV)
+
+    for measurement in content:
+      lines.append(measurement)  # TODO: replace when we have a measurement struct
+
+    return '\n'.join(lines)
+
   def __init__(self, raw_content, validate = False):
     super(BandwidthFile, self).__init__(raw_content, lazy_load = not validate)
 
+    self.content = []  # TODO: implement
+
     if validate:
-      pass  # TODO: implement eager load
+      _parse_timestamp(self, None)
+      _parse_header(self, None)
