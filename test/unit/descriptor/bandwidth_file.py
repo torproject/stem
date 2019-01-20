@@ -1,23 +1,23 @@
 """
-Unit tests for stem.descriptor.bandwidth_metric.
+Unit tests for stem.descriptor.bandwidth_file.
 """
 
 import datetime
 import unittest
 
 import stem.descriptor
-import stem.descriptor.bandwidth_metric
+import stem.descriptor.bandwidth_file
 
 import test.unit.descriptor
 
 
-class TestBandwidthMetric(unittest.TestCase):
+class TestBandwidthFile(unittest.TestCase):
   def test_format_v1_0(self):
     """
-    Parse version 1.0 formatted metrics.
+    Parse version 1.0 formatted files.
     """
 
-    desc = list(stem.descriptor.parse_file(test.unit.descriptor.get_resource('bwauth_v1.0'), 'badnwidth-file 1.0'))[0]
+    desc = list(stem.descriptor.parse_file(test.unit.descriptor.get_resource('bandwidth_file_v1.0'), 'badnwidth-file 1.0'))[0]
 
     self.assertEqual(datetime.datetime(2019, 1, 14, 17, 41, 29), desc.timestamp)
     self.assertEqual('1.0.0', desc.version)
@@ -38,10 +38,10 @@ class TestBandwidthMetric(unittest.TestCase):
 
   def test_format_v1_2(self):
     """
-    Parse version 1.2 formatted metrics.
+    Parse version 1.2 formatted files.
     """
 
-    desc = list(stem.descriptor.parse_file(test.unit.descriptor.get_resource('bwauth_v1.2'), 'badnwidth-file 1.2'))[0]
+    desc = list(stem.descriptor.parse_file(test.unit.descriptor.get_resource('bandwidth_file_v1.2'), 'badnwidth-file 1.2'))[0]
 
     self.assertEqual(datetime.datetime(2019, 1, 14, 5, 34, 59), desc.timestamp)
     self.assertEqual('1.2.0', desc.version)

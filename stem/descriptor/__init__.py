@@ -108,7 +108,7 @@ except ImportError:
   from stem.util.ordereddict import OrderedDict
 
 __all__ = [
-  'bandwidth_metric',
+  'bandwidth_file',
   'export',
   'reader',
   'remote',
@@ -442,10 +442,10 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == stem.descriptor.bandwidth_metric.BandwidthMetric.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.bandwidth_metric.BandwidthMetric
+  elif descriptor_type == stem.descriptor.bandwidth_file.BandwidthFile.TYPE_ANNOTATION_NAME and major_version == 1:
+    document_type = stem.descriptor.bandwidth_file.BandwidthFile
 
-    for desc in stem.descriptor.bandwidth_metric._parse_file(descriptor_file, validate = validate, **kwargs):
+    for desc in stem.descriptor.bandwidth_file._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   else:
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
@@ -1418,7 +1418,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
 
 # importing at the end to avoid circular dependencies on our Descriptor class
 
-import stem.descriptor.bandwidth_metric
+import stem.descriptor.bandwidth_file
 import stem.descriptor.extrainfo_descriptor
 import stem.descriptor.hidden_service_descriptor
 import stem.descriptor.microdescriptor

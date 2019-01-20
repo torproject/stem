@@ -9,7 +9,7 @@ Parsing for Bandwidth Authority metrics as described in Tor's
 
 ::
 
-  BandwidthMetric - Tor bandwidth authority measurements.
+  BandwidthFile - Tor bandwidth authority measurements.
 
 .. versionadded:: 1.8.0
 """
@@ -73,14 +73,14 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
 
-  :returns: :class:`stem.descriptor.bandwidth_file.BandwidthMetric` object
+  :returns: :class:`stem.descriptor.bandwidth_file.BandwidthFile` object
 
   :raises:
     * **ValueError** if the contents is malformed and validate is **True**
     * **IOError** if the file can't be read
   """
 
-  yield BandwidthMetric(descriptor_file.read(), validate, **kwargs)
+  yield BandwidthFile(descriptor_file.read(), validate, **kwargs)
 
 
 def _parse_header(descriptor, entries):
@@ -119,7 +119,7 @@ def _parse_timestamp(descriptor, entries):
     raise ValueError("First line should be a unix timestamp, but was '%s'" % first_line)
 
 
-class BandwidthMetric(Descriptor):
+class BandwidthFile(Descriptor):
   """
   Tor bandwidth authroity measurements.
 
@@ -156,7 +156,7 @@ class BandwidthMetric(Descriptor):
   ATTRIBUTES.update(dict([(k, (None, _parse_header)) for k in HEADER_ATTR.keys()]))
 
   def __init__(self, raw_content, validate = False):
-    super(BandwidthMetric, self).__init__(raw_content, lazy_load = not validate)
+    super(BandwidthFile, self).__init__(raw_content, lazy_load = not validate)
 
     if validate:
       pass  # TODO: implement eager load
