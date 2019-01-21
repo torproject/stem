@@ -25,7 +25,7 @@ from stem.descriptor import (
   Descriptor,
 )
 
-HEADER_DIV = '====='
+HEADER_DIV = b'====='
 
 
 # Converters header attributes to a given type. Malformed fields should be
@@ -103,11 +103,11 @@ def _parse_header(descriptor, entries):
       break  # end of the content
     elif line == HEADER_DIV:
       break  # end of header
-    elif line.startswith('node_id='):
+    elif line.startswith(b'node_id='):
       break  # version 1.0 measurement
 
-    if '=' in line:
-      key, value = line.split('=', 1)
+    if b'=' in line:
+      key, value = stem.util.str_tools._to_unicode(line).split('=', 1)
       header[key] = value
     else:
       raise ValueError("Header expected to be key=value pairs, but had '%s'" % line)
@@ -142,10 +142,11 @@ def _parse_body(descriptor, entries):
   measurements = {}
 
   for line in content.readlines():
-    attr = dict(_mappings_for('measurement', line.strip()))
+    line = stem.util.str_tools._to_unicode(line.strip())
+    attr = dict(_mappings_for('measurement', line))
 
     if 'node_id' not in attr:
-      raise ValueError("Every meaurement must include 'node_id': %s" % line.strip())
+      raise ValueError("Every meaurement must include 'node_id': %s" % line)
     elif attr['node_id'] in measurements:
       # Relay is listed multiple times. This is a bug for the bandwidth
       # authority that made this descriptor, but according to the spec
@@ -207,7 +208,7 @@ class BandwidthFile(Descriptor):
 
       * 'timestamp' is a reserved key for our mandatory header unix timestamp.
 
-      * 'content' is a reserved key for a list of our bandwidth measurements.
+      * 'content' is a reserved key for our bandwidth measurement lines.
 
       * All other keys are treated as header fields.
 
@@ -233,20 +234,20 @@ class BandwidthFile(Descriptor):
     lines = []
 
     if 'timestamp' not in exclude:
-      lines.append(timestamp)
+      lines.append(stem.util.str_tools._to_bytes(timestamp))
 
     if version == '1.0.0' and header:
       raise ValueError('Headers require BandwidthFile version 1.1 or later')
     elif version != '1.0.0':
       for k, v in header.items():
-        lines.append('%s=%s' % (k, v))
+        lines.append(stem.util.str_tools._to_bytes('%s=%s' % (k, v)))
 
       lines.append(HEADER_DIV)
 
     for measurement in content:
-      lines.append(measurement)  # TODO: replace when we have a measurement struct
+      lines.append(stem.util.str_tools._to_bytes(measurement))
 
-    return '\n'.join(lines)
+    return b'\n'.join(lines)
 
   def __init__(self, raw_content, validate = False):
     super(BandwidthFile, self).__init__(raw_content, lazy_load = not validate)

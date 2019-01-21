@@ -150,7 +150,7 @@ class TestBandwidthFile(unittest.TestCase):
       'content': [],
     })
 
-    self.assertEqual('12345\nversion=1.2.0\n=====', content)
+    self.assertEqual(b'12345\nversion=1.2.0\n=====', content)
 
   @patch('time.time', Mock(return_value = 1410723598.276578))
   def test_new_header_attribute(self):
@@ -176,10 +176,10 @@ class TestBandwidthFile(unittest.TestCase):
     """
 
     test_values = (
-      '',
-      'boo',
-      '123.4',
-      '-123',
+      b'',
+      b'boo',
+      b'123.4',
+      b'-123',
     )
 
     for value in test_values:
