@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
   * Added :func:`stem.descriptor.remote.get_microdescriptors`
   * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
   * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method (:trac:`28450`)
