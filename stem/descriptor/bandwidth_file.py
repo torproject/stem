@@ -15,6 +15,7 @@ Parsing for Bandwidth Authority metrics as described in Tor's
 """
 
 import datetime
+import io
 import time
 
 import stem.util.str_tools
@@ -91,16 +92,17 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
 
 def _parse_header(descriptor, entries):
   header = {}
-  lines = str(descriptor).split('\n')
+  content = io.BytesIO(descriptor.get_bytes())
 
-  # skip the first line, which should be the timestamp
+  content.readline()  # skip the first line, which should be the timestamp
 
-  if lines and lines[0].isdigit():
-    lines = lines[1:]
+  while True:
+    line = content.readline().strip()
 
-  for line in lines:
-    if line == HEADER_DIV:
-      break
+    if not line:
+      break  # end of the content
+    elif line == HEADER_DIV:
+      break  # end of header
     elif line.startswith('node_id='):
       break  # version 1.0 measurement
 
@@ -117,7 +119,7 @@ def _parse_header(descriptor, entries):
 
 
 def _parse_timestamp(descriptor, entries):
-  first_line = str(descriptor).split('\n', 1)[0]
+  first_line = io.BytesIO(descriptor.get_bytes()).readline().strip()
 
   if first_line.isdigit():
     descriptor.timestamp = datetime.datetime.utcfromtimestamp(int(first_line))
@@ -129,30 +131,30 @@ def _parse_body(descriptor, entries):
   # In version 1.0.0 the body is everything after the first line. Otherwise
   # it's everything after the header's divider.
 
-  div = '\n' if descriptor.version == '1.0.0' else HEADER_DIV
+  content = io.BytesIO(descriptor.get_bytes())
 
-  if div in str(descriptor):
-    body = str(descriptor).split(div, 1)[1].strip()
+  if descriptor.version == '1.0.0':
+    content.readline()  # skip the first line
   else:
-    body = ''
+    while content.readline().strip() != HEADER_DIV:
+      pass  # skip the header
 
   measurements = {}
 
-  if body:
-    for line in body.split('\n'):
-      attr = dict(_mappings_for('measurement', line))
+  for line in content.readlines():
+    attr = dict(_mappings_for('measurement', line.strip()))
 
-      if 'node_id' not in attr:
-        raise ValueError("Every meaurement must include 'node_id': %s" % line)
-      elif attr['node_id'] in measurements:
-        # Relay is listed multiple times. This is a bug for the bandwidth
-        # authority that made this descriptor, but according to the spec
-        # should be ignored by parsers.
+    if 'node_id' not in attr:
+      raise ValueError("Every meaurement must include 'node_id': %s" % line.strip())
+    elif attr['node_id'] in measurements:
+      # Relay is listed multiple times. This is a bug for the bandwidth
+      # authority that made this descriptor, but according to the spec
+      # should be ignored by parsers.
 
-        continue
+      continue
 
-      fingerprint = attr['node_id'].lstrip('$')  # bwauths prefix fingerprints with '$'
-      measurements[fingerprint] = attr
+    fingerprint = attr['node_id'].lstrip('$')  # bwauths prefix fingerprints with '$'
+    measurements[fingerprint] = attr
 
   descriptor.measurements = measurements
 
