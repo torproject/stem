@@ -25,6 +25,12 @@ from stem.descriptor import (
   Descriptor,
 )
 
+try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
 HEADER_DIV = b'====='
 
 
@@ -91,7 +97,7 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
 
 
 def _parse_header(descriptor, entries):
-  header = {}
+  header = OrderedDict()
   content = io.BytesIO(descriptor.get_bytes())
 
   content.readline()  # skip the first line, which should be the timestamp
@@ -226,7 +232,7 @@ class BandwidthFile(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    header = dict(attr) if attr is not None else {}
+    header = OrderedDict(attr) if attr is not None else OrderedDict()
     timestamp = header.pop('timestamp', str(int(time.time())))
     content = header.pop('content', [])
     version = header.get('version', HEADER_DEFAULT.get('version'))

@@ -11,6 +11,12 @@ from stem.descriptor.bandwidth_file import BandwidthFile
 from test.unit.descriptor import get_resource
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # added in python 3.3
   from unittest.mock import Mock, patch
 except ImportError:
@@ -144,11 +150,11 @@ class TestBandwidthFile(unittest.TestCase):
     Exercise the example in our content method's pydoc.
     """
 
-    content = BandwidthFile.content({
-      'timestamp': '12345',
-      'version': '1.2.0',
-      'content': [],
-    })
+    content = BandwidthFile.content(OrderedDict([
+      ('timestamp', '12345'),
+      ('version', '1.2.0'),
+      ('content', []),
+    ]))
 
     self.assertEqual(b'12345\nversion=1.2.0\n=====', content)
 
@@ -158,7 +164,7 @@ class TestBandwidthFile(unittest.TestCase):
     Include an unrecognized header field.
     """
 
-    desc = BandwidthFile.create({'version': '1.1.0', 'new_header': 'neat stuff'})
+    desc = BandwidthFile.create(OrderedDict([('version', '1.1.0'), ('new_header', 'neat stuff')]))
     self.assertEqual(EXPECTED_NEW_HEADER_CONTENT, str(desc))
     self.assertEqual('1.1.0', desc.version)
     self.assertEqual({'version': '1.1.0', 'new_header': 'neat stuff'}, desc.header)

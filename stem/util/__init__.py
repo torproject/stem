@@ -17,10 +17,12 @@ __all__ = [
   'lru_cache',
   'ordereddict',
   'proc',
+  'str_tools',
   'system',
   'term',
   'test_tools',
   'tor_tools',
+
   'datetime_to_unix',
 ]
 

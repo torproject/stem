@@ -9,11 +9,14 @@ Package for parsing and processing descriptor data.
 ::
 
   parse_file - Parses the descriptors in a file.
-  create - Creates a new custom descriptor.
   create_signing_key - Cretes a signing key that can be used for creating descriptors.
 
   Descriptor - Common parent for all descriptor file types.
-    |- from_str - provides a parsed descriptor for the given string
+    | |- content - creates the text of a new descriptor
+    | |- create - creates a new descriptor
+    | +- from_str - provides a parsed descriptor for the given string
+    |
+    |- type_annotation - provides our @type annotation
     |- get_path - location of the descriptor on disk if it came from a file
     |- get_archive_path - location of the descriptor within the archive it came from
     |- get_bytes - similar to str(), but provides our original bytes content
@@ -109,17 +112,20 @@ except ImportError:
 
 __all__ = [
   'bandwidth_file',
+  'certificate',
   'export',
-  'reader',
-  'remote',
   'extrainfo_descriptor',
-  'server_descriptor',
+  'hidden_service_descriptor',
   'microdescriptor',
   'networkstatus',
+  'reader',
+  'remote',
   'router_status_entry',
+  'server_descriptor',
   'tordnsel',
-  'parse_file',
+
   'Descriptor',
+  'parse_file',
 ]
 
 UNSEEKABLE_MSG = """\
