@@ -38,6 +38,7 @@ Contents
    api/manual
    api/version
 
+   api/descriptor/bandwidth_file
    api/descriptor/certificate
    api/descriptor/descriptor
    api/descriptor/server_descriptor
