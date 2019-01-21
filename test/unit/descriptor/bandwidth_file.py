@@ -16,6 +16,36 @@ try:
 except ImportError:
   from mock import Mock, patch
 
+EXPECTED_MEASUREMENT_1 = {
+  'scanner': '/scanner.1/scan-data/bws-0.0:0.8-done-2019-01-13-22:55:22',
+  'measured_at': '1547441722',
+  'pid_delta': '1.07534299311',
+  'updated_at': '1547441722',
+  'pid_error_sum': '3.23746667827',
+  'nick': 'baldr',
+  'node_id': '$D8B9CAA5B818DEFE80857F83FDABBB6429DCFCA0',
+  'pid_bw': '47625769',
+  'bw': '47600',
+  'pid_error': '3.23746667827',
+  'circ_fail': '0.0',
+}
+
+EXPECTED_MEASUREMENT_2 = {
+  'desc_bw_obs_last': '473188',
+  'success': '13',
+  'desc_bw_obs_mean': '581671',
+  'bw_median': '202438',
+  'nick': 'Teinetteiine',
+  'bw': '1',
+  'desc_bw_avg': '1024000',
+  'time': '2019-01-13T12:21:29',
+  'bw_mean': '184647',
+  'error_circ': '0',
+  'error_stream': '0',
+  'node_id': '$9C7E1AFDACC53228F6FB57B3A08C7D36240B8F6F',
+  'error_misc': '0',
+}
+
 EXPECTED_NEW_HEADER_CONTENT = """
 1410723598
 version=1.1.0
@@ -49,6 +79,9 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(None, desc.min_count)
     self.assertEqual(None, desc.min_percent)
 
+    self.assertEqual(94, len(desc.measurements))
+    self.assertEqual(EXPECTED_MEASUREMENT_1, desc.measurements['D8B9CAA5B818DEFE80857F83FDABBB6429DCFCA0'])
+
   def test_format_v1_2(self):
     """
     Parse version 1.2 formatted files.
@@ -72,6 +105,9 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(96, desc.eligible_percent)
     self.assertEqual(3908, desc.min_count)
     self.assertEqual(60, desc.min_percent)
+
+    self.assertEqual(81, len(desc.measurements))
+    self.assertEqual(EXPECTED_MEASUREMENT_2, desc.measurements['9C7E1AFDACC53228F6FB57B3A08C7D36240B8F6F'])
 
   @patch('time.time', Mock(return_value = 1410723598.276578))
   def test_minimal_bandwidth_file(self):

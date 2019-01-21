@@ -19,7 +19,10 @@ import time
 
 import stem.util.str_tools
 
-from stem.descriptor import Descriptor
+from stem.descriptor import (
+  _mappings_for,
+  Descriptor,
+)
 
 HEADER_DIV = '====='
 
@@ -122,10 +125,46 @@ def _parse_timestamp(descriptor, entries):
     raise ValueError("First line should be a unix timestamp, but was '%s'" % first_line)
 
 
+def _parse_body(descriptor, entries):
+  # In version 1.0.0 the body is everything after the first line. Otherwise
+  # it's everything after the header's divider.
+
+  div = '\n' if descriptor.version == '1.0.0' else HEADER_DIV
+
+  if div in str(descriptor):
+    body = str(descriptor).split(div, 1)[1].strip()
+  else:
+    body = ''
+
+  measurements = {}
+
+  if body:
+    for line in body.split('\n'):
+      attr = dict(_mappings_for('measurement', line))
+
+      if 'node_id' not in attr:
+        raise ValueError("Every meaurement must include 'node_id': %s" % line)
+      elif attr['node_id'] in measurements:
+        # Relay is listed multiple times. This is a bug for the bandwidth
+        # authority that made this descriptor, but according to the spec
+        # should be ignored by parsers.
+
+        continue
+
+      fingerprint = attr['node_id'].lstrip('$')  # bwauths prefix fingerprints with '$'
+      measurements[fingerprint] = attr
+
+  descriptor.measurements = measurements
+
+
 class BandwidthFile(Descriptor):
   """
   Tor bandwidth authroity measurements.
 
+  :var dict measurements: **\*** mapping of relay fingerprints to their
+    bandwidth measurement metadata
+
+  :var dict header: **\*** header metadata
   :var datetime timestamp: **\*** time when these metrics were published
   :var str version: **\*** document format version
 
@@ -143,8 +182,6 @@ class BandwidthFile(Descriptor):
   :var int min_count: minimum eligible relays for results to be provided
   :var int min_percent: minimum measured percentage of the consensus
 
-  :var dict header: **\*** header metadata
-
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
@@ -154,6 +191,7 @@ class BandwidthFile(Descriptor):
   ATTRIBUTES = {
     'timestamp': (None, _parse_timestamp),
     'header': ({}, _parse_header),
+    'measurements': ({}, _parse_body),
   }
 
   ATTRIBUTES.update(dict([(k, (None, _parse_header)) for k in HEADER_ATTR.keys()]))
@@ -211,8 +249,7 @@ class BandwidthFile(Descriptor):
   def __init__(self, raw_content, validate = False):
     super(BandwidthFile, self).__init__(raw_content, lazy_load = not validate)
 
-    self.content = []  # TODO: implement
-
     if validate:
       _parse_timestamp(self, None)
       _parse_header(self, None)
+      _parse_body(self, None)
