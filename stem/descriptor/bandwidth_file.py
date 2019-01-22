@@ -31,10 +31,14 @@ try:
 except ImportError:
   from stem.util.ordereddict import OrderedDict
 
+# Four character dividers are allowed for backward compatability, but five is
+# preferred.
+
 HEADER_DIV = b'====='
+HEADER_DIV_ALT = b'===='
 
 
-# Converters header attributes to a given type. Malformed fields should be
+# Converts header attributes to a given type. Malformed fields should be
 # ignored according to the spec.
 
 def _str(val):
@@ -107,10 +111,10 @@ def _parse_header(descriptor, entries):
 
     if not line:
       break  # end of the content
-    elif line == HEADER_DIV:
+    elif line in (HEADER_DIV, HEADER_DIV_ALT):
       break  # end of header
-    elif line.startswith(b'node_id='):
-      break  # version 1.0 measurement
+    elif not header and 'node_id=' in line:
+      break  # version 1.0 doesn't have any headers
 
     if b'=' in line:
       key, value = stem.util.str_tools._to_unicode(line).split('=', 1)
@@ -142,7 +146,7 @@ def _parse_body(descriptor, entries):
   if descriptor.version == '1.0.0':
     content.readline()  # skip the first line
   else:
-    while content.readline().strip() != HEADER_DIV:
+    while content.readline().strip() not in ('', HEADER_DIV, HEADER_DIV_ALT):
       pass  # skip the header
 
   measurements = {}
@@ -168,7 +172,7 @@ def _parse_body(descriptor, entries):
 
 class BandwidthFile(Descriptor):
   """
-  Tor bandwidth authroity measurements.
+  Tor bandwidth authority measurements.
 
   :var dict measurements: **\*** mapping of relay fingerprints to their
     bandwidth measurement metadata
@@ -195,7 +199,7 @@ class BandwidthFile(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
-  TYPE_ANNOTATION_NAME = 'badnwidth-file'  # TODO: needs an official @type, https://trac.torproject.org/projects/tor/ticket/28615
+  TYPE_ANNOTATION_NAME = 'bandwidth-file'  # TODO: needs an official @type, https://trac.torproject.org/projects/tor/ticket/28615
 
   ATTRIBUTES = {
     'timestamp': (None, _parse_timestamp),

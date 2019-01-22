@@ -66,7 +66,7 @@ class TestBandwidthFile(unittest.TestCase):
     Parse version 1.0 formatted files.
     """
 
-    desc = list(stem.descriptor.parse_file(get_resource('bandwidth_file_v1.0'), 'badnwidth-file 1.0'))[0]
+    desc = list(stem.descriptor.parse_file(get_resource('bandwidth_file_v1.0'), 'bandwidth-file 1.0'))[0]
 
     self.assertEqual(datetime.datetime(2019, 1, 14, 17, 41, 29), desc.timestamp)
     self.assertEqual('1.0.0', desc.version)
@@ -93,7 +93,7 @@ class TestBandwidthFile(unittest.TestCase):
     Parse version 1.2 formatted files.
     """
 
-    desc = list(stem.descriptor.parse_file(get_resource('bandwidth_file_v1.2'), 'badnwidth-file 1.2'))[0]
+    desc = list(stem.descriptor.parse_file(get_resource('bandwidth_file_v1.2'), 'bandwidth-file 1.2'))[0]
 
     self.assertEqual(datetime.datetime(2019, 1, 14, 5, 34, 59), desc.timestamp)
     self.assertEqual('1.2.0', desc.version)
@@ -175,6 +175,18 @@ class TestBandwidthFile(unittest.TestCase):
     """
 
     self.assertRaisesWith(ValueError, 'Headers require BandwidthFile version 1.1 or later', BandwidthFile.create, {'new_header': 'neat stuff'})
+
+  def test_header_alternate_div(self):
+    """
+    To support backward compatability four character dividers are allowed.
+    """
+
+    with open(get_resource('bandwidth_file_v1.2')) as desc_file:
+      desc = BandwidthFile.from_str(desc_file.read().replace('=====', '===='))
+
+    self.assertEqual(datetime.datetime(2019, 1, 14, 5, 34, 59), desc.timestamp)
+    self.assertEqual('1.2.0', desc.version)
+    self.assertEqual(81, len(desc.measurements))
 
   def test_invalid_timestamp(self):
     """
