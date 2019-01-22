@@ -698,8 +698,8 @@ class ServerDescriptor(Descriptor):
     annotation_dict = {}
 
     for line in self._annotation_lines:
-      if b' ' in line:
-        key, value = line.split(b' ', 1)
+      if ' ' in line:
+        key, value = line.split(' ', 1)
         annotation_dict[key] = value
       else:
         annotation_dict[line] = None

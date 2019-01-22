@@ -736,9 +736,9 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     desc = desc_entries[0]
 
     self.assertEqual('caerSidi', desc.nickname)
-    self.assertEqual(b'@pepperjack very tasty', desc.get_annotation_lines()[0])
-    self.assertEqual(b'@mushrooms not so much', desc.get_annotation_lines()[1])
-    self.assertEqual({b'@pepperjack': b'very tasty', b'@mushrooms': b'not so much'}, desc.get_annotations())
+    self.assertEqual('@pepperjack very tasty', desc.get_annotation_lines()[0])
+    self.assertEqual('@mushrooms not so much', desc.get_annotation_lines()[1])
+    self.assertEqual({'@pepperjack': 'very tasty', '@mushrooms': 'not so much'}, desc.get_annotations())
     self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_duplicate_field(self):
