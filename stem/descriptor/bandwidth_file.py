@@ -154,17 +154,13 @@ def _parse_body(descriptor, entries):
   for line in content.readlines():
     line = stem.util.str_tools._to_unicode(line.strip())
     attr = dict(_mappings_for('measurement', line))
+    fingerprint = attr.get('node_id', '').lstrip('$')  # bwauths prefix fingerprints with '$'
 
-    if 'node_id' not in attr:
+    if not fingerprint:
       raise ValueError("Every meaurement must include 'node_id': %s" % line)
-    elif attr['node_id'] in measurements:
-      # Relay is listed multiple times. This is a bug for the bandwidth
-      # authority that made this descriptor, but according to the spec
-      # should be ignored by parsers.
+    elif fingerprint in measurements:
+      raise ValueError('Relay %s is listed multiple times. It should only be present once.' % fingerprint)
 
-      continue
-
-    fingerprint = attr['node_id'].lstrip('$')  # bwauths prefix fingerprints with '$'
     measurements[fingerprint] = attr
 
   descriptor.measurements = measurements
