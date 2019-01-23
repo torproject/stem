@@ -408,7 +408,7 @@ class RelaySocket(BaseSocket):
 
         try:
           return s.recv()
-        except ssl.SSLWantReadError:
+        except (socket.timeout, ssl.SSLError, ssl.SSLWantReadError):
           return None
         finally:
           s.setblocking(1)
