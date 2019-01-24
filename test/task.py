@@ -8,7 +8,9 @@
 
   Initialization Tasks
   |- STEM_VERSION - checks our stem version
+  |- STEM_COMMIT - checks our stem commit
   |- TOR_VERSION - checks our tor version
+  |- TOR_COMMIT - checks our tor commit
   |- PYTHON_VERSION - checks our python version
   |- PLATFORM_VERSION - checks our operating system version
   |- CRYPTO_VERSION - checks our version of cryptography
@@ -71,8 +73,24 @@ PYFLAKES_UNAVAILABLE = 'Static error checking requires pyflakes version 0.7.3 or
 PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pycodestyle\n'
 
 
+def _check_stem_version():
+  commit = _git_commit(os.path.join(test.STEM_BASE, '.git'))
+
+  if commit:
+    return '%s (commit %s)' % (stem.__version__, commit[:8])
+  else:
+    return stem.__version__
+
+
 def _check_tor_version(tor_path):
-  return str(test.tor_version(tor_path)).split()[0]
+  version = test.tor_version(tor_path)
+  version_str = str(version).split()[0]
+
+
+  if version.git_commit:
+    return '%s (commit %s)' % (version_str, version.git_commit[:8])
+  else:
+    return version_str
 
 
 def _check_python_version():
@@ -80,6 +98,21 @@ def _check_python_version():
   version = platform.python_version()
 
   return version if interpreter == 'CPython' else '%s (%s)' % (interpreter, version)
+
+
+def _git_commit(git_dir):
+  if not stem.util.system.is_available('git'):
+    return None
+  elif not os.path.exists(git_dir):
+    return None
+
+  cmd = ['git', '--git-dir', git_dir, 'rev-parse', 'HEAD']
+  git_output = stem.util.system.call(cmd)
+
+  if len(git_output) != 1:
+    raise ValueError("Expected a single line from '%s':\n\n%s" % (' '.join(cmd), git_output))
+  else:
+    return git_output[0]
 
 
 def _check_platform_version():
@@ -209,7 +242,7 @@ class Task(object):
     start_time = time.time()
     println('  %s...' % self.label, STATUS, NO_NL)
 
-    padding = 50 - len(self.label)
+    padding = 40 - len(self.label)
     println(' ' * padding, NO_NL)
 
     try:
@@ -221,7 +254,7 @@ class Task(object):
       self.is_successful = True
       output_msg = 'running' if self._is_background_task else 'done'
 
-      if self.result and self.print_result and isinstance(self.result, str):
+      if self.result and self.print_result and stem.util._is_str(self.result):
         output_msg = self.result
       elif self.print_runtime:
         output_msg += ' (%0.1fs)' % (time.time() - start_time)
@@ -276,10 +309,10 @@ class StaticCheckTask(Task):
       println('unavailable', STATUS)
 
 
-STEM_VERSION = Task('stem version', lambda: stem.__version__)
+STEM_VERSION = Task('stem version', _check_stem_version)
 TOR_VERSION = Task('tor version', _check_tor_version)
 PYTHON_VERSION = Task('python version', _check_python_version)
-PLATFORM_VERSION = Task('operating system version', _check_platform_version)
+PLATFORM_VERSION = Task('operating system', _check_platform_version)
 CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
 PYNACL_VERSION = ModuleVersion('pynacl version', 'nacl', stem.prereq._is_pynacl_available)
 MOCK_VERSION = ModuleVersion('mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
