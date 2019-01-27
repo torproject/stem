@@ -107,7 +107,6 @@ import stem.directory
 import stem.prereq
 import stem.util.enum
 
-from stem.client.datatype import RelayCommand
 from stem.util import log, str_tools
 
 try:
@@ -966,8 +965,7 @@ def _download_from_orport(endpoint, compression, resource):
         'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
-      circ.send(RelayCommand.BEGIN_DIR, stream_id = 1)
-      response = b''.join([cell.data for cell in circ.send(RelayCommand.DATA, request, stream_id = 1)])
+      response = circ.directory(request, stream_id = 1)
       first_line, data = response.split(b'\r\n', 1)
       header_data, body_data = data.split(b'\r\n\r\n', 1)
 

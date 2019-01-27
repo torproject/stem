@@ -86,7 +86,6 @@ def _check_tor_version(tor_path):
   version = test.tor_version(tor_path)
   version_str = str(version).split()[0]
 
-
   if version.git_commit:
     return '%s (commit %s)' % (version_str, version.git_commit[:8])
   else:

@@ -95,7 +95,7 @@ def _orport_mock(data, encoding = 'identity', response_code_header = None):
   connect_mock = MagicMock()
   relay_mock = connect_mock().__enter__()
   circ_mock = relay_mock.create_circuit().__enter__()
-  circ_mock.send.return_value = cells
+  circ_mock.directory.return_value = data
   return connect_mock
 
 

@@ -33,7 +33,20 @@ import stem.client.cell
 import stem.socket
 import stem.util.connection
 
-from stem.client.datatype import ZERO, LinkProtocol, Address, KDF, split
+from stem.client.cell import (
+  CELL_TYPE_SIZE,
+  FIXED_PAYLOAD_LEN,
+  Cell,
+)
+
+from stem.client.datatype import (
+  ZERO,
+  Address,
+  KDF,
+  LinkProtocol,
+  RelayCommand,
+  split,
+)
 
 __all__ = [
   'cell',
@@ -51,8 +64,17 @@ class Relay(object):
   """
 
   def __init__(self, orport, link_protocol):
+    # TODO: Python 3.x adds a getbuffer() method which
+    # lets us get the size...
+    #
+    #   https://stackoverflow.com/questions/26827055/python-how-to-get-iobytes-allocated-memory-length
+    #
+    # When we drop python 2.x support we should replace
+    # self._orport_buffer with an io.BytesIO.
+
     self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
+    self._orport_buffer = b''  # unread bytes
     self._orport_lock = threading.RLock()
     self._circuits = {}
 
@@ -129,6 +151,47 @@ class Relay(object):
     conn.send(stem.client.cell.NetinfoCell(relay_addr, []).pack(link_protocol))
 
     return Relay(conn, link_protocol)
+
+  def _recv(self, raw = False):
+    """
+    Reads the next cell from our ORPort. If none is present this blocks
+    until one is available.
+
+    :param bool raw: provides bytes rather than parsing as a cell if **True**
+
+    :returns: next :class:`~stem.client.cell.Cell`
+    """
+
+    with self._orport_lock:
+      # cells begin with [circ_id][cell_type][...]
+
+      circ_id_size = self.link_protocol.circ_id_size.size
+
+      while len(self._orport_buffer) < (circ_id_size + CELL_TYPE_SIZE.size):
+        self._orport_buffer += self._orport.recv()  # read until we know the cell type
+
+      cell_type = Cell.by_value(CELL_TYPE_SIZE.pop(self._orport_buffer[circ_id_size:])[0])
+
+      if cell_type.IS_FIXED_SIZE:
+        cell_size = circ_id_size + CELL_TYPE_SIZE.size + FIXED_PAYLOAD_LEN
+      else:
+        # variable length, our next field is the payload size
+
+        while len(self._orport_buffer) < (circ_id_size + CELL_TYPE_SIZE.size + FIXED_PAYLOAD_LEN.size):
+          self._orport_buffer += self._orport.recv()  # read until we know the cell size
+
+        payload_len = FIXED_PAYLOAD_LEN.pop(self._orport_buffer[circ_id_size + CELL_TYPE_SIZE.size:])[0]
+        cell_size = circ_id_size + CELL_TYPE_SIZE.size + FIXED_PAYLOAD_LEN.size + payload_len
+
+      while len(self._orport_buffer) < cell_size:
+        self._orport_buffer += self._orport.recv()  # read until we have the full cell
+
+      if raw:
+        content, self._orport_buffer = split(self._orport_buffer, cell_size)
+        return content
+      else:
+        cell, self._orport_buffer = Cell.pop(self._orport_buffer, self.link_protocol)
+        return cell
 
   def _msg(self, cell):
     """
@@ -263,15 +326,48 @@ class Circuit(object):
     self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
     self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
 
-  def send(self, command, data = '', stream_id = 0):
+  def directory(self, request, stream_id = 0):
+    """
+    Request descriptors from the relay.
+
+    :param str request: directory request to make
+    :param int stream_id: specific stream this concerns
+
+    :returns: **str** with the requested descriptor data
+    """
+
+    with self.relay._orport_lock:
+      self._send(RelayCommand.BEGIN_DIR, stream_id = stream_id)
+      self._send(RelayCommand.DATA, request, stream_id = stream_id)
+
+      response = []
+
+      while True:
+        # Decrypt relay cells received in response. Our digest/key only
+        # updates when handled successfully.
+
+        encrypted_cell = self.relay._recv(raw = True)
+
+        decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(self.relay.link_protocol, encrypted_cell, self.backward_key, self.backward_digest)
+
+        if self.id != decrypted_cell.circ_id:
+          raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, decrypted_cell.circ_id))
+
+        self.backward_digest = backward_digest
+        self.backward_key = backward_key
+
+        if decrypted_cell.command == RelayCommand.END:
+          return b''.join([cell.data for cell in response])
+        else:
+          response.append(decrypted_cell)
+
+  def _send(self, command, data = '', stream_id = 0):
     """
     Sends a message over the circuit.
 
     :param stem.client.datatype.RelayCommand command: command to be issued
     :param bytes data: message payload
     :param int stream_id: specific stream this concerns
-
-    :returns: **list** of :class:`~stem.client.cell.RelayCell` responses
     """
 
     with self.relay._orport_lock:
@@ -284,31 +380,6 @@ class Circuit(object):
 
       self.forward_digest = forward_digest
       self.forward_key = forward_key
-
-      # Decrypt relay cells received in response. Again, our digest/key only
-      # updates when handled successfully.
-
-      reply = self.relay._orport.recv()
-      reply_cells = []
-
-      while reply:
-        reply_cmd = stem.client.datatype.Size.CHAR.pop(reply[self.relay.link_protocol.circ_id_size.size:])[0]
-
-        if reply_cmd != stem.client.cell.RelayCell.VALUE:
-          raise stem.ProtocolError('Circuit response should be a series of RELAY cells, but received an unexpected %s (%i)' % (stem.client.cell.Cell.by_value(reply_cmd), reply_cmd))
-
-        encrypted_cell, reply = split(reply, self.relay.link_protocol.fixed_cell_length)
-        decrypted_cell, backward_key, backward_digest = stem.client.cell.RelayCell.decrypt(self.relay.link_protocol, encrypted_cell, self.backward_key, self.backward_digest)
-
-        if self.id != decrypted_cell.circ_id:
-          raise stem.ProtocolError('Response should be for circuit id %i, not %i' % (self.id, decrypted_cell.circ_id))
-
-        self.backward_digest = backward_digest
-        self.backward_key = backward_key
-
-        reply_cells.append(decrypted_cell)
-
-      return reply_cells
 
   def close(self):
     with self.relay._orport_lock:

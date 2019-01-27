@@ -51,6 +51,9 @@ from stem.util import datetime_to_unix, str_tools
 
 FIXED_PAYLOAD_LEN = 509  # PAYLOAD_LEN, per tor-spec section 0.2
 AUTH_CHALLENGE_SIZE = 32
+
+CELL_TYPE_SIZE = Size.CHAR
+PAYLOAD_LEN_SIZE = Size.SHORT
 RELAY_DIGEST_SIZE = Size.LONG
 
 STREAM_ID_REQUIRED = (
@@ -169,13 +172,13 @@ class Cell(object):
     link_protocol = LinkProtocol(link_protocol)
 
     circ_id, content = link_protocol.circ_id_size.pop(content)
-    command, content = Size.CHAR.pop(content)
+    command, content = CELL_TYPE_SIZE.pop(content)
     cls = Cell.by_value(command)
 
     if cls.IS_FIXED_SIZE:
       payload_len = FIXED_PAYLOAD_LEN
     else:
-      payload_len, content = Size.SHORT.pop(content)
+      payload_len, content = PAYLOAD_LEN_SIZE.pop(content)
 
     if len(content) < payload_len:
       raise ValueError('%s cell should have a payload of %i bytes, but only had %i' % (cls.NAME, payload_len, len(content)))
