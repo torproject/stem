@@ -241,6 +241,10 @@ expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_te
 
 
 class TestHiddenServiceDescriptor(unittest.TestCase):
+  def test_from_str(self):
+    sig = HiddenServiceDescriptor.create()
+    self.assertEqual(sig, HiddenServiceDescriptor.from_str(str(sig)))
+
   def test_for_duckduckgo_with_validation(self):
     """
     Parse duckduckgo's descriptor.

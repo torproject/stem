@@ -37,6 +37,10 @@ w/1LVWFfhcBnsGi4JMGbmP+KUZG9A8kI9deSyJhfi35jA7UepiHHAgMBAAE=
 
 
 class TestMicrodescriptor(unittest.TestCase):
+  def test_from_str(self):
+    sig = Microdescriptor.create()
+    self.assertEqual(sig, Microdescriptor.from_str(str(sig)))
+
   def test_local_microdescriptors(self):
     """
     Checks a small microdescriptor file with known contents.

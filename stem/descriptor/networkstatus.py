@@ -323,6 +323,9 @@ def _parse_file(document_file, document_type = None, validate = False, is_microd
     router_type = RouterStatusEntryMicroV3 if is_microdescriptor else RouterStatusEntryV3
   elif document_type == BridgeNetworkStatusDocument:
     document_type, router_type = BridgeNetworkStatusDocument, RouterStatusEntryV2
+  elif document_type == DetachedSignature:
+    yield document_type(document_file.read(), validate, **kwargs)
+    return
   else:
     raise ValueError("Document type %i isn't recognized (only able to parse v2, v3, and bridge)" % document_type)
 
@@ -1900,6 +1903,8 @@ class DetachedSignature(Descriptor):
   **\*** mandatory attribute
   """
 
+  TYPE_ANNOTATION_NAME = 'detached-signature-3'
+
   ATTRIBUTES = {
     'consensus_digest': (None, _parse_consensus_digest_line),
     'valid_after': (None, _parse_header_valid_after_line),
@@ -1931,24 +1936,6 @@ class DetachedSignature(Descriptor):
       ('fresh-until', _random_date()),
       ('valid-until', _random_date()),
     ))
-
-  @classmethod
-  def from_str(cls, content, **kwargs):
-    # Detached signatures don't have their own @type annotation, so to make
-    # our subclass from_str() work we need to do the type inferencing ourself.
-
-    if 'descriptor_type' in kwargs:
-      raise ValueError("Detached signatures don't have their own @type annotation. As such providing a 'descriptor_type' argument with DetachedSignature.from_str() does not work. Please drop the 'descriptor_type' argument when using this method.")
-
-    is_multiple = kwargs.pop('multiple', False)
-    results = list(_parse_file_detached_sigs(io.BytesIO(stem.util.str_tools._to_bytes(content)), **kwargs))
-
-    if is_multiple:
-      return results
-    elif len(results) == 1:
-      return results[0]
-    else:
-      raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   def __init__(self, raw_content, validate = False):
     super(DetachedSignature, self).__init__(raw_content, lazy_load = not validate)

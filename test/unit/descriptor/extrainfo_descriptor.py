@@ -27,6 +27,10 @@ expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_te
 
 
 class TestExtraInfoDescriptor(unittest.TestCase):
+  def test_from_str(self):
+    sig = RelayExtraInfoDescriptor.create()
+    self.assertEqual(sig, RelayExtraInfoDescriptor.from_str(str(sig)))
+
   def test_metrics_relay_descriptor(self):
     """
     Parses and checks our results against an extrainfo descriptor from metrics.

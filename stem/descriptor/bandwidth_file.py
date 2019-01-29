@@ -195,7 +195,7 @@ class BandwidthFile(Descriptor):
   a default value, others are left as **None** if undefined
   """
 
-  TYPE_ANNOTATION_NAME = 'bandwidth-file'  # TODO: needs an official @type, https://trac.torproject.org/projects/tor/ticket/28615
+  TYPE_ANNOTATION_NAME = 'bandwidth-file'
 
   ATTRIBUTES = {
     'timestamp': (None, _parse_timestamp),

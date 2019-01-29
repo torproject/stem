@@ -86,6 +86,10 @@ SkYvemmKnuFFmLHYKMjTy0YA5oTkmYgFao15gMeR4nNwuqwxwJ7YLEeCTW+D3avi
 
 
 class TestDetachedSignature(unittest.TestCase):
+  def test_from_str(self):
+    sig = DetachedSignature.create()
+    self.assertEqual(sig, DetachedSignature.from_str(str(sig)))
+
   def test_minimal(self):
     """
     Parses a minimal detached signature.

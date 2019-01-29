@@ -53,6 +53,10 @@ expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_te
 
 
 class TestServerDescriptor(unittest.TestCase):
+  def test_from_str(self):
+    sig = RelayDescriptor.create()
+    self.assertEqual(sig, RelayDescriptor.from_str(str(sig)))
+
   def test_with_tarfile_path(self):
     """
     Fetch server descriptors via parse_file() for a tarfile path.

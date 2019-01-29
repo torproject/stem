@@ -438,6 +438,11 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
+  elif descriptor_type == stem.descriptor.networkstatus.DetachedSignature.TYPE_ANNOTATION_NAME and major_version == 1:
+    document_type = stem.descriptor.networkstatus.DetachedSignature
+
+    for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
+      yield desc
   elif descriptor_type == stem.descriptor.tordnsel.TorDNSEL.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.tordnsel.TorDNSEL
 

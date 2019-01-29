@@ -61,6 +61,10 @@ new_header=neat stuff
 
 
 class TestBandwidthFile(unittest.TestCase):
+  def test_from_str(self):
+    sig = BandwidthFile.create()
+    self.assertEqual(sig, BandwidthFile.from_str(str(sig)))
+
   def test_format_v1_0(self):
     """
     Parse version 1.0 formatted files.
