@@ -180,10 +180,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(5, len(reply.reply_headers))
 
   def test_gzip_url_override(self):
-    query = stem.descriptor.remote.Query(TEST_RESOURCE, start = False)
-    self.assertEqual([Compression.PLAINTEXT], query.compression)
-    self.assertEqual(TEST_RESOURCE, query.resource)
-
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
     self.assertEqual([Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)

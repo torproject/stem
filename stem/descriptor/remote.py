@@ -334,6 +334,9 @@ class Query(object):
      Serge has replaced Bifroest as our bridge authority. Avoiding descriptor
      downloads from it instead.
 
+  .. versionchanged:: 1.8.0
+     Defaulting to gzip compression rather than plaintext downloads.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -377,14 +380,14 @@ class Query(object):
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, compression = None, retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  def __init__(self, resource, descriptor_type = None, endpoints = None, compression = (Compression.GZIP,), retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
     if resource.endswith('.z'):
       compression = [Compression.GZIP]
       resource = resource[:-2]
-    elif compression is None:
+    elif not compression:
       compression = [Compression.PLAINTEXT]
     else:
       if isinstance(compression, str):
