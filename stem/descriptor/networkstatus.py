@@ -668,7 +668,7 @@ def _parse_header_network_status_version_line(descriptor, entries):
   if ' ' in value:
     version, flavor = value.split(' ', 1)
   else:
-    version, flavor = value, None
+    version, flavor = value, 'ns'
 
   if not version.isdigit():
     raise ValueError('Network status document has a non-numeric version: network-status-version %s' % value)
@@ -944,7 +944,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     mapping for relays contained in the document
 
   :var int version: **\*** document version
-  :var str version_flavor: **\*** flavor associated with the document (such as 'microdesc')
+  :var str version_flavor: **\*** flavor associated with the document (such as 'ns' or 'microdesc')
   :var bool is_consensus: **\*** **True** if the document is a consensus
   :var bool is_vote: **\*** **True** if the document is a vote
   :var bool is_microdescriptor: **\*** **True** if this is a microdescriptor
@@ -1034,7 +1034,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   ATTRIBUTES = {
     'version': (None, _parse_header_network_status_version_line),
-    'version_flavor': (None, _parse_header_network_status_version_line),
+    'version_flavor': ('ns', _parse_header_network_status_version_line),
     'is_consensus': (True, _parse_header_vote_status_line),
     'is_vote': (False, _parse_header_vote_status_line),
     'is_microdescriptor': (False, _parse_header_network_status_version_line),

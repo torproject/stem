@@ -101,7 +101,7 @@ ci356fosgLiM1sVqCUkNdA==
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
       self.assertEqual(3, document.version)
-      self.assertEqual(None, document.version_flavor)
+      self.assertEqual('ns', document.version_flavor)
       self.assertEqual(True, document.is_consensus)
       self.assertEqual(False, document.is_vote)
       self.assertEqual(False, document.is_microdescriptor)
@@ -227,7 +227,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       document = stem.descriptor.networkstatus.NetworkStatusDocumentV3(descriptor_file.read(), default_params = False)
 
       self.assertEqual(3, document.version)
-      self.assertEqual(None, document.version_flavor)
+      self.assertEqual('ns', document.version_flavor)
       self.assertEqual(False, document.is_consensus)
       self.assertEqual(True, document.is_vote)
       self.assertEqual(False, document.is_microdescriptor)
@@ -303,7 +303,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     self.assertEqual({}, document.routers)
     self.assertEqual(3, document.version)
-    self.assertEqual(None, document.version_flavor)
+    self.assertEqual('ns', document.version_flavor)
     self.assertEqual(True, document.is_consensus)
     self.assertEqual(False, document.is_vote)
     self.assertEqual(False, document.is_microdescriptor)
@@ -524,7 +524,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = NetworkStatusDocumentV3.create({'network-status-version': '3'})
     self.assertEqual(3, document.version)
-    self.assertEqual(None, document.version_flavor)
+    self.assertEqual('ns', document.version_flavor)
     self.assertEqual(False, document.is_microdescriptor)
 
     document = NetworkStatusDocumentV3.create({'network-status-version': '3 microdesc'})
@@ -537,7 +537,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
 
     document = NetworkStatusDocumentV3(content, False)
     self.assertEqual(4, document.version)
-    self.assertEqual(None, document.version_flavor)
+    self.assertEqual('ns', document.version_flavor)
     self.assertEqual(False, document.is_microdescriptor)
 
   def test_vote_status(self):

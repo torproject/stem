@@ -639,7 +639,7 @@ class NetinfoCell(Cell):
   Information relays exchange about each other.
 
   :var datetime timestamp: current time
-  :var stem.client.Address receiver_address: receiver's OR address
+  :var stem.client.datatype.Address receiver_address: receiver's OR address
   :var list sender_addresses: sender's OR addresses
   """
 
