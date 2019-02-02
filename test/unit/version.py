@@ -11,14 +11,24 @@ from stem.version import Version
 
 try:
   # added in python 3.3
-  from unittest.mock import patch
+  from unittest.mock import Mock, patch
 except ImportError:
-  from mock import patch
+  from mock import Mock, patch
 
-TOR_VERSION_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
+VERSION_CMD_OUTPUT = """Mar 22 23:09:37.088 [notice] Tor v0.2.2.35 \
 (git-73ff13ab3cc9570d). This is experimental software. Do not rely on it for \
 strong anonymity. (Running on Linux i686)
-Tor version 0.2.2.35 (git-73ff13ab3cc9570d)."""
+%s"""
+
+TOR_VERSION_OUTPUT = VERSION_CMD_OUTPUT % 'Tor version 0.2.2.35 (git-73ff13ab3cc9570d).'
+MALFORMED_TOR_VERSION = VERSION_CMD_OUTPUT % 'Tor version 0.2.blah (git-73ff13ab3cc9570d).'
+MISSING_TOR_VERSION = VERSION_CMD_OUTPUT % ''
+
+TOR_VERSION_EXTRA_LINES = VERSION_CMD_OUTPUT % """
+This is an extra line before the version
+Tor version 0.2.2.35 (git-73ff13ab3cc9570d).
+And an extra line afterward too
+"""
 
 
 class TestVersion(unittest.TestCase):
@@ -34,6 +44,35 @@ class TestVersion(unittest.TestCase):
     call_mock.assert_called_once_with('tor_unit --version')
 
     self.assertEqual(stem.version.VERSION_CACHE['tor_unit'], version)
+
+  @patch('stem.util.system.call', Mock(return_value = TOR_VERSION_EXTRA_LINES.splitlines()))
+  @patch.dict(stem.version.VERSION_CACHE)
+  def test_get_system_tor_version_extra_lines(self):
+    """
+    Include extra text before and after the version.
+    """
+
+    version = stem.version.get_system_tor_version('tor_unit')
+    self.assert_versions_match(version, 0, 2, 2, 35, None, 'git-73ff13ab3cc9570d')
+
+  @patch('stem.util.system.call', Mock(return_value = MISSING_TOR_VERSION.splitlines()))
+  @patch.dict(stem.version.VERSION_CACHE)
+  def test_get_system_tor_version_missing(self):
+    """
+    Tor version output that doesn't include a version within it.
+    """
+
+    self.assertRaisesRegexp(IOError, "'tor_unit --version' didn't provide a parseable version", stem.version.get_system_tor_version, 'tor_unit')
+
+  @patch('stem.util.system.call', Mock(return_value = MALFORMED_TOR_VERSION.splitlines()))
+  @patch.dict(stem.version.VERSION_CACHE)
+  def test_get_system_tor_version_malformed(self):
+    """
+    Tor version output that has the correct basic formatting, but an invalid
+    version.
+    """
+
+    self.assertRaisesWith(IOError, "'0.2.blah (git-73ff13ab3cc9570d)' isn't a properly formatted tor version", stem.version.get_system_tor_version, 'tor_unit')
 
   def test_parsing(self):
     """

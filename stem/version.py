@@ -129,23 +129,21 @@ def get_system_tor_version(tor_cmd = 'tor'):
 
       raise IOError(exc)
 
-    if version_output:
+    for line in version_output:
       # output example:
       # Oct 21 07:19:27.438 [notice] Tor v0.2.1.30. This is experimental software. Do not rely on it for strong anonymity. (Running on Linux i686)
       # Tor version 0.2.1.30.
 
-      last_line = version_output[-1]
-
-      if last_line.startswith('Tor version ') and last_line.endswith('.'):
+      if line.startswith('Tor version ') and line.endswith('.'):
         try:
-          version_str = last_line[12:-1]
+          version_str = line[12:-1]
           VERSION_CACHE[tor_cmd] = Version(version_str)
+          break
         except ValueError as exc:
           raise IOError(exc)
-      else:
-        raise IOError("Unexpected response from '%s': %s" % (version_cmd, last_line))
-    else:
-      raise IOError("'%s' didn't have any output" % version_cmd)
+
+    if tor_cmd not in VERSION_CACHE:
+      raise IOError("'%s' didn't provide a parseable version:\n\n%s" % (version_cmd, '\n'.join(version_output)))
 
   return VERSION_CACHE[tor_cmd]
 
