@@ -113,7 +113,7 @@ def _parse_header(descriptor, entries):
       break  # end of the content
     elif line in (HEADER_DIV, HEADER_DIV_ALT):
       break  # end of header
-    elif not header and 'node_id=' in line:
+    elif not header and b'node_id=' in line:
       break  # version 1.0 doesn't have any headers
 
     if b'=' in line:
