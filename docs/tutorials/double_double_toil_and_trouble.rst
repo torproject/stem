@@ -71,6 +71,7 @@ Applications
 `exit-funding <https://github.com/torservers/exit-funding>`_                                                Script to estimate how much exit relays have been used.
 `torsearch <https://github.com/wfn/torsearch>`_                                                             Search engine prototype for descriptor data.
 `or-applet <https://github.com/Yawning/or-applet>`_                                                         GUI widget to provide circuit information and an interactive interpreter.
+`Vanguard <https://github.com/mikeperry-tor/vanguards>`_                                                    Experimental hidden service security additions
 `OnionBalance <https://github.com/DonnchaC/onionbalance>`_                                                  Tool for making distributed hidden service requests.
 `OnionPerf <https://github.com/robgjansen/onionperf>`_                                                      Measures onion service performance over time using customizable client behavior models.
 `OnioNS <https://github.com/Jesse-V/OnioNS-client>`_                                                        Distributed DNS for hidden services.
@@ -82,6 +83,7 @@ Applications
 `trnnr <https://github.com/NullHypothesis/trnnr>`_                                                          Python implementation of tor's nearest neighbour ranking.
 `TorTP <https://github.com/vinc3nt/stem-tortp>`_                                                            Configures iptables to torify all traffic.
 `BWScanner <https://github.com/TheTorProject/bwscanner>`_                                                   Measurements for the tor bandwidth authorities. Interesting example of txtorcon and stem being used together.
+`Bushel <https://github.com/irl/bushel/>`_                                                                  Command-line descriptor download tools
 `blockstack-tor <https://github.com/blockstack/blockstack-tor>`_                                            Tor integration for `Blockstack <https://github.com/blockstack/blockstack>`_
 =========================================================================================================== ==========
 
