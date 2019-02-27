@@ -181,10 +181,9 @@ of authentication (including the cookie file's location) by calling
   250-VERSION Tor="0.2.5.1-alpha-dev"
   250 OK
 
-Cookie authentication has two flavors: **COOKIE** and **SAFECOOKIE**. Below
-we'll show you how to authenticate via COOKIE. SAFECOOKIE authentication is a
-lot more involved, and not something you will want to do by hand (though Stem
-supports it transparently).
+Cookie authentication has two flavors: **COOKIE** and **SAFECOOKIE**. First
+we will demonstrate **COOKIE** authentication which is quite a bit simpler,
+though Stem supports both transparently.
 
 To get the credential for your AUTHENTICATE command we will use **hexdump**...
 
@@ -198,6 +197,57 @@ To get the credential for your AUTHENTICATE command we will use **hexdump**...
   Connected to localhost.
   Escape character is '^]'.
   AUTHENTICATE be9c9e18364e33d5eb8ba820d456aa2bc03444c0420f089ba4569b6aeecc6254
+  250 OK
+  GETINFO version
+  250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
+  250 OK
+  QUIT
+  250 closing connection
+  Connection closed by foreign host.
+
+**I'm using safe cookie authentication**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Password and cookie authentication both disclose your credential. This makes
+you vulnerable to replay attacks if you accidently connect to a malicious port
+or have a man-in-the-middle. **SAFECOOKIE** authentication avoids this through
+a two way handshake, but authenticating by hand requires some extra work.
+
+This demonstration will use **xxd** to for hex conversion and **openssl** for
+crypto. First we need to call **AUTHCHALLENGE** with a random one-time token...
+
+::
+
+  % CookieString="$(xxd -u -p -c32 < /home/atagar/.tor/control_auth_cookie)"
+  % ClientNonce="$(xxd -u -p -l32 -c32 < /dev/urandom)"
+  % printf '%s\n' "${ClientNonce}"
+  9C653314CC4CC2C695999CE84EB1B0045E3D59B6AFFE615D624DB4870DD7041E
+
+  % telnet localhost 9051
+  Trying 127.0.0.1...
+  Connected to localhost.
+  Escape character is '^]'.
+  AUTHCHALLENGE SAFECOOKIE 9C653314CC4CC2C695999CE84EB1B0045E3D59B6AFFE615D624DB4870DD7041E
+  250 AUTHCHALLENGE SERVERHASH=16274D83FC2240DF9D50D74009D9AE107B77EA317F0034D3638C7942F350D1F9
+                    SERVERNONCE=1C2E73C41FA8537FDD3A59C2ECBE26DFC85E0A05389373AD8C130C0F5795A036
+
+Next combine the server challenge with our cookie content. This token will
+prove to Tor that we have our authentication cookie without divulging its
+content...
+
+::
+
+  % ServerNonce="1C2E73C41FA8537FDD3A59C2ECBE26DFC85E0A05389373AD8C130C0F5795A036"
+  % printf '%s%s%s\n' "${CookieString}" "${ClientNonce}" "${ServerNonce}" | xxd -r -p \
+  > | openssl dgst -sha256 -binary -hmac "Tor safe cookie authentication controller-to-server hash" \
+  > | xxd -p -u -c32
+  A733E09A65E2A6030BF6710D800370FC3AD28E1D2545E1692D160545D93CEE68
+
+We can now authenticate using this token...
+
+::
+
+  AUTHENTICATE A733E09A65E2A6030BF6710D800370FC3AD28E1D2545E1692D160545D93CEE68
   250 OK
   GETINFO version
   250-version=0.2.5.1-alpha-dev (git-245ecfff36c0cecc)
