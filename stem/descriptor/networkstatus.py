@@ -1067,7 +1067,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'bandwidth_weights': ({}, _parse_footer_bandwidth_weights_line),
   }
 
-  HEADER_PARSER_FOR_LINE = {
+  _HEADER_PARSER_FOR_LINE = {
     'network-status-version': _parse_header_network_status_version_line,
     'vote-status': _parse_header_vote_status_line,
     'consensus-methods': _parse_header_consensus_methods_line,
@@ -1093,7 +1093,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     'bandwidth-file-digest': _parse_bandwidth_file_digest,
   }
 
-  FOOTER_PARSER_FOR_LINE = {
+  _FOOTER_PARSER_FOR_LINE = {
     'directory-footer': _parse_directory_footer_line,
     'bandwidth-weights': _parse_footer_bandwidth_weights_line,
     'directory-signature': _parse_footer_directory_signature_line,
@@ -1301,8 +1301,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   def get_unrecognized_lines(self):
     if self._lazy_loading:
-      self._parse(self._header_entries, False, parser_for_line = self.HEADER_PARSER_FOR_LINE)
-      self._parse(self._footer_entries, False, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+      self._parse(self._header_entries, False, parser_for_line = self._HEADER_PARSER_FOR_LINE)
+      self._parse(self._footer_entries, False, parser_for_line = self._FOOTER_PARSER_FOR_LINE)
       self._lazy_loading = False
 
     return super(NetworkStatusDocumentV3, self).get_unrecognized_lines()
@@ -1340,7 +1340,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       if self._default_params:
         self.params = dict(DEFAULT_PARAMS)
 
-      self._parse(entries, validate, parser_for_line = self.HEADER_PARSER_FOR_LINE)
+      self._parse(entries, validate, parser_for_line = self._HEADER_PARSER_FOR_LINE)
 
       # should only appear in consensus-method 7 or later
 
@@ -1372,7 +1372,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
           if not (keyword == 'directory-signature' and self.is_consensus):
             raise ValueError("Network status documents can only have a single '%s' line, got %i" % (keyword, len(values)))
 
-      self._parse(entries, validate, parser_for_line = self.FOOTER_PARSER_FOR_LINE)
+      self._parse(entries, validate, parser_for_line = self._FOOTER_PARSER_FOR_LINE)
 
       # Check that the footer has the right initial line. Prior to consensus
       # method 9 it's a 'directory-signature' and after that footers start with
