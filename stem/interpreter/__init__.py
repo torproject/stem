@@ -118,11 +118,6 @@ def main():
     sys.exit(1)
 
   with controller:
-    autocompleter = stem.interpreter.autocomplete.Autocompleter(controller)
-    readline.parse_and_bind('tab: complete')
-    readline.set_completer(autocompleter.complete)
-    readline.set_completer_delims('\n')
-
     interpreter = stem.interpreter.commands.ControlInterpreter(controller)
     showed_close_confirmation = False
 
@@ -158,6 +153,11 @@ def main():
         sys.exit(1)
 
     else:
+      autocompleter = stem.interpreter.autocomplete.Autocompleter(controller)
+      readline.parse_and_bind('tab: complete')
+      readline.set_completer(autocompleter.complete)
+      readline.set_completer_delims('\n')
+
       for line in msg('msg.startup_banner').splitlines():
         line_format = HEADER_BOLD_OUTPUT if line.startswith('  ') else HEADER_OUTPUT
         print(format(line, *line_format))

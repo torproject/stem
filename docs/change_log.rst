@@ -77,6 +77,10 @@ The following are only available within Stem's `git repository
 
   * Added NetBSD to our `download page <download.html>`_
 
+ * **Interpreter**
+
+  * tor-prompt is now ~34% faster when used to non-interactively invoke commands
+
 .. _version_1.7:
 
 Version 1.7 (October 7th, 2018)
