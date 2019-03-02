@@ -59,6 +59,20 @@ new_header=neat stuff
 =====
 """.strip()
 
+WRONG_VERSION_POSITION = """
+1410723598
+file_created=2019-01-14T05:35:06
+version=1.1.0
+=====
+""".strip()
+
+RIGHT_VERSION_POSITION = """
+1410723598
+version=1.1.0
+file_created=2019-01-14T05:35:06
+=====
+""".strip()
+
 
 class TestBandwidthFile(unittest.TestCase):
   def test_from_str(self):
@@ -179,6 +193,26 @@ class TestBandwidthFile(unittest.TestCase):
     """
 
     self.assertRaisesWith(ValueError, 'Headers require BandwidthFile version 1.1 or later', BandwidthFile.create, {'new_header': 'neat stuff'})
+
+  def test_version_position(self):
+    """
+    Our 'version' header must be in the second position if validated, but
+    otherwise doesn't matter. (:trac:`29539`)
+    """
+
+    desc = BandwidthFile.from_str(WRONG_VERSION_POSITION)
+    self.assertEqual('1.1.0', desc.version)
+
+    self.assertRaisesWith(ValueError, "The 'version' header must be in the second position", BandwidthFile.from_str, WRONG_VERSION_POSITION, validate = True)
+
+    content = BandwidthFile.content(OrderedDict([
+      ('timestamp', '1410723598'),
+      ('file_created', '2019-01-14T05:35:06'),
+      ('version', '1.1.0'),
+      ('content', []),
+    ]))
+
+    self.assertEqual(RIGHT_VERSION_POSITION, content)
 
   def test_header_alternate_div(self):
     """

@@ -106,6 +106,9 @@ def _parse_header(descriptor, entries):
 
   content.readline()  # skip the first line, which should be the timestamp
 
+  index = 1
+  version_index = None
+
   while True:
     line = content.readline().strip()
 
@@ -119,13 +122,21 @@ def _parse_header(descriptor, entries):
     if b'=' in line:
       key, value = stem.util.str_tools._to_unicode(line).split('=', 1)
       header[key] = value
+
+      if key == 'version':
+        version_index = index
     else:
       raise ValueError("Header expected to be key=value pairs, but had '%s'" % line)
+
+    index += 1
 
   descriptor.header = header
 
   for attr, (keyword, cls) in HEADER_ATTR.items():
     setattr(descriptor, attr, cls(header.get(keyword, HEADER_DEFAULT.get(attr))))
+
+  if version_index is not None and version_index != 1:
+    raise ValueError("The 'version' header must be in the second position")
 
 
 def _parse_timestamp(descriptor, entries):
@@ -245,6 +256,11 @@ class BandwidthFile(Descriptor):
     if version == '1.0.0' and header:
       raise ValueError('Headers require BandwidthFile version 1.1 or later')
     elif version != '1.0.0':
+      # ensure 'version' is the second header
+
+      if 'version' not in exclude:
+        lines.append(stem.util.str_tools._to_bytes('version=%s' % header.pop('version')))
+
       for k, v in header.items():
         lines.append(stem.util.str_tools._to_bytes('%s=%s' % (k, v)))
 
