@@ -213,7 +213,7 @@ you vulnerable to replay attacks if you accidently connect to a malicious port
 or have a man-in-the-middle. **SAFECOOKIE** authentication avoids this through
 a two way handshake, but authenticating by hand requires some extra work.
 
-This demonstration will use **xxd** to for hex conversion and **openssl** for
+This demonstration will use **xxd** for hex conversion and **openssl** for
 crypto. First we need to call **AUTHCHALLENGE** with a random one-time token...
 
 ::
@@ -231,9 +231,9 @@ crypto. First we need to call **AUTHCHALLENGE** with a random one-time token...
   250 AUTHCHALLENGE SERVERHASH=16274D83FC2240DF9D50D74009D9AE107B77EA317F0034D3638C7942F350D1F9
                     SERVERNONCE=1C2E73C41FA8537FDD3A59C2ECBE26DFC85E0A05389373AD8C130C0F5795A036
 
-Next combine the server challenge with our cookie content. This token will
-prove to Tor that we have our authentication cookie without divulging its
-content...
+In another terminal prompt next combine the server challenge with our cookie
+content. This token will prove to Tor that we have our authentication cookie
+without divulging its content...
 
 ::
 
