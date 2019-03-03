@@ -66,6 +66,7 @@ easily parsed and compared, for instance...
   **GETINFO_MICRODESCRIPTORS**          'GETINFO md/all' query
   **HIDDEN_SERVICE_V3**                 Support for v3 hidden services
   **HSFETCH**                           HSFETCH requests
+  **HSFETCH_V3**                        HSFETCH for version 3 hidden services
   **HSPOST**                            HSPOST requests
   **ADD_ONION**                         ADD_ONION and DEL_ONION requests
   **ADD_ONION_BASIC_AUTH**              ADD_ONION supports basic authentication
@@ -380,6 +381,7 @@ Requirement = stem.util.enum.Enum(
   ('GETINFO_MICRODESCRIPTORS', Version('0.3.5.1-alpha')),
   ('HIDDEN_SERVICE_V3', Version('0.3.3.1-alpha')),
   ('HSFETCH', Version('0.2.7.1-alpha')),
+  ('HSFETCH_V3', Version('0.4.1.1-alpha')),
   ('HSPOST', Version('0.2.7.1-alpha')),
   ('ADD_ONION', Version('0.2.7.1-alpha')),
   ('ADD_ONION_BASIC_AUTH', Version('0.2.9.1-alpha')),

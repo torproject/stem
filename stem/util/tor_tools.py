@@ -39,9 +39,10 @@ import stem.util.str_tools
 NICKNAME_PATTERN = re.compile('^[a-zA-Z0-9]{1,19}$')
 CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
 
-# Hidden service addresses are sixteen base32 characters.
+# Hidden service addresses are sixteen or fifty six base32 characters.
 
-HS_ADDRESS_PATTERN = re.compile('^[a-z2-7]{16}$')
+HS_V2_ADDRESS_PATTERN = re.compile('^[a-z2-7]{16}$')
+HS_V3_ADDRESS_PATTERN = re.compile('^[a-z2-7]{56}$')
 
 
 def is_valid_fingerprint(entry, check_prefix = False):
@@ -132,14 +133,19 @@ def is_valid_hidden_service_address(entry):
   Checks if a string is a valid format for being a hidden service address (not
   including the '.onion' suffix).
 
-  :returns: **True** if the string could be a hidden service address, **False** otherwise
+  .. versionchanged:: 1.8.0
+     Responds with **True** if a version 3 hidden service address, rather than
+     just version 2 addresses.
+
+  :returns: **True** if the string could be a hidden service address, **False**
+    otherwise
   """
 
   if isinstance(entry, bytes):
     entry = stem.util.str_tools._to_unicode(entry)
 
   try:
-    return bool(HS_ADDRESS_PATTERN.match(entry))
+    return bool(HS_V2_ADDRESS_PATTERN.match(entry)) or bool(HS_V3_ADDRESS_PATTERN.match(entry))
   except TypeError:
     return False
 

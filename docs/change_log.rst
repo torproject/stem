@@ -73,6 +73,10 @@ The following are only available within Stem's `git repository
 
   * Sockets with ORPorts errored if responses exceeded a hardcoded buffer size (:trac:`28961`)
 
+ * **Utilities**
+
+  * :func:`~stem.util.tor_tools.is_valid_hidden_service_address` now provides *true* if a v3 hidden servie address
+
  * **Website**
 
   * Added NetBSD to our `download page <download.html>`_
