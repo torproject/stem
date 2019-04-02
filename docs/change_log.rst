@@ -47,6 +47,7 @@ The following are only available within Stem's `git repository
 
  * **Controller**
 
+  * Added :func:`~stem.control.Controller.get_start_time` method to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_uptime` method to the :class:`~stem.control.Controller`
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
   * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)

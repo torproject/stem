@@ -84,6 +84,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_protocolinfo - information about the controller interface
     |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
+    |- get_start_time - timestamp when the tor process began
     |- get_uptime - duration tor has been running
     |- is_user_traffic_allowed - checks if we send or receive direct user traffic
     |
@@ -1582,8 +1583,10 @@ class Controller(BaseController):
 
     user = self._get_cache('user')
 
-    if not user:
-      user = self.get_info('process/user', None)
+    if user:
+      return user
+
+    user = self.get_info('process/user', None)
 
     if not user and self.is_localhost():
       pid = self.get_pid(None)
@@ -1618,11 +1621,13 @@ class Controller(BaseController):
 
     pid = self._get_cache('pid')
 
-    if not pid:
-      getinfo_pid = self.get_info('process/pid', None)
+    if pid:
+      return pid
 
-      if getinfo_pid and getinfo_pid.isdigit():
-        pid = int(getinfo_pid)
+    getinfo_pid = self.get_info('process/pid', None)
+
+    if getinfo_pid and getinfo_pid.isdigit():
+      pid = int(getinfo_pid)
 
     if not pid and self.is_localhost():
       pid_file_path = self.get_conf('PidFile', None)
@@ -1652,30 +1657,37 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_uptime(self, default = UNDEFINED):
+  def get_start_time(self, default = UNDEFINED):
     """
-    get_uptime(default = UNDEFINED)
+    get_start_time(default = UNDEFINED)
 
-    Provides the duration in seconds that tor has been running.
+    Provides when the tor process began.
 
     .. versionadded:: 1.8.0
 
     :param object default: response if the query fails
 
-    :returns: **int** for the number of seconds tor has been running
+    :returns: **float** for the unix timestamp of when the tor process began
 
-    :raises: **ValueError** if unable to determine the uptime and no default
-      was provided
+    :raises: **ValueError** if unable to determine when the process began and
+      no default was provided
     """
+
+    start_time = self._get_cache('start_time')
+
+    if start_time:
+      return start_time
 
     if self.get_version() >= stem.version.Requirement.GETINFO_UPTIME:
       uptime = self.get_info('uptime', None)
 
-      if uptime and uptime.isdigit():
-        return int(uptime)
-      else:
-        raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
-    else:
+      if uptime:
+        if not uptime.isdigit():
+          raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
+
+        start_time = time.time() - float(uptime)
+
+    if not start_time and self.is_localhost():
       # Tor doesn't yet support this GETINFO option, attempt to determine the
       # uptime of the process ourselves.
 
@@ -1689,10 +1701,30 @@ class Controller(BaseController):
 
       start_time = stem.util.system.start_time(pid)
 
-      if not start_time:
-        raise ValueError('Unable to determine when the tor process began')
+    if start_time:
+      self._set_cache({'start_time': start_time})
+      return start_time
+    else:
+      raise ValueError("Unable to resolve when tor began" if self.is_localhost() else "Tor isn't running locally")
 
-      return time.time() - start_time
+  @with_default()
+  def get_uptime(self, default = UNDEFINED):
+    """
+    get_uptime(default = UNDEFINED)
+
+    Provides the duration in seconds that tor has been running.
+
+    .. versionadded:: 1.8.0
+
+    :param object default: response if the query fails
+
+    :returns: **float** for the number of seconds tor has been running
+
+    :raises: **ValueError** if unable to determine the uptime and no default
+      was provided
+    """
+
+    return time.time() - self.get_start_time()
 
   def is_user_traffic_allowed(self):
     """

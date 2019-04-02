@@ -563,14 +563,17 @@ class TestControl(unittest.TestCase):
     self.assertEqual(432, self.controller.get_pid())
 
   @patch('stem.control.Controller.get_version', Mock(return_value = stem.version.Version('0.5.0.14')))
+  @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = False))
   @patch('stem.control.Controller.get_info')
+  @patch('time.time', Mock(return_value = 1000.0))
   def test_get_uptime_by_getinfo(self, getinfo_mock):
     """
     Exercise the get_uptime() resolution via a GETINFO query.
     """
 
     getinfo_mock.return_value = '321'
-    self.assertEqual(321, self.controller.get_uptime())
+    self.assertEqual(321.0, self.controller.get_uptime())
+    self.controller.clear_cache()
 
     getinfo_mock.return_value = 'abc'
     self.assertRaisesWith(ValueError, "'GETINFO uptime' did not provide a valid numeric response: abc", self.controller.get_uptime)
@@ -585,7 +588,7 @@ class TestControl(unittest.TestCase):
     Exercise the get_uptime() resolution via process age.
     """
 
-    self.assertEqual(200, self.controller.get_uptime())
+    self.assertEqual(200.0, self.controller.get_uptime())
 
   @patch('stem.control.Controller.get_info')
   def test_get_network_status_for_ourselves(self, get_info_mock):
