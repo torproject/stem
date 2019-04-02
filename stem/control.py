@@ -84,6 +84,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- get_protocolinfo - information about the controller interface
     |- get_user - provides the user tor is running as
     |- get_pid - provides the pid of our tor process
+    |- get_uptime - duration tor has been running
     |- is_user_traffic_allowed - checks if we send or receive direct user traffic
     |
     |- get_microdescriptor - querying the microdescriptor for a relay
@@ -1649,6 +1650,49 @@ class Controller(BaseController):
       return pid
     else:
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
+
+  @with_default()
+  def get_uptime(self, default = UNDEFINED):
+    """
+    get_uptime(default = UNDEFINED)
+
+    Provides the duration in seconds that tor has been running.
+
+    .. versionadded:: 1.8.0
+
+    :param object default: response if the query fails
+
+    :returns: **int** for the number of seconds tor has been running
+
+    :raises: **ValueError** if unable to determine the uptime and no default
+      was provided
+    """
+
+    if self.get_version() >= stem.version.Requirement.GETINFO_UPTIME:
+      uptime = self.get_info('uptime', None)
+
+      if uptime and uptime.isdigit():
+        return int(uptime)
+      else:
+        raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
+    else:
+      # Tor doesn't yet support this GETINFO option, attempt to determine the
+      # uptime of the process ourselves.
+
+      if not self.is_localhost():
+        raise ValueError('Unable to determine the uptime when tor is not running locally')
+
+      pid = self.get_pid(None)
+
+      if not pid:
+        raise ValueError('Unable to determine the pid of the tor process')
+
+      start_time = stem.util.system.start_time(pid)
+
+      if not start_time:
+        raise ValueError('Unable to determine when the tor process began')
+
+      return time.time() - start_time
 
   def is_user_traffic_allowed(self):
     """

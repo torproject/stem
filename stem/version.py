@@ -64,6 +64,7 @@ easily parsed and compared, for instance...
   **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
   **GETINFO_GEOIP_AVAILABLE**           'GETINFO ip-to-country/ipv4-available' query and its ipv6 counterpart
   **GETINFO_MICRODESCRIPTORS**          'GETINFO md/all' query
+  **GETINFO_UPTIME**                    'GETINFO uptime' query
   **HIDDEN_SERVICE_V3**                 Support for v3 hidden services
   **HSFETCH**                           HSFETCH requests
   **HSFETCH_V3**                        HSFETCH for version 3 hidden services
@@ -379,6 +380,7 @@ Requirement = stem.util.enum.Enum(
   ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
   ('GETINFO_GEOIP_AVAILABLE', Version('0.3.2.1-alpha')),
   ('GETINFO_MICRODESCRIPTORS', Version('0.3.5.1-alpha')),
+  ('GETINFO_UPTIME', Version('0.3.5.1-alpha')),
   ('HIDDEN_SERVICE_V3', Version('0.3.3.1-alpha')),
   ('HSFETCH', Version('0.2.7.1-alpha')),
   ('HSFETCH_V3', Version('0.4.1.1-alpha')),
