@@ -163,7 +163,6 @@ def main():
     test.task.PYTHON_VERSION,
     test.task.PLATFORM_VERSION,
     test.task.CRYPTO_VERSION,
-    test.task.PYNACL_VERSION,
     test.task.MOCK_VERSION,
     test.task.PYFLAKES_VERSION,
     test.task.PYCODESTYLE_VERSION,

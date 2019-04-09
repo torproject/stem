@@ -865,7 +865,7 @@ class RelayDescriptor(ServerDescriptor):
           if onion_key_crosscert_digest != self._onion_key_crosscert_digest():
             raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self._onion_key_crosscert_digest()))
 
-      if stem.prereq._is_pynacl_available() and self.certificate:
+      if stem.prereq._is_crypto_ed25519_supported() and self.certificate:
         self.certificate.validate(self)
 
   @classmethod

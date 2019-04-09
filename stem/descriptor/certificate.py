@@ -224,34 +224,33 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid
-      * **ImportError** if pynacl module is unavailable
+      * **ImportError** if cryptography module is unavailable or ed25519 is not supported
     """
 
-    if not stem.prereq._is_pynacl_available():
-      raise ImportError('Certificate validation requires the pynacl module')
+    if not stem.prereq._is_crypto_ed25519_supported():
+      raise ImportError('Certificate validation requires the cryptography module and support of ed25519')
 
-    import nacl.signing
-    import nacl.encoding
-    from nacl.exceptions import BadSignatureError
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    from cryptography.exceptions import InvalidSignature
 
     descriptor_content = server_descriptor.get_bytes()
     signing_key = None
 
     if server_descriptor.ed25519_master_key:
-      signing_key = nacl.signing.VerifyKey(stem.util.str_tools._to_bytes(server_descriptor.ed25519_master_key) + b'=', encoder = nacl.encoding.Base64Encoder)
+      signing_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_master_key) + b'='))
     else:
       for extension in self.extensions:
         if extension.type == ExtensionType.HAS_SIGNING_KEY:
-          signing_key = nacl.signing.VerifyKey(extension.data)
+          signing_key = Ed25519PublicKey.from_public_bytes(extension.data)
           break
 
     if not signing_key:
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      signing_key.verify(base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH], self.signature)
-    except BadSignatureError as exc:
-      raise ValueError('Ed25519KeyCertificate signing key is invalid (%s)' % exc)
+      signing_key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
+    except InvalidSignature:
+      raise ValueError('Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)')
 
     # ed25519 signature validates descriptor content up until the signature itself
 
@@ -265,7 +264,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_signature) + b'=' * missing_padding)
 
     try:
-      verify_key = nacl.signing.VerifyKey(self.key)
-      verify_key.verify(descriptor_sha256_digest, signature_bytes)
-    except BadSignatureError as exc:
-      raise ValueError('Descriptor Ed25519 certificate signature invalid (%s)' % exc)
+      verify_key = Ed25519PublicKey.from_public_bytes(self.key)
+      verify_key.verify(signature_bytes, descriptor_sha256_digest)
+    except InvalidSignature:
+      raise ValueError('Descriptor Ed25519 certificate signature invalid (Signature was forged or corrupt)')

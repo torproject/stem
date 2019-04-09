@@ -29,7 +29,7 @@ import sys
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
 ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
 LZMA_UNAVAILABLE = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
-PYNACL_UNAVAILABLE = "Unable to import the pynacl module. Because of this we'll be unable to verify descriptor ed25519 certificate integrity. You can get pynacl from https://pypi.python.org/pypi/PyNaCl/"
+ED25519_UNSUPPORTED = "Unable to verify descriptor ed25519 certificate integrity. ed25519 is not supported by installed versions of OpenSSL and/or cryptography"
 
 
 def check_requirements():
@@ -126,6 +126,7 @@ def is_crypto_available():
   try:
     from cryptography.utils import int_from_bytes, int_to_bytes
     from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.backends.openssl.backend import backend
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.primitives.serialization import load_der_public_key
@@ -239,20 +240,21 @@ def _is_lru_cache_available():
     return hasattr(functools, 'lru_cache')
 
 
-def _is_pynacl_available():
+def _is_crypto_ed25519_supported():
   """
-  Checks if the pynacl functions we use are available. This is used for
-  verifying ed25519 certificates in relay descriptor signatures.
+  Checks if ed25519 is supported by current versions of the cryptography
+  package and OpenSSL. This is used for verifying ed25519 certificates in relay
+  descriptor signatures.
 
-  :returns: **True** if we can use pynacl and **False** otherwise
+  :returns: **True** if ed25519 is supported and **False** otherwise
   """
-
   from stem.util import log
 
-  try:
-    from nacl import encoding
-    from nacl import signing
-    return True
-  except ImportError:
-    log.log_once('stem.prereq._is_pynacl_available', log.INFO, PYNACL_UNAVAILABLE)
+  if not is_crypto_available():
     return False
+
+  from cryptography.hazmat.backends.openssl.backend import backend
+  supported = hasattr(backend, 'ed25519_supported') and backend.ed25519_supported()
+  if not supported:
+    log.log_once('stem.prereq._is_crypto_ed25519_supported', log.INFO, ED25519_UNSUPPORTED)
+  return supported

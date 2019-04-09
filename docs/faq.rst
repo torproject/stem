@@ -53,8 +53,7 @@ Does Stem have any dependencies?
 **No.** All you need in order to use Stem is Python.
 
 When it is available Stem will use `cryptography
-<https://pypi.python.org/pypi/cryptography>`_ and `PyNaCl
-<https://pypi.python.org/pypi/PyNaCl/>`_ to validate descriptor signatures.
+<https://pypi.python.org/pypi/cryptography>`_ to validate descriptor signatures.
 However, there is no need to install cryptography unless you need this
 functionality.
 
@@ -81,7 +80,6 @@ Ubuntu you can install these with...
 
   % sudo apt-get install python-dev libffi-dev
   % sudo pip install cryptography
-  % sudo pip install pynacl
 
 .. _what_python_versions_is_stem_compatible_with:
 

@@ -3,4 +3,3 @@ pyflakes
 pycodestyle
 tox
 cryptography
-pynacl
