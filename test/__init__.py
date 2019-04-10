@@ -16,27 +16,9 @@ Unit and integration tests for the stem library. Helpers include...
 import collections
 import itertools
 import os
-import signal
-import sys
-import traceback
 
 import stem.util.enum
 import stem.version
-
-# Install signal handlers before doing anything else
-def log_traceback(sig, frame):
-  """Log a stack trace. exit(-1) if the signal was SIGABRT."""
-  message  = "Signal {} received.\nTraceback:\n".format(sig)
-  message += ''.join(traceback.format_stack(frame))
-  print(message)
-  if sig == signal.SIGABRT:
-    sys.exit(-1)
-
-# Register handlers
-# Log stack trace and exit
-signal.signal(signal.SIGABRT, log_traceback)
-# Log stack trace and continue
-signal.signal(signal.SIGUSR1, log_traceback)
 
 __all__ = [
   'network',

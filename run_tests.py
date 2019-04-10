@@ -7,6 +7,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 """
 
 import os
+import signal
 import sys
 import threading
 import time
@@ -70,6 +71,18 @@ New capabilities are:
 """
 
 
+def log_traceback(sig, frame):
+  """
+  Signal handler that logs the present traceback, and aborts our process with
+  exit status -1 in the case of SIGABRT.
+  """
+
+  print('Signal %s received.\nTraceback:\n%s' % (sig, traceback.format_stack(frame)))
+
+  if sig == signal.SIGABRT:
+    sys.exit(-1)
+
+
 def get_unit_tests(module_prefix = None):
   """
   Provides the classes for our unit tests.
@@ -123,6 +136,9 @@ def main():
   except ImportError as exc:
     println('%s\n' % exc)
     sys.exit(1)
+
+  signal.signal(signal.SIGABRT, log_traceback)
+  signal.signal(signal.SIGUSR1, log_traceback)
 
   test_config = stem.util.conf.get_config('test')
   test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
