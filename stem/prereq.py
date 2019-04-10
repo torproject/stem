@@ -29,7 +29,7 @@ import sys
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
 ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
 LZMA_UNAVAILABLE = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
-ED25519_UNSUPPORTED = "Unable to verify descriptor ed25519 certificate integrity. ed25519 is not supported by installed versions of OpenSSL and/or cryptography"
+ED25519_UNSUPPORTED = 'Unable to verify descriptor ed25519 certificate integrity. ed25519 is not supported by installed versions of OpenSSL and/or cryptography'
 
 
 def check_requirements():
@@ -248,13 +248,15 @@ def _is_crypto_ed25519_supported():
 
   :returns: **True** if ed25519 is supported and **False** otherwise
   """
-  from stem.util import log
 
   if not is_crypto_available():
     return False
 
+  from stem.util import log
   from cryptography.hazmat.backends.openssl.backend import backend
-  supported = hasattr(backend, 'ed25519_supported') and backend.ed25519_supported()
-  if not supported:
+
+  if hasattr(backend, 'ed25519_supported') and backend.ed25519_supported():
+    return True
+  else:
     log.log_once('stem.prereq._is_crypto_ed25519_supported', log.INFO, ED25519_UNSUPPORTED)
-  return supported
+    return False

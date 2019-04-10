@@ -224,11 +224,12 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid
-      * **ImportError** if cryptography module is unavailable or ed25519 is not supported
+      * **ImportError** if cryptography module is unavailable or ed25519 is
+        unsupported
     """
 
     if not stem.prereq._is_crypto_ed25519_supported():
-      raise ImportError('Certificate validation requires the cryptography module and support of ed25519')
+      raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     from cryptography.exceptions import InvalidSignature

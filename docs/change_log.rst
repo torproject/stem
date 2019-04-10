@@ -56,6 +56,7 @@ The following are only available within Stem's `git repository
  * **Descriptors**
 
   * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
+  * Ed25519 validity checks are now done though the cryptography module rather than PyNaCl (:trac:`22022`)
   * Download compressed descriptors by default (:trac:`29186`)
   * Added :func:`stem.descriptor.remote.get_microdescriptors`
   * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
