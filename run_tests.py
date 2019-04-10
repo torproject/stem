@@ -77,7 +77,7 @@ def log_traceback(sig, frame):
   exit status -1 in the case of SIGABRT.
   """
 
-  print('Signal %s received.\nTraceback:\n%s' % (sig, traceback.format_stack(frame)))
+  print('Signal %s received. Traceback:\n\n%s' % (sig, ''.join(traceback.format_stack(frame))))
 
   if sig == signal.SIGABRT:
     sys.exit(-1)
