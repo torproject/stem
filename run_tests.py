@@ -6,6 +6,7 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
+import multiprocessing
 import os
 import signal
 import sys
@@ -71,16 +72,71 @@ New capabilities are:
 """
 
 
+def enable_signal_handlers():
+  """
+  Enable signal handlers for USR1 and ABRT.
+  """
+  signal.signal(signal.SIGABRT, log_traceback)
+  signal.signal(signal.SIGUSR1, log_traceback)
+
+
+def disable_signal_handlers():
+  """
+  Ignore signals USR1 and ABRT.
+  """
+  signal.signal(signal.SIGABRT, signal.SIG_IGN)
+  signal.signal(signal.SIGUSR1, signal.SIG_IGN)
+
+
+def format_traceback(pid, ident, frame):
+  """
+  Format the traceback for process pid and thread ident using the stack frame.
+  """
+  if frame is not None:
+    return ('Traceback for thread %d in process %d:\n\n%s' %
+            (ident, pid, ''.join(traceback.format_stack(frame))))
+  else:
+    return ('No traceback for thread %d in process %d.' % (ident, pid))
+
+
 def log_traceback(sig, frame):
   """
-  Signal handler that logs the present traceback, and aborts our process with
-  exit status -1 in the case of SIGABRT.
+  Signal handler that:
+   - logs the current thread id and pid,
+   - logs tracebacks for all threads,
+   - flushes stdio buffers,
+   - propagate the signal to multiprocessing.active_children(), and
+   - in the case of SIGABRT, aborts our process with exit status -1.
+  While this signal handler is running, other signals are ignored.
   """
 
-  print('Signal %s received. Traceback:\n\n%s' % (sig, ''.join(traceback.format_stack(frame))))
+  disable_signal_handlers()
+
+  # format and log tracebacks
+  pid = os.getpid()
+  thread_tracebacks = [format_traceback(pid, ident, frame_)
+                       for ident, frame_ in sys._current_frames().items()]
+  print('Signal %s received by thread %d in process %d:\n\n%s' %
+        (sig, threading.current_thread().ident, pid,
+         '\n\n'.join(thread_tracebacks)))
+
+  # we're about to signal our children, and maybe do a hard abort, so flush
+  sys.stdout.flush()
+
+  # propagate the signal to any multiprocessing children
+  pgid = os.getpgid(pid)
+  for p in multiprocessing.active_children():
+    # avoid race conditions
+    if p.is_alive():
+      os.kill(p.pid, sig)
 
   if sig == signal.SIGABRT:
-    sys.exit(-1)
+    # we need to use os._exit() to abort every thread in the interpreter,
+    # rather than raise a SystemExit exception that can be caught
+    os._exit(-1)
+  else:
+    # we're done: stop ignoring signals
+    enable_signal_handlers()
 
 
 def get_unit_tests(module_prefix = None):
@@ -137,8 +193,7 @@ def main():
     println('%s\n' % exc)
     sys.exit(1)
 
-  signal.signal(signal.SIGABRT, log_traceback)
-  signal.signal(signal.SIGUSR1, log_traceback)
+  enable_signal_handlers()
 
   test_config = stem.util.conf.get_config('test')
   test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
