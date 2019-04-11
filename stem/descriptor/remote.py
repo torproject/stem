@@ -87,7 +87,7 @@ content. For example...
   =============== ===========
   **PLAINTEXT**   Uncompressed data.
   **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
-  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.python.org/pypi/zstandard>`_.
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.org/project/zstandard/>`_.
   **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
   =============== ===========
 """
@@ -297,7 +297,7 @@ class Query(object):
   =============================================== ===========
 
   **ZSTD** compression requires `zstandard
-  <https://pypi.python.org/pypi/zstandard>`_, and **LZMA** requires the `lzma
+  <https://pypi.org/project/zstandard/>`_, and **LZMA** requires the `lzma
   module <https://docs.python.org/3/library/lzma.html>`_.
 
   For legacy reasons if our resource has a '.z' suffix then our **compression**
@@ -1041,7 +1041,7 @@ def _decompress(data, encoding):
     return zlib.decompress(data, zlib.MAX_WBITS | 32)
   elif encoding == Compression.ZSTD:
     if not stem.prereq.is_zstd_available():
-      raise ImportError('Decompressing zstd data requires https://pypi.python.org/pypi/zstandard')
+      raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
 
     import zstd
     output_buffer = io.BytesIO()

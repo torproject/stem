@@ -68,8 +68,8 @@ SRC_PATHS = [os.path.join(test.STEM_BASE, path) for path in (
   os.path.join('docs', 'roles.py'),
 )]
 
-PYFLAKES_UNAVAILABLE = 'Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  http://pypi.python.org/pypi/pyflakes\n'
-PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  http://pypi.python.org/pypi/pycodestyle\n'
+PYFLAKES_UNAVAILABLE = 'Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  https://pypi.org/project/pyflakes/\n'
+PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  https://pypi.org/project/pycodestyle/\n'
 
 
 def _check_stem_version():

@@ -53,14 +53,14 @@ CONFIG = stem.util.conf.config_dict('test', {
 MOCK_UNAVAILABLE_MSG = """\
 To run stem's tests you'll need mock...
 
-https://pypi.python.org/pypi/mock/
+https://pypi.org/project/mock/
 """
 
 MOCK_OUT_OF_DATE_MSG = """\
 To run stem's tests you'll need mock. You have version %s, but you need
 version 0.8.0 or later...
 
-https://pypi.python.org/pypi/mock/
+https://pypi.org/project/mock/
 """
 
 NEW_CAPABILITIES_FOUND = """\

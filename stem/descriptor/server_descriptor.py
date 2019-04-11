@@ -802,7 +802,7 @@ class RelayDescriptor(ServerDescriptor):
   .. versionchanged:: 1.6.0
      Moved from the deprecated `pycrypto
      <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography
-     <https://pypi.python.org/pypi/cryptography>`_ for validating signatures.
+     <https://pypi.org/project/cryptography/>`_ for validating signatures.
 
   .. versionchanged:: 1.6.0
      Added the certificate attribute.

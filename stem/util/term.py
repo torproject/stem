@@ -112,8 +112,8 @@ def format(msg, *attr):
   The following are some toolkits providing similar capabilities:
 
   * `django.utils.termcolors <https://github.com/django/django/blob/master/django/utils/termcolors.py>`_
-  * `termcolor <https://pypi.python.org/pypi/termcolor>`_
-  * `colorama <https://pypi.python.org/pypi/colorama>`_
+  * `termcolor <https://pypi.org/project/termcolor/>`_
+  * `colorama <https://pypi.org/project/colorama/>`_
 
   .. versionchanged:: 1.6.0
      Normalized return value to be unicode to better support python 2/3

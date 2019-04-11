@@ -26,8 +26,8 @@ import inspect
 import platform
 import sys
 
-CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.python.org/pypi/cryptography"
-ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.python.org/pypi/zstandard)'
+CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.org/project/cryptography/"
+ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.org/project/zstandard/)'
 LZMA_UNAVAILABLE = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'
 ED25519_UNSUPPORTED = 'Unable to verify descriptor ed25519 certificate integrity. ed25519 is not supported by installed versions of OpenSSL and/or cryptography'
 
@@ -143,7 +143,7 @@ def is_crypto_available():
 
 def is_zstd_available():
   """
-  Checks if the `zstd module <https://pypi.python.org/pypi/zstandard>`_ is
+  Checks if the `zstd module <https://pypi.org/project/zstandard/>`_ is
   available.
 
   .. versionadded:: 1.7.0
@@ -153,7 +153,7 @@ def is_zstd_available():
 
   try:
     # Unfortunately the zstandard module uses the same namespace as another
-    # zstd module (https://pypi.python.org/pypi/zstd), so we need to
+    # zstd module (https://pypi.org/project/zstd/), so we need to
     # differentiate them.
 
     import zstd
@@ -187,7 +187,7 @@ def is_mock_available():
   """
   Checks if the mock module is available. In python 3.3 and up it is a builtin
   unittest module, but before this it needed to be `installed separately
-  <https://pypi.python.org/pypi/mock/>`_. Imports should be as follows....
+  <https://pypi.org/project/mock/>`_. Imports should be as follows....
 
   ::
 

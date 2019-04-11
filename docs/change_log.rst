@@ -83,6 +83,7 @@ The following are only available within Stem's `git repository
  * **Website**
 
   * Added NetBSD to our `download page <download.html>`_
+  * `Update PyPI links <https://packaging.python.org/guides/migrating-to-pypi-org/>`_ (:trac:`30137`)
 
  * **Interpreter**
 
@@ -202,7 +203,7 @@ Year long accumulation of fixes and improvements in support of the `Nyx 2.0 rele
   * Supporting `descriptor creation <tutorials/mirror_mirror_on_the_wall.html#can-i-create-descriptors>`_ (:trac:`10227`)
   * Support and validation for `ed25519 certificates <api/descriptor/certificate.html>`_ (`spec <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, :trac:`21558`)
   * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.validate_signatures` to check our key certificate signatures (:trac:`11045`)
-  * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.python.org/pypi/cryptography>`_ for validating signatures (:trac:`21086`)
+  * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.org/project/cryptography/>`_ for validating signatures (:trac:`21086`)
   * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Added server descriptor's new extra_info_sha256_digest attribute (:spec:`0f03581`)
   * Added server descriptor's new protocol attribute (:spec:`eb4fb3c`)

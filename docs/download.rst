@@ -74,16 +74,16 @@ Download
    :header-rows: 0
 
    * - .. image:: /_static/section/download/pypi.png
-          :target: https://pypi.python.org/pypi/stem/
+          :target: https://pypi.org/project/stem/
 
      - .. image:: /_static/label/python_package_index.png
-          :target: https://pypi.python.org/pypi/stem/
+          :target: https://pypi.org/project/stem/
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
        easily install from its `tarball
-       <https://pypi.python.org/packages/11/d5/e51983f81b38408ae2f0e166481ad867962f6fa07610fe71119534e12d41/stem-1.6.0.tar.gz>`_
+       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
        (`sig
-       <https://pypi.python.org/packages/11/d5/e51983f81b38408ae2f0e166481ad867962f6fa07610fe71119534e12d41/stem-1.6.0.tar.gz.asc>`_),
+       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_),
        or with **pip**...
 
        ::

@@ -53,7 +53,7 @@ Does Stem have any dependencies?
 **No.** All you need in order to use Stem is Python.
 
 When it is available Stem will use `cryptography
-<https://pypi.python.org/pypi/cryptography>`_ to validate descriptor signatures.
+<https://pypi.org/project/cryptography/>`_ to validate descriptor signatures.
 However, there is no need to install cryptography unless you need this
 functionality.
 
@@ -468,7 +468,7 @@ you will need to decompress the archives yourself.
 
 With modern versions of tar you can simply decompress archives via **tar xf
 archive.tar.xz**, or programmatically using `lzma
-<https://pypi.python.org/pypi/pyliblzma>`_.
+<https://pypi.org/project/pyliblzma/>`_.
 
 .. _what_is_that_with_keyword_i_keep_seeing_in_the_tutorials:
 

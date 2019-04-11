@@ -50,11 +50,11 @@
 #   |- git tag -u 9ABBEEC6 -m "stem release 1.0.0" 1.0.0 d0bb81a
 #   +- git push --tags
 #
-# * Dry-run release on https://pypi.python.org/pypi/stem/
+# * Dry-run release on https://pypi.org/project/stem/
 #   |- python setup.py sdist --dryrun
 #   |- gpg --detach-sig --armor dist/stem-dry-run-1.0.0.tar.gz
 #   |- twine upload dist/*
-#   +- Check that https://pypi.python.org/pypi/stem-dry-run/ looks correct, comparing it to https://pypi.python.org/pypi/stem/
+#   +- Check that https://pypi.org/project/stem-dry-run/ looks correct, comparing it to https://pypi.org/project/stem/
 #      +- Don't worry about the 'Bug Tracker' being missing. That's an attribute of the project itself.
 #
 # * Final release
