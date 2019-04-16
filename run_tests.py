@@ -88,15 +88,18 @@ def disable_signal_handlers():
   signal.signal(signal.SIGUSR1, signal.SIG_IGN)
 
 
-def format_traceback(pid, ident, frame):
+def format_traceback(thread):
   """
   Format the traceback for process pid and thread ident using the stack frame.
   """
+
+  frame = sys._current_frames().get(thread.ident, None)
+
   if frame is not None:
-    return ('Traceback for thread %d in process %d:\n\n%s' %
-            (ident, pid, ''.join(traceback.format_stack(frame))))
+    return ('Traceback for thread %s in process %d:\n\n%s' %
+            (thread.name, os.getpid(), ''.join(traceback.format_stack(frame))))
   else:
-    return ('No traceback for thread %d in process %d.' % (ident, pid))
+    return ('No traceback for thread %s in process %d.' % (thread.name, os.getpid()))
 
 
 def log_traceback(sig, frame):
@@ -113,18 +116,16 @@ def log_traceback(sig, frame):
   disable_signal_handlers()
 
   # format and log tracebacks
-  pid = os.getpid()
-  thread_tracebacks = [format_traceback(pid, ident, frame_)
-                       for ident, frame_ in sys._current_frames().items()]
-  print('Signal %s received by thread %d in process %d:\n\n%s' %
-        (sig, threading.current_thread().ident, pid,
+  thread_tracebacks = [format_traceback(thread)
+                       for thread in threading.enumerate()]
+  print('Signal %s received by thread %s in process %d:\n\n%s' %
+        (sig, threading.current_thread().name, os.getpid(),
          '\n\n'.join(thread_tracebacks)))
 
   # we're about to signal our children, and maybe do a hard abort, so flush
   sys.stdout.flush()
 
   # propagate the signal to any multiprocessing children
-  pgid = os.getpgid(pid)
   for p in multiprocessing.active_children():
     # avoid race conditions
     if p.is_alive():
