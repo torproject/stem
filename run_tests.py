@@ -101,7 +101,7 @@ def log_traceback(sig, frame):
     lines.append(stacktrace)
 
   lines.append('=' * 80)
-  println('\n'.join(lines))
+  println('\n'.join(lines), STDERR)
 
   # propagate the signal to any multiprocessing children
 
