@@ -7,6 +7,8 @@ together for improved readability.
 """
 
 import re
+import threading
+import traceback
 import sys
 
 import stem.util.enum
@@ -90,6 +92,26 @@ def print_logging(logging_buffer):
       println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
 
     print('')
+
+
+def thread_stacktraces():
+  """
+  Provides a dump of the stacktrace information for all active threads.
+
+  :returns: **dict** that maps thread names to their stacktrace
+  """
+
+  stacktraces = {}
+
+  for thread in threading.enumerate():
+    frame = sys._current_frames().get(thread.ident, None)
+
+    if frame:
+      stacktraces[thread.name] = ''.join(traceback.format_stack(frame))
+    else:
+      stacktraces[thread.name] = 'No traceback available'
+
+  return stacktraces
 
 
 def apply_filters(testing_output, *filters):

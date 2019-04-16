@@ -72,62 +72,40 @@ New capabilities are:
 """
 
 
-def enable_signal_handlers():
-  """
-  Enable signal handlers for USR1 and ABRT.
-  """
-  signal.signal(signal.SIGABRT, log_traceback)
-  signal.signal(signal.SIGUSR1, log_traceback)
-
-
-def disable_signal_handlers():
-  """
-  Ignore signals USR1 and ABRT.
-  """
-  signal.signal(signal.SIGABRT, signal.SIG_IGN)
-  signal.signal(signal.SIGUSR1, signal.SIG_IGN)
-
-
-def format_traceback(thread):
-  """
-  Format the traceback for process pid and thread ident using the stack frame.
-  """
-
-  frame = sys._current_frames().get(thread.ident, None)
-
-  if frame is not None:
-    return ('Traceback for thread %s in process %d:\n\n%s' %
-            (thread.name, os.getpid(), ''.join(traceback.format_stack(frame))))
-  else:
-    return ('No traceback for thread %s in process %d.' % (thread.name, os.getpid()))
-
-
 def log_traceback(sig, frame):
   """
-  Signal handler that:
-   - logs the current thread id and pid,
-   - logs tracebacks for all threads,
-   - flushes stdio buffers,
-   - propagate the signal to multiprocessing.active_children(), and
-   - in the case of SIGABRT, aborts our process with exit status -1.
-  While this signal handler is running, other signals are ignored.
+  Dump the stacktraces of all threads on stderr.
   """
 
-  disable_signal_handlers()
+  # Attempt to get the name of our signal. Unfortunately the signal module
+  # doesn't provide a reverse mapping, so we need to get this ourselves
+  # from the attributes.
 
-  # format and log tracebacks
-  thread_tracebacks = [format_traceback(thread)
-                       for thread in threading.enumerate()]
-  print('Signal %s received by thread %s in process %d:\n\n%s' %
-        (sig, threading.current_thread().name, os.getpid(),
-         '\n\n'.join(thread_tracebacks)))
+  signal_name = str(sig)
 
-  # we're about to signal our children, and maybe do a hard abort, so flush
-  sys.stdout.flush()
+  for attr_name, value in signal.__dict__.items():
+    if attr_name.startswith('SIG') and value == sig:
+      signal_name = attr_name
+      break
+
+  lines = [
+    '',  # initial NL so we start on our own line
+    '=' * 80,
+    'Signal %s received by thread %s in process %i' % (signal_name, threading.current_thread().name, os.getpid()),
+  ]
+
+  for thread_name, stacktrace in test.output.thread_stacktraces().items():
+    lines.append('-' * 80)
+    lines.append('%s thread stacktrace' % thread_name)
+    lines.append('')
+    lines.append(stacktrace)
+
+  lines.append('=' * 80)
+  println('\n'.join(lines))
 
   # propagate the signal to any multiprocessing children
+
   for p in multiprocessing.active_children():
-    # avoid race conditions
     if p.is_alive():
       os.kill(p.pid, sig)
 
@@ -135,9 +113,6 @@ def log_traceback(sig, frame):
     # we need to use os._exit() to abort every thread in the interpreter,
     # rather than raise a SystemExit exception that can be caught
     os._exit(-1)
-  else:
-    # we're done: stop ignoring signals
-    enable_signal_handlers()
 
 
 def get_unit_tests(module_prefix = None):
@@ -194,7 +169,8 @@ def main():
     println('%s\n' % exc)
     sys.exit(1)
 
-  enable_signal_handlers()
+  signal.signal(signal.SIGABRT, log_traceback)
+  signal.signal(signal.SIGUSR1, log_traceback)
 
   test_config = stem.util.conf.get_config('test')
   test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
