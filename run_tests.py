@@ -6,6 +6,7 @@
 Runs unit and integration tests. For usage information run this with '--help'.
 """
 
+import errno
 import multiprocessing
 import os
 import signal
@@ -106,8 +107,14 @@ def log_traceback(sig, frame):
   # propagate the signal to any multiprocessing children
 
   for p in multiprocessing.active_children():
-    if p.is_alive():
+    try:
       os.kill(p.pid, sig)
+    except OSError as e:
+      # If the process exited before we could kill it
+      if e.errno == errno.ESRCH: # No such process
+        pass
+      else:
+        raise e
 
   if sig == signal.SIGABRT:
     # we need to use os._exit() to abort every thread in the interpreter,
