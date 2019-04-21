@@ -38,6 +38,53 @@ HEADER_DIV = b'====='
 HEADER_DIV_ALT = b'===='
 
 
+class RecentStats(object):
+  """
+  Statistical information collected over the last 'data_period' (by default
+  five days).
+
+  :var int consensus_count: number of consensuses published during this period
+
+  :var int prioritized_relays: number of relays prioritized to be measured
+  :var int prioritized_relay_lists: number of times a set of relays were
+    prioritized to be measured
+
+  :var int measurement_attempts: number of relay measurements we attempted
+  :var int measurement_failures: number of measurement attempts that failed
+
+  :var RelayFailures relay_failures: number of relays we failed to measure
+  """
+
+  def __init__(self):
+    self.consensus_count = None
+    self.prioritized_relays = None
+    self.prioritized_relay_lists = None
+    self.measurement_attempts = None
+    self.measurement_failures = None
+    self.relay_failures = RelayFailures()
+
+
+class RelayFailures(object):
+  """
+  Summary of the number of relays we were unable to measure.
+
+  :var int no_measurement: number of relays that did not have any successful
+    measurements
+  :var int insuffient_period: number of relays whos measurements were collected
+    over a period that was too small (1 day by default)
+  :var int insufficient_measurements: number of relays we did not collect
+    enough measurements for (2 by default)
+  :var int stale: number of relays whos latest measurement is too old (5 days
+    by default)
+  """
+
+  def __init__(self):
+    self.no_measurement = None
+    self.insuffient_period = None
+    self.insufficient_measurements = None
+    self.stale = None
+
+
 # Converts header attributes to a given type. Malformed fields should be
 # ignored according to the spec.
 
@@ -56,9 +103,15 @@ def _date(val):
     return None  # not an iso formatted date
 
 
+def _csv(val):
+  return map(lambda v: v.strip(), val.split(',')) if val is not None else None
+
+
 # mapping of attributes => (header, type)
 
 HEADER_ATTR = {
+  # version 1.1.0 introduced headers
+
   'version': ('version', _str),
 
   'software': ('software', _str),
@@ -69,11 +122,32 @@ HEADER_ATTR = {
   'created_at': ('file_created', _date),
   'generated_at': ('generator_started', _date),
 
+  # version 1.2.0 additions
+
   'consensus_size': ('number_consensus_relays', _int),
   'eligible_count': ('number_eligible_relays', _int),
   'eligible_percent': ('percent_eligible_relays', _int),
   'min_count': ('minimum_number_eligible_relays', _int),
   'min_percent': ('minimum_percent_eligible_relays', _int),
+
+  # version 1.3.0 additions
+
+  'scanner_country': ('scanner_country', _str),
+  'destinations_countries': ('destinations_countries', _csv),
+
+  # version 1.4.0 additions
+
+  'time_to_report_half_network': ('time_to_report_half_network', _int),
+
+  'recent_stats.consensus_count': ('recent_consensus_count', _int),
+  'recent_stats.prioritized_relay_lists': ('recent_priority_list_count', _int),
+  'recent_stats.prioritized_relays': ('recent_priority_relay_count', _int),
+  'recent_stats.measurement_attempts': ('recent_measurement_attempt_count', _int),
+  'recent_stats.measurement_failures': ('recent_measurement_failure_count', _int),
+  'recent_stats.relay_failures.no_measurement': ('recent_measurements_excluded_error_count', _int),
+  'recent_stats.relay_failures.insuffient_period': ('recent_measurements_excluded_near_count', _int),
+  'recent_stats.relay_failures.insufficient_measurements': ('recent_measurements_excluded_few_count', _int),
+  'recent_stats.relay_failures.stale': ('recent_measurements_excluded_old_count', _int),
 }
 
 HEADER_DEFAULT = {
@@ -131,9 +205,15 @@ def _parse_header(descriptor, entries):
     index += 1
 
   descriptor.header = header
+  descriptor.recent_stats = RecentStats()
 
-  for attr, (keyword, cls) in HEADER_ATTR.items():
-    setattr(descriptor, attr, cls(header.get(keyword, HEADER_DEFAULT.get(attr))))
+  for full_attr, (keyword, cls) in HEADER_ATTR.items():
+    obj = descriptor
+
+    for attr in full_attr.split('.')[:-1]:
+      obj = getattr(obj, attr)
+
+    setattr(obj, full_attr.split('.')[-1], cls(header.get(keyword, HEADER_DEFAULT.get(full_attr))))
 
   if version_index is not None and version_index != 1:
     raise ValueError("The 'version' header must be in the second position")
@@ -201,6 +281,15 @@ class BandwidthFile(Descriptor):
   :var int eligible_percent: percentage of consensus with enough measurements
   :var int min_count: minimum eligible relays for results to be provided
   :var int min_percent: minimum measured percentage of the consensus
+
+  :var str scanner_country: country code where this scan took place
+  :var list destinations_countries: all country codes that were scanned
+
+  :var int time_to_report_half_network: estimated number of seconds required to
+    measure half the network, given recent measurements
+
+  :var RecentStats recent_stats: statistical information collected over the
+    last 'data_period' (by default five days)
 
   **\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined

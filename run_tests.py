@@ -109,12 +109,11 @@ def log_traceback(sig, frame):
   for p in multiprocessing.active_children():
     try:
       os.kill(p.pid, sig)
-    except OSError as e:
-      # If the process exited before we could kill it
-      if e.errno == errno.ESRCH: # No such process
-        pass
+    except OSError as exc:
+      if exc.errno == errno.ESRCH:
+        pass  # already exited, no such process
       else:
-        raise e
+        raise exc
 
   if sig == signal.SIGABRT:
     # we need to use os._exit() to abort every thread in the interpreter,

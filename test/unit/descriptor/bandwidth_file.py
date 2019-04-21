@@ -52,6 +52,33 @@ EXPECTED_MEASUREMENT_2 = {
   'error_misc': '0',
 }
 
+EXPECTED_MEASUREMENT_3 = {
+  'desc_bw_obs_last': '70423',
+  'success': '13',
+  'desc_bw_obs_mean': '81784',
+  'bw_median': '2603',
+  'nick': 'whitsun',
+  'bw': '1',
+  'desc_bw_avg': '1073741824',
+  'time': '2019-04-21T10:22:16',
+  'bw_mean': '2714',
+  'error_circ': '1',
+  'error_stream': '0',
+  'node_id': '$8F0F49F2341C7F706D5B475815DBD3E5761334B3',
+  'error_misc': '0',
+  'consensus_bandwidth': '1000',
+  'consensus_bandwidth_is_unmeasured': 'False',
+  'desc_bw_bur': '1073741824',
+  'error_destination': '0',
+  'error_second_relay': '0',
+  'master_key_ed25519': 'acShTw35dmVSTkhMdmo9RFRLsP4QV+qOZrEJQubnvWY',
+  'relay_in_recent_consensus_count': '22',
+  'relay_recent_measurement_attempt_count': '1',
+  'relay_recent_measurements_excluded_error_count': '1',
+  'relay_recent_priority_list_count': '1',
+  'success': '3',
+}
+
 EXPECTED_NEW_HEADER_CONTENT = """
 1410723598
 version=1.1.0
@@ -103,6 +130,23 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(None, desc.min_count)
     self.assertEqual(None, desc.min_percent)
 
+    self.assertEqual(None, desc.scanner_country)
+    self.assertEqual(None, desc.destinations_countries)
+    self.assertEqual(None, desc.time_to_report_half_network)
+
+    stats = desc.recent_stats
+    self.assertEqual(None, stats.consensus_count)
+    self.assertEqual(None, stats.prioritized_relays)
+    self.assertEqual(None, stats.prioritized_relay_lists)
+    self.assertEqual(None, stats.measurement_attempts)
+    self.assertEqual(None, stats.measurement_failures)
+
+    relay_failures = stats.relay_failures
+    self.assertEqual(None, relay_failures.no_measurement)
+    self.assertEqual(None, relay_failures.insuffient_period)
+    self.assertEqual(None, relay_failures.insufficient_measurements)
+    self.assertEqual(None, relay_failures.stale)
+
     self.assertEqual(94, len(desc.measurements))
     self.assertEqual(EXPECTED_MEASUREMENT_1, desc.measurements['D8B9CAA5B818DEFE80857F83FDABBB6429DCFCA0'])
 
@@ -130,8 +174,69 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(3908, desc.min_count)
     self.assertEqual(60, desc.min_percent)
 
+    self.assertEqual(None, desc.scanner_country)
+    self.assertEqual(None, desc.destinations_countries)
+    self.assertEqual(None, desc.time_to_report_half_network)
+
+    stats = desc.recent_stats
+    self.assertEqual(None, stats.consensus_count)
+    self.assertEqual(None, stats.prioritized_relays)
+    self.assertEqual(None, stats.prioritized_relay_lists)
+    self.assertEqual(None, stats.measurement_attempts)
+    self.assertEqual(None, stats.measurement_failures)
+
+    relay_failures = stats.relay_failures
+    self.assertEqual(None, relay_failures.no_measurement)
+    self.assertEqual(None, relay_failures.insuffient_period)
+    self.assertEqual(None, relay_failures.insufficient_measurements)
+    self.assertEqual(None, relay_failures.stale)
+
     self.assertEqual(81, len(desc.measurements))
     self.assertEqual(EXPECTED_MEASUREMENT_2, desc.measurements['9C7E1AFDACC53228F6FB57B3A08C7D36240B8F6F'])
+
+  def test_format_v1_4(self):
+    """
+    Parse version 1.4 formatted files.
+    """
+
+    desc = list(stem.descriptor.parse_file(get_resource('bandwidth_file_v1.4'), 'bandwidth-file 1.4'))[0]
+
+    self.assertEqual(datetime.datetime(2019, 4, 21, 21, 34, 57), desc.timestamp)
+    self.assertEqual('1.4.0', desc.version)
+
+    self.assertEqual('sbws', desc.software)
+    self.assertEqual('1.1.0', desc.software_version)
+
+    self.assertEqual(datetime.datetime(2019, 4, 16, 21, 35, 7), desc.earliest_bandwidth)
+    self.assertEqual(datetime.datetime(2019, 4, 21, 21, 34, 57), desc.latest_bandwidth)
+    self.assertEqual(datetime.datetime(2019, 4, 21, 21, 35, 4), desc.created_at)
+    self.assertEqual(datetime.datetime(2019, 4, 20, 11, 40, 1), desc.generated_at)
+
+    self.assertEqual(6684, desc.consensus_size)
+    self.assertEqual(6459, desc.eligible_count)
+    self.assertEqual(97, desc.eligible_percent)
+    self.assertEqual(4010, desc.min_count)
+    self.assertEqual(60, desc.min_percent)
+
+    self.assertEqual('US', desc.scanner_country)
+    self.assertEqual(['ZZ'], desc.destinations_countries)
+    self.assertEqual(223519, desc.time_to_report_half_network)
+
+    stats = desc.recent_stats
+    self.assertEqual(34, stats.consensus_count)
+    self.assertEqual(86417, stats.prioritized_relays)
+    self.assertEqual(260, stats.prioritized_relay_lists)
+    self.assertEqual(86417, stats.measurement_attempts)
+    self.assertEqual(57023, stats.measurement_failures)
+
+    relay_failures = stats.relay_failures
+    self.assertEqual(788, relay_failures.no_measurement)
+    self.assertEqual(182, relay_failures.insuffient_period)
+    self.assertEqual(663, relay_failures.insufficient_measurements)
+    self.assertEqual(0, relay_failures.stale)
+
+    self.assertEqual(58, len(desc.measurements))
+    self.assertEqual(EXPECTED_MEASUREMENT_3, desc.measurements['8F0F49F2341C7F706D5B475815DBD3E5761334B3'])
 
   @patch('time.time', Mock(return_value = 1410723598.276578))
   def test_minimal_bandwidth_file(self):
