@@ -54,7 +54,6 @@ EXPECTED_MEASUREMENT_2 = {
 
 EXPECTED_MEASUREMENT_3 = {
   'desc_bw_obs_last': '70423',
-  'success': '13',
   'desc_bw_obs_mean': '81784',
   'bw_median': '2603',
   'nick': 'whitsun',
