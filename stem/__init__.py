@@ -468,16 +468,20 @@ Library for working with the tor process.
   .. versionchanged:: 1.6.0
      Added the QUERY_NO_HSDIR reason.
 
-  =================== ===========
-  HSDescReason        Description
-  =================== ===========
-  **BAD_DESC**        descriptor was unparseable
-  **QUERY_REJECTED**  hidden service directory refused to provide the descriptor
-  **UPLOAD_REJECTED** descriptor was rejected by the hidden service directory
-  **NOT_FOUND**       descriptor with the given identifier wasn't found
-  **QUERY_NO_HSDIR**  no hidden service directory was found
-  **UNEXPECTED**      failure type is unknown
-  =================== ===========
+  .. versionchanged:: 1.8.0
+     Added the QUERY_RATE_LIMITED reason.
+
+  ======================= ===========
+  HSDescReason            Description
+  ======================= ===========
+  **BAD_DESC**            descriptor was unparseable
+  **QUERY_REJECTED**      hidden service directory refused to provide the descriptor
+  **UPLOAD_REJECTED**     descriptor was rejected by the hidden service directory
+  **NOT_FOUND**           descriptor with the given identifier wasn't found
+  **QUERY_NO_HSDIR**      no hidden service directory was found
+  **QUERY_RATE_LIMITED**  request was throttled
+  **UNEXPECTED**          failure type is unknown
+  ======================= ===========
 
 .. data:: HSAuth (enum)
 
