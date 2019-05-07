@@ -18,8 +18,8 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/src/or/fallback_dirs.inc'
-FALLBACK_DIR_LINK = "href='/tor.git/commit/src/or/fallback_dirs.inc\?id=([^']*)'"
+GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/src/app/config/fallback_dirs.inc'
+FALLBACK_DIR_LINK = "href='/tor.git/commit/src/app/config/fallback_dirs.inc\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
