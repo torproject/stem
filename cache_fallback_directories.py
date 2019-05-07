@@ -9,7 +9,7 @@ Caches tor's latest fallback directories.
 import re
 import sys
 
-import stem.descriptor.remote
+import stem.directory
 import stem.util.system
 
 try:
@@ -39,8 +39,8 @@ if __name__ == '__main__':
   print('Current stem commit: %s' % stem_commit)
   print('')
 
-  cached_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_cache()
-  latest_fallback_directories = stem.descriptor.remote.FallbackDirectory.from_remote()
+  cached_fallback_directories = stem.directory.Fallback.from_cache()
+  latest_fallback_directories = stem.directory.Fallback.from_remote()
 
   if cached_fallback_directories == latest_fallback_directories:
     print('Fallback directories are already up to date, nothing to do.')
@@ -51,5 +51,5 @@ if __name__ == '__main__':
   headers = latest_fallback_directories.values()[0].header if latest_fallback_directories else None
 
   print('Differences detected...\n')
-  print(stem.descriptor.remote._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
-  stem.descriptor.remote.FallbackDirectory._write(latest_fallback_directories, fallback_dir_commit, stem_commit, headers)
+  print(stem.directory._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
+  stem.directory.Fallback._write(latest_fallback_directories, fallback_dir_commit, stem_commit, headers)
