@@ -2914,7 +2914,7 @@ class Controller(BaseController):
     if our_services:
       try:
         result += self.get_info('onions/current').split('\n')
-      except stem.ProtocolError as exc:
+      except (stem.ProtocolError, stem.OperationFailed) as exc:
         # TODO: Tor's behavior around this was changed in Feb 2017, we should
         # drop it when all versions that did this are deprecated...
         #
@@ -2926,7 +2926,7 @@ class Controller(BaseController):
     if detached:
       try:
         result += self.get_info('onions/detached').split('\n')
-      except stem.ProtocolError as exc:
+      except (stem.ProtocolError, stem.OperationFailed) as exc:
         if 'No onion services of the specified type.' not in str(exc):
           raise
 
