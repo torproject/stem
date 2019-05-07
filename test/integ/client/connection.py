@@ -63,4 +63,4 @@ class TestConnection(unittest.TestCase):
     """
 
     conn = Relay.connect('127.0.0.1', test.runner.ORPORT)
-    self.assertEqual(5, int(conn.link_protocol))
+    self.assertTrue(int(conn.link_protocol) in (4, 5))
