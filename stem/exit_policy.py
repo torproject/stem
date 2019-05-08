@@ -452,14 +452,19 @@ class ExitPolicy(object):
     return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_default()])
 
   def _get_rules(self):
-    if self._rules is None:
+    # Local reference to our input_rules so this can be lock free. Otherwise
+    # another thread might unset our input_rules while processing them.
+
+    input_rules = self._input_rules
+
+    if self._rules is None and input_rules is not None:
       rules = []
       is_all_accept, is_all_reject = True, True
 
-      if isinstance(self._input_rules, bytes):
-        decompressed_rules = zlib.decompress(self._input_rules).split(b',')
+      if isinstance(input_rules, bytes):
+        decompressed_rules = zlib.decompress(input_rules).split(b',')
       else:
-        decompressed_rules = self._input_rules
+        decompressed_rules = input_rules
 
       for rule in decompressed_rules:
         if isinstance(rule, bytes):

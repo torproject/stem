@@ -51,6 +51,7 @@ The following are only available within Stem's `git repository
   * Added :func:`~stem.control.Controller.get_uptime` method to the :class:`~stem.control.Controller`
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
   * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
+  * ExitPolicies could raise TypeError when read concurrently (:trac:`29899`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
 
  * **Descriptors**
