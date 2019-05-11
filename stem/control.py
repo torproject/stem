@@ -229,17 +229,22 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 
   Purposes for inbound connections that Tor handles.
 
-  ============= ===========
-  Listener      Description
-  ============= ===========
-  **OR**        traffic we're relaying as a member of the network (torrc's **ORPort** and **ORListenAddress**)
-  **DIR**       mirroring for tor descriptor content (torrc's **DirPort** and **DirListenAddress**)
-  **SOCKS**     client traffic we're sending over Tor (torrc's **SocksPort** and **SocksListenAddress**)
-  **TRANS**     transparent proxy handling (torrc's **TransPort** and **TransListenAddress**)
-  **NATD**      forwarding for ipfw NATD connections (torrc's **NatdPort** and **NatdListenAddress**)
-  **DNS**       DNS lookups for our traffic (torrc's **DNSPort** and **DNSListenAddress**)
-  **CONTROL**   controller applications (torrc's **ControlPort** and **ControlListenAddress**)
-  ============= ===========
+  .. versionchanged:: 1.8.0
+     Added the EXTOR and HTTPTUNNEL listeners.
+
+  =============== ===========
+  Listener        Description
+  =============== ===========
+  **OR**          traffic we're relaying as a member of the network (torrc's **ORPort** and **ORListenAddress**)
+  **DIR**         mirroring for tor descriptor content (torrc's **DirPort** and **DirListenAddress**)
+  **SOCKS**       client traffic we're sending over Tor (torrc's **SocksPort** and **SocksListenAddress**)
+  **TRANS**       transparent proxy handling (torrc's **TransPort** and **TransListenAddress**)
+  **NATD**        forwarding for ipfw NATD connections (torrc's **NatdPort** and **NatdListenAddress**)
+  **DNS**         DNS lookups for our traffic (torrc's **DNSPort** and **DNSListenAddress**)
+  **CONTROL**     controller applications (torrc's **ControlPort** and **ControlListenAddress**)
+  **EXTOR**       pluggable transport for Extended ORPorts (torrc's **ExtORPort**)
+  **HTTPTUNNEL**  http tunneling proxy (torrc's **HTTPTunnelPort**)
+  =============== ===========
 """
 
 import calendar
@@ -338,6 +343,8 @@ Listener = stem.util.enum.UppercaseEnum(
   'NATD',
   'DNS',
   'CONTROL',
+  'EXTOR',
+  'HTTPTUNNEL',
 )
 
 # torrc options that cannot be changed once tor's running
