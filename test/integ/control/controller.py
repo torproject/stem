@@ -1356,7 +1356,6 @@ class TestController(unittest.TestCase):
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
-  @test.require.online
   @test.require.controller
   def test_transition_to_relay(self):
     """
