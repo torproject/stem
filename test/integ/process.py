@@ -459,7 +459,7 @@ class TestProcess(unittest.TestCase):
               'ControlPort': control_port,
               'DataDirectory': data_directory,
             },
-            completion_percent = 5
+            completion_percent = 0
           )
 
         control_socket = stem.socket.ControlPort(port = int(control_port))
@@ -499,7 +499,7 @@ class TestProcess(unittest.TestCase):
             'ControlPort': control_port,
             'DataDirectory': data_directory,
           },
-          completion_percent = 5
+          completion_percent = 0
         )
 
         control_socket = stem.socket.ControlPort(port = int(control_port))
@@ -594,7 +594,7 @@ class TestProcess(unittest.TestCase):
           'DataDirectory': data_directory,
           '__OwningControllerProcess': str(sleep_process.pid),
         },
-        completion_percent = 5,
+        completion_percent = 0,
       )
 
       # Kill the sleep command. Tor should quit shortly after.
@@ -637,7 +637,7 @@ class TestProcess(unittest.TestCase):
           'ControlPort': control_port,
           'DataDirectory': data_directory,
         },
-        completion_percent = 5,
+        completion_percent = 0,
         take_ownership = True,
       )
 
