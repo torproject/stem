@@ -85,14 +85,14 @@ new_header=neat stuff
 =====
 """.strip()
 
-WRONG_VERSION_POSITION = """
+WRONG_VERSION_POSITION = b"""
 1410723598
 file_created=2019-01-14T05:35:06
 version=1.1.0
 =====
 """.strip()
 
-RIGHT_VERSION_POSITION = """
+RIGHT_VERSION_POSITION = b"""
 1410723598
 version=1.1.0
 file_created=2019-01-14T05:35:06

@@ -104,7 +104,7 @@ def _date(val):
 
 
 def _csv(val):
-  return map(lambda v: v.strip(), val.split(',')) if val is not None else None
+  return list(map(lambda v: v.strip(), val.split(','))) if val is not None else None
 
 
 # mapping of attributes => (header, type)
