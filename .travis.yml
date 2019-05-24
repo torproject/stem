@@ -1,38 +1,196 @@
-# Travis CI configuration file
-# http://about.travis-ci.org/docs/
-
 language: python
 
-python:
-    - "2.7"
-    - "3.5"
-    - "3.6"
+# The default python version on Travis is 2.7
+# But we add this line to show the python version in the Travis UI
+python: "2.7"
 
-env:
-  - TEST_PARAM="--unit"
-  - TEST_PARAM="--integ"
+os:
+  - linux
+  ## We also use macOS for some networks
 
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq tor
+matrix:
+  # include creates Linux, python 2.7, tor master builds by default
+  # we use tor master to catch tor issues before stable releases
+  # the key(s) in each item override these defaults
+  include:
+    ## macOS on Travis is tricky:
+    ##   - We use the default python version on macOS, which is currently 2.7.
+    ##     (But we don't show the version, because Travis might change it
+    ##     without us noticing.)
+    ##   - We use language: c, because language: python fails on Travis macOS.
+    ##   - We get the tor version in the homebrew cache on the macOS image.
+    ##     The latest tor version in homebrew is on this page:
+    ##       https://formulae.brew.sh/formula/tor
+    ##     The Travis version might be slightly older.
+    - os: osx
+      language: c
+      python:
+      env: TOR="stable-release"
 
-# Dependencies installation commands
-install:
-  - pip install -U pip
-  - pip install -r requirements.txt
+    ## Test all supported and available tor versions on Linux
+    ## If the deb.torproject.org repositories are removed, we will fall back to
+    ## Ubuntu security's tor version (currently 0.2.9.14). We might want to
+    ## automatically fail the job if we can't get a newer tor, see #29741.
+    ## The current tor versions in Ubuntu are on this page:
+    ## https://packages.ubuntu.com/search?keywords=tor&searchon=names&exact=1
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.2.9.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - shellcheck
+            - tor
+      env: TOR="0.2.9-nightly"
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.3.4.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - shellcheck
+            - tor
+      env: TOR="0.3.4-nightly"
+    ## The current stable release is 0.3.5, so we don't have a separate
+    ## 0.3.5-stable job
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - shellcheck
+            - tor
+      env: TOR="stable-release"
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.3.5.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - shellcheck
+            - tor
+      env: TOR="0.3.5-nightly"
+    ## The experimental deb line needs to be updated when 0.4.0 becomes stable
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-experimental-0.4.0.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - shellcheck
+            - tor
+      env: TOR="0.4.0-nightly"
 
-# Tests running commands
-script:
-  - ./run_tests.py $TEST_PARAM 
+    ## Test all supported python releases
+    ## Pre-installed in Travis xenial:
+    ## https://docs.travis-ci.com/user/reference/xenial/#python-support
+    ## End of Life: 1 January 2020
+    ## https://www.python.org/dev/peps/pep-0373/#id2
+    - python: "2.7"
+    ## End of Life: December 2021
+    ## https://www.python.org/dev/peps/pep-0494/#lifespan
+    - python: "3.6"
+    ## End of Life: June 2023
+    ## https://www.python.org/dev/peps/pep-0537/#lifespan
+    - python: "3.7"
+    ## Stable: 20 October 2019
+    ## (Switch from 3.8-dev to 3.8, and check for 3.9-dev)
+    ## End of Life: October2024
+    ## https://www.python.org/dev/peps/pep-0569/#lifespan
+    - python: "3.8-dev"
+    - python: "nightly"
+    # PyPy versions
+    ## End of Life: "forever"
+    ## http://doc.pypy.org/en/latest/faq.html#how-long-will-pypy-support-python2
+    ## But stem may decide not to support python 2 after 1 Jan 2020.
+    ## Travis Xenial does not support pypy2.7
+    #- python: "pypy2.7"
+    ## PyPy does not have documented end of life dates
+    - python: "pypy3.5"
+    ## PyPy 3.6 is currently in alpha
+    ## Travis Xenial does not support pypy3.6-dev yet?
+    #- python: "pypy3.6-dev"
 
-notifications:
-  email: false
+  ## Uncomment to allow the build to report success (with non-required
+  ## sub-builds continuing to run) if all required sub-builds have
+  ## succeeded.  This is somewhat buggy currently: it can cause
+  ## duplicate notifications and prematurely report success if a
+  ## single sub-build has succeeded.  See
+  ## https://github.com/travis-ci/travis-ci/issues/1696
+  #fast_finish: true
 
-after_script:
-  # List installed packages along with their versions.
-  - "pip list"
+  ## These builds fail in Travis at the moment
+  #allow_failures:
+  #  - env: TOR="master-nightly"
 
+## We don't need sudo. (The "apt:" stanza after this allows us to not need
+## sudo; otherwise, we would need it for getting dependencies.)
 sudo: false
 
-git:
-  depth: 300
+## (Linux only) Use the Ubuntu Xenial Linux Image
+## deb.torproject.org doesn't support Trusty any more
+dist: xenial
+
+## (OSX only) Use the default OSX image
+## See https://docs.travis-ci.com/user/reference/osx#os-x-version
+## Default is Xcode 9.4 on macOS 10.13 as of August 2018
+#osx_image: xcode9.4
+
+## The TOR env var should be kept in sync with the Linux tor version below
+## We use the basic-min network by default, to reduce load and increase
+## reliability
+env:
+  - TOR="master-nightly"
+
+## Download our dependencies
+addons:
+  ## (Linux only)
+  apt:
+    sources:
+      - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-master-xenial main'
+        key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+    packages:
+      - shellcheck
+      - tor
+  ## (macOS only)
+  homebrew:
+    packages:
+      - shellcheck
+      - tor
+
+install:
+  ## We also need to install stem's dependencies
+  - pip install -U pip
+  - pip install -r requirements.txt
+  ## List installed package versions
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then dpkg-query --show; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew list --versions; fi
+  - pip list
+  - python --version
+  - shellcheck --version
+  - tor --version
+
+script:
+  ## Check the only shell script in the repository
+  - shellcheck docs/republish
+  ## Run stem's tests
+  - ./run_tests.py --unit
+  - ./run_tests.py --integ
+
+after_failure:
+  ## Show the integ tor log
+  - cat "$STEM_SOURCE_DIR"/test/data/tor_log || echo "cat failed"
+
+notifications:
+  irc:
+    channels:
+      - "irc.oftc.net#tor-ci"
+    template:
+      - "%{repository} %{branch} %{commit} - %{author}: %{commit_subject}"
+      - "Build #%{build_number} %{result}. Details: %{build_url}"
+    on_success: change
+    on_failure: change
+  email:
+    on_success: never
+    on_failure: change
