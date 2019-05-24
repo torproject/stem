@@ -13,11 +13,19 @@ matrix:
   # we use tor master to catch tor issues before stable releases
   # the key(s) in each item override these defaults
   include:
-    ## Test macOS
-    ## Tweak the language to work around a Travis macOS python install bug
+    ## macOS on Travis is tricky:
+    ##   - We use the default python version on macOS, which is currently 2.7.
+    ##     (But we don't show the version, because Travis might change it
+    ##     without us noticing.)
+    ##   - We use language: c, because language: python fails on Travis macOS.
+    ##   - We get the tor version in the homebrew cache on the macOS image.
+    ##     The latest tor version in homebrew is on this page:
+    ##       https://formulae.brew.sh/formula/tor
+    ##     The Travis version might be slightly older.
     - os: osx
       language: c
       python:
+      env: TOR="stable-release"
 
     ## Test all supported and available tor versions on Linux
     ## If the deb.torproject.org repositories are removed, we will fall back to
