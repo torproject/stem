@@ -347,10 +347,10 @@ class RelayCell(CircuitCell):
   IS_FIXED_SIZE = True
 
   def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
-    if 'HASH' in str(type(digest)):
+    if 'hash' in str(type(digest)).lower():
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
-      # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH'.
+      # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH' or 'Hash'.
 
       digest_packed = digest.digest()[:RELAY_DIGEST_SIZE.size]
       digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
@@ -400,7 +400,7 @@ class RelayCell(CircuitCell):
     :param bytes content: cell content to be decrypted
     :param cryptography.hazmat.primitives.ciphers.CipherContext key:
       key established with the relay we received this cell from
-    :param HASH digest: running digest held with the relay
+    :param hashlib.HASH digest: running digest held with the relay
 
     :returns: **tuple** with our decrypted cell and updated key/digest
 
@@ -453,7 +453,7 @@ class RelayCell(CircuitCell):
     :param int link_protocol: link protocol version
     :param cryptography.hazmat.primitives.ciphers.CipherContext key:
       key established with the relay we're sending this cell to
-    :param HASH digest: running digest held with the relay
+    :param hashlib.HASH digest: running digest held with the relay
 
     :returns: **tuple** with our encrypted payload and updated key/digest
     """
