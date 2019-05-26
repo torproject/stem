@@ -30,6 +30,7 @@ import re
 import sys
 import time
 import traceback
+import distro
 
 import stem
 import stem.prereq
@@ -119,7 +120,7 @@ def _check_platform_version():
   elif platform.system() == 'Darwin':
     extra = platform.release()
   elif platform.system() == 'Linux':
-    extra = ' '.join(platform.linux_distribution()[:2])
+    extra = ' '.join(distro.linux_distribution(full_distribution_name=False)[:2])
   else:
     extra = None
 
