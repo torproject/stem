@@ -706,7 +706,7 @@ def pid_by_name(process_name, multiple = False):
     results = stem.util.system.call('tasklist', None)
 
     if results:
-      tasklist_regex = re.compile('^\s*%s\s+(?P<pid>[0-9]*)' % process_name)
+      tasklist_regex = re.compile('^\\s*%s\\s+(?P<pid>[0-9]*)' % process_name)
 
       for line in results:
         match = tasklist_regex.search(line)

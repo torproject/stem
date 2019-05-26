@@ -307,7 +307,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   initial_position = descriptor_file.tell()
   first_line = stem.util.str_tools._to_unicode(descriptor_file.readline().strip())
-  metrics_header_match = re.match('^@type (\S+) (\d+).(\d+)$', first_line)
+  metrics_header_match = re.match('^@type (\\S+) (\\d+).(\\d+)$', first_line)
 
   if not metrics_header_match:
     descriptor_file.seek(initial_position)
@@ -320,7 +320,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
       descriptor_file = NewlineNormalizer(descriptor_file)
 
     if descriptor_type is not None:
-      descriptor_type_match = re.match('^(\S+) (\d+).(\d+)$', descriptor_type)
+      descriptor_type_match = re.match('^(\\S+) (\\d+).(\\d+)$', descriptor_type)
 
       if descriptor_type_match:
         desc_type, major_version, minor_version = descriptor_type_match.groups()

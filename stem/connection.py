@@ -474,49 +474,49 @@ def authenticate(controller, password = None, chroot_path = None, protocolinfo_r
       Tor allows for authentication by reading it a cookie file, but we can't
       read that file (probably due to permissions).
 
-    * **\***:class:`stem.connection.IncorrectCookieValue`
+    * **\\***:class:`stem.connection.IncorrectCookieValue`
 
       Tor allows for authentication by reading it a cookie file, but rejected
       the contents of that file.
 
-    * **\***:class:`stem.connection.AuthChallengeUnsupported`
+    * **\\***:class:`stem.connection.AuthChallengeUnsupported`
 
       Tor doesn't recognize the AUTHCHALLENGE command. This is probably a Tor
       version prior to SAFECOOKIE being implement, but this exception shouldn't
       arise because we won't attempt SAFECOOKIE auth unless Tor claims to
       support it.
 
-    * **\***:class:`stem.connection.UnrecognizedAuthChallengeMethod`
+    * **\\***:class:`stem.connection.UnrecognizedAuthChallengeMethod`
 
       Tor couldn't recognize the AUTHCHALLENGE method Stem sent to it. This
       shouldn't happen at all.
 
-    * **\***:class:`stem.connection.InvalidClientNonce`
+    * **\\***:class:`stem.connection.InvalidClientNonce`
 
       Tor says that the client nonce provided by Stem during the AUTHCHALLENGE
       process is invalid.
 
-    * **\***:class:`stem.connection.AuthSecurityFailure`
+    * **\\***:class:`stem.connection.AuthSecurityFailure`
 
       Nonce value provided by the server was invalid.
 
-    * **\***:class:`stem.connection.OpenAuthRejected`
+    * **\\***:class:`stem.connection.OpenAuthRejected`
 
       Tor says that it allows for authentication without any credentials, but
       then rejected our authentication attempt.
 
-    * **\***:class:`stem.connection.MissingAuthInfo`
+    * **\\***:class:`stem.connection.MissingAuthInfo`
 
       Tor provided us with a PROTOCOLINFO reply that is technically valid, but
       missing the information we need to authenticate.
 
-    * **\***:class:`stem.connection.AuthenticationFailure`
+    * **\\***:class:`stem.connection.AuthenticationFailure`
 
       There are numerous other ways that authentication could have failed
       including socket failures, malformed controller responses, etc. These
       mostly constitute transient failures or bugs.
 
-    **\*** In practice it is highly unusual for this to occur, being more of a
+    **\\*** In practice it is highly unusual for this to occur, being more of a
     theoretical possibility rather than something you should expect. It's fine
     to treat these as errors. If you have a use case where this commonly
     happens, please file a ticket on 'trac.torproject.org'.

@@ -6,7 +6,7 @@ Parsing for Tor server descriptors, which contains the infrequently changing
 information about a Tor relay (contact information, exit policy, public keys,
 etc). This information is provided from a few sources...
 
-* The control port via 'GETINFO desc/\*' queries.
+* The control port via 'GETINFO desc/\\*' queries.
 
 * The 'cached-descriptors' file in Tor's data directory.
 
@@ -287,7 +287,7 @@ def _parse_platform_line(descriptor, entries):
   # version, but might as well try to save our caller the effort.
 
   value = _value('platform', entries)
-  platform_match = re.match('^(?:node-)?Tor (\S*).* on (.*)$', value)
+  platform_match = re.match('^(?:node-)?Tor (\\S*).* on (.*)$', value)
 
   if platform_match:
     version_str, descriptor.operating_system = platform_match.groups()
@@ -459,44 +459,44 @@ class ServerDescriptor(Descriptor):
   """
   Common parent for server descriptors.
 
-  :var str nickname: **\*** relay's nickname
+  :var str nickname: **\\*** relay's nickname
   :var str fingerprint: identity key fingerprint
-  :var datetime published: **\*** time in UTC when this descriptor was made
+  :var datetime published: **\\*** time in UTC when this descriptor was made
 
-  :var str address: **\*** IPv4 address of the relay
-  :var int or_port: **\*** port used for relaying
-  :var int socks_port: **\*** port used as client (**deprecated**, always **None**)
-  :var int dir_port: **\*** port used for descriptor mirroring
+  :var str address: **\\*** IPv4 address of the relay
+  :var int or_port: **\\*** port used for relaying
+  :var int socks_port: **\\*** port used as client (**deprecated**, always **None**)
+  :var int dir_port: **\\*** port used for descriptor mirroring
 
   :var bytes platform: line with operating system and tor version
   :var stem.version.Version tor_version: version of tor
   :var str operating_system: operating system
   :var int uptime: uptime when published in seconds
   :var bytes contact: contact information
-  :var stem.exit_policy.ExitPolicy exit_policy: **\*** stated exit policy
-  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
-  :var BridgeDistribution bridge_distribution: **\*** preferred method of providing this relay's
+  :var stem.exit_policy.ExitPolicy exit_policy: **\\*** stated exit policy
+  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\\*** exit policy for IPv6
+  :var BridgeDistribution bridge_distribution: **\\*** preferred method of providing this relay's
     address if a bridge
-  :var set family: **\*** nicknames or fingerprints of declared family
+  :var set family: **\\*** nicknames or fingerprints of declared family
 
-  :var int average_bandwidth: **\*** average rate it's willing to relay in bytes/s
-  :var int burst_bandwidth: **\*** burst rate it's willing to relay in bytes/s
-  :var int observed_bandwidth: **\*** estimated capacity based on usage in bytes/s
+  :var int average_bandwidth: **\\*** average rate it's willing to relay in bytes/s
+  :var int burst_bandwidth: **\\*** burst rate it's willing to relay in bytes/s
+  :var int observed_bandwidth: **\\*** estimated capacity based on usage in bytes/s
 
   :var list link_protocols: link protocols supported by the relay
   :var list circuit_protocols: circuit protocols supported by the relay
-  :var bool is_hidden_service_dir: **\*** indicates if the relay serves hidden
+  :var bool is_hidden_service_dir: **\\*** indicates if the relay serves hidden
     service descriptors
-  :var bool hibernating: **\*** hibernating when published
-  :var bool allow_single_hop_exits: **\*** flag if single hop exiting is allowed
-  :var bool allow_tunneled_dir_requests: **\*** flag if tunneled directory
+  :var bool hibernating: **\\*** hibernating when published
+  :var bool allow_single_hop_exits: **\\*** flag if single hop exiting is allowed
+  :var bool allow_tunneled_dir_requests: **\\*** flag if tunneled directory
     requests are accepted
-  :var bool extra_info_cache: **\*** flag if a mirror for extra-info documents
+  :var bool extra_info_cache: **\\*** flag if a mirror for extra-info documents
   :var str extra_info_digest: upper-case hex encoded digest of our extra-info document
   :var str extra_info_sha256_digest: base64 encoded sha256 digest of our extra-info document
   :var bool eventdns: flag for evdns backend (**deprecated**, always unset)
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
-  :var list or_addresses: **\*** alternative for our address/or_port
+  :var list or_addresses: **\\*** alternative for our address/or_port
     attributes, each entry is a tuple of the form (address (**str**), port
     (**int**), is_ipv6 (**bool**))
   :var dict protocols: mapping of protocols to their supported versions
@@ -511,7 +511,7 @@ class ServerDescriptor(Descriptor):
   :var int write_history_interval: seconds per interval
   :var list write_history_values: bytes written during each interval
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
 
   .. versionchanged:: 1.5.0
@@ -785,14 +785,14 @@ class RelayDescriptor(ServerDescriptor):
   :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
   :var str ed25519_signature: signature of this document using ed25519
 
-  :var str onion_key: **\*** key used to encrypt EXTEND cells
+  :var str onion_key: **\\*** key used to encrypt EXTEND cells
   :var str onion_key_crosscert: signature generated using the onion_key
   :var str ntor_onion_key_crosscert: signature generated using the ntor-onion-key
   :var str ntor_onion_key_crosscert_sign: sign of the corresponding ed25519 public key
-  :var str signing_key: **\*** relay's long-term identity key
-  :var str signature: **\*** signature for this descriptor
+  :var str signing_key: **\\*** relay's long-term identity key
+  :var str signature: **\\*** signature for this descriptor
 
-  **\*** attribute is required when we're parsed with validation
+  **\\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.5.0
      Added the ed25519_certificate, ed25519_master_key, ed25519_signature,

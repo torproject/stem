@@ -169,7 +169,7 @@ def strip_module(line_type, line_content):
   repetitive, and redundant with the headers.
   """
 
-  m = re.match('.*( \(test\..*?\)).*', line_content)
+  m = re.match('.*( \\(test\\..*?\\)).*', line_content)
 
   if m:
     line_content = line_content.replace(m.groups()[0], '', 1)
@@ -182,7 +182,7 @@ def runtimes(line_type, line_content):
   Provides test runtimes if showing verbose results.
   """
 
-  m = re.search('(test\.[^)]*)', line_content)
+  m = re.search('(test\\.[^)]*)', line_content)
 
   if m and line_type == LineType.OK:
     test = '%s.%s' % (m.group(0), line_content.split()[0])
@@ -283,7 +283,7 @@ class ErrorTracker(object):
         else:
           self._errors.append(line_content)
 
-        module_match = re.match('.*\((test\.\S+)\.\S+\).*', line_content)
+        module_match = re.match('.*\\((test\\.\\S+)\\.\\S+\\).*', line_content)
 
         if module_match:
           self._error_modules.add(module_match.group(1))

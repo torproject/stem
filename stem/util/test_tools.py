@@ -323,7 +323,7 @@ def test_runtimes():
 
 def clean_orphaned_pyc(paths):
   """
-  Deletes any file with a \*.pyc extention without a corresponding \*.py. This
+  Deletes any file with a \\*.pyc extention without a corresponding \\*.py. This
   helps to address a common gotcha when deleting python files...
 
   * You delete module 'foo.py' and run the tests to ensure that you haven't

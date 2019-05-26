@@ -139,7 +139,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
       signal.setitimer(signal.ITIMER_REAL, timeout)
 
     bootstrap_line = re.compile('Bootstrapped ([0-9]+)%')
-    problem_line = re.compile('\[(warn|err)\] (.*)$')
+    problem_line = re.compile('\\[(warn|err)\\] (.*)$')
     last_problem = 'Timed out'
 
     while True:

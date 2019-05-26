@@ -50,7 +50,7 @@ __all__ = [
   'SingleLineResponse',
 ]
 
-KEY_ARG = re.compile('^(\S+)=')
+KEY_ARG = re.compile('^(\\S+)=')
 
 
 def convert(response_type, message, **kwargs):

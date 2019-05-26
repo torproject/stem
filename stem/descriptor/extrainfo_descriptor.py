@@ -16,7 +16,7 @@ Extra-info descriptors are available from a few sources...
 
 * If you have 'DownloadExtraInfo 1' in your torrc...
 
- * control port via 'GETINFO extra-info/digest/\*' queries
+ * control port via 'GETINFO extra-info/digest/\\*' queries
  * the 'cached-extrainfo' file in tor's data directory
 
 * Archived descriptors provided by `CollecTor <https://metrics.torproject.org/collector.html>`_.
@@ -164,8 +164,8 @@ SINGLE_FIELDS = (
   'exit-streams-opened',
 )
 
-_timestamp_re = re.compile('^(.*) \(([0-9]+) s\)( .*)?$')
-_locale_re = re.compile('^[a-zA-Z0-9\?]{2}$')
+_timestamp_re = re.compile('^(.*) \\(([0-9]+) s\\)( .*)?$')
+_locale_re = re.compile('^[a-zA-Z0-9\\?]{2}$')
 
 
 def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
@@ -572,12 +572,12 @@ class ExtraInfoDescriptor(Descriptor):
   """
   Extra-info descriptor document.
 
-  :var str nickname: **\*** relay's nickname
-  :var str fingerprint: **\*** identity key fingerprint
-  :var datetime published: **\*** time in UTC when this descriptor was made
+  :var str nickname: **\\*** relay's nickname
+  :var str fingerprint: **\\*** identity key fingerprint
+  :var datetime published: **\\*** time in UTC when this descriptor was made
   :var str geoip_db_digest: sha1 of the geoIP database file for IPv4 addresses
   :var str geoip6_db_digest: sha1 of the geoIP database file for IPv6 addresses
-  :var dict transport: **\*** mapping of transport methods to their (address,
+  :var dict transport: **\\*** mapping of transport methods to their (address,
     port, args) tuple, these usually appear on bridges in which case all of
     those are **None**
 
@@ -663,13 +663,13 @@ class ExtraInfoDescriptor(Descriptor):
 
   :var datetime hs_stats_end: end of the sampling interval
   :var int hs_rend_cells: rounded count of the RENDEZVOUS1 cells seen
-  :var int hs_rend_cells_attr: **\*** attributes provided for the hs_rend_cells
+  :var int hs_rend_cells_attr: **\\*** attributes provided for the hs_rend_cells
   :var int hs_dir_onions_seen: rounded count of the identities seen
-  :var int hs_dir_onions_seen_attr: **\*** attributes provided for the hs_dir_onions_seen
+  :var int hs_dir_onions_seen_attr: **\\*** attributes provided for the hs_dir_onions_seen
 
   **Padding Count Attributes:**
 
-  :var dict padding_counts: **\*** padding parameters
+  :var dict padding_counts: **\\*** padding parameters
   :var datetime padding_counts_end: end of the period when padding data is being collected
   :var int padding_counts_interval: length in seconds of the interval
 
@@ -683,7 +683,7 @@ class ExtraInfoDescriptor(Descriptor):
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
   :var dict ip_versions: mapping of ip transports to a count for the number of users
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
 
   .. versionchanged:: 1.4.0
@@ -906,14 +906,14 @@ class ExtraInfoDescriptor(Descriptor):
 class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   """
   Relay extra-info descriptor, constructed from data such as that provided by
-  'GETINFO extra-info/digest/\*', cached descriptors, and metrics
+  'GETINFO extra-info/digest/\\*', cached descriptors, and metrics
   (`specification <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_).
 
   :var ed25519_certificate str: base64 encoded ed25519 certificate
   :var ed25519_signature str: signature of this document using ed25519
-  :var str signature: **\*** signature for this extrainfo descriptor
+  :var str signature: **\\*** signature for this extrainfo descriptor
 
-  **\*** attribute is required when we're parsed with validation
+  **\\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.5.0
      Added the ed25519_certificate and ed25519_signature attributes.

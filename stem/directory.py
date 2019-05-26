@@ -62,18 +62,18 @@ GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/conf
 GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
-AUTHORITY_NAME = re.compile('"(\S+) orport=(\d+) .*"')
-AUTHORITY_V3IDENT = re.compile('"v3ident=([\dA-F]{40}) "')
-AUTHORITY_IPV6 = re.compile('"ipv6=\[([\da-f:]+)\]:(\d+) "')
-AUTHORITY_ADDR = re.compile('"([\d\.]+):(\d+) ([\dA-F ]{49})",')
+AUTHORITY_NAME = re.compile('"(\\S+) orport=(\\d+) .*"')
+AUTHORITY_V3IDENT = re.compile('"v3ident=([\\dA-F]{40}) "')
+AUTHORITY_IPV6 = re.compile('"ipv6=\\[([\\da-f:]+)\\]:(\\d+) "')
+AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{49})",')
 
 FALLBACK_DIV = '/* ===== */'
-FALLBACK_MAPPING = re.compile('/\*\s+(\S+)=(\S*)\s+\*/')
+FALLBACK_MAPPING = re.compile('/\\*\\s+(\\S+)=(\\S*)\\s+\\*/')
 
-FALLBACK_ADDR = re.compile('"([\d\.]+):(\d+) orport=(\d+) id=([\dA-F]{40}).*')
-FALLBACK_NICKNAME = re.compile('/\* nickname=(\S+) \*/')
-FALLBACK_EXTRAINFO = re.compile('/\* extrainfo=([0-1]) \*/')
-FALLBACK_IPV6 = re.compile('" ipv6=\[([\da-f:]+)\]:(\d+)"')
+FALLBACK_ADDR = re.compile('"([\\d\\.]+):(\\d+) orport=(\\d+) id=([\\dA-F]{40}).*')
+FALLBACK_NICKNAME = re.compile('/\\* nickname=(\\S+) \\*/')
+FALLBACK_EXTRAINFO = re.compile('/\\* extrainfo=([0-1]) \\*/')
+FALLBACK_IPV6 = re.compile('" ipv6=\\[([\\da-f:]+)\\]:(\\d+)"')
 
 
 def _match_with(lines, regexes, required = None):

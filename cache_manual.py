@@ -19,7 +19,7 @@ except ImportError:
   import urllib2 as urllib
 
 GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/doc/tor.1.txt'
-MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\?id=([^']*)'"
+MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:

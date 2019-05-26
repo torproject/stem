@@ -175,7 +175,7 @@ def _check_for_unused_tests(paths):
       with open(py_path) as f:
         file_contents = f.read()
 
-      test_match = re.search('^class (\S*)\(unittest.TestCase\):$', file_contents, re.MULTILINE)
+      test_match = re.search('^class (\\S*)\\(unittest.TestCase\\):$', file_contents, re.MULTILINE)
 
       if test_match:
         class_name = test_match.groups()[0]

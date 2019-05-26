@@ -538,24 +538,24 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   :var dict routers: fingerprints to :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV2`
     contained in the document
 
-  :var int version: **\*** document version
+  :var int version: **\\*** document version
 
-  :var str hostname: **\*** hostname of the authority
-  :var str address: **\*** authority's IP address
-  :var int dir_port: **\*** authority's DirPort
-  :var str fingerprint: **\*** authority's fingerprint
-  :var str contact: **\*** authority's contact information
-  :var str signing_key: **\*** authority's public signing key
+  :var str hostname: **\\*** hostname of the authority
+  :var str address: **\\*** authority's IP address
+  :var int dir_port: **\\*** authority's DirPort
+  :var str fingerprint: **\\*** authority's fingerprint
+  :var str contact: **\\*** authority's contact information
+  :var str signing_key: **\\*** authority's public signing key
 
   :var list client_versions: list of recommended client tor version strings
   :var list server_versions: list of recommended server tor version strings
-  :var datetime published: **\*** time when the document was published
-  :var list options: **\*** list of things that this authority decides
+  :var datetime published: **\\*** time when the document was published
+  :var list options: **\\*** list of things that this authority decides
 
-  :var str signing_authority: **\*** name of the authority signing the document
-  :var str signature: **\*** authority's signature for the document
+  :var str signing_authority: **\\*** name of the authority signing the document
+  :var str signature: **\\*** authority's signature for the document
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
 
@@ -943,27 +943,27 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   :var dict routers: fingerprint to :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
     mapping for relays contained in the document
 
-  :var int version: **\*** document version
-  :var str version_flavor: **\*** flavor associated with the document (such as 'ns' or 'microdesc')
-  :var bool is_consensus: **\*** **True** if the document is a consensus
-  :var bool is_vote: **\*** **True** if the document is a vote
-  :var bool is_microdescriptor: **\*** **True** if this is a microdescriptor
+  :var int version: **\\*** document version
+  :var str version_flavor: **\\*** flavor associated with the document (such as 'ns' or 'microdesc')
+  :var bool is_consensus: **\\*** **True** if the document is a consensus
+  :var bool is_vote: **\\*** **True** if the document is a vote
+  :var bool is_microdescriptor: **\\*** **True** if this is a microdescriptor
     flavored document, **False** otherwise
-  :var datetime valid_after: **\*** time when the consensus became valid
-  :var datetime fresh_until: **\*** time when the next consensus should be produced
-  :var datetime valid_until: **\*** time when this consensus becomes obsolete
-  :var int vote_delay: **\*** number of seconds allowed for collecting votes
+  :var datetime valid_after: **\\*** time when the consensus became valid
+  :var datetime fresh_until: **\\*** time when the next consensus should be produced
+  :var datetime valid_until: **\\*** time when this consensus becomes obsolete
+  :var int vote_delay: **\\*** number of seconds allowed for collecting votes
     from all authorities
-  :var int dist_delay: **\*** number of seconds allowed for collecting
+  :var int dist_delay: **\\*** number of seconds allowed for collecting
     signatures from all authorities
   :var list client_versions: list of recommended client tor versions
   :var list server_versions: list of recommended server tor versions
-  :var list packages: **\*** list of :data:`~stem.descriptor.networkstatus.PackageVersion` entries
-  :var list known_flags: **\*** list of :data:`~stem.Flag` for the router's flags
-  :var dict params: **\*** dict of parameter(**str**) => value(**int**) mappings
-  :var list directory_authorities: **\*** list of :class:`~stem.descriptor.networkstatus.DirectoryAuthority`
+  :var list packages: **\\*** list of :data:`~stem.descriptor.networkstatus.PackageVersion` entries
+  :var list known_flags: **\\*** list of :data:`~stem.Flag` for the router's flags
+  :var dict params: **\\*** dict of parameter(**str**) => value(**int**) mappings
+  :var list directory_authorities: **\\*** list of :class:`~stem.descriptor.networkstatus.DirectoryAuthority`
     objects that have generated this document
-  :var list signatures: **\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
+  :var list signatures: **\\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
     of the authorities that have signed the document
 
   **Consensus Attributes:**
@@ -985,7 +985,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
   :var list consensus_methods: list of ints for the supported method versions
   :var datetime published: time when the document was published
-  :var dict flag_thresholds: **\*** mapping of internal performance thresholds used while making the vote, values are **ints** or **floats**
+  :var dict flag_thresholds: **\\*** mapping of internal performance thresholds used while making the vote, values are **ints** or **floats**
 
   :var dict recommended_client_protocols: recommended protocols for clients
   :var dict recommended_relay_protocols: recommended protocols for relays
@@ -997,7 +997,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     to generate this vote, this is a mapping of hash functions to their resulting
     digest value
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as None if undefined
 
   .. versionchanged:: 1.4.0
@@ -1519,13 +1519,13 @@ class DirectoryAuthority(Descriptor):
   * The authority's nickname ends with '-legacy'.
   * There's no **contact** or **vote_digest** attribute.
 
-  :var str nickname: **\*** authority's nickname
-  :var str v3ident: **\*** identity key fingerprint used to sign votes and consensus
-  :var str hostname: **\*** hostname of the authority
-  :var str address: **\*** authority's IP address
-  :var int dir_port: **\*** authority's DirPort
-  :var int or_port: **\*** authority's ORPort
-  :var bool is_legacy: **\*** if the authority's using the legacy format
+  :var str nickname: **\\*** authority's nickname
+  :var str v3ident: **\\*** identity key fingerprint used to sign votes and consensus
+  :var str hostname: **\\*** hostname of the authority
+  :var str address: **\\*** authority's IP address
+  :var int dir_port: **\\*** authority's DirPort
+  :var int or_port: **\\*** authority's ORPort
+  :var bool is_legacy: **\\*** if the authority's using the legacy format
   :var str contact: contact information, this is included if is_legacy is **False**
 
   **Consensus Attributes:**
@@ -1535,12 +1535,12 @@ class DirectoryAuthority(Descriptor):
   **Vote Attributes:**
 
   :var str legacy_dir_key: fingerprint of and obsolete identity key
-  :var stem.descriptor.networkstatus.KeyCertificate key_certificate: **\***
+  :var stem.descriptor.networkstatus.KeyCertificate key_certificate: **\\***
     authority's key certificate
 
-  :var bool is_shared_randomness_participate: **\*** **True** if this authority
+  :var bool is_shared_randomness_participate: **\\*** **True** if this authority
     participates in establishing a shared random value, **False** otherwise
-  :var list shared_randomness_commitments: **\*** list of
+  :var list shared_randomness_commitments: **\\*** list of
     :data:`~stem.descriptor.networkstatus.SharedRandomnessCommitment` entries
   :var int shared_randomness_previous_reveal_count: number of commitments
     used to generate the last shared random value
@@ -1551,7 +1551,7 @@ class DirectoryAuthority(Descriptor):
   :var str shared_randomness_current_value: base64 encoded current shared
     random value
 
-  **\*** mandatory attribute
+  **\\*** mandatory attribute
 
   .. versionchanged:: 1.4.0
      Renamed our 'fingerprint' attribute to 'v3ident' (prior attribute exists
@@ -1734,19 +1734,19 @@ class KeyCertificate(Descriptor):
   """
   Directory key certificate for a v3 network status document.
 
-  :var int version: **\*** version of the key certificate
+  :var int version: **\\*** version of the key certificate
   :var str address: authority's IP address
   :var int dir_port: authority's DirPort
-  :var str fingerprint: **\*** authority's fingerprint
-  :var str identity_key: **\*** long term authority identity key
-  :var datetime published: **\*** time when this key was generated
-  :var datetime expires: **\*** time after which this key becomes invalid
-  :var str signing_key: **\*** directory server's public signing key
+  :var str fingerprint: **\\*** authority's fingerprint
+  :var str identity_key: **\\*** long term authority identity key
+  :var datetime published: **\\*** time when this key was generated
+  :var datetime expires: **\\*** time after which this key becomes invalid
+  :var str signing_key: **\\*** directory server's public signing key
   :var str crosscert: signature made using certificate's signing key
-  :var str certification: **\*** signature of this key certificate signed with
+  :var str certification: **\\*** signature of this key certificate signed with
     the identity key
 
-  **\*** mandatory attribute
+  **\\*** mandatory attribute
   """
 
   TYPE_ANNOTATION_NAME = 'dir-key-certificate-3'
@@ -1887,20 +1887,20 @@ class DetachedSignature(Descriptor):
 
   .. versionadded:: 1.8.0
 
-  :var str consensus_digest: **\*** digest of the consensus being signed
-  :var datetime valid_after: **\*** time when the consensus became valid
-  :var datetime fresh_until: **\*** time when the next consensus should be produced
-  :var datetime valid_until: **\*** time when this consensus becomes obsolete
-  :var list additional_digests: **\***
+  :var str consensus_digest: **\\*** digest of the consensus being signed
+  :var datetime valid_after: **\\*** time when the consensus became valid
+  :var datetime fresh_until: **\\*** time when the next consensus should be produced
+  :var datetime valid_until: **\\*** time when this consensus becomes obsolete
+  :var list additional_digests: **\\***
     :class:`~stem.descriptor.networkstatus.DocumentDigest` for additional
     consensus flavors
-  :var list additional_signatures: **\***
+  :var list additional_signatures: **\\***
     :class:`~stem.descriptor.networkstatus.DocumentSignature` for additional
     consensus flavors
-  :var list signatures: **\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
+  :var list signatures: **\\*** :class:`~stem.descriptor.networkstatus.DocumentSignature`
     of the authorities that have signed the document
 
-  **\*** mandatory attribute
+  **\\*** mandatory attribute
   """
 
   TYPE_ANNOTATION_NAME = 'detached-signature-3'

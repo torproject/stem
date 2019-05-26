@@ -51,12 +51,12 @@ class TorDNSEL(Descriptor):
   TorDNSEL descriptor (`exitlist specification
   <https://www.torproject.org/tordnsel/exitlist-spec.txt>`_)
 
-  :var str fingerprint: **\*** authority's fingerprint
-  :var datetime published: **\*** time in UTC when this descriptor was made
-  :var datetime last_status: **\*** time in UTC when the relay was seen in a v2 network status
-  :var list exit_addresses: **\*** list of (str address, datetime date) tuples consisting of the found IPv4 exit address and the time
+  :var str fingerprint: **\\*** authority's fingerprint
+  :var datetime published: **\\*** time in UTC when this descriptor was made
+  :var datetime last_status: **\\*** time in UTC when the relay was seen in a v2 network status
+  :var list exit_addresses: **\\*** list of (str address, datetime date) tuples consisting of the found IPv4 exit address and the time
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
 

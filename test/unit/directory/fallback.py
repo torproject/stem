@@ -131,7 +131,7 @@ class TestFallback(unittest.TestCase):
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT.replace(b'version=2.0.0', b'version'))))
   def test_from_remote_malformed_header(self):
-    self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\* version \*/', stem.directory.Fallback.from_remote)
+    self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\\* version \\*/', stem.directory.Fallback.from_remote)
 
   def test_from_remote_malformed(self):
     test_values = {

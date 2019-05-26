@@ -80,6 +80,7 @@ The following are only available within Stem's `git repository
  * **Utilities**
 
   * :func:`~stem.util.tor_tools.is_valid_hidden_service_address` now provides *true* if a v3 hidden servie address
+  * Fixed 'invalid escape sequence' python 3.6 warnings (:trac:`27270`)
 
  * **Website**
 

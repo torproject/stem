@@ -197,14 +197,14 @@ class Microdescriptor(Descriptor):
   Microdescriptor (`descriptor specification
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
-  :var str onion_key: **\*** key used to encrypt EXTEND cells
+  :var str onion_key: **\\*** key used to encrypt EXTEND cells
   :var str ntor_onion_key: base64 key used to encrypt EXTEND in the ntor protocol
-  :var list or_addresses: **\*** alternative for our address/or_port attributes, each
+  :var list or_addresses: **\\*** alternative for our address/or_port attributes, each
     entry is a tuple of the form (address (**str**), port (**int**), is_ipv6
     (**bool**))
-  :var list family: **\*** nicknames or fingerprints of declared family
-  :var stem.exit_policy.MicroExitPolicy exit_policy: **\*** relay's exit policy
-  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\*** exit policy for IPv6
+  :var list family: **\\*** nicknames or fingerprints of declared family
+  :var stem.exit_policy.MicroExitPolicy exit_policy: **\\*** relay's exit policy
+  :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\\*** exit policy for IPv6
   :var hash identifiers: mapping of key types (like rsa1024 or ed25519) to
     their base64 encoded identity, this is only used for collision prevention
     (:trac:`11743`)
@@ -215,7 +215,7 @@ class Microdescriptor(Descriptor):
   :var str identifier_type: identity digest key type (**deprecated**, use
     identifiers instead)
 
-  **\*** attribute is required when we're parsed with validation
+  **\\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.1.0
      Added the identifier and identifier_type attributes.

@@ -261,12 +261,12 @@ class BandwidthFile(Descriptor):
   """
   Tor bandwidth authority measurements.
 
-  :var dict measurements: **\*** mapping of relay fingerprints to their
+  :var dict measurements: **\\*** mapping of relay fingerprints to their
     bandwidth measurement metadata
 
-  :var dict header: **\*** header metadata
-  :var datetime timestamp: **\*** time when these metrics were published
-  :var str version: **\*** document format version
+  :var dict header: **\\*** header metadata
+  :var datetime timestamp: **\\*** time when these metrics were published
+  :var str version: **\\*** document format version
 
   :var str software: application that generated these metrics
   :var str software_version: version of the application that generated these metrics
@@ -291,7 +291,7 @@ class BandwidthFile(Descriptor):
   :var RecentStats recent_stats: statistical information collected over the
     last 'data_period' (by default five days)
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
 

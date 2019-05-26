@@ -139,7 +139,7 @@ def get_config_policy(rules, ip_address = None):
     if not rule:
       continue
 
-    if not re.search(':[\d\-\*]+$', rule):
+    if not re.search(':[\\d\\-\\*]+$', rule):
       rule = '%s:*' % rule
 
     if 'private' in rule:
@@ -642,7 +642,7 @@ class ExitPolicyRule(object):
   This should be treated as an immutable object.
 
   .. versionchanged:: 1.5.0
-     Support for 'accept6/reject6' entries and '\*4/6' wildcards.
+     Support for 'accept6/reject6' entries and '\\*4/6' wildcards.
 
   :var bool is_accept: indicates if exiting is allowed or disallowed
 
@@ -714,7 +714,7 @@ class ExitPolicyRule(object):
     """
     **True** if we'll match against **any** address, **False** otherwise.
 
-    Note that this is different than \*4, \*6, or '/0' address which are
+    Note that this is different than \\*4, \\*6, or '/0' address which are
     wildcards for only either IPv4 or IPv6.
 
     :returns: **bool** for if our address matching is a wildcard

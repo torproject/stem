@@ -47,7 +47,7 @@ Connection and networking based utility functions.
   **NETSTAT_WINDOWS**   netstat command under Windows
   **SS**                ss command
   **LSOF**              lsof command
-  **SOCKSTAT**          sockstat command under \*nix
+  **SOCKSTAT**          sockstat command under \\*nix
   **BSD_SOCKSTAT**      sockstat command under FreeBSD
   **BSD_PROCSTAT**      procstat command under FreeBSD
   **BSD_FSTAT**         fstat command under OpenBSD
@@ -125,28 +125,28 @@ RESOLVER_FILTER = {
   Resolver.PROC: '',
 
   # tcp        0    586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843/tor
-  Resolver.NETSTAT: '^{protocol}\s+.*\s+{local}\s+{remote}\s+ESTABLISHED\s+{pid}/{name}\s*$',
+  Resolver.NETSTAT: '^{protocol}\\s+.*\\s+{local}\\s+{remote}\\s+ESTABLISHED\\s+{pid}/{name}\\s*$',
 
   # tcp        586 192.168.0.1:44284       38.229.79.2:443         ESTABLISHED 15843
-  Resolver.NETSTAT_WINDOWS: '^\s*{protocol}\s+{local}\s+{remote}\s+ESTABLISHED\s+{pid}\s*$',
+  Resolver.NETSTAT_WINDOWS: '^\\s*{protocol}\\s+{local}\\s+{remote}\\s+ESTABLISHED\\s+{pid}\\s*$',
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
-  Resolver.SS: '^{protocol}\s+ESTAB\s+.*\s+{local}\s+{remote}\s+users:\(\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\)\)$',
+  Resolver.SS: '^{protocol}\\s+ESTAB\\s+.*\\s+{local}\\s+{remote}\\s+users:\\(\\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\\)\\)$',
 
   # tor  3873  atagar  45u  IPv4  40994  0t0  TCP 10.243.55.20:45724->194.154.227.109:9001 (ESTABLISHED)
-  Resolver.LSOF: '^{name}\s+{pid}\s+.*\s+{protocol}\s+{local}->{remote} \(ESTABLISHED\)$',
+  Resolver.LSOF: '^{name}\\s+{pid}\\s+.*\\s+{protocol}\\s+{local}->{remote} \\(ESTABLISHED\\)$',
 
   # atagar   tor                  15843    tcp4   192.168.0.20:44092        68.169.35.102:443         ESTABLISHED
-  Resolver.SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+{protocol}4\s+{local}\s+{remote}\s+ESTABLISHED$',
+  Resolver.SOCKSTAT: '^\\S+\\s+{name}\\s+{pid}\\s+{protocol}4\\s+{local}\\s+{remote}\\s+ESTABLISHED$',
 
   # _tor     tor        4397  12 tcp4   172.27.72.202:54011   127.0.0.1:9001
-  Resolver.BSD_SOCKSTAT: '^\S+\s+{name}\s+{pid}\s+\S+\s+{protocol}4\s+{local}\s+{remote}$',
+  Resolver.BSD_SOCKSTAT: '^\\S+\\s+{name}\\s+{pid}\\s+\\S+\\s+{protocol}4\\s+{local}\\s+{remote}$',
 
   # 3561 tor                 4 s - rw---n--   2       0 TCP 10.0.0.2:9050 10.0.0.1:22370
-  Resolver.BSD_PROCSTAT: '^\s*{pid}\s+{name}\s+.*\s+{protocol}\s+{local}\s+{remote}$',
+  Resolver.BSD_PROCSTAT: '^\\s*{pid}\\s+{name}\\s+.*\\s+{protocol}\\s+{local}\\s+{remote}$',
 
   # _tor     tor        15843   20* internet stream tcp 0x0 192.168.1.100:36174 --> 4.3.2.1:443
-  Resolver.BSD_FSTAT: '^\S+\s+{name}\s+{pid}\s+.*\s+{protocol}\s+\S+\s+{local}\s+[-<]-[->]\s+{remote}$',
+  Resolver.BSD_FSTAT: '^\\S+\\s+{name}\\s+{pid}\\s+.*\\s+{protocol}\\s+\\S+\\s+{local}\\s+[-<]-[->]\\s+{remote}$',
 }
 
 
@@ -243,11 +243,11 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
     raise IOError("Unable to query '%s': %s" % (resolver_command, exc))
 
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
-    protocol = '(?P<protocol>\S+)',
-    local = '(?P<local>[\[\]0-9a-f.:]+)',
-    remote = '(?P<remote>[\[\]0-9a-f.:]+)',
+    protocol = '(?P<protocol>\\S+)',
+    local = '(?P<local>[\\[\\]0-9a-f.:]+)',
+    remote = '(?P<remote>[\\[\\]0-9a-f.:]+)',
     pid = process_pid if process_pid else '[0-9]*',
-    name = process_name if process_name else '\S*',
+    name = process_name if process_name else '\\S*',
   )
 
   _log('Resolver regex: %s' % resolver_regex_str)

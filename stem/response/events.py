@@ -19,7 +19,7 @@ from stem.util import connection, log, str_tools, tor_tools
 # because some positional arguments, like circuit paths, can have an equal
 # sign.
 
-KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\S*)$')
+KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\\S*)$')
 QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
 CELL_TYPE = re.compile('^[a-z0-9_]+$')
 PARSE_NEWCONSENSUS_EVENTS = True

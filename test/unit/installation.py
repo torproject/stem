@@ -31,7 +31,7 @@ class TestInstallation(unittest.TestCase):
     #
     #   packages = ['stem', 'stem.descriptor', 'stem.util'],
 
-    modules = json.loads(re.search('packages = (\[.*\])', self.setup_contents).group(1).replace("'", '"'))
+    modules = json.loads(re.search('packages = (\\[.*\\])', self.setup_contents).group(1).replace("'", '"'))
     module_paths = dict([(m, os.path.join(test.STEM_BASE, m.replace('.', os.path.sep))) for m in modules])
 
     for module, path in module_paths.items():

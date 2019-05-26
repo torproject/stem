@@ -185,15 +185,15 @@ class HiddenServiceDescriptor(Descriptor):
   """
   Hidden service descriptor.
 
-  :var str descriptor_id: **\*** identifier for this descriptor, this is a base32 hash of several fields
-  :var int version: **\*** hidden service descriptor version
-  :var str permanent_key: **\*** long term key of the hidden service
-  :var str secret_id_part: **\*** hash of the time period, cookie, and replica
+  :var str descriptor_id: **\\*** identifier for this descriptor, this is a base32 hash of several fields
+  :var int version: **\\*** hidden service descriptor version
+  :var str permanent_key: **\\*** long term key of the hidden service
+  :var str secret_id_part: **\\*** hash of the time period, cookie, and replica
     values so our descriptor_id can be validated
-  :var datetime published: **\*** time in UTC when this descriptor was made
-  :var list protocol_versions: **\*** list of **int** versions that are supported when establishing a connection
+  :var datetime published: **\\*** time in UTC when this descriptor was made
+  :var list protocol_versions: **\\*** list of **int** versions that are supported when establishing a connection
   :var str introduction_points_encoded: raw introduction points blob
-  :var list introduction_points_auth: **\*** tuples of the form
+  :var list introduction_points_auth: **\\*** tuples of the form
     (auth_method, auth_data) for our introduction_points_content
     (**deprecated**, always **[]**)
   :var bytes introduction_points_content: decoded introduction-points content
@@ -201,7 +201,7 @@ class HiddenServiceDescriptor(Descriptor):
     encrypted
   :var str signature: signature of the descriptor content
 
-  **\*** attribute is either required when we're parsed with validation or has
+  **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
 
   .. versionchanged:: 1.6.0
