@@ -40,6 +40,7 @@ remotely like Tor does.
  * `stem.descriptor.tordnsel <api/descriptor/tordnsel.html>`_ - `TorDNSEL <https://www.torproject.org/projects/tordnsel.html.en>`_ exit lists.
  * `stem.descriptor.certificate <api/descriptor/certificate.html>`_ - `Ed25519 certificates <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_.
 
+* `stem.directory <api/directory.html>`_ - Directory authority and fallback directory information.
 * `stem.descriptor.reader <api/descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
 * `stem.descriptor.remote <api/descriptor/remote.html>`_ - Downloads descriptors from directory mirrors and authorities.
 * `stem.descriptor.export <api/descriptor/export.html>`_ - Exports descriptors to other formats.

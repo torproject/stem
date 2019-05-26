@@ -14,7 +14,9 @@ Contents
    tutorials/down_the_rabbit_hole
    tutorials/double_double_toil_and_trouble
 
+   tutorials/examples/check_digests
    tutorials/examples/compare_flags
+   tutorials/examples/download_descriptor
    tutorials/examples/exit_used
    tutorials/examples/list_circuits
    tutorials/examples/relay_connections
@@ -30,6 +32,7 @@ Contents
 
    api/control
    api/connection
+   api/directory
    api/socket
    api/process
    api/response
