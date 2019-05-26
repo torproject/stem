@@ -291,9 +291,9 @@ class TestSystem(unittest.TestCase):
     elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
       self.skipTest('(resolvers unavailable)')
       return
-    elif not (stem.util.system.is_available('netstat') or
-              stem.util.system.is_available('sockstat') or
-              stem.util.system.is_available('lsof')):
+    elif not stem.util.system.is_available('netstat') or \
+             stem.util.system.is_available('sockstat') or \
+              stem.util.system.is_available('lsof'):
       self.skipTest('(connection resolvers unavailable)')
       return
 
