@@ -129,6 +129,8 @@ fine-grained control over the authentication process. For instance...
 
 import binascii
 import getpass
+import hashlib
+import hmac
 import os
 
 import stem.control
@@ -146,6 +148,8 @@ AuthMethod = stem.util.enum.Enum('NONE', 'PASSWORD', 'COOKIE', 'SAFECOOKIE', 'UN
 
 CLIENT_HASH_CONSTANT = b'Tor safe cookie authentication controller-to-server hash'
 SERVER_HASH_CONSTANT = b'Tor safe cookie authentication server-to-controller hash'
+
+CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 
 MISSING_PASSWORD_BUG_MSG = """
 BUG: You provided a password but despite this stem reported that it was
@@ -941,15 +945,18 @@ def authenticate_safecookie(controller, cookie_path, suppress_ctl_errors = True)
     else:
       raise AuthChallengeFailed('Unable to parse AUTHCHALLENGE response: %s' % exc, cookie_path)
 
-  expected_server_hash = stem.util.connection._hmac_sha256(
+  expected_server_hash = _hmac_sha256(
     SERVER_HASH_CONSTANT,
     cookie_data + client_nonce + authchallenge_response.server_nonce)
 
-  if not stem.util.connection._cryptovariables_equal(authchallenge_response.server_hash, expected_server_hash):
+  authchallenge_hmac = _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, authchallenge_response.server_hash)
+  expected_hmac = _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, expected_server_hash)
+
+  if authchallenge_hmac != expected_hmac:
     raise AuthSecurityFailure('Tor provided the wrong server nonce', cookie_path)
 
   try:
-    client_hash = stem.util.connection._hmac_sha256(
+    client_hash = _hmac_sha256(
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
 
@@ -1098,6 +1105,19 @@ def _read_cookie(cookie_path, is_safecookie):
   except IOError as exc:
     exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)
     raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
+
+
+def _hmac_sha256(key, msg):
+  """
+  Generates a sha256 digest using the given key and message.
+
+  :param str key: starting key for the hash
+  :param str msg: message to be hashed
+
+  :returns: sha256 digest of msg as bytes, hashed using the given key
+  """
+
+  return hmac.new(key, msg, hashlib.sha256).digest()
 
 
 class AuthenticationFailure(Exception):

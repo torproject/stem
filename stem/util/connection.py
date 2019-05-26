@@ -55,8 +55,6 @@ Connection and networking based utility functions.
 """
 
 import collections
-import hashlib
-import hmac
 import os
 import platform
 import re
@@ -88,8 +86,6 @@ Resolver = enum.Enum(
 
 FULL_IPv4_MASK = '255.255.255.255'
 FULL_IPv6_MASK = 'FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'
-
-CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE = os.urandom(32)
 
 PORT_USES = None  # port number => description
 
@@ -737,34 +733,6 @@ def _address_to_binary(address):
     return ''.join([_get_binary(int(grouping, 16), 16) for grouping in address.split(':')])
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
-
-
-def _hmac_sha256(key, msg):
-  """
-  Generates a sha256 digest using the given key and message.
-
-  :param str key: starting key for the hash
-  :param str msg: message to be hashed
-
-  :returns: sha256 digest of msg as bytes, hashed using the given key
-  """
-
-  return hmac.new(key, msg, hashlib.sha256).digest()
-
-
-def _cryptovariables_equal(x, y):
-  """
-  Compares two strings for equality securely.
-
-  :param str x: string to be compared.
-  :param str y: the other string to be compared.
-
-  :returns: **True** if both strings are equal, **False** otherwise.
-  """
-
-  return (
-    _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, x) ==
-    _hmac_sha256(CRYPTOVARIABLE_EQUALITY_COMPARISON_NONCE, y))
 
 
 # TODO: drop with stem 2.x
