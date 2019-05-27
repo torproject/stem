@@ -7,6 +7,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 """
 
 import errno
+import importlib
 import multiprocessing
 import os
 import signal
@@ -15,14 +16,6 @@ import threading
 import time
 import traceback
 import unittest
-
-try:
-  # TODO: added in python 2.7, drop check when removing 2.6 support
-
-  import importlib
-  RUN_ASYNC_TESTS = True
-except ImportError:
-  RUN_ASYNC_TESTS = False
 
 try:
   from StringIO import StringIO
@@ -256,15 +249,14 @@ def main():
     async_args = test.AsyncTestArgs(default_test_dir, args.tor_path)
 
     for module_str in stem.util.test_tools.ASYNC_TESTS:
-      if RUN_ASYNC_TESTS and (not args.specific_test or module_str.startswith(args.specific_test)):
-        module = importlib.import_module(module_str.rsplit('.', 1)[0])
-        test_classes = [v for k, v in module.__dict__.items() if k.startswith('Test')]
+      module = importlib.import_module(module_str.rsplit('.', 1)[0])
+      test_classes = [v for k, v in module.__dict__.items() if k.startswith('Test')]
 
-        if len(test_classes) != 1:
-          print('BUG: Detected multiple tests for %s: %s' % (module_str, ', '.join(test_classes)))
-          sys.exit(1)
+      if len(test_classes) != 1:
+        print('BUG: Detected multiple tests for %s: %s' % (module_str, ', '.join(test_classes)))
+        sys.exit(1)
 
-        test_classes[0].run_tests(async_args)
+      test_classes[0].run_tests(async_args)
 
   if args.run_unit:
     test.output.print_divider('UNIT TESTS', True)
