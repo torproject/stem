@@ -18,6 +18,7 @@
   |- PYFLAKES_VERSION - checks our version of pyflakes
   |- PYCODESTYLE_VERSION - checks our version of pycodestyle
   |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
+  |- REMOVE_TOR_DATA_DIR - removes our tor data directory
   |- IMPORT_TESTS - ensure all test modules have been imported
   |- UNUSED_TESTS - checks to see if any tests are missing from our settings
   |- PYFLAKES_TASK - static checks
@@ -27,6 +28,7 @@
 import os
 import platform
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -134,6 +136,20 @@ def _clean_orphaned_pyc(paths):
   """
 
   return ['removed %s' % path for path in stem.util.test_tools.clean_orphaned_pyc(paths)]
+
+
+def _remove_tor_data_dir():
+  """
+  Empties tor's data directory.
+  """
+
+  config_test_dir = CONFIG['integ.test_directory']
+
+  if config_test_dir and os.path.exists(config_test_dir):
+    shutil.rmtree(config_test_dir, ignore_errors = True)
+    return 'done'
+  else:
+    return 'skipped'
 
 
 def _import_tests():
@@ -316,6 +332,7 @@ MOCK_VERSION = ModuleVersion('mock version', ['unittest.mock', 'mock'], stem.pre
 PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)
+REMOVE_TOR_DATA_DIR = Task('emptying our tor data directory', _remove_tor_data_dir)
 IMPORT_TESTS = Task('importing test modules', _import_tests, print_runtime = True)
 
 UNUSED_TESTS = Task('checking for unused tests', _check_for_unused_tests, [(

@@ -223,6 +223,7 @@ def main():
     test.task.CLEAN_PYC,
     test.task.UNUSED_TESTS,
     test.task.IMPORT_TESTS,
+    test.task.REMOVE_TOR_DATA_DIR if args.run_integ else None,
     test.task.PYFLAKES_TASK if not args.specific_test else None,
     test.task.PYCODESTYLE_TASK if not args.specific_test else None,
   )
