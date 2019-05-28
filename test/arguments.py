@@ -26,7 +26,7 @@ CONFIG = stem.util.conf.config_dict('test', {
 DEFAULT_ARGS = {
   'run_unit': False,
   'run_integ': False,
-  'specific_test': None,
+  'specific_test': [],
   'logging_runlevel': None,
   'tor_path': 'tor',
   'run_targets': [test.Target.RUN_OPEN],
@@ -103,7 +103,7 @@ def parse(argv):
 
       args['attribute_targets'] = attribute_targets
     elif opt == '--test':
-      args['specific_test'] = arg
+      args['specific_test'].append(arg)
     elif opt in ('-l', '--log'):
       arg = arg.upper()
 

@@ -114,49 +114,61 @@ def log_traceback(sig, frame):
     os._exit(-1)
 
 
-def get_unit_tests(module_prefix = None):
+def get_unit_tests(module_prefixes = None):
   """
   Provides the classes for our unit tests.
 
-  :param str module_prefix: only provide the test if the module starts with
-    this substring
+  :param list module_prefixes: only provide the test if the module starts with
+    any of these substrings
 
   :returns: an **iterator** for our unit tests
   """
 
-  if module_prefix and not module_prefix.startswith('test.unit.'):
-    module_prefix = 'test.unit.' + module_prefix
-
-  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefix)
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefixes)
 
 
-def get_integ_tests(module_prefix = None):
+def get_integ_tests(module_prefixes = None):
   """
   Provides the classes for our integration tests.
 
-  :param str module_prefix: only provide the test if the module starts with
-    this substring
+  :param list module_prefixes: only provide the test if the module starts with
+    any of these substrings
 
   :returns: an **iterator** for our integration tests
   """
 
-  if module_prefix and not module_prefix.startswith('test.integ.'):
-    module_prefix = 'test.integ.' + module_prefix
-
-  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefix)
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefixes)
 
 
-def _get_tests(modules, module_prefix):
+def _get_tests(modules, module_prefixes):
   for import_name in modules:
-    module, module_name = import_name.rsplit('.', 1)  # example: util.conf.TestConf
-
-    if not module_prefix or module.startswith(module_prefix):
+    if not module_prefixes:
       yield import_name
-    elif module_prefix.startswith(module):
-      # single test for this module
+    else:
+      # Example import_name: test.unit.util.conf.TestConf
+      #
+      # Our '--test' argument doesn't include the prefix, so excluding it from
+      # the names we look for.
 
-      test_name = module_prefix.rsplit('.', 1)[1]
-      yield '%s.%s' % (import_name, test_name)
+      if import_name.startswith('test.unit.'):
+        cropped_name = import_name[10:]
+      elif import_name.startswith('test.integ.'):
+        cropped_name = import_name[11:]
+      else:
+        cropped_name = import_name
+
+      cropped_name = cropped_name.rsplit('.', 1)[0]  # exclude the class name
+
+      for prefix in module_prefixes:
+        if cropped_name.startswith(prefix):
+          yield import_name
+          break
+        elif prefix.startswith(cropped_name):
+          # single test for this module
+
+          test_name = prefix.rsplit('.', 1)[1]
+          yield '%s.%s' % (import_name, test_name)
+          break
 
 
 def main():
