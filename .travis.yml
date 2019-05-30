@@ -25,7 +25,7 @@ matrix:
     - os: osx
       language: c
       python:
-      env: TOR="stable-release"
+      env: TOR="stable-release" TARGET="--target ONLINE"
 
     ## Test all supported and available tor versions on Linux
     ## If the deb.torproject.org repositories are removed, we will fall back to
@@ -40,7 +40,7 @@ matrix:
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
             - tor
-      env: TOR="0.2.9-nightly"
+      env: TOR="0.2.9-nightly" TARGET=""
     - addons:
         apt:
           sources:
@@ -48,7 +48,7 @@ matrix:
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
             - tor
-      env: TOR="0.3.4-nightly"
+      env: TOR="0.3.4-nightly" TARGET=""
     ## The current stable release is 0.3.5, so we don't have a separate
     ## 0.3.5-stable job
     - addons:
@@ -58,7 +58,7 @@ matrix:
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
             - tor
-      env: TOR="stable-release"
+      env: TOR="stable-release" TARGET=""
     - addons:
         apt:
           sources:
@@ -66,7 +66,7 @@ matrix:
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
             - tor
-      env: TOR="0.3.5-nightly"
+      env: TOR="0.3.5-nightly" TARGET=""
     ## The experimental deb line needs to be updated when 0.4.0 becomes stable
     - addons:
         apt:
@@ -75,7 +75,7 @@ matrix:
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
             - tor
-      env: TOR="0.4.0-nightly"
+      env: TOR="0.4.0-nightly" TARGET=""
 
     ## Test all supported python releases
     ## Pre-installed in Travis xenial:
@@ -83,29 +83,37 @@ matrix:
     ## End of Life: 1 January 2020
     ## https://www.python.org/dev/peps/pep-0373/#id2
     - python: "2.7"
+      env: TOR="master-nightly" TARGET="--target ONLINE"
     ## End of Life: December 2021
     ## https://www.python.org/dev/peps/pep-0494/#lifespan
     - python: "3.6"
+      env: TOR="master-nightly" TARGET=""
     ## End of Life: June 2023
     ## https://www.python.org/dev/peps/pep-0537/#lifespan
     - python: "3.7"
+      env: TOR="master-nightly" TARGET=""
     ## Stable: 20 October 2019
     ## (Switch from 3.8-dev to 3.8, and check for 3.9-dev)
     ## End of Life: October2024
     ## https://www.python.org/dev/peps/pep-0569/#lifespan
     - python: "3.8-dev"
+      env: TOR="master-nightly" TARGET=""
     - python: "nightly"
+      env: TOR="master-nightly" TARGET="--target ONLINE"
     # PyPy versions
     ## End of Life: "forever"
     ## http://doc.pypy.org/en/latest/faq.html#how-long-will-pypy-support-python2
     ## But stem may decide not to support python 2 after 1 Jan 2020.
     ## Travis Xenial does not support pypy2.7
     #- python: "pypy2.7"
+    #  env: TOR="master-nightly" TARGET=""
     ## PyPy does not have documented end of life dates
     - python: "pypy3.5"
+      env: TOR="master-nightly" TARGET=""
     ## PyPy 3.6 is currently in alpha
     ## Travis Xenial does not support pypy3.6-dev yet?
     #- python: "pypy3.6-dev"
+    #  env: TOR="master-nightly" TARGET=""
 
   ## Uncomment to allow the build to report success (with non-required
   ## sub-builds continuing to run) if all required sub-builds have
@@ -117,7 +125,7 @@ matrix:
 
   ## These builds fail in Travis at the moment
   #allow_failures:
-  #  - env: TOR="master-nightly"
+  #  - env: TOR="master-nightly" TARGET="--target ONLINE"
 
 ## We don't need sudo. (The "apt:" stanza after this allows us to not need
 ## sudo; otherwise, we would need it for getting dependencies.)
@@ -133,10 +141,9 @@ dist: xenial
 #osx_image: xcode9.4
 
 ## The TOR env var should be kept in sync with the Linux tor version below
-## We use the basic-min network by default, to reduce load and increase
-## reliability
+## This line doesn't actually create any Travis jobs
 env:
-  - TOR="master-nightly"
+  - TOR="master-nightly" TARGET="--target ONLINE"
 
 ## Download our dependencies
 addons:
@@ -166,7 +173,7 @@ install:
 script:
   ## Run stem's tests
   - ./run_tests.py --unit
-  - ./run_tests.py --integ
+  - ./run_tests.py --integ $TARGET
 
 after_failure:
   ## Show the integ tor log
