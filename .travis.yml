@@ -39,7 +39,6 @@ matrix:
             - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.2.9.x-xenial main'
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
-            - shellcheck
             - tor
       env: TOR="0.2.9-nightly"
     - addons:
@@ -48,7 +47,6 @@ matrix:
             - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.3.4.x-xenial main'
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
-            - shellcheck
             - tor
       env: TOR="0.3.4-nightly"
     ## The current stable release is 0.3.5, so we don't have a separate
@@ -59,7 +57,6 @@ matrix:
             - sourceline: 'deb https://deb.torproject.org/torproject.org xenial main'
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
-            - shellcheck
             - tor
       env: TOR="stable-release"
     - addons:
@@ -68,7 +65,6 @@ matrix:
             - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.3.5.x-xenial main'
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
-            - shellcheck
             - tor
       env: TOR="0.3.5-nightly"
     ## The experimental deb line needs to be updated when 0.4.0 becomes stable
@@ -78,7 +74,6 @@ matrix:
             - sourceline: 'deb https://deb.torproject.org/torproject.org tor-experimental-0.4.0.x-xenial main'
               key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
           packages:
-            - shellcheck
             - tor
       env: TOR="0.4.0-nightly"
 
@@ -151,12 +146,10 @@ addons:
       - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-master-xenial main'
         key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
     packages:
-      - shellcheck
       - tor
   ## (macOS only)
   homebrew:
     packages:
-      - shellcheck
       - tor
 
 install:
@@ -168,12 +161,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew list --versions; fi
   - pip list
   - python --version
-  - shellcheck --version
   - tor --version
 
 script:
-  ## Check the only shell script in the repository
-  - shellcheck docs/republish
   ## Run stem's tests
   - ./run_tests.py --unit
   - ./run_tests.py --integ
