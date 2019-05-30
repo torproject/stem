@@ -134,6 +134,10 @@ Descriptors
 
   Example for writing a Tor consensus to disk, and reading it back.
 
+* `Bandwidth Heuristics <examples/bandwidth_stats.html>`_
+
+  Download bandwidth authority heuristics about relay capacity.
+
 * `Checking Digests <examples/check_digests.html>`_
 
   Looking for additional integrity that your descriptor is properly signed?

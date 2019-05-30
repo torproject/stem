@@ -61,6 +61,8 @@ content. For example...
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     |- get_microdescriptors - provides present microdescriptors with the given digests
     |- get_consensus - provides the present consensus or router status entries
+    |- get_bandwidth_file - provies bandwidth heuristics used to make the next consensus
+    |- get_detached_signatures - authority signatures used to make the next consensus
     |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
 
@@ -224,6 +226,18 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
+def get_bandwidth_file(**query_args):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.remote.DescriptorDownloader.get_bandwidth_file`
+  on our singleton instance.
+
+  .. versionadded:: 1.8.0
+  """
+
+  return get_instance().get_bandwidth_file(**query_args)
+
+
 def get_detached_signatures(**query_args):
   """
   Shorthand for
@@ -291,6 +305,7 @@ class Query(object):
   /tor/micro/d/<hash1>-<hash2>                    microdescriptors with the given hashes
   /tor/status-vote/current/consensus              present consensus
   /tor/status-vote/current/consensus-microdesc    present microdescriptor consensus
+  /tor/status-vote/next/bandwidth                 bandwidth authority heuristics for the next consenus
   /tor/status-vote/next/consensus-signatures      detached signature, used for making the next consenus
   /tor/keys/all                                   key certificates for the authorities
   /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
@@ -849,6 +864,22 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
+  def get_bandwidth_file(self, **query_args):
+    """
+    Provides the bandwidth authority heuristics used to make the next
+    consensus.
+
+    .. versionadded:: 1.8.0
+
+    :param query_args: additional arguments for the
+      :class:`~stem.descriptor.remote.Query` constructor
+
+    :returns: :class:`~stem.descriptor.remote.Query` for the bandwidth
+      authority heuristics
+    """
+
+    return self.query('/tor/status-vote/next/bandwidth', **query_args)
+
   def get_detached_signatures(self, **query_args):
     """
     Provides the detached signatures that will be used to make the next
@@ -1070,16 +1101,22 @@ def _guess_descriptor_type(resource):
     return 'extra-info 1.0'
   elif resource.startswith('/tor/micro/'):
     return 'microdescriptor 1.0'
-  elif resource.startswith('/tor/status-vote/next/consensus-signatures'):
-    return '%s 1.0' % DETACHED_SIGNATURE_TYPE
-  elif resource.startswith('/tor/status-vote/current/consensus-microdesc'):
-    return 'network-status-microdesc-consensus-3 1.0'
-  elif resource.startswith('/tor/status-vote/'):
-    return 'network-status-consensus-3 1.0'
   elif resource.startswith('/tor/keys/'):
     return 'dir-key-certificate-3 1.0'
-  else:
-    raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
+  elif resource.startswith('/tor/status-vote/'):
+    # The following resource urls can be for the present consensus
+    # (/tor/status-vote/current/*) or the next (/tor/status-vote/next/*).
+
+    if resource.endswith('/consensus'):
+      return 'network-status-consensus-3 1.0'
+    elif resource.endswith('/consensus-microdesc'):
+      return 'network-status-microdesc-consensus-3 1.0'
+    elif resource.endswith('/consensus-signatures'):
+      return '%s 1.0' % DETACHED_SIGNATURE_TYPE
+    elif resource.endswith('/bandwidth'):
+      return 'bandwidth-file 1.0'
+
+  raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
 
 
 def get_authorities():

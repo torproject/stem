@@ -60,6 +60,7 @@ The following are only available within Stem's `git repository
   * Ed25519 validity checks are now done though the cryptography module rather than PyNaCl (:trac:`22022`)
   * Download compressed descriptors by default (:trac:`29186`)
   * Added :func:`stem.descriptor.remote.get_microdescriptors`
+  * Added :func:`stem.descriptor.remote.get_bandwidth_file` (:trac:`26902`)
   * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
   * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method (:trac:`28450`)
   * Added :func:`~stem.descriptor.__init__.Descriptor.type_annotation` method (:trac:`28397`)
