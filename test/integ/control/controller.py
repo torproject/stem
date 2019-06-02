@@ -1069,15 +1069,15 @@ class TestController(unittest.TestCase):
         # Make sure we have the stream for which we asked, otherwise
         # the next assertion would be a false positive.
 
-        self.assertEqual([built_stream.id], [stream.id for stream in controller.get_streams()])
+        self.assertTrue(built_stream.id in [stream.id for stream in controller.get_streams()])
 
         # Try to close our stream...
 
         controller.close_stream(built_stream.id)
 
-        # ...which means there are zero streams.
+        # ... after which the stream should no longer be present.
 
-        self.assertEqual([], controller.get_streams())
+        self.assertFalse(built_stream.id in [stream.id for stream in controller.get_streams()])
 
       # unknown stream
 
