@@ -38,7 +38,7 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--quiet|--hush', '--version', '-h, -help'])
+EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, -help'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """
@@ -177,7 +177,7 @@ class TestManual(unittest.TestCase):
     assert_equal('signals', EXPECTED_SIGNALS, set(manual.signals.keys()))
     assert_equal('sighup description', 'Tor will catch this, clean up and sync to disk if necessary, and exit.', manual.signals['SIGTERM'])
 
-    assert_equal('number of files', 48, len(manual.files))
+    assert_equal('number of files', 47, len(manual.files))
     assert_equal('lib path description', 'The tor process stores keys and other data here.', manual.files['@LOCALSTATEDIR@/lib/tor/'])
 
     for category in Category:
