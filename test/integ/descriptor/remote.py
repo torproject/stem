@@ -102,6 +102,9 @@ class TestDescriptorDownloader(unittest.TestCase):
     queries = []
 
     for nickname, authority in stem.directory.Authority.from_cache().items():
+      if nickname in stem.descriptor.remote.DIR_PORT_BLACKLIST:
+        continue
+
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',

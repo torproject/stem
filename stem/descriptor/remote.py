@@ -140,6 +140,16 @@ SINGLETON_DOWNLOADER = None
 
 DETACHED_SIGNATURE_TYPE = 'detached-signature'
 
+# Some authorities intentionally break their DirPort to discourage DOS. In
+# particular they throttle the rate to such a degree that requests can take
+# hours to complete. Unfortunately Python's socket timeouts only kick in
+# when we stop receiving data, so these 'sandtraps' cause our downloads to
+# hang pretty much indefinitely.
+#
+# Best we can do is simply avoid attempting to use them in the first place.
+
+DIR_PORT_BLACKLIST = ('tor26', 'Serge')
+
 
 def get_instance():
   """
@@ -560,11 +570,12 @@ class Query(object):
     :param bool use_authority: ignores our endpoints and uses a directory
       authority instead
 
-    :returns: **str** for the url being queried by this request
+    :returns: :class:`stem.Endpoint` for the location to be downloaded
+      from by this request
     """
 
     if use_authority or not self.endpoints:
-      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in ('tor26', 'Serge')])
+      picked = random.choice([auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in DIR_PORT_BLACKLIST])
       return stem.DirPort(picked.address, picked.dir_port)
     else:
       return random.choice(self.endpoints)
@@ -575,15 +586,17 @@ class Query(object):
       endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
 
       if isinstance(endpoint, stem.ORPort):
+        downloaded_from = 'ORPort %s:%s (resource %s)' % (endpoint.address, endpoint.port, self.resource)
         self.content, self.reply_headers = _download_from_orport(endpoint, self.compression, self.resource)
       elif isinstance(endpoint, stem.DirPort):
         self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
+        downloaded_from = self.download_url
         self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
       else:
         raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
 
       self.runtime = time.time() - self.start_time
-      log.trace("Descriptors retrieved from '%s' in %0.2fs" % (self.download_url, self.runtime))
+      log.trace("Descriptors retrieved from %s in %0.2fs" % (downloaded_from, self.runtime))
     except:
       exc = sys.exc_info()[1]
 
@@ -615,8 +628,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors = False, **default_args):
     self._default_args = default_args
 
-    directories = list(stem.directory.Authority.from_cache().values())
-    self._endpoints = [(directory.address, directory.dir_port) for directory in directories]
+    self._endpoints = None
 
     if use_mirrors:
       try:
@@ -637,7 +649,7 @@ class DescriptorDownloader(object):
     :raises: **Exception** if unable to determine the directory mirrors
     """
 
-    directories = stem.directory.Authority.from_cache().values()
+    directories = [auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in DIR_PORT_BLACKLIST]
     new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
