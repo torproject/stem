@@ -84,7 +84,7 @@ def print_divider(msg, is_header = False):
 
 
 def print_logging(logging_buffer):
-  if SUPPRESS_STDOUT:
+  if SUPPRESS_STDOUT or logging_buffer is None:
     return
 
   if not logging_buffer.is_empty():

@@ -28,6 +28,7 @@ DEFAULT_ARGS = {
   'run_integ': False,
   'specific_test': [],
   'logging_runlevel': None,
+  'logging_path': None,
   'tor_path': 'tor',
   'run_targets': [test.Target.RUN_OPEN],
   'attribute_targets': [],
@@ -37,7 +38,7 @@ DEFAULT_ARGS = {
 }
 
 OPT = 'auit:l:qvh'
-OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'tor=', 'quiet', 'verbose', 'help']
+OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'log-file=', 'tor=', 'quiet', 'verbose', 'help']
 
 
 def parse(argv):
@@ -111,6 +112,8 @@ def parse(argv):
         raise ValueError(LOG_TYPE_ERROR % arg)
 
       args['logging_runlevel'] = arg
+    elif opt == '--log-file':
+      args['logging_path'] = arg
     elif opt in ('--tor'):
       args['tor_path'] = arg
     elif opt in ('-q', '--quiet'):

@@ -8,6 +8,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 
 import errno
 import importlib
+import logging
 import multiprocessing
 import os
 import signal
@@ -233,10 +234,20 @@ def main():
     test.task.PYCODESTYLE_TASK if not args.specific_test else None,
   )
 
-  # buffer that we log messages into so they can be printed after a test has finished
+  # Test logging. If '--log-file' is provided we log to that location,
+  # otherwise we buffer messages and log to stdout after its test completes.
 
-  logging_buffer = stem.util.log.LogBuffer(args.logging_runlevel)
-  stem.util.log.get_logger().addHandler(logging_buffer)
+  logging_buffer = None
+
+  if args.logging_runlevel:
+    if args.logging_path:
+      handler = logging.FileHandler(args.logging_path, mode = 'w')
+      handler.setLevel(stem.util.log.logging_level(args.logging_runlevel))
+      handler.setFormatter(stem.util.log.FORMATTER)
+    else:
+      handler = logging_buffer = stem.util.log.LogBuffer(args.logging_runlevel)
+
+    stem.util.log.get_logger().addHandler(handler)
 
   # filters for how testing output is displayed
 
@@ -399,6 +410,12 @@ def _print_static_issues(static_check_issues):
 
 
 def _run_test(args, test_class, output_filters):
+  # When logging to a file we don't have stdout's test delimiters to correlate
+  # logs with the test that generated them.
+
+  if args.logging_path:
+    stem.util.log.notice('Beginning test %s' % test_class)
+
   start_time = time.time()
 
   # Test classes look like...
@@ -448,6 +465,9 @@ def _run_test(args, test_class, output_filters):
     else:
       println(' failed (%0.2fs)' % (time.time() - start_time), ERROR)
       println(test.output.apply_filters(test_results.getvalue(), *output_filters), NO_NL)
+
+  if args.logging_path:
+    stem.util.log.notice('Finished test %s' % test_class)
 
   return run_result
 

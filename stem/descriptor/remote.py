@@ -596,7 +596,7 @@ class Query(object):
         raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
 
       self.runtime = time.time() - self.start_time
-      log.trace("Descriptors retrieved from %s in %0.2fs" % (downloaded_from, self.runtime))
+      log.trace('Descriptors retrieved from %s in %0.2fs' % (downloaded_from, self.runtime))
     except:
       exc = sys.exc_info()[1]
 

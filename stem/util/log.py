@@ -78,6 +78,11 @@ logging.addLevelName(LOG_VALUES[NOTICE], 'NOTICE')
 LOGGER = logging.getLogger('stem')
 LOGGER.setLevel(LOG_VALUES[TRACE])
 
+FORMATTER = logging.Formatter(
+  fmt = '%(asctime)s [%(levelname)s] %(message)s',
+  datefmt = '%m/%d/%Y %H:%M:%S',
+)
+
 # There's some messages that we don't want to log more than once. This set has
 # the messages IDs that we've logged which fall into this category.
 DEDUPLICATION_MESSAGE_IDS = set()
@@ -221,6 +226,9 @@ class LogBuffer(logging.Handler):
 
   .. versionchanged:: 1.4.0
      Added the yield_records argument.
+
+  .. deprecated:: 1.8.0
+     This will be dropped in Stem 2.x. Use python's logging.BufferingHandler instead.
   """
 
   def __init__(self, runlevel, yield_records = False):
@@ -232,10 +240,7 @@ class LogBuffer(logging.Handler):
 
     logging.Handler.__init__(self, level = logging_level(runlevel))
 
-    self.formatter = logging.Formatter(
-      fmt = '%(asctime)s [%(levelname)s] %(message)s',
-      datefmt = '%m/%d/%Y %H:%M:%S')
-
+    self.formatter = FORMATTER
     self._buffer = []
     self._yield_records = yield_records
 
