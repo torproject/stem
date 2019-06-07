@@ -187,6 +187,9 @@ def main():
   test_config = stem.util.conf.get_config('test')
   test_config.load(os.path.join(test.STEM_BASE, 'test', 'settings.cfg'))
 
+  if 'STEM_TEST_CONFIG' in os.environ:
+    test_config.load(os.environ['STEM_TEST_CONFIG'])
+
   try:
     args = test.arguments.parse(sys.argv[1:])
     test.task.TOR_VERSION.args = (args.tor_path,)

@@ -52,6 +52,8 @@ import test
 from test.output import println, STATUS, ERROR, SUBSTATUS, NO_NL
 
 CONFIG = stem.util.conf.config_dict('test', {
+  'integ.torrc': '',
+  'integ.extra_torrc': '',
   'integ.test_directory': './test/data',
   'integ.log': './test/data/log',
   'target.torrc': {},
@@ -59,18 +61,6 @@ CONFIG = stem.util.conf.config_dict('test', {
 
 SOCKS_PORT = 1112
 ORPORT = 1113
-
-BASE_TORRC = """# configuration for stem integration tests
-DataDirectory %%s
-SocksPort %i
-ORPort %i
-ExitRelay 0
-PublishServerDescriptor 0
-AssumeReachable 1
-DownloadExtraInfo 1
-Log notice stdout
-Log debug file %%s/tor_log
-""" % (SOCKS_PORT, ORPORT)
 
 # singleton Runner instance
 INTEG_RUNNER = None
@@ -221,22 +211,32 @@ class Runner(object):
         data_dir_path = './%s' % os.path.basename(self._test_dir)
 
       config_csv = CONFIG['target.torrc'].get(config_target)
-      extra_torrc_opts = []
+      target_torrc_opts = []
 
       if config_csv:
         for opt in config_csv.split(','):
           opt = opt.strip()
 
           if opt in Torrc.keys():
-            extra_torrc_opts.append(Torrc[opt])
+            target_torrc_opts.append(Torrc[opt])
           else:
             raise ValueError("'%s' isn't a test.runner.Torrc enumeration" % opt)
 
-      self._custom_opts = extra_torrc_opts
-      self._torrc_contents = BASE_TORRC % (data_dir_path, data_dir_path)
+      self._custom_opts = target_torrc_opts
 
-      if extra_torrc_opts:
-        self._torrc_contents += '\n'.join(extra_torrc_opts) + '\n'
+      self._torrc_contents = CONFIG['integ.torrc']
+
+      if target_torrc_opts:
+        self._torrc_contents += '\n\n# Torrc options for the %s target\n\n' % config_target
+        self._torrc_contents += '\n'.join(target_torrc_opts)
+
+      if CONFIG['integ.extra_torrc']:
+        self._torrc_contents += '\n\n# Torrc options from %s\n\n' % os.environ['STEM_TEST_CONFIG']
+        self._torrc_contents += CONFIG['integ.extra_torrc']
+
+      self._torrc_contents = self._torrc_contents.replace('[DATA_DIR]', data_dir_path)
+      self._torrc_contents = self._torrc_contents.replace('[SOCKS_PORT]', str(SOCKS_PORT))
+      self._torrc_contents = self._torrc_contents.replace('[OR_PORT]', str(ORPORT))
 
       try:
         self._tor_cwd = os.getcwd()
