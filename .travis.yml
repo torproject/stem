@@ -41,16 +41,6 @@ matrix:
           packages:
             - tor
       env: TOR="0.2.9-nightly" TARGET=""
-    ## The current stable release is 0.3.5, so we don't have a separate
-    ## 0.3.5-stable job
-    - addons:
-        apt:
-          sources:
-            - sourceline: 'deb https://deb.torproject.org/torproject.org xenial main'
-              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
-          packages:
-            - tor
-      env: TOR="stable-release" TARGET=""
     - addons:
         apt:
           sources:
@@ -59,6 +49,17 @@ matrix:
           packages:
             - tor
       env: TOR="0.3.5-nightly" TARGET=""
+    ## The current stable release is 0.4.0
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - tor
+      env: TOR="stable-release" TARGET=""
+    ## TODO: add 0.4.0-nightly and experimental-0.4.1 when available
+    ## See #30827.
 
     ## Test all supported python releases
     ## Pre-installed in Travis xenial:
