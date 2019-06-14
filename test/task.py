@@ -44,6 +44,8 @@ import test.output
 
 from test.output import STATUS, ERROR, NO_NL, println
 
+TASK_DESCRIPTION_WIDTH = 40
+
 try:
   # TODO: remove check when dropping python 2.6 support
 
@@ -259,7 +261,7 @@ class Task(object):
     start_time = time.time()
     println('  %s...' % self.label, STATUS, NO_NL)
 
-    padding = 40 - len(self.label)
+    padding = TASK_DESCRIPTION_WIDTH - len(self.label)
     println(' ' * padding, NO_NL)
 
     try:
@@ -322,7 +324,7 @@ class StaticCheckTask(Task):
       return super(StaticCheckTask, self).run()
     else:
       println('  %s...' % self.label, STATUS, NO_NL)
-      println(' ' * (50 - len(self.label)), NO_NL)
+      println(' ' * (TASK_DESCRIPTION_WIDTH - len(self.label)), NO_NL)
       println('unavailable', STATUS)
 
 
