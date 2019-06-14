@@ -2361,7 +2361,7 @@ class Controller(BaseController):
       # entries since the user didn't request those by their key, so we can't
       # be sure what they wanted.
 
-      for key in reply:
+      for key in list(reply):
         if not key.lower() in MAPPED_CONFIG_KEYS.values():
           user_expected_key = _case_insensitive_lookup(params, key, key)
 
