@@ -1,4 +1,4 @@
-# Copyright 2017, Damian Johnson and The Tor Project
+# Copyright 2017-2019, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 """
@@ -23,7 +23,7 @@ With this you can either download and read directly from CollecTor...
 
   for desc in collector.get_server_descriptors(start = yesterday):
     if desc.exit_policy.is_exiting_allowed():
-      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+      print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
 ... or download the descriptors to disk and read them later.
 
@@ -45,9 +45,9 @@ With this you can either download and read directly from CollecTor...
 
   for desc in reader:
     if desc.exit_policy.is_exiting_allowed():
-      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+      print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
-.. versionadded:: 1.7.0
+.. versionadded:: 1.8.0
 """
 
 import io
