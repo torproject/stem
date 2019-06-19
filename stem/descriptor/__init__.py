@@ -225,7 +225,12 @@ class _Compression(object):
     """
 
     if not self.available:
-      raise ImportError("'%s' decompression module is unavailable" % self._module_name)
+      if self.name == 'zstd':
+        raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
+      elif self.name == 'lzma':
+        raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
+      else:
+        raise ImportError("'%s' decompression module is unavailable" % self._module_name)
 
     return self._decompression_func(self._module, content)
 
@@ -247,7 +252,7 @@ Compression = stem.util.enum.Enum(
   ('GZIP', _Compression('gzip', 'zlib', 'gzip', '.gz', lambda module, content: module.decompress(content, module.MAX_WBITS | 32))),
   ('BZ2', _Compression('bzip2', 'bz2', 'bzip2', '.bz2', lambda module, content: module.decompress(content))),
   ('LZMA', _Compression('lzma', 'lzma', 'x-tor-lzma', '.xz', lambda module, content: module.decompress(content))),
-  ('ZSTD', _Compression('zstd', 'zstd', 'zstd', '.zst', _zstd_decompress)),
+  ('ZSTD', _Compression('zstd', 'zstd', 'x-zstd', '.zst', _zstd_decompress)),
 )
 
 

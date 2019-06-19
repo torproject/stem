@@ -100,7 +100,6 @@ import random
 import sys
 import threading
 import time
-import zlib
 
 import stem
 import stem.client
@@ -119,12 +118,21 @@ try:
 except ImportError:
   import urllib2 as urllib
 
+# TODO: remove in stem 2.x, replaced with stem.descriptor.Compression
+
 Compression = stem.util.enum.Enum(
   ('PLAINTEXT', 'identity'),
   ('GZIP', 'gzip'),  # can also be 'deflate'
   ('ZSTD', 'x-zstd'),
   ('LZMA', 'x-tor-lzma'),
 )
+
+COMPRESSION_MIGRATION = {
+  'identity': stem.descriptor.Compression.PLAINTEXT,
+  'gzip': stem.descriptor.Compression.GZIP,
+  'x-zstd': stem.descriptor.Compression.ZSTD,
+  'x-tor-lzma': stem.descriptor.Compression.LZMA,
+}
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -364,6 +372,11 @@ class Query(object):
   .. versionchanged:: 1.8.0
      Defaulting to gzip compression rather than plaintext downloads.
 
+  .. versionchanged:: 1.8.0
+     Using :class:`~stem.descriptor.__init__.Compression` for our compression
+     argument, usage of strings or this module's Compression enum is deprecated
+     and will be removed in stem 2.x.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -371,7 +384,7 @@ class Query(object):
 
   :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
     authority or mirror we're querying, this uses authorities if undefined
-  :var list compression: list of :data:`stem.descriptor.remote.Compression`
+  :var list compression: list of :data:`stem.descriptor.Compression`
     we're willing to accept, when none are mutually supported downloads fall
     back to Compression.PLAINTEXT
   :var int retries: number of times to attempt the request if downloading it
@@ -429,6 +442,19 @@ class Query(object):
       if not compression:
         compression = [Compression.PLAINTEXT]
 
+    # TODO: Normalize from our old compression enum to
+    # stem.descriptor.Compression. This will get removed in Stem 2.x.
+
+    new_compression = []
+
+    for legacy_compression in compression:
+      if isinstance(legacy_compression, stem.descriptor._Compression):
+        new_compression.append(legacy_compression)
+      elif legacy_compression in COMPRESSION_MIGRATION:
+        new_compression.append(COMPRESSION_MIGRATION[legacy_compression])
+      else:
+        raise ValueError("'%s' (%s) is not a recognized type of compression" % (legacy_compression, type(legacy_compression).__name__))
+
     if descriptor_type:
       self.descriptor_type = descriptor_type
     else:
@@ -446,7 +472,7 @@ class Query(object):
           raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
-    self.compression = compression
+    self.compression = new_compression
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
@@ -1009,7 +1035,7 @@ def _download_from_orport(endpoint, compression, resource):
     with relay.create_circuit() as circ:
       request = '\r\n'.join((
         'GET %s HTTP/1.0' % resource,
-        'Accept-Encoding: %s' % ', '.join(compression),
+        'Accept-Encoding: %s' % ', '.join(map(lambda c: c.encoding, compression)),
         'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
@@ -1051,7 +1077,7 @@ def _download_from_dirport(url, compression, timeout):
     urllib.Request(
       url,
       headers = {
-        'Accept-Encoding': ', '.join(compression),
+        'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),
         'User-Agent': stem.USER_AGENT,
       }
     ),
@@ -1080,29 +1106,14 @@ def _decompress(data, encoding):
     * **ImportError** if missing the decompression module
   """
 
-  if encoding == Compression.PLAINTEXT:
-    return data
-  elif encoding in (Compression.GZIP, 'deflate'):
-    return zlib.decompress(data, zlib.MAX_WBITS | 32)
-  elif encoding == Compression.ZSTD:
-    if not stem.prereq.is_zstd_available():
-      raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
+  if encoding == 'deflate':
+    return stem.descriptor.Compression.GZIP.decompress(data)
 
-    import zstd
-    output_buffer = io.BytesIO()
+  for compression in stem.descriptor.Compression:
+    if encoding == compression.encoding:
+      return compression.decompress(data)
 
-    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
-      decompressor.write(data)
-
-    return output_buffer.getvalue()
-  elif encoding == Compression.LZMA:
-    if not stem.prereq.is_lzma_available():
-      raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
-
-    import lzma
-    return lzma.decompress(data)
-  else:
-    raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
+  raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
 
 
 def _guess_descriptor_type(resource):
