@@ -50,9 +50,10 @@ With this you can either download and read directly from CollecTor...
 .. versionadded:: 1.8.0
 """
 
-import io
 import json
 import time
+
+from stem.descriptor import Compression
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -68,82 +69,18 @@ COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
 
-class Compression(object):
-  """
-  Compression method supported by CollecTor.
-
-  :var bool available: **True** if this method of decryption is available,
-    **False** otherwise
-  :var str extension: file extension of this compression
-  """
-
-  def __init__(self, module, extension):
-    # Compression modules are optional. Usually gzip and bz2 are available, but
-    # they might be missing if compiling python yourself. As for lzma it was
-    # added in python 3.3.
-
-    try:
-      self._module = __import__(module)
-      self.available = True
-    except ImportError:
-      self._module = None
-      self.available = False
-
-    self.extension = extension
-    self._module_name = module
-
-  def decompress(self, content):
-    """
-    Decompresses the given content via this method.
-
-    :param bytes content: content to be decompressed
-
-    :returns: **bytes** with the decompressed content
-
-    :raises:
-      If unable to decompress this provide...
-
-      * **IOError** if content isn't compressed with this
-      * **ImportError** if this method if decompression is unavalable
-    """
-
-    if not self.available:
-      raise ImportError("'%s' decompression module is unavailable" % self)
-
-    if self._module_name == 'gzip':
-      if stem.prereq.is_python_3():
-        return self._module.decompress(content)
-      else:
-        # prior to python 3.2 gzip only had GzipFile
-        return self._module.GzipFile(fileobj = io.BytesIO(content)).read()
-    elif self._module_name == 'bz2':
-      return self._module.decompress(content)
-    elif self._module_name == 'lzma':
-      return self._module.decompress(content)
-    else:
-      raise ImportError('BUG: No implementation for %s decompression' % self)
-
-  def __str__(self):
-    return self._module_name
-
-
-GZIP = Compression('gzip', '.gz')
-BZ2 = Compression('bz2', '.bz2')
-LZMA = Compression('lzma', '.xz')
-
-
 def url(resource, compression = None):
   """
   Provides CollecTor url for the given resource.
 
   :param str resource: resource type of the url
-  :param descriptor.collector.Compression compression: compression type to
+  :param descriptor.Compression compression: compression type to
     download from
 
   :returns: **str** with the CollecTor url
   """
 
-  # TODO: Not yet sure how to most elegantly map resources to urls. No doubt
+  # TODO: Unsure how to most elegantly map resources to urls. No doubt
   # this'll change as we add more types.
 
   if resource == 'index':
@@ -152,7 +89,7 @@ def url(resource, compression = None):
     raise ValueError("'%s' isn't a recognized resource type" % resource)
 
   suffix = compression.extension if compression else ''
-  return ''.join((COLLECTOR_URL, '/'.join(path), suffix))
+  return COLLECTOR_URL + '/'.join(path) + suffix
 
 
 class CollecTor(object):
@@ -161,7 +98,7 @@ class CollecTor(object):
   provided in `an index <https://collector.torproject.org/index/index.json>`_
   that's fetched as required.
 
-  :var descriptor.collector.Compression compression: compression type to
+  :var descriptor.Compression compression: compression type to
     download from, if undefiled we'll use the best decompression available
   :var int retries: number of times to attempt the request if downloading it
     fails
@@ -172,7 +109,7 @@ class CollecTor(object):
     if compression == 'best':
       self.compression = None
 
-      for option in (LZMA, BZ2, GZIP):
+      for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
         if option.available:
           self.compression = option
           break

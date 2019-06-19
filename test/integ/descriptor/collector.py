@@ -6,7 +6,8 @@ import unittest
 
 import test.require
 
-from stem.descriptor.collector import GZIP, BZ2, LZMA, CollecTor
+from stem.descriptor import Compression
+from stem.descriptor.collector import CollecTor
 
 
 class TestCollector(unittest.TestCase):
@@ -18,17 +19,17 @@ class TestCollector(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_index_gzip(self):
-    self._test_index(GZIP)
+    self._test_index(Compression.GZIP)
 
   @test.require.only_run_once
   @test.require.online
   def test_index_bz2(self):
-    self._test_index(BZ2)
+    self._test_index(Compression.BZ2)
 
   @test.require.only_run_once
   @test.require.online
   def test_index_lzma(self):
-    self._test_index(LZMA)
+    self._test_index(Compression.LZMA)
 
   def _test_index(self, compression):
     if compression and not compression.available:

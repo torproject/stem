@@ -7,7 +7,8 @@ import unittest
 
 import stem.prereq
 
-from stem.descriptor.collector import GZIP, BZ2, LZMA, CollecTor, url
+from stem.descriptor import Compression
+from stem.descriptor.collector import CollecTor, url
 
 try:
   # added in python 3.3
@@ -22,9 +23,9 @@ class TestCollector(unittest.TestCase):
   def test_url(self):
     self.assertEqual('https://collector.torproject.org/index/index.json', url('index'))
     self.assertEqual('https://collector.torproject.org/index/index.json', url('index', compression = None))
-    self.assertEqual('https://collector.torproject.org/index/index.json.gz', url('index', compression = GZIP))
-    self.assertEqual('https://collector.torproject.org/index/index.json.bz2', url('index', compression = BZ2))
-    self.assertEqual('https://collector.torproject.org/index/index.json.xz', url('index', compression = LZMA))
+    self.assertEqual('https://collector.torproject.org/index/index.json.gz', url('index', compression = Compression.GZIP))
+    self.assertEqual('https://collector.torproject.org/index/index.json.bz2', url('index', compression = Compression.BZ2))
+    self.assertEqual('https://collector.torproject.org/index/index.json.xz', url('index', compression = Compression.LZMA))
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'{"index_created":"2017-12-25 21:06","build_revision":"56a303e","path":"https://collector.torproject.org"}')))
   def test_index(self):
@@ -47,7 +48,7 @@ class TestCollector(unittest.TestCase):
       self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index)
 
   def test_index_malformed_compression(self):
-    for compression in (GZIP, BZ2, LZMA):
+    for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
       with patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not compressed'))):
         collector = CollecTor(compression = compression)
         self.assertRaisesRegexp(IOError, 'Unable to decompress response as %s' % compression, collector.index)
