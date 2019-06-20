@@ -142,6 +142,9 @@ addons:
   homebrew:
     packages:
       - tor
+    # See ticket #30928 for more information. This key should be removed at
+    # some point to speed up builds.
+    update: true
 
 install:
   ## We also need to install stem's dependencies
