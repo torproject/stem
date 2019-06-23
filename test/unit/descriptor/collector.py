@@ -23,6 +23,7 @@ class TestCollector(unittest.TestCase):
   def test_url(self):
     self.assertEqual('https://collector.torproject.org/index/index.json', url('index'))
     self.assertEqual('https://collector.torproject.org/index/index.json', url('index', compression = None))
+    self.assertEqual('https://collector.torproject.org/index/index.json', url('index', compression = Compression.PLAINTEXT))
     self.assertEqual('https://collector.torproject.org/index/index.json.gz', url('index', compression = Compression.GZIP))
     self.assertEqual('https://collector.torproject.org/index/index.json.bz2', url('index', compression = Compression.BZ2))
     self.assertEqual('https://collector.torproject.org/index/index.json.xz', url('index', compression = Compression.LZMA))
@@ -35,12 +36,12 @@ class TestCollector(unittest.TestCase):
       'path': 'https://collector.torproject.org'
     }
 
-    collector = CollecTor(compression = None)
+    collector = CollecTor(compression = Compression.PLAINTEXT)
     self.assertEqual(expected, collector.index())
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not json')))
   def test_index_malformed_json(self):
-    collector = CollecTor(compression = None)
+    collector = CollecTor(compression = Compression.PLAINTEXT)
 
     if stem.prereq.is_python_3():
       self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index)

@@ -65,7 +65,7 @@ COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
 
-def url(resource, compression = None):
+def url(resource, compression = Compression.PLAINTEXT):
   """
   Provides CollecTor url for the given resource.
 
@@ -84,8 +84,8 @@ def url(resource, compression = None):
   else:
     raise ValueError("'%s' isn't a recognized resource type" % resource)
 
-  suffix = compression.extension if compression else ''
-  return COLLECTOR_URL + '/'.join(path) + suffix
+  extension = compression.extension if compression not in (None, Compression.PLAINTEXT) else ''
+  return COLLECTOR_URL + '/'.join(path) + extension
 
 
 class CollecTor(object):
@@ -102,21 +102,21 @@ class CollecTor(object):
   """
 
   def __init__(self, compression = 'best', retries = 2, timeout = None):
-    if compression == 'best':
-      self.compression = None
-
-      for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
-        if option.available:
-          self.compression = option
-          break
-    else:
-      self.compression = compression
-
+    self.compression = Compression.PLAINTEXT
     self.retries = retries
     self.timeout = timeout
 
     self._cached_index = None
     self._cached_index_at = 0
+
+    if compression == 'best':
+
+      for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
+        if option.available:
+          self.compression = option
+          break
+    elif compression is not None:
+      self.compression = compression
 
   def index(self):
     """
