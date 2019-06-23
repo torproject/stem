@@ -16,12 +16,11 @@ With this you can either download and read directly from CollecTor...
   import datetime
   import stem.descriptor.collector
 
-  collector = stem.descriptor.collector.CollecTor()
   yesterday = datetime.date.today() - datetime.timedelta(1)
 
   # provide yesterday's exits
 
-  for desc in collector.get_server_descriptors(start = yesterday):
+  for desc in stem.descriptor.collector.get_server_descriptors(start = yesterday):
     if desc.exit_policy.is_exiting_allowed():
       print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
@@ -33,10 +32,9 @@ With this you can either download and read directly from CollecTor...
   import stem.descriptor
   import stem.descriptor.collector
 
-  collector = stem.descriptor.collector.CollecTor()
   yesterday = datetime.date.today() - datetime.timedelta(1)
 
-  collector.download_server_descriptors(
+  stem.descriptor.collector.download_server_descriptors(
     destination = '~/descriptor_cache',
     start = yesterday,
   ).join()
