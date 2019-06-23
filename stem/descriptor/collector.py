@@ -30,8 +30,8 @@ With this you can either download and read directly from CollecTor...
 ::
 
   import datetime
+  import stem.descriptor
   import stem.descriptor.collector
-  import stem.descriptor.reader
 
   collector = stem.descriptor.collector.CollecTor()
   yesterday = datetime.date.today() - datetime.timedelta(1)
@@ -41,9 +41,7 @@ With this you can either download and read directly from CollecTor...
     start = yesterday,
   ).join()
 
-  reader = stem.descriptor.reader.DescriptorReader('~/descriptor_cache')
-
-  for desc in reader:
+  for desc in stem.descriptor.parse_file('~/descriptor_cache', descriptor_type = 'server-descriptor 1.0'):
     if desc.exit_policy.is_exiting_allowed():
       print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
