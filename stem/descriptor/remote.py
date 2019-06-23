@@ -61,9 +61,10 @@ content. For example...
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
     |- get_microdescriptors - provides present microdescriptors with the given digests
     |- get_consensus - provides the present consensus or router status entries
+    |- get_vote - provides an authority's vote for the next consensus
+    |- get_key_certificates - provides present authority key certificates
     |- get_bandwidth_file - provies bandwidth heuristics used to make the next consensus
     |- get_detached_signatures - authority signatures used to make the next consensus
-    |- get_key_certificates - provides present authority key certificates
     +- query - request an arbitrary descriptor resource
 
 .. versionadded:: 1.1.0
@@ -1119,7 +1120,7 @@ def _guess_descriptor_type(resource):
     # The following resource urls can be for the present consensus
     # (/tor/status-vote/current/*) or the next (/tor/status-vote/next/*).
 
-    if resource.endswith('/consensus'):
+    if resource.endswith('/consensus') or resource.endswith('/authority'):
       return 'network-status-consensus-3 1.0'
     elif resource.endswith('/consensus-microdesc'):
       return 'network-status-microdesc-consensus-3 1.0'

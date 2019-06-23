@@ -270,6 +270,23 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
+  @patch(URL_OPEN)
+  def test_each_getter(self, dirport_mock):
+    """
+    Surface level exercising of each getter method for downloading descriptors.
+    """
+
+    downloader = stem.descriptor.remote.get_instance()
+
+    downloader.get_server_descriptors()
+    downloader.get_extrainfo_descriptors()
+    downloader.get_microdescriptors('test-hash')
+    downloader.get_consensus()
+    downloader.get_vote(stem.directory.Authority.from_cache()['moria1'])
+    downloader.get_key_certificates()
+    downloader.get_bandwidth_file()
+    downloader.get_detached_signatures()
+
   @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
   def test_reply_headers(self):
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
