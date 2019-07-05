@@ -76,20 +76,6 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.lzma', timeout = None)
 
   @patch(URL_OPEN)
-  def test_download_zstd(self, urlopen_mock):
-    if not Compression.ZSTD.available:
-      self.skipTest('(zstd compression unavailable)')
-      return
-
-    import zstd
-    compressor = zstd.ZstdCompressor()
-    urlopen_mock.return_value = io.BytesIO(compressor.compress(MINIMAL_INDEX_JSON))
-
-    collector = CollecTor(compression = Compression.ZSTD)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
-    urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.zst', timeout = None)
-
-  @patch(URL_OPEN)
   def test_download_retries(self, urlopen_mock):
     urlopen_mock.side_effect = IOError('boom')
 
@@ -118,7 +104,7 @@ class TestCollector(unittest.TestCase):
       self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index)
 
   def test_index_malformed_compression(self):
-    for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA, Compression.ZSTD):
+    for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
       if not compression.available:
         next
 
