@@ -28,6 +28,14 @@ class TestCollector(unittest.TestCase):
     self.assertEqual('https://collector.torproject.org/index/index.json.bz2', url('index', compression = Compression.BZ2))
     self.assertEqual('https://collector.torproject.org/index/index.json.xz', url('index', compression = Compression.LZMA))
 
+  @patch(URL_OPEN)
+  def test_retries(self, urlopen_mock):
+    collector = CollecTor(retries = 4)
+    urlopen_mock.side_effect = IOError('boom')
+
+    self.assertRaisesRegexp(IOError, 'boom', collector.index)
+    self.assertEqual(5, urlopen_mock.call_count)
+
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'{"index_created":"2017-12-25 21:06","build_revision":"56a303e","path":"https://collector.torproject.org"}')))
   def test_index(self):
     expected = {
@@ -52,4 +60,4 @@ class TestCollector(unittest.TestCase):
     for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
       with patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not compressed'))):
         collector = CollecTor(compression = compression)
-        self.assertRaisesRegexp(IOError, 'Unable to decompress response as %s' % compression, collector.index)
+        self.assertRaisesRegexp(IOError, 'Unable to decompress %s response' % compression, collector.index)

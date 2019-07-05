@@ -47,9 +47,11 @@ With this you can either download and read directly from CollecTor...
 """
 
 import json
+import sys
 import time
 
 from stem.descriptor import Compression
+from stem.util import log
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -88,6 +90,53 @@ def url(resource, compression = Compression.PLAINTEXT):
   return COLLECTOR_URL + '/'.join(path) + extension
 
 
+def _download(url, compression, timeout, retries):
+  """
+  Download from the given url.
+
+  :param str url: url to download from
+  :param descriptor.Compression compression: decompression type
+  :param int timeout: timeout when connection becomes idle, no timeout applied
+    if **None**
+  :param int retires: maximum attempts to impose
+
+  :returns: content of the given url
+
+  :raises:
+    * **IOError** if unable to decompress
+    * **socket.timeout** if our request timed out
+    * **urllib2.URLError** for most request failures
+
+    Note that the urllib2 module may fail with other exception types, in
+    which case we'll pass it along.
+  """
+
+  start_time = time.time()
+
+  try:
+    response = urllib.urlopen(url, timeout = timeout).read()
+  except:
+    exc = sys.exc_info()[1]
+
+    if timeout is not None:
+      timeout -= time.time() - start_time
+
+    if retries > 0 and (timeout is None or timeout > 0):
+      log.debug("Failed to download from CollecTor at '%s' (%i retries remaining): %s" % (url, retries, exc))
+      return _download(url, compression, timeout, retries - 1)
+    else:
+      log.debug("Failed to download from CollecTor at '%s': %s" % (url, exc))
+      raise
+
+  if compression not in (None, Compression.PLAINTEXT):
+    try:
+      response = compression.decompress(response)
+    except Exception as exc:
+      raise IOError('Unable to decompress %s response from %s: %s' % (compression, url, exc))
+
+  return stem.util.str_tools._to_unicode(response)
+
+
 class CollecTor(object):
   """
   Downloader for descriptors from CollecTor. The contents of CollecTor are
@@ -110,7 +159,6 @@ class CollecTor(object):
     self._cached_index_at = 0
 
     if compression == 'best':
-
       for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
         if option.available:
           self.compression = option
@@ -134,17 +182,8 @@ class CollecTor(object):
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
-      # TODO: add retry support
-
-      response = urllib.urlopen(url('index', self.compression), timeout = self.timeout).read()
-
-      if self.compression:
-        try:
-          response = self.compression.decompress(response)
-        except Exception as exc:
-          raise IOError('Unable to decompress response as %s: %s' % (self.compression, exc))
-
-      self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
+      response = _download(url('index', self.compression), self.compression, self.timeout, self.retries)
+      self._cached_index = json.loads(response)
       self._cached_index_at = time.time()
 
     return self._cached_index
