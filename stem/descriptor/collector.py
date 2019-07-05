@@ -29,17 +29,20 @@ With this you can either download and read directly from CollecTor...
 ::
 
   import datetime
+  import os
   import stem.descriptor
   import stem.descriptor.collector
 
   yesterday = datetime.date.today() - datetime.timedelta(1)
+  path = os.path.expanduser('~/descriptor_cache/server_desc_today')
 
-  stem.descriptor.collector.download_server_descriptors(
-    destination = '~/descriptor_cache',
-    start = yesterday,
-  ).join()
+  with open(path, 'wb') as cache_file:
+    for desc in stem.descriptor.collector.get_server_descriptors(start = yesterday):
+      cache_file.write(desc.get_bytes())
 
-  for desc in stem.descriptor.parse_file('~/descriptor_cache', descriptor_type = 'server-descriptor 1.0'):
+  # then later...
+
+  for desc in stem.descriptor.parse_file(path, descriptor_type = 'server-descriptor 1.0'):
     if desc.exit_policy.is_exiting_allowed():
       print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
