@@ -70,34 +70,11 @@ COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
 
-def url(resource, compression = Compression.PLAINTEXT):
-  """
-  Provides CollecTor url for the given resource.
-
-  :param str resource: resource type of the url
-  :param descriptor.Compression compression: compression type to
-    download from
-
-  :returns: **str** with the CollecTor url
-  """
-
-  # TODO: Unsure how to most elegantly map resources to urls. No doubt
-  # this'll change as we add more types.
-
-  if resource == 'index':
-    path = ('index', 'index.json')
-  else:
-    raise ValueError("'%s' isn't a recognized resource type" % resource)
-
-  extension = compression.extension if compression not in (None, Compression.PLAINTEXT) else ''
-  return COLLECTOR_URL + '/'.join(path) + extension
-
-
 def _download(url, compression, timeout, retries):
   """
   Download from the given url.
 
-  :param str url: url to download from
+  :param str url: uncompressed url to download from
   :param descriptor.Compression compression: decompression type
   :param int timeout: timeout when connection becomes idle, no timeout applied
     if **None**
@@ -115,6 +92,10 @@ def _download(url, compression, timeout, retries):
   """
 
   start_time = time.time()
+  extension = compression.extension if compression not in (None, Compression.PLAINTEXT) else ''
+
+  if not url.endswith(extension):
+    url += extension
 
   try:
     response = urllib.urlopen(url, timeout = timeout).read()
@@ -185,7 +166,7 @@ class CollecTor(object):
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
-      response = _download(url('index', self.compression), self.compression, self.timeout, self.retries)
+      response = _download(COLLECTOR_URL + 'index/index.json', self.compression, self.timeout, self.retries)
       self._cached_index = json.loads(response)
       self._cached_index_at = time.time()
 
