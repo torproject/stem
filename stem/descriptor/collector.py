@@ -49,6 +49,7 @@ With this you can either download and read directly from CollecTor...
 .. versionadded:: 1.8.0
 """
 
+import datetime
 import json
 import sys
 import time
@@ -124,11 +125,15 @@ def _download(url, compression, timeout, retries):
 class Index(object):
   """
   Index of CollecTor's content.
+
+  :var hash files: mapping of paths to thier content
   """
 
   def __init__(self, content):
     self._str_content = content
     self._hash_content = Index._convert_paths(json.loads(content))
+
+    self.files = Index._get_files(self._hash_content, [])
 
   def __str__(self):
     return self._str_content
@@ -136,6 +141,31 @@ class Index(object):
   def __iter__(self):
     for k, v in self._hash_content.items():
       yield k, v
+
+  @staticmethod
+  def _get_files(val, path):
+    """
+    Provies a mapping of paths to files within the index.
+
+    :param dict val: index hash
+    :param list path: path we've transversed into
+
+    :returns: **dict** mapping paths to files
+    """
+
+    files = {}
+
+    if isinstance(val, dict):
+      for k, v in val.items():
+        if k == 'files':
+          for filename, attr in v.items():
+            file_path = '/'.join(path + [filename])
+            files[file_path] = File(file_path, attr.get('size'), attr.get('last_modified'))
+        elif k == 'directories':
+          for filename, attr in v.items():
+            files.update(Index._get_files(attr, path + [filename]))
+
+    return files
 
   @staticmethod
   def _convert_paths(val):
@@ -159,6 +189,21 @@ class Index(object):
       return contents
     else:
       return val
+
+
+class File(object):
+  """
+  File within CollecTor.
+
+  :var str path: file path within collector
+  :var int size: size of the file
+  :var datetime last_modified: when the file was last modified
+  """
+
+  def __init__(self, path, size, last_modified):
+    self.path = path
+    self.size = size
+    self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
 
 
 class CollecTor(object):

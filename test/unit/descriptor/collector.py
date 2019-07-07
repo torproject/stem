@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.collector.
 """
 
+import datetime
 import io
 import unittest
 
@@ -27,6 +28,9 @@ MINIMAL_INDEX = {
 }
 
 MINIMAL_INDEX_JSON = b'{"index_created":"2017-12-25 21:06","build_revision":"56a303e","path":"https://collector.torproject.org"}'
+
+with open(get_resource('collector_index.json'), 'rb') as index_file:
+  EXAMPLE_INDEX_CONTENT = index_file.read()
 
 
 class TestCollector(unittest.TestCase):
@@ -114,10 +118,20 @@ class TestCollector(unittest.TestCase):
         collector = CollecTor(compression = compression)
         self.assertRaisesRegexp(IOError, 'Unable to decompress %s response' % compression, collector.index)
 
-  @patch(URL_OPEN)
-  def test_real_index(self, urlopen_mock):
-    with open(get_resource('collector_index.json'), 'rb') as index_file:
-      urlopen_mock.return_value = io.BytesIO(index_file.read())
-
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  def test_real_index(self):
     collector = CollecTor(compression = Compression.PLAINTEXT)
     self.assertEqual(EXAMPLE_INDEX, dict(collector.index()))
+
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  def test_contents(self):
+    collector = CollecTor(compression = Compression.PLAINTEXT)
+    index = collector.index()
+
+    self.assertEqual(85, len(index.files))
+    test_path = 'archive/relay-descriptors/extra-infos/extra-infos-2007-09.tar.xz'
+
+    extrainfo_file = index.files[test_path]
+    self.assertEqual(test_path, extrainfo_file.path)
+    self.assertEqual(6459884, extrainfo_file.size)
+    self.assertEqual(datetime.datetime(2016, 6, 23, 9, 54), extrainfo_file.last_modified)
