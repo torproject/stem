@@ -121,29 +121,44 @@ def _download(url, compression, timeout, retries):
   return stem.util.str_tools._to_unicode(response)
 
 
-def _convert_index_paths(val):
+class Index(object):
   """
-  Key files and directories off their paths so we can work with them more
-  efficiently.
-
-  :val dict val: index to convert
-
-  :returns: index with files and directories converted to path-keyed hashes
-
-  :raises: **ValueError** if unable to parse the index
+  Index of CollecTor's content.
   """
 
-  if isinstance(val, dict):
-    return dict([(k, _convert_index_paths(v)) for (k, v) in val.items()])
-  elif isinstance(val, list) and all([isinstance(entry, dict) and 'path' in entry for entry in val]):
-    contents = {}
+  def __init__(self, content):
+    self._str_content = content
+    self._hash_content = Index._convert_paths(json.loads(content))
 
-    for entry in val:
-      contents[entry['path']] = dict((k, _convert_index_paths(v)) for (k, v) in entry.items() if k != 'path')
+  def __str__(self):
+    return self._str_content
 
-    return contents
-  else:
-    return val
+  def __iter__(self):
+    for k, v in self._hash_content.items():
+      yield k, v
+
+  @staticmethod
+  def _convert_paths(val):
+    """
+    Key files and directories off their paths so we can transverse them more
+    efficiently.
+
+    :val dict val: index to convert
+
+    :returns: index with files and directories converted to path-keyed hashes
+    """
+
+    if isinstance(val, dict):
+      return dict([(k, Index._convert_paths(v)) for (k, v) in val.items()])
+    elif isinstance(val, list) and all([isinstance(entry, dict) and 'path' in entry for entry in val]):
+      contents = {}
+
+      for entry in val:
+        contents[entry['path']] = dict((k, Index._convert_paths(v)) for (k, v) in entry.items() if k != 'path')
+
+      return contents
+    else:
+      return val
 
 
 class CollecTor(object):
@@ -179,7 +194,8 @@ class CollecTor(object):
     """
     Provides the archives available in CollecTor.
 
-    :returns: **dict** with the archive contents
+    :returns: :class:`~stem.descriptor.collector.Index` with the archive
+      contents
 
     :raises:
       If unable to retrieve the index this provide...
@@ -192,7 +208,7 @@ class CollecTor(object):
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
       response = _download(COLLECTOR_URL + 'index/index.json', self.compression, self.timeout, self.retries)
-      self._cached_index = _convert_index_paths(json.loads(response))
+      self._cached_index = Index(response)
       self._cached_index_at = time.time()
 
     return self._cached_index
