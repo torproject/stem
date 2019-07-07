@@ -121,6 +121,31 @@ def _download(url, compression, timeout, retries):
   return stem.util.str_tools._to_unicode(response)
 
 
+def _convert_index_paths(val):
+  """
+  Key files and directories off their paths so we can work with them more
+  efficiently.
+
+  :val dict val: index to convert
+
+  :returns: index with files and directories converted to path-keyed hashes
+
+  :raises: **ValueError** if unable to parse the index
+  """
+
+  if isinstance(val, dict):
+    return dict([(k, _convert_index_paths(v)) for (k, v) in val.items()])
+  elif isinstance(val, list) and all([isinstance(entry, dict) and 'path' in entry for entry in val]):
+    contents = {}
+
+    for entry in val:
+      contents[entry['path']] = dict((k, _convert_index_paths(v)) for (k, v) in entry.items() if k != 'path')
+
+    return contents
+  else:
+    return val
+
+
 class CollecTor(object):
   """
   Downloader for descriptors from CollecTor. The contents of CollecTor are
@@ -167,7 +192,7 @@ class CollecTor(object):
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
       response = _download(COLLECTOR_URL + 'index/index.json', self.compression, self.timeout, self.retries)
-      self._cached_index = json.loads(response)
+      self._cached_index = _convert_index_paths(json.loads(response))
       self._cached_index_at = time.time()
 
     return self._cached_index
