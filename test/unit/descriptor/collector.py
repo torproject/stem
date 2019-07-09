@@ -39,7 +39,7 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(MINIMAL_INDEX_JSON)
 
     collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(MINIMAL_INDEX, dict(collector.index()))
+    self.assertEqual(MINIMAL_INDEX, collector.index())
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json', timeout = None)
 
   @patch(URL_OPEN)
@@ -52,7 +52,7 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(zlib.compress(MINIMAL_INDEX_JSON))
 
     collector = CollecTor(compression = Compression.GZIP)
-    self.assertEqual(MINIMAL_INDEX, dict(collector.index()))
+    self.assertEqual(MINIMAL_INDEX, collector.index())
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.gz', timeout = None)
 
   @patch(URL_OPEN)
@@ -65,7 +65,7 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(bz2.compress(MINIMAL_INDEX_JSON))
 
     collector = CollecTor(compression = Compression.BZ2)
-    self.assertEqual(MINIMAL_INDEX, dict(collector.index()))
+    self.assertEqual(MINIMAL_INDEX, collector.index())
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.bz2', timeout = None)
 
   @patch(URL_OPEN)
@@ -78,7 +78,7 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.return_value = io.BytesIO(lzma.compress(MINIMAL_INDEX_JSON))
 
     collector = CollecTor(compression = Compression.LZMA)
-    self.assertEqual(MINIMAL_INDEX, dict(collector.index()))
+    self.assertEqual(MINIMAL_INDEX, collector.index())
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.lzma', timeout = None)
 
   @patch(URL_OPEN)
@@ -98,7 +98,7 @@ class TestCollector(unittest.TestCase):
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(MINIMAL_INDEX_JSON)))
   def test_index(self):
     collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(MINIMAL_INDEX, dict(collector.index()))
+    self.assertEqual(MINIMAL_INDEX, collector.index())
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not json')))
   def test_index_malformed_json(self):
@@ -121,17 +121,17 @@ class TestCollector(unittest.TestCase):
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
   def test_real_index(self):
     collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(EXAMPLE_INDEX, dict(collector.index()))
+    self.assertEqual(EXAMPLE_INDEX, collector.index())
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
   def test_contents(self):
     collector = CollecTor(compression = Compression.PLAINTEXT)
-    index = collector.index()
+    files = collector.files()
 
-    self.assertEqual(85, len(index.files))
+    self.assertEqual(85, len(files))
     test_path = 'archive/relay-descriptors/extra-infos/extra-infos-2007-09.tar.xz'
 
-    extrainfo_file = index.files[test_path]
+    extrainfo_file = files[test_path]
     self.assertEqual(test_path, extrainfo_file.path)
     self.assertEqual(6459884, extrainfo_file.size)
     self.assertEqual(datetime.datetime(2016, 6, 23, 9, 54), extrainfo_file.last_modified)

@@ -122,75 +122,6 @@ def _download(url, compression, timeout, retries):
   return stem.util.str_tools._to_unicode(response)
 
 
-class Index(object):
-  """
-  Index of CollecTor's content.
-
-  :var hash files: mapping of paths to thier content
-  """
-
-  def __init__(self, content):
-    self._str_content = content
-    self._hash_content = Index._convert_paths(json.loads(content))
-
-    self.files = Index._get_files(self._hash_content, [])
-
-  def __str__(self):
-    return self._str_content
-
-  def __iter__(self):
-    for k, v in self._hash_content.items():
-      yield k, v
-
-  @staticmethod
-  def _get_files(val, path):
-    """
-    Provies a mapping of paths to files within the index.
-
-    :param dict val: index hash
-    :param list path: path we've transversed into
-
-    :returns: **dict** mapping paths to files
-    """
-
-    files = {}
-
-    if isinstance(val, dict):
-      for k, v in val.items():
-        if k == 'files':
-          for filename, attr in v.items():
-            file_path = '/'.join(path + [filename])
-            files[file_path] = File(file_path, attr.get('size'), attr.get('last_modified'))
-        elif k == 'directories':
-          for filename, attr in v.items():
-            files.update(Index._get_files(attr, path + [filename]))
-
-    return files
-
-  @staticmethod
-  def _convert_paths(val):
-    """
-    Key files and directories off their paths so we can transverse them more
-    efficiently.
-
-    :val dict val: index to convert
-
-    :returns: index with files and directories converted to path-keyed hashes
-    """
-
-    if isinstance(val, dict):
-      return dict([(k, Index._convert_paths(v)) for (k, v) in val.items()])
-    elif isinstance(val, list) and all([isinstance(entry, dict) and 'path' in entry for entry in val]):
-      contents = {}
-
-      for entry in val:
-        contents[entry['path']] = dict((k, Index._convert_paths(v)) for (k, v) in entry.items() if k != 'path')
-
-      return contents
-    else:
-      return val
-
-
 class File(object):
   """
   File within CollecTor.
@@ -225,6 +156,7 @@ class CollecTor(object):
     self.timeout = timeout
 
     self._cached_index = None
+    self._cached_files = None  # {path => file} mappings in the index
     self._cached_index_at = 0
 
     if compression == 'best':
@@ -253,7 +185,52 @@ class CollecTor(object):
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
       response = _download(COLLECTOR_URL + 'index/index.json', self.compression, self.timeout, self.retries)
-      self._cached_index = Index(response)
+      self._cached_index = json.loads(response)
       self._cached_index_at = time.time()
 
     return self._cached_index
+
+  def files(self):
+    """
+    Provides files CollecTor presently has.
+
+    :returns: **hash** mapping paths to :class:`~stem.descriptor.collector.File`
+
+    :raises:
+      If unable to retrieve the index this provide...
+
+        * **ValueError** if json is malformed
+        * **IOError** if unable to decompress
+        * **socket.timeout** if our request timed out
+        * **urllib2.URLError** for most request failures
+    """
+
+    if not self._cached_files or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
+      self._cached_files = CollecTor._files(self.index(), [])
+
+    return self._cached_files
+
+  @staticmethod
+  def _files(val, path):
+    """
+    Provies a mapping of paths to files within the index.
+
+    :param dict val: index hash
+    :param list path: path we've transversed into
+
+    :returns: **dict** mapping paths to files
+    """
+
+    files = {}
+
+    if isinstance(val, dict):
+      for k, v in val.items():
+        if k == 'files':
+          for attr in v:
+            file_path = '/'.join(path + [attr.get('path')])
+            files[file_path] = File(file_path, attr.get('size'), attr.get('last_modified'))
+        elif k == 'directories':
+          for attr in v:
+            files.update(CollecTor._files(attr, path + [attr.get('path')]))
+
+    return files
