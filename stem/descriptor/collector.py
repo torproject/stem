@@ -70,6 +70,40 @@ import stem.util.str_tools
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
+# mapping of path prefixes to their descriptor type (sampled 7/11/19)
+
+COLLECTOR_DESC_TYPES = {
+  'archive/bridge-descriptors/server-descriptors/': 'bridge-server-descriptor 1.2',
+  'archive/bridge-descriptors/extra-infos/': 'bridge-extra-info 1.3',
+  'archive/bridge-descriptors/statuses/': 'bridge-network-status 1.1',
+  'archive/bridge-pool-assignments/': 'bridge-pool-assignment 1.0',
+  'archive/exit-lists/': 'tordnsel 1.0',
+  'archive/relay-descriptors/bandwidths/': 'bandwidth-file 1.0',
+  'archive/relay-descriptors/certs': 'dir-key-certificate-3 1.0',
+  'archive/relay-descriptors/consensuses/': 'network-status-consensus-3 1.0',
+  'archive/relay-descriptors/extra-infos/': 'extra-info 1.0',
+  'archive/relay-descriptors/microdescs/': ('network-status-microdesc-consensus-3 1.0', 'microdescriptor 1.0'),
+  'archive/relay-descriptors/server-descriptors/': 'server-descriptor 1.0',
+  'archive/relay-descriptors/statuses/': 'network-status-2 1.0',
+  'archive/relay-descriptors/tor/': 'directory 1.0',
+  'archive/relay-descriptors/votes/': 'network-status-vote-3 1.0',
+  'archive/torperf/': 'torperf 1.0',
+  'archive/webstats/': (),
+  'recent/bridge-descriptors/extra-infos/': 'bridge-extra-info 1.3',
+  'recent/bridge-descriptors/server-descriptors/': 'bridge-server-descriptor 1.2',
+  'recent/bridge-descriptors/statuses/': 'bridge-network-status 1.2',
+  'recent/exit-lists/': 'tordnsel 1.0',
+  'recent/relay-descriptors/bandwidths/': 'bandwidth-file 1.0',
+  'recent/relay-descriptors/consensuses/': 'network-status-consensus-3 1.0',
+  'recent/relay-descriptors/extra-infos/': 'extra-info 1.0',
+  'recent/relay-descriptors/microdescs/consensus-microdesc/': 'network-status-microdesc-consensus-3 1.0',
+  'recent/relay-descriptors/microdescs/micro/': 'microdescriptor 1.0',
+  'recent/relay-descriptors/server-descriptors/': 'server-descriptor 1.0',
+  'recent/relay-descriptors/votes/': 'network-status-vote-3 1.0',
+  'recent/torperf/': 'torperf 1.1',
+  'recent/webstats/': (),
+}
+
 
 def _download(url, compression, timeout, retries):
   """
@@ -135,6 +169,27 @@ class File(object):
     self.path = path
     self.size = size
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
+    self._guessed_type = None
+
+  def guess_descriptor_types(self):
+    """
+    Descriptor @type this file is expected to have based on its path. If unable
+    to determine any this tuple is empty.
+
+    :returns: **tuple** with the descriptor types this file is expected to have
+    """
+
+    if self._guessed_type is None:
+      guessed_type = ()
+
+      for path_prefix, types in COLLECTOR_DESC_TYPES.items():
+        if self.path.startswith(path_prefix):
+          guessed_type = (types,) if isinstance(types, str) else types
+          break
+
+      self._guessed_type = guessed_type
+
+    return self._guessed_type
 
 
 class CollecTor(object):
