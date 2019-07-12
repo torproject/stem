@@ -133,8 +133,23 @@ class TestCollector(unittest.TestCase):
 
     extrainfo_file = files[test_path]
     self.assertEqual(test_path, extrainfo_file.path)
+    self.assertEqual(Compression.LZMA, extrainfo_file.compression)
+    self.assertEqual(True, extrainfo_file.tar)
     self.assertEqual(6459884, extrainfo_file.size)
     self.assertEqual(datetime.datetime(2016, 6, 23, 9, 54), extrainfo_file.last_modified)
+
+  def test_file_compression_attributes(self):
+    f = File('archive/relay-descriptors/microdescs/microdescs-2014-01.tar.xz', 7515396, '2014-02-07 03:59')
+    self.assertEqual(Compression.LZMA, f.compression)
+    self.assertEqual(True, f.tar)
+
+    f = File('archive/webstats/webstats-2015-03.tar', 20480, '2018-03-19 16:07')
+    self.assertEqual(Compression.PLAINTEXT, f.compression)
+    self.assertEqual(True, f.tar)
+
+    f = File('recent/relay-descriptors/extra-infos/2019-07-03-02-05-00-extra-infos', 1162899, '2019-07-03 02:05')
+    self.assertEqual(Compression.PLAINTEXT, f.compression)
+    self.assertEqual(False, f.tar)
 
   def test_guess_descriptor_types(self):
     f = File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar.xz', 377644, '2016-09-04 09:21')

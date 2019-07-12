@@ -161,15 +161,27 @@ class File(object):
   File within CollecTor.
 
   :var str path: file path within collector
+  :var stem.descriptor.Compression compression: file compression, **None** if
+    this cannot be determined
+  :var bool tar: **True** if a tarball, **False** otherwise
   :var int size: size of the file
   :var datetime last_modified: when the file was last modified
   """
 
   def __init__(self, path, size, last_modified):
     self.path = path
+    self.compression = None
+    self.tar = path.endswith('.tar') or '.tar.' in path
     self.size = size
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
     self._guessed_type = None
+
+    if '.' not in self.path or self.path.endswith('.tar'):
+      self.compression = Compression.PLAINTEXT
+    else:
+      for compression in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
+        if self.path.endswith(compression.extension):
+          self.compression = compression
 
   def guess_descriptor_types(self):
     """
