@@ -151,6 +151,27 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(Compression.PLAINTEXT, f.compression)
     self.assertEqual(False, f.tar)
 
+  def test_file_date_attributes(self):
+    f = File('archive/relay-descriptors/microdescs/microdescs-2014-01.tar.xz', 7515396, '2014-02-07 03:59')
+    self.assertEqual(datetime.datetime(2014, 1, 1), f.start)
+    self.assertEqual(datetime.datetime(2014, 2, 1), f.end)
+
+    f = File('recent/relay-descriptors/extra-infos/2019-07-03-02-05-00-extra-infos', 1162899, '2019-07-03 02:05')
+    self.assertEqual(datetime.datetime(2019, 7, 3, 2, 5, 0), f.start)
+    self.assertEqual(datetime.datetime(2019, 7, 3, 3, 5, 0), f.end)
+
+    f = File('archive/relay-descriptors/certs.tar.xz', 144696, '2019-07-03 03:29')
+    self.assertEqual(None, f.start)
+    self.assertEqual(None, f.end)
+
+    # check date boundaries
+
+    f = File('archive/relay-descriptors/microdescs/microdescs-2014-12.tar.xz', 7515396, '2014-02-07 03:59')
+    self.assertEqual(datetime.datetime(2015, 1, 1), f.end)
+
+    f = File('recent/relay-descriptors/extra-infos/2019-07-03-23-05-00-extra-infos', 1162899, '2019-07-03 02:05')
+    self.assertEqual(datetime.datetime(2019, 7, 4, 0, 5, 0), f.end)
+
   def test_guess_descriptor_types(self):
     f = File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar.xz', 377644, '2016-09-04 09:21')
     self.assertEqual(('bridge-extra-info 1.3',), f.guess_descriptor_types())

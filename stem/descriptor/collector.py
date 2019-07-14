@@ -51,6 +51,7 @@ With this you can either download and read directly from CollecTor...
 
 import datetime
 import json
+import re
 import sys
 import time
 
@@ -69,6 +70,10 @@ import stem.util.str_tools
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
+
+YEAR_DATE = re.compile('-(\\d{4})-(\\d{2})\\.')
+SEC_DATE = re.compile('(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})')
+
 
 # mapping of path prefixes to their descriptor type (sampled 7/11/19)
 
@@ -165,23 +170,24 @@ class File(object):
     this cannot be determined
   :var bool tar: **True** if a tarball, **False** otherwise
   :var int size: size of the file
+
+  :var datetime start: beginning of the time range descriptors are for,
+    **None** if this cannot be determined
+  :var datetime end: ending of the time range descriptors are for,
+    **None** if this cannot be determined
   :var datetime last_modified: when the file was last modified
   """
 
   def __init__(self, path, size, last_modified):
     self.path = path
-    self.compression = None
+    self.compression = File._guess_compression(path)
     self.tar = path.endswith('.tar') or '.tar.' in path
     self.size = size
-    self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
-    self._guessed_type = None
 
-    if '.' not in self.path or self.path.endswith('.tar'):
-      self.compression = Compression.PLAINTEXT
-    else:
-      for compression in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
-        if self.path.endswith(compression.extension):
-          self.compression = compression
+    self.start, self.end = File._guess_time_range(path)
+    self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
+
+    self._guessed_type = None
 
   def guess_descriptor_types(self):
     """
@@ -202,6 +208,49 @@ class File(object):
       self._guessed_type = guessed_type
 
     return self._guessed_type
+
+  @staticmethod
+  def _guess_compression(path):
+    """
+    Determine file comprssion from CollecTor's filename.
+    """
+
+    if '.' not in path or path.endswith('.tar'):
+      return Compression.PLAINTEXT
+    else:
+      for compression in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
+        if path.endswith(compression.extension):
+          return compression
+
+  @staticmethod
+  def _guess_time_range(path):
+    """
+    Attemt to determine the (start, end) time range from CollecTor's filename.
+    This provides (None, None) if this cannot be determined.
+    """
+
+    year_match = YEAR_DATE.search(path)
+
+    if year_match:
+      year, month = map(int, year_match.groups())
+      start = datetime.datetime(year, month, 1)
+
+      if month < 12:
+        return (start, datetime.datetime(year, month + 1, 1))
+      else:
+        return (start, datetime.datetime(year + 1, 1, 1))
+
+    sec_match = SEC_DATE.search(path)
+
+    if sec_match:
+      # Descriptors in the 'recent/*' section have filenames with second level
+      # granularity. Not quite sure why, but since consensus documents are
+      # published hourly we'll use that as the delta here.
+
+      start = datetime.datetime.strptime(sec_match.group(1), '%Y-%m-%d-%H-%M-%S')
+      return (start, start + datetime.timedelta(seconds = 3600))
+
+    return (None, None)
 
 
 class CollecTor(object):
