@@ -109,6 +109,7 @@ import stem.descriptor.networkstatus
 import stem.directory
 import stem.prereq
 import stem.util.enum
+import stem.util.tor_tools
 
 from stem.util import log, str_tools
 
@@ -1126,6 +1127,8 @@ def _guess_descriptor_type(resource):
       return 'network-status-microdesc-consensus-3 1.0'
     elif resource.endswith('/consensus-signatures'):
       return '%s 1.0' % DETACHED_SIGNATURE_TYPE
+    elif stem.util.tor_tools.is_valid_fingerprint(resource.split('/')[-1]):
+      return 'network-status-consensus-3 1.0'
     elif resource.endswith('/bandwidth'):
       return 'bandwidth-file 1.0'
 
