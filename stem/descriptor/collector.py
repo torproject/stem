@@ -329,7 +329,7 @@ class CollecTor(object):
     """
 
     if not self._cached_files or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
-      self._cached_files = CollecTor._files(self.index(), [])
+      self._cached_files = sorted(CollecTor._files(self.index(), []), key = lambda x: x.start if x.start else FUTURE)
 
     matches = []
 
@@ -341,8 +341,6 @@ class CollecTor(object):
 
       if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in entry.guess_descriptor_types()]):
         matches.append(entry)
-
-    matches.sort(key = lambda x: x.start if x.start else FUTURE)
 
     return matches
 
