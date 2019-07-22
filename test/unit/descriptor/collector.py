@@ -131,7 +131,7 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(85, len(files))
     test_path = 'archive/relay-descriptors/extra-infos/extra-infos-2007-09.tar.xz'
 
-    extrainfo_file = files[test_path]
+    extrainfo_file = filter(lambda x: x.path == test_path, files)[0]
     self.assertEqual(test_path, extrainfo_file.path)
     self.assertEqual(Compression.LZMA, extrainfo_file.compression)
     self.assertEqual(True, extrainfo_file.tar)
@@ -171,6 +171,41 @@ class TestCollector(unittest.TestCase):
 
     f = File('recent/relay-descriptors/extra-infos/2019-07-03-23-05-00-extra-infos', 1162899, '2019-07-03 02:05')
     self.assertEqual(datetime.datetime(2019, 7, 4, 0, 5, 0), f.end)
+
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  def test_file_query_by_type(self):
+    collector = CollecTor(compression = Compression.PLAINTEXT)
+
+    expected = [
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar.xz',
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-02.tar.xz',
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-03.tar.xz',
+      'recent/relay-descriptors/server-descriptors/2019-07-03-02-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-07-03-03-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-07-03-04-05-00-server-descriptors',
+    ]
+
+    self.assertEqual(expected, map(lambda x: x.path, collector.files(descriptor_type = 'server-descriptor')))
+
+  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  def test_file_query_by_date(self):
+    collector = CollecTor(compression = Compression.PLAINTEXT)
+
+    self.assertEqual([
+      'recent/relay-descriptors/server-descriptors/2019-07-03-02-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-07-03-03-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-07-03-04-05-00-server-descriptors',
+    ], map(lambda x: x.path, collector.files(descriptor_type = 'server-descriptor', start = datetime.datetime(2007, 1, 1))))
+
+    self.assertEqual([
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar.xz',
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-02.tar.xz',
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-03.tar.xz',
+    ], map(lambda x: x.path, collector.files(descriptor_type = 'server-descriptor', end = datetime.datetime(2007, 1, 1))))
+
+    self.assertEqual([
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-03.tar.xz',
+    ], map(lambda x: x.path, collector.files(descriptor_type = 'server-descriptor', start = datetime.datetime(2006, 2, 10), end = datetime.datetime(2007, 1, 1))))
 
   def test_guess_descriptor_types(self):
     f = File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar.xz', 377644, '2016-09-04 09:21')

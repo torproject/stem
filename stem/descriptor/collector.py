@@ -74,6 +74,9 @@ REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 YEAR_DATE = re.compile('-(\\d{4})-(\\d{2})\\.')
 SEC_DATE = re.compile('(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})')
 
+# distant future date so we can sort files without a timestamp at the end
+
+FUTURE = datetime.datetime(9999, 1, 1)
 
 # mapping of path prefixes to their descriptor type (sampled 7/11/19)
 
@@ -272,7 +275,7 @@ class CollecTor(object):
     self.timeout = timeout
 
     self._cached_index = None
-    self._cached_files = None  # {path => file} mappings in the index
+    self._cached_files = None
     self._cached_index_at = 0
 
     if compression == 'best':
@@ -306,11 +309,15 @@ class CollecTor(object):
 
     return self._cached_index
 
-  def files(self):
+  def files(self, descriptor_type = None, start = None, end = None):
     """
-    Provides files CollecTor presently has.
+    Provides files CollecTor presently has, sorted oldest to newest.
 
-    :returns: **hash** mapping paths to :class:`~stem.descriptor.collector.File`
+    :param str descriptor_type: descriptor type or prefix to retrieve
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+
+    :returns: **list** of :class:`~stem.descriptor.collector.File`
 
     :raises:
       If unable to retrieve the index this provide...
@@ -324,7 +331,20 @@ class CollecTor(object):
     if not self._cached_files or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
       self._cached_files = CollecTor._files(self.index(), [])
 
-    return self._cached_files
+    matches = []
+
+    for entry in self._cached_files:
+      if start and (entry.start is None or entry.start < start):
+        continue
+      elif end and (entry.end is None or entry.end > end):
+        continue
+
+      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in entry.guess_descriptor_types()]):
+        matches.append(entry)
+
+    matches.sort(key = lambda x: x.start if x.start else FUTURE)
+
+    return matches
 
   @staticmethod
   def _files(val, path):
@@ -334,19 +354,19 @@ class CollecTor(object):
     :param dict val: index hash
     :param list path: path we've transversed into
 
-    :returns: **dict** mapping paths to files
+    :returns: **list** of :class:`~stem.descriptor.collector.File`
     """
 
-    files = {}
+    files = []
 
     if isinstance(val, dict):
       for k, v in val.items():
         if k == 'files':
           for attr in v:
             file_path = '/'.join(path + [attr.get('path')])
-            files[file_path] = File(file_path, attr.get('size'), attr.get('last_modified'))
+            files.append(File(file_path, attr.get('size'), attr.get('last_modified')))
         elif k == 'directories':
           for attr in v:
-            files.update(CollecTor._files(attr, path + [attr.get('path')]))
+            files.extend(CollecTor._files(attr, path + [attr.get('path')]))
 
     return files
