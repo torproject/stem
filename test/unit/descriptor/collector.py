@@ -38,8 +38,8 @@ class TestCollector(unittest.TestCase):
   def test_download_plaintext(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(MINIMAL_INDEX_JSON)
 
-    collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(MINIMAL_INDEX, collector.index(Compression.PLAINTEXT))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json', timeout = None)
 
   @patch(URL_OPEN)
@@ -51,8 +51,8 @@ class TestCollector(unittest.TestCase):
     import zlib
     urlopen_mock.return_value = io.BytesIO(zlib.compress(MINIMAL_INDEX_JSON))
 
-    collector = CollecTor(compression = Compression.GZIP)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(MINIMAL_INDEX, collector.index(Compression.GZIP))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.gz', timeout = None)
 
   @patch(URL_OPEN)
@@ -64,8 +64,8 @@ class TestCollector(unittest.TestCase):
     import bz2
     urlopen_mock.return_value = io.BytesIO(bz2.compress(MINIMAL_INDEX_JSON))
 
-    collector = CollecTor(compression = Compression.BZ2)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(MINIMAL_INDEX, collector.index(Compression.BZ2))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.bz2', timeout = None)
 
   @patch(URL_OPEN)
@@ -77,8 +77,8 @@ class TestCollector(unittest.TestCase):
     import lzma
     urlopen_mock.return_value = io.BytesIO(lzma.compress(MINIMAL_INDEX_JSON))
 
-    collector = CollecTor(compression = Compression.LZMA)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(MINIMAL_INDEX, collector.index(Compression.LZMA))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.lzma', timeout = None)
 
   @patch(URL_OPEN)
@@ -97,35 +97,35 @@ class TestCollector(unittest.TestCase):
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(MINIMAL_INDEX_JSON)))
   def test_index(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(MINIMAL_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(MINIMAL_INDEX, collector.index(Compression.PLAINTEXT))
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not json')))
   def test_index_malformed_json(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
+    collector = CollecTor()
 
     if stem.prereq.is_python_3():
-      self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index)
+      self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index, Compression.PLAINTEXT)
     else:
-      self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index)
+      self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index, Compression.PLAINTEXT)
 
   def test_index_malformed_compression(self):
     for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
       if not compression.available:
-        next
+        continue
 
       with patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not compressed'))):
-        collector = CollecTor(compression = compression)
-        self.assertRaisesRegexp(IOError, 'Unable to decompress %s response' % compression, collector.index)
+        collector = CollecTor()
+        self.assertRaisesRegexp(IOError, 'Failed to decompress as %s' % compression, collector.index, compression)
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
   def test_real_index(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
-    self.assertEqual(EXAMPLE_INDEX, collector.index())
+    collector = CollecTor()
+    self.assertEqual(EXAMPLE_INDEX, collector.index(compression = Compression.PLAINTEXT))
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
   def test_contents(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
+    collector = CollecTor()
     files = collector.files()
 
     self.assertEqual(85, len(files))
@@ -172,9 +172,9 @@ class TestCollector(unittest.TestCase):
     f = File('recent/relay-descriptors/extra-infos/2019-07-03-23-05-00-extra-infos', 1162899, '2019-07-03 02:05')
     self.assertEqual(datetime.datetime(2019, 7, 4, 0, 5, 0), f.end)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
   def test_file_query_by_type(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
+    collector = CollecTor()
 
     expected = [
       'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar.xz',
@@ -187,9 +187,9 @@ class TestCollector(unittest.TestCase):
 
     self.assertEqual(expected, map(lambda x: x.path, collector.files(descriptor_type = 'server-descriptor')))
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(EXAMPLE_INDEX_CONTENT)))
+  @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
   def test_file_query_by_date(self):
-    collector = CollecTor(compression = Compression.PLAINTEXT)
+    collector = CollecTor()
 
     self.assertEqual([
       'recent/relay-descriptors/server-descriptors/2019-07-03-02-05-00-server-descriptors',

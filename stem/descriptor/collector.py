@@ -64,10 +64,6 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-import stem.prereq
-import stem.util.enum
-import stem.util.str_tools
-
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
 
@@ -113,12 +109,11 @@ COLLECTOR_DESC_TYPES = {
 }
 
 
-def _download(url, compression, timeout, retries):
+def _download(url, timeout, retries):
   """
   Download from the given url.
 
   :param str url: uncompressed url to download from
-  :param descriptor.Compression compression: decompression type
   :param int timeout: timeout when connection becomes idle, no timeout applied
     if **None**
   :param int retires: maximum attempts to impose
@@ -135,13 +130,9 @@ def _download(url, compression, timeout, retries):
   """
 
   start_time = time.time()
-  extension = compression.extension if compression not in (None, Compression.PLAINTEXT) else ''
-
-  if not url.endswith(extension):
-    url += extension
 
   try:
-    response = urllib.urlopen(url, timeout = timeout).read()
+    return urllib.urlopen(url, timeout = timeout).read()
   except:
     exc = sys.exc_info()[1]
 
@@ -150,18 +141,10 @@ def _download(url, compression, timeout, retries):
 
     if retries > 0 and (timeout is None or timeout > 0):
       log.debug("Failed to download from CollecTor at '%s' (%i retries remaining): %s" % (url, retries, exc))
-      return _download(url, compression, timeout, retries - 1)
+      return _download(url, timeout, retries - 1)
     else:
       log.debug("Failed to download from CollecTor at '%s': %s" % (url, exc))
       raise
-
-  if compression not in (None, Compression.PLAINTEXT):
-    try:
-      response = compression.decompress(response)
-    except Exception as exc:
-      raise IOError('Unable to decompress %s response from %s: %s' % (compression, url, exc))
-
-  return stem.util.str_tools._to_unicode(response)
 
 
 class File(object):
@@ -262,15 +245,12 @@ class CollecTor(object):
   provided in `an index <https://collector.torproject.org/index/index.json>`_
   that's fetched as required.
 
-  :var descriptor.Compression compression: compression type to
-    download from, if undefiled we'll use the best decompression available
   :var int retries: number of times to attempt the request if downloading it
     fails
   :var float timeout: duration before we'll time out our request
   """
 
-  def __init__(self, compression = 'best', retries = 2, timeout = None):
-    self.compression = Compression.PLAINTEXT
+  def __init__(self, retries = 2, timeout = None):
     self.retries = retries
     self.timeout = timeout
 
@@ -278,17 +258,12 @@ class CollecTor(object):
     self._cached_files = None
     self._cached_index_at = 0
 
-    if compression == 'best':
-      for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
-        if option.available:
-          self.compression = option
-          break
-    elif compression is not None:
-      self.compression = compression
-
-  def index(self):
+  def index(self, compression = 'best'):
     """
     Provides the archives available in CollecTor.
+
+    :param descriptor.Compression compression: compression type to
+      download from, if undefiled we'll use the best decompression available
 
     :returns: :class:`~stem.descriptor.collector.Index` with the archive
       contents
@@ -303,7 +278,18 @@ class CollecTor(object):
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
-      response = _download(COLLECTOR_URL + 'index/index.json', self.compression, self.timeout, self.retries)
+      if compression == 'best':
+        for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP, Compression.PLAINTEXT):
+          if option.available:
+            compression = option
+            break
+      elif compression is None:
+        compression = Compression.PLAINTEXT
+
+      extension = compression.extension if compression != Compression.PLAINTEXT else ''
+      url = COLLECTOR_URL + 'index/index.json' + extension
+      response = compression.decompress(_download(url, self.timeout, self.retries))
+
       self._cached_index = json.loads(response)
       self._cached_index_at = time.time()
 

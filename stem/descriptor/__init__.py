@@ -225,14 +225,17 @@ class _Compression(object):
     """
 
     if not self.available:
-      if self.name == 'zstd':
+      if self._name == 'zstd':
         raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
-      elif self.name == 'lzma':
+      elif self._name == 'lzma':
         raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
       else:
         raise ImportError("'%s' decompression module is unavailable" % self._module_name)
 
-    return self._decompression_func(self._module, content)
+    try:
+      return self._decompression_func(self._module, content)
+    except Exception as exc:
+      raise IOError('Failed to decompress as %s: %s' % (self, exc))
 
   def __str__(self):
     return self._name
