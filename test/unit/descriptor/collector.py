@@ -209,13 +209,13 @@ class TestCollector(unittest.TestCase):
 
   def test_guess_descriptor_types(self):
     f = File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar.xz', 377644, '2016-09-04 09:21')
-    self.assertEqual(('bridge-extra-info 1.3',), f.guess_descriptor_types())
+    self.assertEqual(('bridge-extra-info 1.3',), f._guess_descriptor_types())
 
     f = File('archive/relay-descriptors/microdescs/microdescs-2014-01.tar.xz', 7515396, '2014-02-07 03:59')
-    self.assertEqual(('network-status-microdesc-consensus-3 1.0', 'microdescriptor 1.0'), f.guess_descriptor_types())
+    self.assertEqual(('network-status-microdesc-consensus-3 1.0', 'microdescriptor 1.0'), f._guess_descriptor_types())
 
     f = File('archive/webstats/webstats-2015-03.tar', 20480, '2018-03-19 16:07')
-    self.assertEqual((), f.guess_descriptor_types())
+    self.assertEqual((), f._guess_descriptor_types())
 
     f = File('archive/no_such_file.tar', 20480, '2018-03-19 16:07')
-    self.assertEqual((), f.guess_descriptor_types())
+    self.assertEqual((), f._guess_descriptor_types())

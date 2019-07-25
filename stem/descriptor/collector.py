@@ -51,11 +51,15 @@ With this you can either download and read directly from CollecTor...
 
 import datetime
 import json
+import os
 import re
 import sys
+import tempfile
 import time
 
-from stem.descriptor import Compression
+import stem.util.str_tools
+
+from stem.descriptor import Compression, parse_file
 from stem.util import log
 
 try:
@@ -121,7 +125,6 @@ def _download(url, timeout, retries):
   :returns: content of the given url
 
   :raises:
-    * **IOError** if unable to decompress
     * **socket.timeout** if our request timed out
     * **urllib2.URLError** for most request failures
 
@@ -174,8 +177,118 @@ class File(object):
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
 
     self._guessed_type = None
+    self._downloaded_to = None  # location we last downloaded to
 
-  def guess_descriptor_types(self):
+  def read(self, directory = None, descriptor_type = None, timeout = None, retries = 3):
+    """
+    Provides descriptors from this archive. Descriptors are downloaded or read
+    from disk as follows...
+
+    * If this file has already been downloaded through
+      :func:`~stem.descriptor.collector.CollecTor.download' these descriptors
+      are read from disk.
+
+    * If a **directory** argument is provided and the file is already present
+      these descriptors are read from disk.
+
+    * If a **directory** argument is provided and the file is not present the
+      file is downloaded this location then read.
+
+    * If the file has neither been downloaded and no **directory** argument
+      is provided then the file is downloaded to a temporary directory that's
+      deleted after it is read.
+
+    :param str directory: destination to download into
+    :param str descriptor_type: `descriptor type
+      <https://metrics.torproject.org/collector.html#data-formats>`_, this is
+      guessed if not provided
+    :param int timeout: timeout when connection becomes idle, no timeout
+      applied if **None**
+    :param int retires: maximum attempts to impose
+
+    :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor`
+      instances in the file
+
+    :raises:
+      * **ValueError** if unable to determine the descirptor type
+      * **TypeError** if we cannot parse this descriptor type
+      * **socket.timeout** if our request timed out
+      * **urllib2.URLError** for most request failures
+
+      Note that the urllib2 module may fail with other exception types, in
+      which case we'll pass it along.
+    """
+
+    if descriptor_type is None:
+      descriptor_types = self._guess_descriptor_types()
+
+      if not descriptor_types:
+        raise ValueError("Unable to determine this file's descriptor type")
+      elif len(descriptor_types) > 1:
+        raise ValueError("Unable to determine disambiguate file's descriptor type from %s" % ', '.join(descriptor_types))
+
+      descriptor_type = descriptor_types[0]
+
+    if directory is None:
+      if self._downloaded_to and os.path.exists(self._downloaded_to):
+        directory = os.path.dirname(self._downloaded_to)
+      else:
+        with tempfile.TemporaryDirectory() as tmp_directory:
+          return self.read(tmp_directory, timeout, retries)
+
+    path = self.download(directory, True, timeout, retries)
+    return parse_file(path, descriptor_type)
+
+  def download(self, directory, decompress = True, timeout = None, retries = 3):
+    """
+    Downloads this file to the given location. If a file already exists this is
+    a no-op.
+
+    :param str directory: destination to download into
+    :param bool decompress: decompress written file
+    :param int timeout: timeout when connection becomes idle, no timeout
+      applied if **None**
+    :param int retires: maximum attempts to impose
+
+    :returns: **str** with the path we downloaded to
+
+    :raises:
+      * **socket.timeout** if our request timed out
+      * **urllib2.URLError** for most request failures
+
+      Note that the urllib2 module may fail with other exception types, in
+      which case we'll pass it along.
+    """
+
+    # TODO: If checksums get added to the index we should replace
+    # the path check below to verify that...
+    #
+    #   https://trac.torproject.org/projects/tor/ticket/31204
+
+    filename = self.path.split('/')[-1]
+
+    if decompress:
+      filename = filename.rsplit('.', 1)[0]
+
+    path = os.path.join(directory, filename)
+
+    if not os.path.exists(directory):
+      os.makedirs(directory)
+    elif os.path.exists(path):
+      return path  # file already exists
+
+    with open(path, 'wb') as output_file:
+      response = _download(COLLECTOR_URL + self.path, timeout, retries)
+
+      if decompress:
+        response = self.compression.decompress(response)
+
+      output_file.write(response)
+
+    self._downloaded_to = path
+    return path
+
+  def _guess_descriptor_types(self):
     """
     Descriptor @type this file is expected to have based on its path. If unable
     to determine any this tuple is empty.
@@ -290,7 +403,7 @@ class CollecTor(object):
       url = COLLECTOR_URL + 'index/index.json' + extension
       response = compression.decompress(_download(url, self.timeout, self.retries))
 
-      self._cached_index = json.loads(response)
+      self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
 
     return self._cached_index
@@ -325,7 +438,7 @@ class CollecTor(object):
       elif end and (entry.end is None or entry.end > end):
         continue
 
-      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in entry.guess_descriptor_types()]):
+      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in entry._guess_descriptor_types()]):
         matches.append(entry)
 
     return matches
