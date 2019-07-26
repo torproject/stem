@@ -477,8 +477,7 @@ class Query(object):
     self.fall_back_to_authority = fall_back_to_authority
 
     self.content = None
-    self.error = None  # TODO: maybe remove in favor of error_attr in stem 2.x
-    self._error_attr = None
+    self.error = None
     self.is_done = False
     self.download_url = None
 
