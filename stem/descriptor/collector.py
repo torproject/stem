@@ -432,21 +432,21 @@ class CollecTor(object):
 
     matches = []
 
-    for entry in self._cached_files:
-      if start and (entry.start is None or entry.start < start):
+    for f in self._cached_files:
+      if start and (f.start is None or f.start < start):
         continue
-      elif end and (entry.end is None or entry.end > end):
+      elif end and (f.end is None or f.end > end):
         continue
 
-      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in entry._guess_descriptor_types()]):
-        matches.append(entry)
+      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f._guess_descriptor_types()]):
+        matches.append(f)
 
     return matches
 
   @staticmethod
   def _files(val, path):
     """
-    Provies a mapping of paths to files within the index.
+    Recursively provies files within the index.
 
     :param dict val: index hash
     :param list path: path we've transversed into
@@ -454,16 +454,18 @@ class CollecTor(object):
     :returns: **list** of :class:`~stem.descriptor.collector.File`
     """
 
+    if not isinstance(val, dict):
+      return []  # leaf node without any files
+
     files = []
 
-    if isinstance(val, dict):
-      for k, v in val.items():
-        if k == 'files':
-          for attr in v:
-            file_path = '/'.join(path + [attr.get('path')])
-            files.append(File(file_path, attr.get('size'), attr.get('last_modified')))
-        elif k == 'directories':
-          for attr in v:
-            files.extend(CollecTor._files(attr, path + [attr.get('path')]))
+    for k, v in val.items():
+      if k == 'files':
+        for attr in v:
+          file_path = '/'.join(path + [attr.get('path')])
+          files.append(File(file_path, attr.get('size'), attr.get('last_modified')))
+      elif k == 'directories':
+        for attr in v:
+          files.extend(CollecTor._files(attr, path + [attr.get('path')]))
 
     return files
