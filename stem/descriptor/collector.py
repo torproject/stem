@@ -314,12 +314,11 @@ class File(object):
     Determine file comprssion from CollecTor's filename.
     """
 
-    if '.' not in path or path.endswith('.tar'):
-      return Compression.PLAINTEXT
-    else:
-      for compression in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
-        if path.endswith(compression.extension):
-          return compression
+    for compression in (Compression.LZMA, Compression.BZ2, Compression.GZIP):
+      if path.endswith(compression.extension):
+        return compression
+
+    return Compression.PLAINTEXT
 
   @staticmethod
   def _guess_time_range(path):
