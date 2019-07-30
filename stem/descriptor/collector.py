@@ -16,7 +16,7 @@ With this you can either download and read directly from CollecTor...
   import datetime
   import stem.descriptor.collector
 
-  yesterday = datetime.date.today() - datetime.timedelta(1)
+  yesterday = datetime.datetime.today() - datetime.timedelta(1)
 
   # provide yesterday's exits
 
@@ -33,7 +33,7 @@ With this you can either download and read directly from CollecTor...
   import stem.descriptor
   import stem.descriptor.collector
 
-  yesterday = datetime.date.today() - datetime.timedelta(1)
+  yesterday = datetime.datetime.today() - datetime.timedelta(1)
   path = os.path.expanduser('~/descriptor_cache/server_desc_today')
 
   with open(path, 'wb') as cache_file:
@@ -53,6 +53,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import sys
 import tempfile
 import time
@@ -70,6 +71,7 @@ except ImportError:
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
+SINGLETON_COLLECTOR = None
 
 YEAR_DATE = re.compile('-(\\d{4})-(\\d{2})\\.')
 SEC_DATE = re.compile('(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})')
@@ -111,6 +113,52 @@ COLLECTOR_DESC_TYPES = {
   'recent/torperf/': 'torperf 1.1',
   'recent/webstats/': (),
 }
+
+
+def get_instance():
+  """
+  Provides the singleton :class:`~stem.descriptor.collector.CollecTor`
+  used for this module's shorthand functions.
+
+  :returns: singleton :class:`~stem.descriptor.collector.CollecTor` instance
+  """
+
+  global SINGLETON_COLLECTOR
+
+  if SINGLETON_COLLECTOR is None:
+    SINGLETON_COLLECTOR = CollecTor()
+
+  return SINGLETON_COLLECTOR
+
+
+def get_server_descriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  """
+  Provides server descriptors for the given time range, sorted oldest to
+  newest.
+
+  :param datetime.datetime start: time range to begin with
+  :param datetime.datetime end: time range to end with
+  :param str cache_to: directory to cache archives into, if an archive is
+    available here it is not downloaded
+  :param int timeout: timeout for downloading each individual archive when the
+    connection becomes idle, no timeout applied if **None**
+  :param int retires: maximum attempts to impose on a per-archive basis
+
+  :returns: **iterator** of
+    :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the given
+    time range
+
+  :raises:
+    * **socket.timeout** if our request timed out
+    * **urllib2.URLError** for most request failures
+
+    Note that the urllib2 module may fail with other exception types, in
+    which case we'll pass it along.
+  """
+
+  for f in get_instance().files('server-descriptor', start, end):
+    for desc in f.read(cache_to, timeout = timeout, retries = retries):
+      yield desc
 
 
 def _download(url, timeout, retries):
@@ -229,13 +277,24 @@ class File(object):
       if self._downloaded_to and os.path.exists(self._downloaded_to):
         directory = os.path.dirname(self._downloaded_to)
       else:
-        with tempfile.TemporaryDirectory() as tmp_directory:
-          return self.read(tmp_directory, descriptor_type, timeout, retries)
+        # TODO: The following can be replaced with simpler usage of
+        # tempfile.TemporaryDirectory when we drop python 2.x support.
+
+        tmp_directory = tempfile.mkdtemp()
+
+        for desc in self.read(tmp_directory, descriptor_type, timeout, retries):
+          yield desc
+
+        shutil.rmtree(tmp_directory)
+
+        return
 
     # TODO: the following will not work if the tar contains multiple types or a type we do not support
 
     path = self.download(directory, True, timeout, retries)
-    return parse_file(path, descriptor_type)
+
+    for desc in parse_file(path, descriptor_type):
+      yield desc
 
   def download(self, directory, decompress = True, timeout = None, retries = 3):
     """

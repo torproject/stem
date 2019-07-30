@@ -164,11 +164,7 @@ DIR_PORT_BLACKLIST = ('tor26', 'Serge')
 def get_instance():
   """
   Provides the singleton :class:`~stem.descriptor.remote.DescriptorDownloader`
-  used for the following functions...
-
-    * :func:`stem.descriptor.remote.get_server_descriptors`
-    * :func:`stem.descriptor.remote.get_extrainfo_descriptors`
-    * :func:`stem.descriptor.remote.get_consensus`
+  used for this module's shorthand functions.
 
   .. versionadded:: 1.5.0
 

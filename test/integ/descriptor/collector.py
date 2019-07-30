@@ -35,8 +35,8 @@ class TestCollector(unittest.TestCase):
     if compression and not compression.available:
       self.skipTest('(%s unavailable)' % compression)
 
-    collector = CollecTor(compression = compression)
-    index = collector.index()
+    collector = CollecTor()
+    index = collector.index(compression = compression)
 
     self.assertEqual('https://collector.torproject.org', index['path'])
     self.assertEqual(['archive', 'contrib', 'recent'], [entry['path'] for entry in index['directories']])
