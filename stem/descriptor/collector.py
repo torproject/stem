@@ -157,7 +157,6 @@ class File(object):
   :var str path: file path within collector
   :var stem.descriptor.Compression compression: file compression, **None** if
     this cannot be determined
-  :var bool tar: **True** if a tarball, **False** otherwise
   :var int size: size of the file
 
   :var datetime start: beginning of the time range descriptors are for,
@@ -170,13 +169,12 @@ class File(object):
   def __init__(self, path, size, last_modified):
     self.path = path
     self.compression = File._guess_compression(path)
-    self.tar = path.endswith('.tar') or '.tar.' in path
     self.size = size
 
     self.start, self.end = File._guess_time_range(path)
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
 
-    self._guessed_type = None
+    self._guessed_type = File._guess_descriptor_types(path)
     self._downloaded_to = None  # location we last downloaded to
 
   def read(self, directory = None, descriptor_type = None, timeout = None, retries = 3):
@@ -220,21 +218,21 @@ class File(object):
     """
 
     if descriptor_type is None:
-      descriptor_types = self._guess_descriptor_types()
-
-      if not descriptor_types:
+      if not self._guessed_type:
         raise ValueError("Unable to determine this file's descriptor type")
-      elif len(descriptor_types) > 1:
-        raise ValueError("Unable to determine disambiguate file's descriptor type from %s" % ', '.join(descriptor_types))
+      elif len(self._guessed_type) > 1:
+        raise ValueError("Unable to determine disambiguate file's descriptor type from %s" % ', '.join(self._guessed_type))
 
-      descriptor_type = descriptor_types[0]
+      descriptor_type = self._guessed_type[0]
 
     if directory is None:
       if self._downloaded_to and os.path.exists(self._downloaded_to):
         directory = os.path.dirname(self._downloaded_to)
       else:
         with tempfile.TemporaryDirectory() as tmp_directory:
-          return self.read(tmp_directory, timeout, retries)
+          return self.read(tmp_directory, descriptor_type, timeout, retries)
+
+    # TODO: the following will not work if the tar contains multiple types or a type we do not support
 
     path = self.download(directory, True, timeout, retries)
     return parse_file(path, descriptor_type)
@@ -267,7 +265,7 @@ class File(object):
 
     filename = self.path.split('/')[-1]
 
-    if decompress:
+    if self.compression != Compression.PLAINTEXT and decompress:
       filename = filename.rsplit('.', 1)[0]
 
     path = os.path.join(directory, filename)
@@ -277,36 +275,35 @@ class File(object):
     elif os.path.exists(path):
       return path  # file already exists
 
+    response = _download(COLLECTOR_URL + self.path, timeout, retries)
+
+    if decompress:
+      response = self.compression.decompress(response)
+
     with open(path, 'wb') as output_file:
-      response = _download(COLLECTOR_URL + self.path, timeout, retries)
-
-      if decompress:
-        response = self.compression.decompress(response)
-
       output_file.write(response)
 
     self._downloaded_to = path
     return path
 
-  def _guess_descriptor_types(self):
+  @staticmethod
+  def _guess_descriptor_types(path):
     """
     Descriptor @type this file is expected to have based on its path. If unable
     to determine any this tuple is empty.
 
+    Hopefully this will be replaced with an explicit value in the future:
+
+      https://trac.torproject.org/projects/tor/ticket/31204
+
     :returns: **tuple** with the descriptor types this file is expected to have
     """
 
-    if self._guessed_type is None:
-      guessed_type = ()
+    for path_prefix, types in COLLECTOR_DESC_TYPES.items():
+      if path.startswith(path_prefix):
+        return (types,) if isinstance(types, str) else types
 
-      for path_prefix, types in COLLECTOR_DESC_TYPES.items():
-        if self.path.startswith(path_prefix):
-          guessed_type = (types,) if isinstance(types, str) else types
-          break
-
-      self._guessed_type = guessed_type
-
-    return self._guessed_type
+    return ()
 
   @staticmethod
   def _guess_compression(path):
@@ -437,7 +434,7 @@ class CollecTor(object):
       elif end and (f.end is None or f.end > end):
         continue
 
-      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f._guess_descriptor_types()]):
+      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f._guessed_type]):
         matches.append(f)
 
     return matches
