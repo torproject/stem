@@ -58,8 +58,23 @@ matrix:
           packages:
             - tor
       env: TOR="stable-release" TARGET=""
-    ## TODO: add 0.4.0-nightly and experimental-0.4.1 when available
-    ## See #30827.
+    ## We also have 0.4.0 and 0.4.1 nightlies
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.4.0.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - tor
+      env: TOR="0.4.0-nightly" TARGET=""
+    - addons:
+        apt:
+          sources:
+            - sourceline: 'deb https://deb.torproject.org/torproject.org tor-nightly-0.4.1.x-xenial main'
+              key_url: 'https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc'
+          packages:
+            - tor
+      env: TOR="0.4.1-nightly" TARGET=""
 
     ## Test all supported python releases
     ## Pre-installed in Travis xenial:
