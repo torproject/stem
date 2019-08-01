@@ -93,7 +93,7 @@ matrix:
       env: TOR="master-nightly" TARGET=""
     ## Stable: 20 October 2019
     ## (Switch from 3.8-dev to 3.8, and check for 3.9-dev)
-    ## End of Life: October2024
+    ## End of Life: October 2024
     ## https://www.python.org/dev/peps/pep-0569/#lifespan
     - python: "3.8-dev"
       env: TOR="master-nightly" TARGET=""
