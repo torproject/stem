@@ -8,6 +8,10 @@ Connection and networking based utility functions.
 
 ::
 
+  DownloadFailed - Inability to download a resource.
+    +- DownloadTimeout - Download timeout reached.
+
+  download - download from a given url
   get_connections - quieries the connections belonging to a given process
   system_resolvers - provides connection resolution methods that are likely to be available
   port_usage - brief description of the common usage for a port
@@ -58,12 +62,22 @@ import collections
 import os
 import platform
 import re
+import socket
+import sys
+import time
+import traceback
 
 import stem.util
 import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log, str_tools
+
+try:
+  # account for urllib's change between python 2.x and 3.x
+  import urllib.request as urllib
+except ImportError:
+  import urllib2 as urllib
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -160,6 +174,104 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   :var str protocol: protocol of the connection ('tcp', 'udp', etc)
   :var bool is_ipv6: addresses are ipv6 if true, and ipv4 otherwise
   """
+
+
+class DownloadFailed(IOError):
+  """
+  Inability to download a resource. Python's urllib module raises
+  a wide variety of undocumented exceptions (urllib2.URLError,
+  socket.timeout, and others).
+
+  This wraps lower level failures in a common exception type that
+  retains their exception and `stacktrace
+  <https://docs.python.org/3/library/traceback.html>`_.
+
+  .. versionadded:: 1.8.0
+
+  :var str url: url we failed to download from
+  :var Exception error: original urllib exception
+  :var traceback stacktrace: original stacktrace
+  :var str stacktrace_str: string representation of the stacktrace
+  """
+
+  def __init__(self, url, error, stacktrace, message = None):
+    if message is None:
+      # The string representation of exceptions can reside in several places.
+      # urllib.URLError use a 'reason' attribute that in turn may referrence
+      # low level structures such as socket.gaierror. Whereas most exceptions
+      # use a 'message' attribute.
+
+      reason = str(error)
+
+      all_str_repr = (
+        getattr(getattr(error, 'reason', None), 'strerror', None),
+        getattr(error, 'reason', None),
+        getattr(error, 'message', None),
+      )
+
+      for str_repr in all_str_repr:
+        if str_repr and isinstance(str_repr, str):
+          reason = str_repr
+          break
+
+      message = 'Failed to download from %s (%s): %s' % (url, type(error).__name__, reason)
+
+    super(DownloadFailed, self).__init__(message)
+
+    self.url = url
+    self.error = error
+    self.stacktrace = stacktrace
+    self.stacktrace_str = ''.join(traceback.format_tb(stacktrace))
+
+
+class DownloadTimeout(DownloadFailed):
+  """
+  Timeout reached while downloading this resource.
+
+  .. versionadded:: 1.8.0
+  """
+
+  def __init__(self, url, error, stacktrace, timeout):
+    super(DownloadTimeout, self).__init__('Failed to download from %s: %0.1f second timeout reached' % (url, timeout))
+
+
+def download(url, timeout = None, retries = None):
+  """
+  Download from the given url.
+
+  .. versionadded:: 1.8.0
+
+  :param str url: uncompressed url to download from
+  :param int timeout: timeout when connection becomes idle, no timeout applied
+    if **None**
+  :param int retires: maximum attempts to impose
+
+  :returns: **bytes** content of the given url
+
+  :raises: :class:`~stem.util.connection.DownloadFailed` if the download fails
+  """
+
+  if retries is None:
+    retries = 0
+
+  start_time = time.time()
+
+  try:
+    return urllib.urlopen(url, timeout = timeout).read()
+  except socket.timeout as exc:
+    raise DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
+  except:
+    exc, stacktrace = sys.exc_info()[1:3]
+
+    if timeout is not None:
+      timeout -= time.time() - start_time
+
+    if retries > 0 and (timeout is None or timeout > 0):
+      log.debug('Failed to download from %s (%i retries remaining): %s' % (url, retries, exc))
+      return download(url, timeout, retries - 1)
+    else:
+      log.debug('Failed to download from %s: %s' % (url, exc))
+      raise DownloadFailed(url, exc, stacktrace)
 
 
 def get_connections(resolver = None, process_pid = None, process_name = None):

@@ -54,20 +54,13 @@ import json
 import os
 import re
 import shutil
-import sys
 import tempfile
 import time
 
+import stem.util.connection
 import stem.util.str_tools
 
 from stem.descriptor import Compression, parse_file
-from stem.util import log
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
@@ -148,54 +141,12 @@ def get_server_descriptors(start = None, end = None, cache_to = None, timeout = 
     :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the given
     time range
 
-  :raises:
-    * **socket.timeout** if our request timed out
-    * **urllib2.URLError** for most request failures
-
-    Note that the urllib2 module may fail with other exception types, in
-    which case we'll pass it along.
+  :raises: :class:`~stem.util.connection.DownloadFailed` if the download fails
   """
 
   for f in get_instance().files('server-descriptor', start, end):
     for desc in f.read(cache_to, timeout = timeout, retries = retries):
       yield desc
-
-
-def _download(url, timeout, retries):
-  """
-  Download from the given url.
-
-  :param str url: uncompressed url to download from
-  :param int timeout: timeout when connection becomes idle, no timeout applied
-    if **None**
-  :param int retires: maximum attempts to impose
-
-  :returns: content of the given url
-
-  :raises:
-    * **socket.timeout** if our request timed out
-    * **urllib2.URLError** for most request failures
-
-    Note that the urllib2 module may fail with other exception types, in
-    which case we'll pass it along.
-  """
-
-  start_time = time.time()
-
-  try:
-    return urllib.urlopen(url, timeout = timeout).read()
-  except:
-    exc = sys.exc_info()[1]
-
-    if timeout is not None:
-      timeout -= time.time() - start_time
-
-    if retries > 0 and (timeout is None or timeout > 0):
-      log.debug("Failed to download from CollecTor at '%s' (%i retries remaining): %s" % (url, retries, exc))
-      return _download(url, timeout, retries - 1)
-    else:
-      log.debug("Failed to download from CollecTor at '%s': %s" % (url, exc))
-      raise
 
 
 class File(object):
@@ -258,11 +209,7 @@ class File(object):
     :raises:
       * **ValueError** if unable to determine the descirptor type
       * **TypeError** if we cannot parse this descriptor type
-      * **socket.timeout** if our request timed out
-      * **urllib2.URLError** for most request failures
-
-      Note that the urllib2 module may fail with other exception types, in
-      which case we'll pass it along.
+      * :class:`~stem.util.connection.DownloadFailed` if the download fails
     """
 
     if descriptor_type is None:
@@ -309,12 +256,7 @@ class File(object):
 
     :returns: **str** with the path we downloaded to
 
-    :raises:
-      * **socket.timeout** if our request timed out
-      * **urllib2.URLError** for most request failures
-
-      Note that the urllib2 module may fail with other exception types, in
-      which case we'll pass it along.
+    :raises: :class:`~stem.util.connection.DownloadFailed` if the download fails
     """
 
     # TODO: If checksums get added to the index we should replace
@@ -334,7 +276,7 @@ class File(object):
     elif os.path.exists(path):
       return path  # file already exists
 
-    response = _download(COLLECTOR_URL + self.path, timeout, retries)
+    response = stem.util.connection.download(COLLECTOR_URL + self.path, timeout, retries)
 
     if decompress:
       response = self.compression.decompress(response)
@@ -441,8 +383,7 @@ class CollecTor(object):
 
         * **ValueError** if json is malformed
         * **IOError** if unable to decompress
-        * **socket.timeout** if our request timed out
-        * **urllib2.URLError** for most request failures
+        * :class:`~stem.util.connection.DownloadFailed` if the download fails
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
@@ -456,7 +397,7 @@ class CollecTor(object):
 
       extension = compression.extension if compression != Compression.PLAINTEXT else ''
       url = COLLECTOR_URL + 'index/index.json' + extension
-      response = compression.decompress(_download(url, self.timeout, self.retries))
+      response = compression.decompress(stem.util.connection.download(url, self.timeout, self.retries))
 
       self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
@@ -478,8 +419,7 @@ class CollecTor(object):
 
         * **ValueError** if json is malformed
         * **IOError** if unable to decompress
-        * **socket.timeout** if our request timed out
-        * **urllib2.URLError** for most request failures
+        * :class:`~stem.util.connection.DownloadFailed` if the download fails
     """
 
     if not self._cached_files or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:

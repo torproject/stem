@@ -5,11 +5,18 @@ that we're running.
 
 import unittest
 
+import stem.util.connection
 import stem.util.system
 import test.require
 import test.runner
 
-from stem.util.connection import RESOLVER_COMMAND, Resolver, get_connections, system_resolvers
+from stem.util.connection import Resolver
+
+try:
+  # account for urllib's change between python 2.x and 3.x
+  import urllib.request as urllib
+except ImportError:
+  import urllib2 as urllib
 
 
 class TestConnection(unittest.TestCase):
@@ -20,21 +27,39 @@ class TestConnection(unittest.TestCase):
     if test.runner.Torrc.PORT not in runner.get_options():
       self.skipTest('(no control port)')
       return
-    elif resolver not in system_resolvers():
+    elif resolver not in stem.util.connection.system_resolvers():
       self.skipTest('(resolver unavailable on this platform)')
       return
 
     with runner.get_tor_socket():
-      connections = get_connections(resolver, process_pid = runner.get_pid())
+      connections = stem.util.connection.get_connections(resolver, process_pid = runner.get_pid())
 
       for conn in connections:
         if conn.local_address == '127.0.0.1' and conn.local_port == test.runner.CONTROL_PORT:
           return
 
-      resolver_command = RESOLVER_COMMAND[resolver].format(pid = runner.get_pid())
+      resolver_command = stem.util.connection.RESOLVER_COMMAND[resolver].format(pid = runner.get_pid())
       resolver_output = stem.util.system.call(resolver_command)
 
       self.fail('Unable to find our controller connection with %s (%s). Connections found were...\n\n%s\n\nCommand output was...\n\n%s' % (resolver, resolver_command, '\n'.join(map(str, connections)), resolver_output))
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_download(self):
+    response = stem.util.connection.download('https://collector.torproject.org/index/index.json')
+    self.assertTrue(b'"path":"https://collector.torproject.org"' in response)
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_download_failure(self):
+    try:
+      stem.util.connection.download('https://no.such.testing.url')
+      self.fail('expected a stem.util.connection.DownloadFailed to be raised')
+    except stem.util.connection.DownloadFailed as exc:
+      self.assertEqual('Failed to download from https://no.such.testing.url (URLError): Name or service not known', str(exc))
+      self.assertEqual('https://no.such.testing.url', exc.url)
+      self.assertEqual('Name or service not known', exc.error.reason.strerror)
+      self.assertEqual(urllib.URLError, type(exc.error))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)
