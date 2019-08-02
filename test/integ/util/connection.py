@@ -5,6 +5,7 @@ that we're running.
 
 import unittest
 
+import stem
 import stem.util.connection
 import stem.util.system
 import test.require
@@ -54,8 +55,8 @@ class TestConnection(unittest.TestCase):
   def test_download_failure(self):
     try:
       stem.util.connection.download('https://no.such.testing.url')
-      self.fail('expected a stem.util.connection.DownloadFailed to be raised')
-    except stem.util.connection.DownloadFailed as exc:
+      self.fail('expected a stem.DownloadFailed to be raised')
+    except stem.DownloadFailed as exc:
       self.assertEqual('Failed to download from https://no.such.testing.url (URLError): Name or service not known', str(exc))
       self.assertEqual('https://no.such.testing.url', exc.url)
       self.assertEqual('Name or service not known', exc.error.reason.strerror)

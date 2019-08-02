@@ -6,6 +6,7 @@ import io
 import platform
 import unittest
 
+import stem
 import stem.util.connection
 
 from stem.util.connection import Resolver, Connection
@@ -189,8 +190,8 @@ class TestConnection(unittest.TestCase):
 
     try:
       stem.util.connection.download(URL)
-      self.fail('expected a stem.util.connection.DownloadFailed to be raised')
-    except stem.util.connection.DownloadFailed as exc:
+      self.fail('expected a stem.DownloadFailed to be raised')
+    except stem.DownloadFailed as exc:
       self.assertEqual('Failed to download from https://example.unit.test.url (URLError): boom', str(exc))
       self.assertEqual(URL, exc.url)
       self.assertEqual('boom', exc.error.reason)

@@ -28,6 +28,9 @@ Library for working with the tor process.
     +- SocketError - Communication with the socket failed.
        +- SocketClosed - Socket has been shut down.
 
+  DownloadFailed - Inability to download a resource.
+    +- DownloadTimeout - Download timeout reached.
+
 .. data:: Runlevel (enum)
 
   Rating of importance used for event logging.
@@ -499,6 +502,8 @@ Library for working with the tor process.
   ================= ===========
 """
 
+import traceback
+
 import stem.util
 import stem.util.enum
 
@@ -532,6 +537,8 @@ __all__ = [
   'InvalidArguments',
   'SocketError',
   'SocketClosed',
+  'DownloadFailed',
+  'DownloadTimeout',
   'Runlevel',
   'Signal',
   'Flag',
@@ -710,6 +717,65 @@ class SocketError(ControllerError):
 
 class SocketClosed(SocketError):
   'Control socket was closed before completing the message.'
+
+
+class DownloadFailed(IOError):
+  """
+  Inability to download a resource. Python's urllib module raises
+  a wide variety of undocumented exceptions (urllib2.URLError,
+  socket.timeout, and others).
+
+  This wraps lower level failures in a common exception type that
+  retains their exception and `stacktrace
+  <https://docs.python.org/3/library/traceback.html>`_.
+
+  .. versionadded:: 1.8.0
+
+  :var str url: url we failed to download from
+  :var Exception error: original urllib exception
+  :var traceback stacktrace: original stacktrace
+  :var str stacktrace_str: string representation of the stacktrace
+  """
+
+  def __init__(self, url, error, stacktrace, message = None):
+    if message is None:
+      # The string representation of exceptions can reside in several places.
+      # urllib.URLError use a 'reason' attribute that in turn may referrence
+      # low level structures such as socket.gaierror. Whereas most exceptions
+      # use a 'message' attribute.
+
+      reason = str(error)
+
+      all_str_repr = (
+        getattr(getattr(error, 'reason', None), 'strerror', None),
+        getattr(error, 'reason', None),
+        getattr(error, 'message', None),
+      )
+
+      for str_repr in all_str_repr:
+        if str_repr and isinstance(str_repr, str):
+          reason = str_repr
+          break
+
+      message = 'Failed to download from %s (%s): %s' % (url, type(error).__name__, reason)
+
+    super(DownloadFailed, self).__init__(message)
+
+    self.url = url
+    self.error = error
+    self.stacktrace = stacktrace
+    self.stacktrace_str = ''.join(traceback.format_tb(stacktrace))
+
+
+class DownloadTimeout(DownloadFailed):
+  """
+  Timeout reached while downloading this resource.
+
+  .. versionadded:: 1.8.0
+  """
+
+  def __init__(self, url, error, stacktrace, timeout):
+    super(DownloadTimeout, self).__init__('Failed to download from %s: %0.1f second timeout reached' % (url, timeout))
 
 
 Runlevel = stem.util.enum.UppercaseEnum(

@@ -141,7 +141,7 @@ def get_server_descriptors(start = None, end = None, cache_to = None, timeout = 
     :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the given
     time range
 
-  :raises: :class:`~stem.util.connection.DownloadFailed` if the download fails
+  :raises: :class:`~stem.DownloadFailed` if the download fails
   """
 
   for f in get_instance().files('server-descriptor', start, end):
@@ -209,7 +209,7 @@ class File(object):
     :raises:
       * **ValueError** if unable to determine the descirptor type
       * **TypeError** if we cannot parse this descriptor type
-      * :class:`~stem.util.connection.DownloadFailed` if the download fails
+      * :class:`~stem.DownloadFailed` if the download fails
     """
 
     if descriptor_type is None:
@@ -256,7 +256,7 @@ class File(object):
 
     :returns: **str** with the path we downloaded to
 
-    :raises: :class:`~stem.util.connection.DownloadFailed` if the download fails
+    :raises: :class:`~stem.DownloadFailed` if the download fails
     """
 
     # TODO: If checksums get added to the index we should replace
@@ -383,7 +383,7 @@ class CollecTor(object):
 
         * **ValueError** if json is malformed
         * **IOError** if unable to decompress
-        * :class:`~stem.util.connection.DownloadFailed` if the download fails
+        * :class:`~stem.DownloadFailed` if the download fails
     """
 
     if not self._cached_index or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
@@ -419,7 +419,7 @@ class CollecTor(object):
 
         * **ValueError** if json is malformed
         * **IOError** if unable to decompress
-        * :class:`~stem.util.connection.DownloadFailed` if the download fails
+        * :class:`~stem.DownloadFailed` if the download fails
     """
 
     if not self._cached_files or time.time() - self._cached_index_at >= REFRESH_INDEX_RATE:
