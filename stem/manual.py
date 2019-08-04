@@ -296,6 +296,8 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
   :raises: **IOError** if unable to retrieve the manual
   """
 
+  # TODO: change IOError to DownloadFailed in stem 2.x
+
   if not path and not file_handle:
     raise ValueError("Either the path or file_handle we're saving to must be provided")
   elif not stem.util.system.is_available('a2x'):

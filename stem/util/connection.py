@@ -186,7 +186,9 @@ def download(url, timeout = None, retries = None):
 
   :returns: **bytes** content of the given url
 
-  :raises: :class:`~stem.DownloadFailed` if the download fails
+  :raises:
+    * :class:`~stem.DownloadTimeout` if our request timed out
+    * :class:`~stem.DownloadFailed` if our request fails
   """
 
   if retries is None:

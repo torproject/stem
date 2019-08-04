@@ -383,7 +383,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # After two requests we'll have reached our total permissable timeout.
     # Check that we don't make a third.
 
-    self.assertRaises(socket.timeout, query.run)
+    self.assertRaises(stem.DownloadTimeout, query.run)
     self.assertEqual(2, dirport_mock.call_count)
 
   def test_query_with_invalid_endpoints(self):

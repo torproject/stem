@@ -97,6 +97,7 @@ content. For example...
 
 import io
 import random
+import socket
 import sys
 import threading
 import time
@@ -525,11 +526,8 @@ class Query(object):
       **False**...
 
         * **ValueError** if the descriptor contents is malformed
-        * **socket.timeout** if our request timed out
-        * **urllib2.URLError** for most request failures
-
-      Note that the urllib2 module may fail with other exception types, in
-      which case we'll pass it along.
+        * :class:`~stem.DownloadTimeout` if our request timed out
+        * :class:`~stem.DownloadFailed` if our request fails
     """
 
     return list(self._run(suppress))
@@ -951,11 +949,11 @@ class DescriptorDownloader(object):
       Traceback (most recent call last):
         File "demo.py", line 3, in
           detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
-        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 476, in run
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 533, in run
           return list(self._run(suppress))
-        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 487, in _run
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 544, in _run
           raise self.error
-      urllib2.HTTPError: HTTP Error 404: Not found
+      stem.DownloadFailed: Failed to download from http://154.35.175.225:80/tor/status-vote/next/consensus-signatures (HTTPError): Not found
 
     .. versionadded:: 1.8.0
 
@@ -1064,20 +1062,26 @@ def _download_from_dirport(url, compression, timeout):
   :returns: two value tuple of the form (data, reply_headers)
 
   :raises:
-    * **socket.timeout** if our request timed out
-    * **urllib2.URLError** for most request failures
+    * :class:`~stem.DownloadTimeout` if our request timed out
+    * :class:`~stem.DownloadFailed` if our request fails
   """
 
-  response = urllib.urlopen(
-    urllib.Request(
-      url,
-      headers = {
-        'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),
-        'User-Agent': stem.USER_AGENT,
-      }
-    ),
-    timeout = timeout,
-  )
+  try:
+    response = urllib.urlopen(
+      urllib.Request(
+        url,
+        headers = {
+          'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),
+          'User-Agent': stem.USER_AGENT,
+        }
+      ),
+      timeout = timeout,
+    )
+  except socket.timeout as exc:
+    raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
+  except:
+    exc, stacktrace = sys.exc_info()[1:3]
+    raise stem.DownloadFailed(url, exc, stacktrace)
 
   return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
 

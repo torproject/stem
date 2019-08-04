@@ -215,6 +215,8 @@ class Directory(object):
     :raises: **IOError** if unable to retrieve the fallback directories
     """
 
+    # TODO: change IOError to DownloadFailed in stem 2.x
+
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
   def __hash__(self):

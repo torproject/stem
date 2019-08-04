@@ -775,7 +775,8 @@ class DownloadTimeout(DownloadFailed):
   """
 
   def __init__(self, url, error, stacktrace, timeout):
-    super(DownloadTimeout, self).__init__('Failed to download from %s: %0.1f second timeout reached' % (url, timeout))
+    message = 'Failed to download from %s: %0.1f second timeout reached' % (url, timeout)
+    super(DownloadTimeout, self).__init__(url, error, stacktrace, message)
 
 
 Runlevel = stem.util.enum.UppercaseEnum(
