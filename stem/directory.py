@@ -40,7 +40,9 @@ as follows...
 
 import os
 import re
+import sys
 
+import stem
 import stem.util
 import stem.util.conf
 
@@ -215,8 +217,6 @@ class Directory(object):
     :raises: **IOError** if unable to retrieve the fallback directories
     """
 
-    # TODO: change IOError to DownloadFailed in stem 2.x
-
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
   def __hash__(self):
@@ -266,11 +266,13 @@ class Authority(Directory):
   def from_remote(timeout = 60):
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
-    except Exception as exc:
-      raise IOError("Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc))
 
-    if not lines:
-      raise IOError('%s did not have any content' % GITWEB_AUTHORITY_URL)
+      if not lines:
+        raise IOError('no content')
+    except:
+      exc, stacktrace = sys.exc_info()[1:3]
+      message = "Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc)
+      raise stem.DownloadFailed(GITWEB_AUTHORITY_URL, exc, stacktrace, message)
 
     # Entries look like...
     #
@@ -412,15 +414,18 @@ class Fallback(Directory):
   def from_remote(timeout = 60):
     try:
       lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
-    except Exception as exc:
-      raise IOError("Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc))
 
-    if not lines:
-      raise IOError('%s did not have any content' % GITWEB_FALLBACK_URL)
-    elif lines[0] != '/* type=fallback */':
-      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
+      if not lines:
+        raise IOError('no content')
+    except:
+      exc, stacktrace = sys.exc_info()[1:3]
+      message = "Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc)
+      raise stem.DownloadFailed(GITWEB_FALLBACK_URL, exc, stacktrace, message)
 
     # header metadata
+
+    if lines[0] != '/* type=fallback */':
+      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
 
     header = {}
 

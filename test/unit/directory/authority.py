@@ -5,6 +5,7 @@ Unit tests for stem.directory.Authority.
 import io
 import unittest
 
+import stem
 import stem.directory
 import stem.prereq
 
@@ -78,4 +79,4 @@ class TestAuthority(unittest.TestCase):
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
-    self.assertRaisesRegexp(IOError, 'did not have any content', stem.directory.Authority.from_remote)
+    self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Authority.from_remote)

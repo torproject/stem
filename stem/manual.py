@@ -53,6 +53,7 @@ import shutil
 import sys
 import tempfile
 
+import stem
 import stem.prereq
 import stem.util
 import stem.util.conf
@@ -296,8 +297,6 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
   :raises: **IOError** if unable to retrieve the manual
   """
 
-  # TODO: change IOError to DownloadFailed in stem 2.x
-
   if not path and not file_handle:
     raise ValueError("Either the path or file_handle we're saving to must be provided")
   elif not stem.util.system.is_available('a2x'):
@@ -313,8 +312,9 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
         request = urllib.urlopen(url, timeout = timeout)
         shutil.copyfileobj(request, asciidoc_file)
     except:
-      exc = sys.exc_info()[1]
-      raise IOError("Unable to download tor's manual from %s to %s: %s" % (url, asciidoc_path, exc))
+      exc, stacktrace = sys.exc_info()[1:3]
+      message = "Unable to download tor's manual from %s to %s: %s" % (url, asciidoc_path, exc)
+      raise stem.DownloadFailed(url, exc, stacktrace, message)
 
     try:
       stem.util.system.call('a2x -f manpage %s' % asciidoc_path)

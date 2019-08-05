@@ -7,6 +7,7 @@ import re
 import tempfile
 import unittest
 
+import stem
 import stem.directory
 import stem.util.conf
 
@@ -123,7 +124,7 @@ class TestFallback(unittest.TestCase):
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
-    self.assertRaisesRegexp(IOError, 'did not have any content', stem.directory.Fallback.from_remote)
+    self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Fallback.from_remote)
 
   @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_GITWEB_CONTENT.splitlines()[1:]))))
   def test_from_remote_no_header(self):
