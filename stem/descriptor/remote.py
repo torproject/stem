@@ -48,7 +48,10 @@ content. For example...
     |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
-    +- get_consensus - provides the present consensus or router status entries
+    |- get_microdescriptors - provides present microdescriptors with the given digests
+    |- get_consensus - provides the present consensus or router status entries
+    |- get_bandwidth_file - provides bandwidth heuristics used to make the next consensus
+    +- get_detached_signatures - authority signatures used to make the next consensus
 
   Query - Asynchronous request to download tor descriptors
     |- start - issues the query if it isn't already running
@@ -63,7 +66,7 @@ content. For example...
     |- get_consensus - provides the present consensus or router status entries
     |- get_vote - provides an authority's vote for the next consensus
     |- get_key_certificates - provides present authority key certificates
-    |- get_bandwidth_file - provies bandwidth heuristics used to make the next consensus
+    |- get_bandwidth_file - provides bandwidth heuristics used to make the next consensus
     |- get_detached_signatures - authority signatures used to make the next consensus
     +- query - request an arbitrary descriptor resource
 

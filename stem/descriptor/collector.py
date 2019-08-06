@@ -16,7 +16,7 @@ With this you can either download and read directly from CollecTor...
   import datetime
   import stem.descriptor.collector
 
-  yesterday = datetime.datetime.today() - datetime.timedelta(1)
+  yesterday = datetime.datetime.utcnow() - datetime.timedelta(days = 1)
 
   # provide yesterday's exits
 
@@ -33,7 +33,7 @@ With this you can either download and read directly from CollecTor...
   import stem.descriptor
   import stem.descriptor.collector
 
-  yesterday = datetime.datetime.today() - datetime.timedelta(1)
+  yesterday = datetime.datetime.utcnow() - datetime.timedelta(days = 1)
   path = os.path.expanduser('~/descriptor_cache/server_desc_today')
 
   with open(path, 'wb') as cache_file:
@@ -45,6 +45,21 @@ With this you can either download and read directly from CollecTor...
   for desc in stem.descriptor.parse_file(path, descriptor_type = 'server-descriptor 1.0'):
     if desc.exit_policy.is_exiting_allowed():
       print('  %s (%s)' % (desc.nickname, desc.fingerprint))
+
+::
+
+  get_instance - Provides a singleton CollecTor used for...
+    +- get_server_descriptors - published server descriptors
+
+  File - Individual file residing within CollecTor
+    |- read - provides descriptors from this file
+    +- download - download this file to disk
+
+  CollecTor - Downloader for descriptors from CollecTor
+    |- get_server_descriptors - published server descriptors
+    |
+    |- index - metadata for content available from CollecTor
+    +- files - files available from CollecTor
 
 .. versionadded:: 1.8.0
 """
