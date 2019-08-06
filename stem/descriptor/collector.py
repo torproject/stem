@@ -141,27 +141,13 @@ def get_instance():
 
 def get_server_descriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
   """
-  Provides server descriptors for the given time range, sorted oldest to
-  newest.
-
-  :param datetime.datetime start: time range to begin with
-  :param datetime.datetime end: time range to end with
-  :param str cache_to: directory to cache archives into, if an archive is
-    available here it is not downloaded
-  :param int timeout: timeout for downloading each individual archive when the
-    connection becomes idle, no timeout applied if **None**
-  :param int retires: maximum attempts to impose on a per-archive basis
-
-  :returns: **iterator** of
-    :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the given
-    time range
-
-  :raises: :class:`~stem.DownloadFailed` if the download fails
+  Shorthand for
+  :func:`~stem.descriptor.collector.CollecTor.get_server_descriptors`
+  on our singleton instance.
   """
 
-  for f in get_instance().files('server-descriptor', start, end):
-    for desc in f.read(cache_to, timeout = timeout, retries = retries):
-      yield desc
+  for desc in get_instance().get_server_descriptors(start, end, cache_to, timeout, retries):
+    yield desc
 
 
 class File(object):
@@ -382,6 +368,30 @@ class CollecTor(object):
     self._cached_index = None
     self._cached_files = None
     self._cached_index_at = 0
+
+  def get_server_descriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+    """
+    Provides server descriptors published during the given time range, sorted
+    oldest to newest.
+
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+    :param str cache_to: directory to cache archives into, if an archive is
+      available here it is not downloaded
+    :param int timeout: timeout for downloading each individual archive when
+      the connection becomes idle, no timeout applied if **None**
+    :param int retires: maximum attempts to impose on a per-archive basis
+
+    :returns: **iterator** of
+      :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the
+      given time range
+
+    :raises: :class:`~stem.DownloadFailed` if the download fails
+    """
+
+    for f in self.files('server-descriptor', start, end):
+      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+        yield desc
 
   def index(self, compression = 'best'):
     """
