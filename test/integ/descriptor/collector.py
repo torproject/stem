@@ -43,6 +43,14 @@ class TestCollector(unittest.TestCase):
     if not (300 < len(recent_descriptors) < 800):
       self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 584 on 8/5/19
 
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_extrainfo_descriptors(self):
+    recent_descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(start = RECENT))
+
+    if not (300 < len(recent_descriptors) < 800):
+      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))
+
   def _test_index(self, compression):
     if compression and not compression.available:
       self.skipTest('(%s unavailable)' % compression)
