@@ -50,7 +50,8 @@ With this you can either download and read directly from CollecTor...
 
   get_instance - Provides a singleton CollecTor used for...
     |- get_server_descriptors - published server descriptors
-    +- get_extrainfo_descriptors - published extrainfo descriptors
+    |- get_extrainfo_descriptors - published extrainfo descriptors
+    +- get_microdescriptors - published microdescriptors
 
   File - Individual file residing within CollecTor
     |- read - provides descriptors from this file
@@ -59,6 +60,7 @@ With this you can either download and read directly from CollecTor...
   CollecTor - Downloader for descriptors from CollecTor
     |- get_server_descriptors - published server descriptors
     |- get_extrainfo_descriptors - published extrainfo descriptors
+    |- get_microdescriptors - published microdescriptors
     |
     |- index - metadata for content available from CollecTor
     +- files - files available from CollecTor
@@ -160,6 +162,17 @@ def get_extrainfo_descriptors(start = None, end = None, cache_to = None, timeout
   """
 
   for desc in get_instance().get_extrainfo_descriptors(start, end, cache_to, timeout, retries):
+    yield desc
+
+
+def get_microdescriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.collector.CollecTor.get_microdescriptors`
+  on our singleton instance.
+  """
+
+  for desc in get_instance().get_microdescriptors(start, end, cache_to, timeout, retries):
     yield desc
 
 
@@ -427,6 +440,30 @@ class CollecTor(object):
     """
 
     for f in self.files('extra-info', start, end):
+      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+        yield desc
+
+  def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+    """
+    Provides microdescriptors published during the given time range,
+    sorted oldest to newest.
+
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+    :param str cache_to: directory to cache archives into, if an archive is
+      available here it is not downloaded
+    :param int timeout: timeout for downloading each individual archive when
+      the connection becomes idle, no timeout applied if **None**
+    :param int retires: maximum attempts to impose on a per-archive basis
+
+    :returns: **iterator** of
+      :class:`~stem.descriptor.microdescriptor.Microdescriptor
+      for the given time range
+
+    :raises: :class:`~stem.DownloadFailed` if the download fails
+    """
+
+    for f in self.files('microdescriptor', start, end):
       for desc in f.read(cache_to, timeout = timeout, retries = retries):
         yield desc
 

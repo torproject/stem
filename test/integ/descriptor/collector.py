@@ -49,7 +49,18 @@ class TestCollector(unittest.TestCase):
     recent_descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(start = RECENT))
 
     if not (300 < len(recent_descriptors) < 800):
-      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))
+      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 583 on 8/7/19
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_microdescriptors(self):
+    recent_descriptors = list(stem.descriptor.collector.get_microdescriptors(start = RECENT))
+
+    # TODO: I'm unsure why these counts differ so much from server/extrainfo
+    # descriptors. Checking with Karsten.
+
+    if not (300 < len(recent_descriptors) < 800):
+      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 23 on 8/7/19
 
   def _test_index(self, compression):
     if compression and not compression.available:
