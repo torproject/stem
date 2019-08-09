@@ -263,12 +263,16 @@ class File(object):
 
         return
 
-    # TODO: the following will not work if the tar contains multiple types or a type we do not support
-
     path = self.download(directory, True, timeout, retries)
 
-    for desc in parse_file(path, descriptor_type):
-      yield desc
+    # Archives can contain multiple descriptor types, so parsing everything and
+    # filtering to what we're after.
+
+    for desc in parse_file(path):
+      desc_annotation = type(desc).TYPE_ANNOTATION_NAME
+
+      if descriptor_type is None or (desc_annotation and descriptor_type.startswith(desc_annotation)):
+        yield desc
 
   def download(self, directory, decompress = True, timeout = None, retries = 3):
     """

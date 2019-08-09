@@ -515,6 +515,8 @@ class RouterStatusEntryV2(RouterStatusEntry):
   a default value, others are left as **None** if undefined
   """
 
+  TYPE_ANNOTATION_NAME = 'network-status-consensus-2'
+
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'digest': (None, _parse_r_line),
   })
@@ -574,6 +576,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-consensus-3'
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'digest': (None, _parse_r_line),
@@ -651,6 +655,8 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-microdesc-consensus-3'
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'or_addresses': ([], _parse_a_line),
