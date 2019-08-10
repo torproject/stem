@@ -450,7 +450,16 @@ class CollecTor(object):
   def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
     """
     Provides microdescriptors published during the given time range,
-    sorted oldest to newest.
+    sorted oldest to newest. Unlike server/extrainfo descriptors,
+    microdescriptors change very infrequently...
+
+    ::
+
+      "Microdescriptors are expected to be relatively static and only change
+      about once per week." -dir-spec section 3.3
+
+    CollecTor archives only contain microdescriptors that *change*, so hourly
+    tarballs often contain very few.
 
     :param datetime.datetime start: time range to begin with
     :param datetime.datetime end: time range to end with
