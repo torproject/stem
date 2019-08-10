@@ -3,6 +3,7 @@ Integration tests for stem.descriptor.collector.
 """
 
 import datetime
+import re
 import unittest
 
 import test.require
@@ -56,8 +57,34 @@ class TestCollector(unittest.TestCase):
   def test_downloading_microdescriptors(self):
     recent_descriptors = list(stem.descriptor.collector.get_microdescriptors(start = RECENT))
 
-    if not (300 < len(recent_descriptors) < 800):
-      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 23 on 8/7/19
+    if not (10 < len(recent_descriptors) < 100):
+      self.fail('Downloaded %i descriptors, expected 10-100' % len(recent_descriptors))  # 23 on 8/7/19
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_consensus_v3(self):
+    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = RECENT))
+
+    if not (3000 < len(recent_descriptors) < 10000):
+      self.fail('Downloaded %i descriptors, expected 3000-10000' % len(recent_descriptors))  # 6554 on 8/10/19
+
+  @test.require.only_run_once
+  @test.require.online
+  def test_downloading_consensus_micro(self):
+    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = RECENT, microdescriptor = True))
+
+    if not (3000 < len(recent_descriptors) < 10000):
+      self.fail('Downloaded %i descriptors, expected 3000-10000' % len(recent_descriptors))
+
+  def test_downloading_consensus_invalid_type(self):
+    test_values = (
+      ({'version': 2, 'microdescriptor': True}, 'Only v3 microdescriptors are available (not version 2)'),
+      ({'version': 1}, 'Only v2 and v3 router status entries are available (not version 1)'),
+      ({'version': 4}, 'Only v2 and v3 router status entries are available (not version 4)'),
+    )
+
+    for args, expected_msg in test_values:
+      self.assertRaisesRegexp(ValueError, re.escape(expected_msg), list, stem.descriptor.collector.get_consensus(**args))
 
   def _test_index(self, compression):
     if compression and not compression.available:

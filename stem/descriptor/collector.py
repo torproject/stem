@@ -51,7 +51,8 @@ With this you can either download and read directly from CollecTor...
   get_instance - Provides a singleton CollecTor used for...
     |- get_server_descriptors - published server descriptors
     |- get_extrainfo_descriptors - published extrainfo descriptors
-    +- get_microdescriptors - published microdescriptors
+    |- get_microdescriptors - published microdescriptors
+    +- get_consensus - published router status entries
 
   File - Individual file residing within CollecTor
     |- read - provides descriptors from this file
@@ -61,6 +62,7 @@ With this you can either download and read directly from CollecTor...
     |- get_server_descriptors - published server descriptors
     |- get_extrainfo_descriptors - published extrainfo descriptors
     |- get_microdescriptors - published microdescriptors
+    |- get_consensus - published router status entries
     |
     |- index - metadata for content available from CollecTor
     +- files - files available from CollecTor
@@ -173,6 +175,17 @@ def get_microdescriptors(start = None, end = None, cache_to = None, timeout = No
   """
 
   for desc in get_instance().get_microdescriptors(start, end, cache_to, timeout, retries):
+    yield desc
+
+
+def get_consensus(start = None, end = None, cache_to = None, version = 3, microdescriptor = False, timeout = None, retries = 3):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.collector.CollecTor.get_consensus`
+  on our singleton instance.
+  """
+
+  for desc in get_instance().get_consensus(start, end, cache_to, version, microdescriptor, timeout, retries):
     yield desc
 
 
@@ -419,6 +432,8 @@ class CollecTor(object):
     :raises: :class:`~stem.DownloadFailed` if the download fails
     """
 
+    # TODO: support bridge variants ('bridge-server-descriptor' type)
+
     for f in self.files('server-descriptor', start, end):
       for desc in f.read(cache_to, timeout = timeout, retries = retries):
         yield desc
@@ -442,6 +457,8 @@ class CollecTor(object):
 
     :raises: :class:`~stem.DownloadFailed` if the download fails
     """
+
+    # TODO: support bridge variants ('bridge-extra-info' type)
 
     for f in self.files('extra-info', start, end):
       for desc in f.read(cache_to, timeout = timeout, retries = retries):
@@ -477,6 +494,48 @@ class CollecTor(object):
     """
 
     for f in self.files('microdescriptor', start, end):
+      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+        yield desc
+
+  def get_consensus(self, start = None, end = None, cache_to = None, version = 3, microdescriptor = False, timeout = None, retries = 3):
+    """
+    Provides consensus router status entries published during the given time
+    range, sorted oldest to newest.
+
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+    :param str cache_to: directory to cache archives into, if an archive is
+      available here it is not downloaded
+    :param int version: consensus variant to retrieve (versions 2 or 3)
+    :param bool microdescriptor: provides the microdescriptor consensus if
+      **True**, standard consensus otherwise
+    :param int timeout: timeout for downloading each individual archive when
+      the connection becomes idle, no timeout applied if **None**
+    :param int retires: maximum attempts to impose on a per-archive basis
+
+    :returns: **iterator** of
+      :class:`~stem.descriptor.router_status_entry.RouterStatusEntry`
+      for the given time range
+
+    :raises: :class:`~stem.DownloadFailed` if the download fails
+    """
+
+    if version == 3 and not microdescriptor:
+      desc_type = 'network-status-consensus-3'
+    elif version == 3 and microdescriptor:
+      desc_type = 'network-status-microdesc-consensus-3'
+    elif version == 2 and not microdescriptor:
+      desc_type = 'network-status-2'
+    else:
+      if microdescriptor and version != 3:
+        raise ValueError('Only v3 microdescriptors are available (not version %s)' % version)
+      else:
+        raise ValueError('Only v2 and v3 router status entries are available (not version %s)' % version)
+
+    # TODO: support bridge variants ('bridge-network-status' type)
+    # TODO: document vs router status entries (ie. DocumentType)?
+
+    for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, timeout = timeout, retries = retries):
         yield desc
 
