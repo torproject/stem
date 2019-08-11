@@ -435,7 +435,7 @@ class CollecTor(object):
     # TODO: support bridge variants ('bridge-server-descriptor' type)
 
     for f in self.files('server-descriptor', start, end):
-      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'server-descriptor', timeout = timeout, retries = retries):
         yield desc
 
   def get_extrainfo_descriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -461,7 +461,7 @@ class CollecTor(object):
     # TODO: support bridge variants ('bridge-extra-info' type)
 
     for f in self.files('extra-info', start, end):
-      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'extra-info', timeout = timeout, retries = retries):
         yield desc
 
   def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -494,7 +494,7 @@ class CollecTor(object):
     """
 
     for f in self.files('microdescriptor', start, end):
-      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'microdescriptor', timeout = timeout, retries = retries):
         yield desc
 
   def get_consensus(self, start = None, end = None, cache_to = None, version = 3, microdescriptor = False, timeout = None, retries = 3):
@@ -536,7 +536,7 @@ class CollecTor(object):
     # TODO: document vs router status entries (ie. DocumentType)?
 
     for f in self.files(desc_type, start, end):
-      for desc in f.read(cache_to, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
         yield desc
 
   def index(self, compression = 'best'):
