@@ -8,7 +8,7 @@ import unittest
 
 import stem.prereq
 
-from stem.descriptor import Compression
+from stem.descriptor import Compression, DocumentHandler
 from stem.descriptor.collector import CollecTor, File
 from test.unit.descriptor import get_resource
 from test.unit.descriptor.data.collector.index import EXAMPLE_INDEX
@@ -254,6 +254,13 @@ class TestCollector(unittest.TestCase):
     f = descriptors[0]
     self.assertEqual('RouterStatusEntryV3', type(f).__name__)
     self.assertEqual('000A10D43011EA4928A35F610405F92B4433B4DC', f.fingerprint)
+
+    descriptors = list(stem.descriptor.collector.get_consensus(document_handler = DocumentHandler.DOCUMENT))
+    self.assertEqual(2, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('NetworkStatusDocumentV3', type(f).__name__)
+    self.assertEqual(35, len(f.routers))
 
     # this archive shouldn't have any v2 or microdescriptor consensus data
 

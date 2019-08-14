@@ -78,10 +78,11 @@ import shutil
 import tempfile
 import time
 
+import stem.descriptor
 import stem.util.connection
 import stem.util.str_tools
 
-from stem.descriptor import Compression, parse_file
+from stem.descriptor import Compression, DocumentHandler
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
@@ -178,14 +179,14 @@ def get_microdescriptors(start = None, end = None, cache_to = None, timeout = No
     yield desc
 
 
-def get_consensus(start = None, end = None, cache_to = None, version = 3, microdescriptor = False, timeout = None, retries = 3):
+def get_consensus(start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, timeout = None, retries = 3):
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_consensus`
   on our singleton instance.
   """
 
-  for desc in get_instance().get_consensus(start, end, cache_to, version, microdescriptor, timeout, retries):
+  for desc in get_instance().get_consensus(start, end, cache_to, document_handler, version, microdescriptor, timeout, retries):
     yield desc
 
 
@@ -216,7 +217,7 @@ class File(object):
     self._guessed_type = File._guess_descriptor_types(path)
     self._downloaded_to = None  # location we last downloaded to
 
-  def read(self, directory = None, descriptor_type = None, timeout = None, retries = 3):
+  def read(self, directory = None, descriptor_type = None, document_handler = DocumentHandler.ENTRIES, timeout = None, retries = 3):
     """
     Provides descriptors from this archive. Descriptors are downloaded or read
     from disk as follows...
@@ -239,6 +240,8 @@ class File(object):
     :param str descriptor_type: `descriptor type
       <https://metrics.torproject.org/collector.html#data-formats>`_, this is
       guessed if not provided
+    :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+      which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int timeout: timeout when connection becomes idle, no timeout
       applied if **None**
     :param int retires: maximum attempts to impose
@@ -269,7 +272,7 @@ class File(object):
 
         tmp_directory = tempfile.mkdtemp()
 
-        for desc in self.read(tmp_directory, descriptor_type, timeout, retries):
+        for desc in self.read(tmp_directory, descriptor_type, document_handler, timeout, retries):
           yield desc
 
         shutil.rmtree(tmp_directory)
@@ -281,7 +284,7 @@ class File(object):
     # Archives can contain multiple descriptor types, so parsing everything and
     # filtering to what we're after.
 
-    for desc in parse_file(path):
+    for desc in stem.descriptor.parse_file(path, document_handler = document_handler):
       desc_annotation = type(desc).TYPE_ANNOTATION_NAME
 
       if descriptor_type is None or (desc_annotation and descriptor_type.startswith(desc_annotation)):
@@ -497,7 +500,7 @@ class CollecTor(object):
       for desc in f.read(cache_to, 'microdescriptor', timeout = timeout, retries = retries):
         yield desc
 
-  def get_consensus(self, start = None, end = None, cache_to = None, version = 3, microdescriptor = False, timeout = None, retries = 3):
+  def get_consensus(self, start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, timeout = None, retries = 3):
     """
     Provides consensus router status entries published during the given time
     range, sorted oldest to newest.
@@ -506,6 +509,8 @@ class CollecTor(object):
     :param datetime.datetime end: time range to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
+    :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+      which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int version: consensus variant to retrieve (versions 2 or 3)
     :param bool microdescriptor: provides the microdescriptor consensus if
       **True**, standard consensus otherwise
@@ -536,7 +541,7 @@ class CollecTor(object):
     # TODO: document vs router status entries (ie. DocumentType)?
 
     for f in self.files(desc_type, start, end):
-      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, desc_type, document_handler, timeout = timeout, retries = retries):
         yield desc
 
   def index(self, compression = 'best'):

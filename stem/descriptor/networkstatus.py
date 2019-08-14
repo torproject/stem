@@ -1032,6 +1032,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      Added the bandwidth_file_digest attributbute.
   """
 
+  TYPE_ANNOTATION_NAME = 'network-status-consensus-3'  # TODO: can also be network-status-vote-3
+
   ATTRIBUTES = {
     'version': (None, _parse_header_network_status_version_line),
     'version_flavor': ('ns', _parse_header_network_status_version_line),
