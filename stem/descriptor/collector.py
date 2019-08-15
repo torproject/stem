@@ -29,22 +29,23 @@ With this you can either download and read directly from CollecTor...
 ::
 
   import datetime
-  import os
   import stem.descriptor
   import stem.descriptor.collector
 
   yesterday = datetime.datetime.utcnow() - datetime.timedelta(days = 1)
-  path = os.path.expanduser('~/descriptor_cache/server_desc_today')
+  cache_dir = '~/descriptor_cache/server_desc_today'
 
-  with open(path, 'wb') as cache_file:
-    for desc in stem.descriptor.collector.get_server_descriptors(start = yesterday):
-      cache_file.write(desc.get_bytes())
+  collector = stem.descriptor.collector.CollecTor()
+
+  for f in collector.files('server-descriptor', start = yesterday):
+    f.download(cache_dir)
 
   # then later...
 
-  for desc in stem.descriptor.parse_file(path, descriptor_type = 'server-descriptor 1.0'):
-    if desc.exit_policy.is_exiting_allowed():
-      print('  %s (%s)' % (desc.nickname, desc.fingerprint))
+  for f in collector.files('server-descriptor', start = yesterday):
+    for desc in f.read(cache_dir):
+      if desc.exit_policy.is_exiting_allowed():
+        print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
 ::
 
@@ -354,6 +355,8 @@ class File(object):
 
     if self.compression != Compression.PLAINTEXT and decompress:
       filename = filename.rsplit('.', 1)[0]
+
+    directory = os.path.expanduser(directory)
 
     path = os.path.join(directory, filename)
 
