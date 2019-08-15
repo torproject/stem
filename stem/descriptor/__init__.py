@@ -920,6 +920,8 @@ class Descriptor(object):
     :returns: :class:`~stem.descriptor.TypeAnnotation` with our type information
     """
 
+    # TODO: populate this from the archive instead if available (so we have correct version numbers)
+
     if self.TYPE_ANNOTATION_NAME is not None:
       return TypeAnnotation(self.TYPE_ANNOTATION_NAME, 1, 0)
     else:

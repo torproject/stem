@@ -146,25 +146,25 @@ def get_instance():
   return SINGLETON_COLLECTOR
 
 
-def get_server_descriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_server_descriptors(start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_server_descriptors`
   on our singleton instance.
   """
 
-  for desc in get_instance().get_server_descriptors(start, end, cache_to, timeout, retries):
+  for desc in get_instance().get_server_descriptors(start, end, cache_to, bridge, timeout, retries):
     yield desc
 
 
-def get_extrainfo_descriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_extrainfo_descriptors(start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_extrainfo_descriptors`
   on our singleton instance.
   """
 
-  for desc in get_instance().get_extrainfo_descriptors(start, end, cache_to, timeout, retries):
+  for desc in get_instance().get_extrainfo_descriptors(start, end, cache_to, bridge, timeout, retries):
     yield desc
 
 
@@ -179,14 +179,14 @@ def get_microdescriptors(start = None, end = None, cache_to = None, timeout = No
     yield desc
 
 
-def get_consensus(start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, timeout = None, retries = 3):
+def get_consensus(start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, bridge = False, timeout = None, retries = 3):
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_consensus`
   on our singleton instance.
   """
 
-  for desc in get_instance().get_consensus(start, end, cache_to, document_handler, version, microdescriptor, timeout, retries):
+  for desc in get_instance().get_consensus(start, end, cache_to, document_handler, version, microdescriptor, bridge, timeout, retries):
     yield desc
 
 
@@ -413,7 +413,7 @@ class CollecTor(object):
     self._cached_files = None
     self._cached_index_at = 0
 
-  def get_server_descriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_server_descriptors(self, start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
     """
     Provides server descriptors published during the given time range, sorted
     oldest to newest.
@@ -422,6 +422,7 @@ class CollecTor(object):
     :param datetime.datetime end: time range to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
+    :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
     :param int retires: maximum attempts to impose on a per-archive basis
@@ -433,13 +434,13 @@ class CollecTor(object):
     :raises: :class:`~stem.DownloadFailed` if the download fails
     """
 
-    # TODO: support bridge variants ('bridge-server-descriptor' type)
+    desc_type = 'server-descriptor' if not bridge else 'bridge-server-descriptor'
 
-    for f in self.files('server-descriptor', start, end):
-      for desc in f.read(cache_to, 'server-descriptor', timeout = timeout, retries = retries):
+    for f in self.files(desc_type, start, end):
+      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
         yield desc
 
-  def get_extrainfo_descriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_extrainfo_descriptors(self, start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
     """
     Provides extrainfo descriptors published during the given time range,
     sorted oldest to newest.
@@ -448,6 +449,7 @@ class CollecTor(object):
     :param datetime.datetime end: time range to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
+    :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
     :param int retires: maximum attempts to impose on a per-archive basis
@@ -459,10 +461,10 @@ class CollecTor(object):
     :raises: :class:`~stem.DownloadFailed` if the download fails
     """
 
-    # TODO: support bridge variants ('bridge-extra-info' type)
+    desc_type = 'extra-info' if not bridge else 'bridge-extra-info'
 
-    for f in self.files('extra-info', start, end):
-      for desc in f.read(cache_to, 'extra-info', timeout = timeout, retries = retries):
+    for f in self.files(desc_type, start, end):
+      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
         yield desc
 
   def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -498,7 +500,7 @@ class CollecTor(object):
       for desc in f.read(cache_to, 'microdescriptor', timeout = timeout, retries = retries):
         yield desc
 
-  def get_consensus(self, start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, timeout = None, retries = 3):
+  def get_consensus(self, start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, bridge = False, timeout = None, retries = 3):
     """
     Provides consensus router status entries published during the given time
     range, sorted oldest to newest.
@@ -512,6 +514,7 @@ class CollecTor(object):
     :param int version: consensus variant to retrieve (versions 2 or 3)
     :param bool microdescriptor: provides the microdescriptor consensus if
       **True**, standard consensus otherwise
+    :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
     :param int retires: maximum attempts to impose on a per-archive basis
@@ -523,19 +526,19 @@ class CollecTor(object):
     :raises: :class:`~stem.DownloadFailed` if the download fails
     """
 
-    if version == 3 and not microdescriptor:
+    if version == 3 and not microdescriptor and not bridge:
       desc_type = 'network-status-consensus-3'
-    elif version == 3 and microdescriptor:
+    elif version == 3 and microdescriptor and not bridge:
       desc_type = 'network-status-microdesc-consensus-3'
-    elif version == 2 and not microdescriptor:
+    elif version == 2 and not microdescriptor and not bridge:
       desc_type = 'network-status-2'
+    elif bridge:
+      desc_type = 'bridge-network-status'
     else:
       if microdescriptor and version != 3:
         raise ValueError('Only v3 microdescriptors are available (not version %s)' % version)
       else:
         raise ValueError('Only v2 and v3 router status entries are available (not version %s)' % version)
-
-    # TODO: support bridge variants ('bridge-network-status' type)
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, document_handler, timeout = timeout, retries = retries):

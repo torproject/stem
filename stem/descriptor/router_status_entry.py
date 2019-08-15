@@ -15,6 +15,8 @@ sources...
 
   RouterStatusEntry - Common parent for router status entries
     |- RouterStatusEntryV2 - Entry for a network status v2 document
+    |   +- RouterStatusEntryBridgeV2 - Entry for a bridge flavored v2 document
+    |
     |- RouterStatusEntryV3 - Entry for a network status v3 document
     +- RouterStatusEntryMicroV3 - Entry for a microdescriptor flavored v3 document
 """
@@ -538,6 +540,17 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v')
+
+
+class RouterStatusEntryBridgeV2(RouterStatusEntryV2):
+  """
+  Information about an individual router stored within a bridge flavored
+  version 2 network status document.
+
+  .. versionadded:: 1.8.0
+  """
+
+  TYPE_ANNOTATION_NAME = 'bridge-network-status'
 
 
 class RouterStatusEntryV3(RouterStatusEntry):

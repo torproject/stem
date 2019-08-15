@@ -212,6 +212,21 @@ class TestCollector(unittest.TestCase):
 
   @patch('stem.util.connection.download')
   @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_bridge_server_descriptors(self, files_mock, download_mock):
+    with open(get_resource('collector/bridge-server-descriptors-2019-02-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/server-descriptors/bridge-server-descriptors-2019-02.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_server_descriptors(bridge = True))
+    self.assertEqual(4, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('BridgeDescriptor', type(f).__name__)
+    self.assertEqual('E90D1DE12B930DEC3F3E1127AAA25E47430CD3F4', f.fingerprint)
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
   def test_reading_extrainfo_descriptors(self, files_mock, download_mock):
     with open(get_resource('collector/extra-infos-2019-04-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
@@ -224,6 +239,21 @@ class TestCollector(unittest.TestCase):
     f = descriptors[0]
     self.assertEqual('RelayExtraInfoDescriptor', type(f).__name__)
     self.assertEqual('170EF19C0FA0491DFCEA6E1FB0941670B80506E1', f.fingerprint)
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_bridge_extrainfo_descriptors(self, files_mock, download_mock):
+    with open(get_resource('collector/bridge-extra-infos-2019-03-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2019-03.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(bridge = True))
+    self.assertEqual(6, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('BridgeExtraInfoDescriptor', type(f).__name__)
+    self.assertEqual('A0187027648A392C6AC413B66F7CD25DD001BF76', f.fingerprint)
 
   @patch('stem.util.connection.download')
   @patch('stem.descriptor.collector.CollecTor.files')
@@ -267,10 +297,13 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(0, len(list(stem.descriptor.collector.get_consensus(version = 2))))
     self.assertEqual(0, len(list(stem.descriptor.collector.get_consensus(microdescriptor = True))))
 
-    # but the microdescriptor archive *does* have microdescriptor consensuses
-
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_microdescriptor_consensus(self, files_mock, download_mock):
     with open(get_resource('collector/microdescs-2019-05-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/microdescs/microdescs-2019-05.tar', 12345, '2016-09-04 09:21')]
 
     descriptors = list(stem.descriptor.collector.get_consensus(microdescriptor = True))
     self.assertEqual(556, len(descriptors))
@@ -278,3 +311,18 @@ class TestCollector(unittest.TestCase):
     f = descriptors[0]
     self.assertEqual('RouterStatusEntryMicroV3', type(f).__name__)
     self.assertEqual('000A10D43011EA4928A35F610405F92B4433B4DC', f.fingerprint)
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_bridge_consensus(self, files_mock, download_mock):
+    with open(get_resource('collector/bridge-statuses-2019-05-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/microdescs/bridge-statuses-2019-05.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_consensus(bridge = True))
+    self.assertEqual(2593, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('RouterStatusEntryBridgeV2', type(f).__name__)
+    self.assertEqual('0035EA2A61E28D395F080ACA2244539490E70950', f.fingerprint)
