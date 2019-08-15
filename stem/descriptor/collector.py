@@ -285,9 +285,7 @@ class File(object):
     # filtering to what we're after.
 
     for desc in stem.descriptor.parse_file(path, document_handler = document_handler):
-      desc_annotation = type(desc).TYPE_ANNOTATION_NAME
-
-      if descriptor_type is None or (desc_annotation and descriptor_type.startswith(desc_annotation)):
+      if descriptor_type is None or descriptor_type.startswith(desc.type_annotation().name):
         yield desc
 
   def download(self, directory, decompress = True, timeout = None, retries = 3):
@@ -538,7 +536,6 @@ class CollecTor(object):
         raise ValueError('Only v2 and v3 router status entries are available (not version %s)' % version)
 
     # TODO: support bridge variants ('bridge-network-status' type)
-    # TODO: document vs router status entries (ie. DocumentType)?
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, document_handler, timeout = timeout, retries = retries):
