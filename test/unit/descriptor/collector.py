@@ -344,13 +344,28 @@ class TestCollector(unittest.TestCase):
 
   @patch('stem.util.connection.download')
   @patch('stem.descriptor.collector.CollecTor.files')
-  def test_reading_exit_list(self, files_mock, download_mock):
+  def test_reading_bandwidth_files(self, files_mock, download_mock):
+    with open(get_resource('collector/bandwidths-2019-05-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/bandwidths/bandwidths-2019-05.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_bandwidth_files())
+    self.assertEqual(2, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('BandwidthFile', type(f).__name__)
+    self.assertEqual(22, len(f.measurements))
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_exit_lists(self, files_mock, download_mock):
     with open(get_resource('collector/exit-list-2018-11-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
     files_mock.return_value = [stem.descriptor.collector.File('archive/exit-lists/exit-list-2018-11.tar', 12345, '2016-09-04 09:21')]
 
-    descriptors = list(stem.descriptor.collector.get_exit_list())
+    descriptors = list(stem.descriptor.collector.get_exit_lists())
     self.assertEqual(3713, len(descriptors))
 
     f = descriptors[0]

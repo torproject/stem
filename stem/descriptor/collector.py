@@ -53,8 +53,10 @@ With this you can either download and read directly from CollecTor...
     |- get_extrainfo_descriptors - published extrainfo descriptors
     |- get_microdescriptors - published microdescriptors
     |- get_consensus - published router status entries
+    |
     |- get_key_certificates - authority key certificates
-    +- get_exit_list - TorDNSEL exit list
+    |- get_bandwidth_files - bandwidth authority heuristics
+    +- get_exit_lists - TorDNSEL exit list
 
   File - Individual file residing within CollecTor
     |- read - provides descriptors from this file
@@ -65,8 +67,10 @@ With this you can either download and read directly from CollecTor...
     |- get_extrainfo_descriptors - published extrainfo descriptors
     |- get_microdescriptors - published microdescriptors
     |- get_consensus - published router status entries
+    |
     |- get_key_certificates - authority key certificates
-    |- get_exit_list - TorDNSEL exit list
+    |- get_bandwidth_files - bandwidth authority heuristics
+    |- get_exit_lists - TorDNSEL exit list
     |
     |- index - metadata for content available from CollecTor
     +- files - files available from CollecTor
@@ -205,14 +209,25 @@ def get_key_certificates(start = None, end = None, cache_to = None, timeout = No
     yield desc
 
 
-def get_exit_list(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_bandwidth_files(start = None, end = None, cache_to = None, timeout = None, retries = 3):
   """
   Shorthand for
-  :func:`~stem.descriptor.collector.CollecTor.get_exit_list`
+  :func:`~stem.descriptor.collector.CollecTor.get_bandwidth_files`
   on our singleton instance.
   """
 
-  for desc in get_instance().get_exit_list(start, end, cache_to, timeout, retries):
+  for desc in get_instance().get_bandwidth_files(start, end, cache_to, timeout, retries):
+    yield desc
+
+
+def get_exit_lists(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.collector.CollecTor.get_exit_lists`
+  on our singleton instance.
+  """
+
+  for desc in get_instance().get_exit_lists(start, end, cache_to, timeout, retries):
     yield desc
 
 
@@ -594,9 +609,33 @@ class CollecTor(object):
       for desc in f.read(cache_to, 'dir-key-certificate-3', timeout = timeout, retries = retries):
         yield desc
 
-  def get_exit_list(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_bandwidth_files(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
     """
-    `TorDNSEL exit list <https://www.torproject.org/projects/tordnsel.html.en>`_
+    Bandwidth authority heuristics for the given time range, sorted oldest to
+    newest.
+
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+    :param str cache_to: directory to cache archives into, if an archive is
+      available here it is not downloaded
+    :param int timeout: timeout for downloading each individual archive when
+      the connection becomes idle, no timeout applied if **None**
+    :param int retries: maximum attempts to impose on a per-archive basis
+
+    :returns: **iterator** of
+      :class:`~stem.descriptor.bandwidth_file.BandwidthFile
+      for the given time range
+
+    :raises: :class:`~stem.DownloadFailed` if the download fails
+    """
+
+    for f in self.files('bandwidth-file', start, end):
+      for desc in f.read(cache_to, 'bandwidth-file', timeout = timeout, retries = retries):
+        yield desc
+
+  def get_exit_lists(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+    """
+    `TorDNSEL exit lists <https://www.torproject.org/projects/tordnsel.html.en>`_
     for the given time range, sorted oldest to newest.
 
     :param datetime.datetime start: time range to begin with
