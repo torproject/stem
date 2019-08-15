@@ -341,3 +341,18 @@ class TestCollector(unittest.TestCase):
     f = descriptors[0]
     self.assertEqual('KeyCertificate', type(f).__name__)
     self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', f.fingerprint)
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_exit_list(self, files_mock, download_mock):
+    with open(get_resource('collector/exit-list-2018-11-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/exit-lists/exit-list-2018-11.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_exit_list())
+    self.assertEqual(3713, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('TorDNSEL', type(f).__name__)
+    self.assertEqual('0011BD2485AD45D984EC4159C88FC066E5E3300E', f.fingerprint)
