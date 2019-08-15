@@ -326,3 +326,18 @@ class TestCollector(unittest.TestCase):
     f = descriptors[0]
     self.assertEqual('RouterStatusEntryBridgeV2', type(f).__name__)
     self.assertEqual('0035EA2A61E28D395F080ACA2244539490E70950', f.fingerprint)
+
+  @patch('stem.util.connection.download')
+  @patch('stem.descriptor.collector.CollecTor.files')
+  def test_reading_key_certificates(self, files_mock, download_mock):
+    with open(get_resource('collector/certs-cropped.tar'), 'rb') as archive:
+      download_mock.return_value = archive.read()
+
+    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/certs.tar', 12345, '2016-09-04 09:21')]
+
+    descriptors = list(stem.descriptor.collector.get_key_certificates())
+    self.assertEqual(5, len(descriptors))
+
+    f = descriptors[0]
+    self.assertEqual('KeyCertificate', type(f).__name__)
+    self.assertEqual('14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4', f.fingerprint)

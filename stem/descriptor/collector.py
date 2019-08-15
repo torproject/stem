@@ -52,7 +52,8 @@ With this you can either download and read directly from CollecTor...
     |- get_server_descriptors - published server descriptors
     |- get_extrainfo_descriptors - published extrainfo descriptors
     |- get_microdescriptors - published microdescriptors
-    +- get_consensus - published router status entries
+    |- get_consensus - published router status entries
+    +- get_key_certificates - authority key certificates
 
   File - Individual file residing within CollecTor
     |- read - provides descriptors from this file
@@ -63,6 +64,7 @@ With this you can either download and read directly from CollecTor...
     |- get_extrainfo_descriptors - published extrainfo descriptors
     |- get_microdescriptors - published microdescriptors
     |- get_consensus - published router status entries
+    |- get_key_certificates - authority key certificates
     |
     |- index - metadata for content available from CollecTor
     +- files - files available from CollecTor
@@ -190,6 +192,17 @@ def get_consensus(start = None, end = None, cache_to = None, document_handler = 
     yield desc
 
 
+def get_key_certificates(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  """
+  Shorthand for
+  :func:`~stem.descriptor.collector.CollecTor.get_key_certificates`
+  on our singleton instance.
+  """
+
+  for desc in get_instance().get_key_certificates(start, end, cache_to, timeout, retries):
+    yield desc
+
+
 class File(object):
   """
   File within CollecTor.
@@ -244,7 +257,7 @@ class File(object):
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int timeout: timeout when connection becomes idle, no timeout
       applied if **None**
-    :param int retires: maximum attempts to impose
+    :param int retries: maximum attempts to impose
 
     :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor`
       instances in the file
@@ -297,7 +310,7 @@ class File(object):
     :param bool decompress: decompress written file
     :param int timeout: timeout when connection becomes idle, no timeout
       applied if **None**
-    :param int retires: maximum attempts to impose
+    :param int retries: maximum attempts to impose
 
     :returns: **str** with the path we downloaded to
 
@@ -425,7 +438,7 @@ class CollecTor(object):
     :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retires: maximum attempts to impose on a per-archive basis
+    :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the
@@ -452,7 +465,7 @@ class CollecTor(object):
     :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retires: maximum attempts to impose on a per-archive basis
+    :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
@@ -487,7 +500,7 @@ class CollecTor(object):
       available here it is not downloaded
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retires: maximum attempts to impose on a per-archive basis
+    :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.microdescriptor.Microdescriptor
@@ -517,7 +530,7 @@ class CollecTor(object):
     :param bool bridge: standard descriptors if **False**, bridge if **True**
     :param int timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retires: maximum attempts to impose on a per-archive basis
+    :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.router_status_entry.RouterStatusEntry`
@@ -542,6 +555,30 @@ class CollecTor(object):
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, document_handler, timeout = timeout, retries = retries):
+        yield desc
+
+  def get_key_certificates(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+    """
+    Directory authority key certificates for the given time range,
+    sorted oldest to newest.
+
+    :param datetime.datetime start: time range to begin with
+    :param datetime.datetime end: time range to end with
+    :param str cache_to: directory to cache archives into, if an archive is
+      available here it is not downloaded
+    :param int timeout: timeout for downloading each individual archive when
+      the connection becomes idle, no timeout applied if **None**
+    :param int retries: maximum attempts to impose on a per-archive basis
+
+    :returns: **iterator** of
+      :class:`~stem.descriptor.networkstatus.KeyCertificate
+      for the given time range
+
+    :raises: :class:`~stem.DownloadFailed` if the download fails
+    """
+
+    for f in self.files('dir-key-certificate-3', start, end):
+      for desc in f.read(cache_to, 'dir-key-certificate-3', timeout = timeout, retries = retries):
         yield desc
 
   def index(self, compression = 'best'):
