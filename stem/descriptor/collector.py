@@ -2,50 +2,19 @@
 # See LICENSE for licensing information
 
 """
-Module for downloading from Tor's descriptor archive, CollecTor...
+Descriptor archives are available from `CollecTor
+<https://metrics.torproject.org/collector.html>`_. If you need Tor's topology
+at a prior point in time this is the place to go!
 
-  https://collector.torproject.org/
+With CollecTor you can either read descriptors directly...
 
-This stores descriptors going back in time. If you need to know what the
-network topology looked like at a past point in time, this is the place to go.
-
-With this you can either download and read directly from CollecTor...
-
-::
-
-  import datetime
-  import stem.descriptor.collector
-
-  yesterday = datetime.datetime.utcnow() - datetime.timedelta(days = 1)
-
-  # provide yesterday's exits
-
-  for desc in stem.descriptor.collector.get_server_descriptors(start = yesterday):
-    if desc.exit_policy.is_exiting_allowed():
-      print('  %s (%s)' % (desc.nickname, desc.fingerprint))
+.. literalinclude:: /_static/example/collector_reading.py
+   :language: python
 
 ... or download the descriptors to disk and read them later.
 
-::
-
-  import datetime
-  import stem.descriptor
-  import stem.descriptor.collector
-
-  yesterday = datetime.datetime.utcnow() - datetime.timedelta(days = 1)
-  cache_dir = '~/descriptor_cache/server_desc_today'
-
-  collector = stem.descriptor.collector.CollecTor()
-
-  for f in collector.files('server-descriptor', start = yesterday):
-    f.download(cache_dir)
-
-  # then later...
-
-  for f in collector.files('server-descriptor', start = yesterday):
-    for desc in f.read(cache_dir):
-      if desc.exit_policy.is_exiting_allowed():
-        print('  %s (%s)' % (desc.nickname, desc.fingerprint))
+.. literalinclude:: /_static/example/collector_caching.py
+   :language: python
 
 ::
 
@@ -282,7 +251,7 @@ class File(object):
     :param str descriptor_type: `descriptor type
       <https://metrics.torproject.org/collector.html#data-formats>`_, this is
       guessed if not provided
-    :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int timeout: timeout when connection becomes idle, no timeout
       applied if **None**
@@ -553,7 +522,7 @@ class CollecTor(object):
     :param datetime.datetime end: time range to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int version: consensus variant to retrieve (versions 2 or 3)
     :param bool microdescriptor: provides the microdescriptor consensus if

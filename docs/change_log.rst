@@ -56,6 +56,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module.
   * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
   * Ed25519 validity checks are now done though the cryptography module rather than PyNaCl (:trac:`22022`)
   * Download compressed descriptors by default (:trac:`29186`)
@@ -134,7 +135,7 @@ and the `stem.directory module <api/directory.html>`_.
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
   * Added the network status vote's new bandwidth_file_headers attribute (:spec:`84591df`)
-  * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e8`)
+  * Added the microdescriptor router status entry's new or_addresses attribute (:trac:`26405`, :spec:`fdc8f3e`)
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26, an authority that frequently timeout
   * Replaced Bifroest bridge authority with Serge (:trac:`26771`)

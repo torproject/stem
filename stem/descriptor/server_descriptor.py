@@ -869,21 +869,26 @@ class RelayDescriptor(ServerDescriptor):
         self.certificate.validate(self)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, signing_key = None):
+  def content(cls, attr = None, exclude = (), sign = False, signing_key = None, exit_policy = None):
     if signing_key:
       sign = True
 
     if attr is None:
       attr = {}
 
-    base_header = (
+    if exit_policy is None:
+      exit_policy = REJECT_ALL_POLICY
+
+    base_header = [
       ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('published', _random_date()),
       ('bandwidth', '153600 256000 104590'),
-      ('reject', '*:*'),
+    ] + [
+      tuple(line.split(' ', 1)) for line in str(exit_policy).splitlines()
+    ] + [
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
       ('signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
-    )
+    ]
 
     if sign:
       if attr and 'signing-key' in attr:
@@ -909,8 +914,8 @@ class RelayDescriptor(ServerDescriptor):
       ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None):
-    return cls(cls.content(attr, exclude, sign, signing_key), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None, exit_policy = None):
+    return cls(cls.content(attr, exclude, sign, signing_key, exit_policy), validate = validate, skip_crypto_validation = not sign)
 
   @lru_cache()
   def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
