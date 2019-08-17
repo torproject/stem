@@ -6,6 +6,8 @@ import os
 
 __all__ = [
   'bandwidth_file',
+  'collector',
+  'data',
   'export',
   'extrainfo_descriptor',
   'microdescriptor',

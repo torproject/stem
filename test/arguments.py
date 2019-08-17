@@ -104,7 +104,7 @@ def parse(argv):
 
       args['attribute_targets'] = attribute_targets
     elif opt == '--test':
-      args['specific_test'].append(arg)
+      args['specific_test'].append(crop_module_name(arg))
     elif opt in ('-l', '--log'):
       arg = arg.upper()
 
@@ -149,3 +149,22 @@ def get_help():
   help_msg += '\n'
 
   return help_msg
+
+
+def crop_module_name(name):
+  """
+  Test modules have a 'test.unit.' or 'test.integ.' prefix which can
+  be omitted from our '--test' argument. Cropping this so we can do
+  normalized comparisons.
+
+  :param str name: module name to crop
+
+  :returns: **str** with the cropped module name
+  """
+
+  if name.startswith('test.unit.'):
+    return name[10:]
+  elif name.startswith('test.integ.'):
+    return name[11:]
+  else:
+    return name

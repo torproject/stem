@@ -43,6 +43,7 @@ remotely like Tor does.
 * `stem.directory <api/directory.html>`_ - Directory authority and fallback directory information.
 * `stem.descriptor.reader <api/descriptor/reader.html>`_ - Reads and parses descriptor files from disk.
 * `stem.descriptor.remote <api/descriptor/remote.html>`_ - Downloads descriptors from directory mirrors and authorities.
+* `stem.descriptor.collector <api/descriptor/collector.html>`_ - Downloads past descriptors from `CollecTor <https://metrics.torproject.org/collector.html>`_.
 * `stem.descriptor.export <api/descriptor/export.html>`_ - Exports descriptors to other formats.
 
 Utilities

@@ -117,10 +117,17 @@ Where can I get past descriptors?
 ---------------------------------
 
 Descriptor archives are available from `CollecTor
-<https://collector.torproject.org/>`_. These archives can be read with
-the `DescriptorReader <../api/descriptor/reader.html>`_...
+<https://metrics.torproject.org/collector.html>`_. If you need Tor's topology
+at a prior point in time this is the place to go!
 
-.. literalinclude:: /_static/example/past_descriptors.py
+With CollecTor you can either read descriptors directly...
+
+.. literalinclude:: /_static/example/collector_reading.py
+   :language: python
+
+... or download the descriptors to disk and read them later.
+
+.. literalinclude:: /_static/example/collector_caching.py
    :language: python
 
 .. _can-i-get-descriptors-from-the-tor-process:

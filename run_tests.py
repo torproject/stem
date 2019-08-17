@@ -146,18 +146,7 @@ def _get_tests(modules, module_prefixes):
     if not module_prefixes:
       yield import_name
     else:
-      # Example import_name: test.unit.util.conf.TestConf
-      #
-      # Our '--test' argument doesn't include the prefix, so excluding it from
-      # the names we look for.
-
-      if import_name.startswith('test.unit.'):
-        cropped_name = import_name[10:]
-      elif import_name.startswith('test.integ.'):
-        cropped_name = import_name[11:]
-      else:
-        cropped_name = import_name
-
+      cropped_name = test.arguments.crop_module_name(import_name)
       cropped_name = cropped_name.rsplit('.', 1)[0]  # exclude the class name
 
       for prefix in module_prefixes:
@@ -370,7 +359,7 @@ def main():
       println('\nYou can re-run just these tests with:\n', ERROR, STDERR)
 
       for module in error_modules:
-        println('  %s --test %s' % (' '.join(sys.argv), module), ERROR, STDERR)
+        println('  %s --test %s' % (' '.join(sys.argv), test.arguments.crop_module_name(module)), ERROR, STDERR)
   else:
     if skipped_tests > 0:
       println('%i TESTS WERE SKIPPED' % skipped_tests, STATUS)

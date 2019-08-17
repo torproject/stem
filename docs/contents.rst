@@ -43,6 +43,7 @@ Contents
 
    api/descriptor/bandwidth_file
    api/descriptor/certificate
+   api/descriptor/collector
    api/descriptor/descriptor
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor

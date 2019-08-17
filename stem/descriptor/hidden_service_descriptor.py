@@ -21,6 +21,9 @@ These are only available through the Controller's
 .. versionadded:: 1.4.0
 """
 
+# TODO: In stem 2.x rename this module to 'hidden_service' (ie, drop the
+# redundant '_descriptor' suffix).
+
 import base64
 import binascii
 import collections

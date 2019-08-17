@@ -38,7 +38,7 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, -help'])
+EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, --help'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """
@@ -162,7 +162,7 @@ class TestManual(unittest.TestCase):
 
     def assert_equal(category, expected, actual):
       if expected != actual:
-        self.fail("Changed tor's man page? The %s changed as follows...\n\nexpected: %s\n\nactual: %s" % (category, expected, actual))
+        self.fail("Changed tor's man page? The %s changed as follows...\n\nexpected: %s\n\nactual: %s" % (category, sorted(expected), sorted(actual)))
 
     manual = stem.manual.Manual.from_man(self.man_path)
 
@@ -171,7 +171,7 @@ class TestManual(unittest.TestCase):
     assert_equal('description', EXPECTED_DESCRIPTION, manual.description)
 
     assert_equal('commandline options', EXPECTED_CLI_OPTIONS, set(manual.commandline_options.keys()))
-    assert_equal('help option', 'Display a short help message and exit.', manual.commandline_options['-h, -help'])
+    assert_equal('help option', 'Display a short help message and exit.', manual.commandline_options['-h, --help'])
     assert_equal('file option', EXPECTED_FILE_DESCRIPTION, manual.commandline_options['-f FILE'])
 
     assert_equal('signals', EXPECTED_SIGNALS, set(manual.signals.keys()))

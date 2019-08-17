@@ -11,6 +11,8 @@ Package for parsing and processing descriptor data.
   parse_file - Parses the descriptors in a file.
   create_signing_key - Cretes a signing key that can be used for creating descriptors.
 
+  Compression - method of descriptor decompression
+
   Descriptor - Common parent for all descriptor file types.
     | |- content - creates the text of a new descriptor
     | |- create - creates a new descriptor
@@ -113,6 +115,7 @@ except ImportError:
 __all__ = [
   'bandwidth_file',
   'certificate',
+  'collector',
   'export',
   'extrainfo_descriptor',
   'hidden_service_descriptor',
@@ -168,6 +171,91 @@ DocumentHandler = stem.util.enum.UppercaseEnum(
   'ENTRIES',
   'DOCUMENT',
   'BARE_DOCUMENT',
+)
+
+
+class _Compression(object):
+  """
+  Compression method supported by CollecTor.
+
+  :var bool available: **True** if this method of decryption is available,
+    **False** otherwise
+  :var str encoding: `http 'Accept-Encoding' parameter <https://en.wikipedia.org/wiki/HTTP_compression#Content-Encoding_tokens>`_
+  :var str extension: file extension of this compression
+
+  .. versionadded:: 1.8.0
+  """
+
+  def __init__(self, name, module, encoding, extension, decompression_func):
+    if module is None:
+      self._module = None
+      self.available = True
+    else:
+      # Compression modules are optional. Usually gzip and bz2 are available,
+      # but they might be missing if compiling python yourself. As for lzma it
+      # was added in python 3.3.
+
+      try:
+        self._module = __import__(module)
+        self.available = True
+      except ImportError:
+        self._module = None
+        self.available = False
+
+    self.extension = extension
+    self.encoding = encoding
+
+    self._name = name
+    self._module_name = module
+    self._decompression_func = decompression_func
+
+  def decompress(self, content):
+    """
+    Decompresses the given content via this method.
+
+    :param bytes content: content to be decompressed
+
+    :returns: **bytes** with the decompressed content
+
+    :raises:
+      If unable to decompress this provide...
+
+      * **IOError** if content isn't compressed with this
+      * **ImportError** if this method if decompression is unavalable
+    """
+
+    if not self.available:
+      if self._name == 'zstd':
+        raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
+      elif self._name == 'lzma':
+        raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
+      else:
+        raise ImportError("'%s' decompression module is unavailable" % self._module_name)
+
+    try:
+      return self._decompression_func(self._module, content)
+    except Exception as exc:
+      raise IOError('Failed to decompress as %s: %s' % (self, exc))
+
+  def __str__(self):
+    return self._name
+
+
+def _zstd_decompress(module, content):
+  output_buffer = io.BytesIO()
+
+  with module.ZstdDecompressor().write_to(output_buffer) as decompressor:
+    decompressor.write(content)
+
+  return output_buffer.getvalue()
+
+
+Compression = stem.util.enum.Enum(
+  ('PLAINTEXT', _Compression('plaintext', None, 'identity', '.txt', lambda module, content: content)),
+  ('GZIP', _Compression('gzip', 'zlib', 'gzip', '.gz', lambda module, content: module.decompress(content, module.MAX_WBITS | 32))),
+  ('BZ2', _Compression('bzip2', 'bz2', 'bzip2', '.bz2', lambda module, content: module.decompress(content))),
+  ('LZMA', _Compression('lzma', 'lzma', 'x-tor-lzma', '.xz', lambda module, content: module.decompress(content))),
+  ('ZSTD', _Compression('zstd', 'zstd', 'x-zstd', '.zst', _zstd_decompress)),
 )
 
 
@@ -831,6 +919,8 @@ class Descriptor(object):
 
     :returns: :class:`~stem.descriptor.TypeAnnotation` with our type information
     """
+
+    # TODO: populate this from the archive instead if available (so we have correct version numbers)
 
     if self.TYPE_ANNOTATION_NAME is not None:
       return TypeAnnotation(self.TYPE_ANNOTATION_NAME, 1, 0)

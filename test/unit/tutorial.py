@@ -8,10 +8,10 @@ import unittest
 import stem.descriptor.remote
 
 from stem.control import Controller
-from stem.descriptor.reader import DescriptorReader
 from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.exit_policy import ExitPolicy
 from test.unit import exec_documentation_example
 
 try:
@@ -165,13 +165,15 @@ class TestTutorial(unittest.TestCase):
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
-  @patch('stem.descriptor.reader.DescriptorReader', spec = DescriptorReader)
-  def test_mirror_mirror_on_the_wall_4(self, reader_mock, stdout_mock):
-    reader = reader_mock().__enter__()
-    reader.__iter__.return_value = iter([RelayDescriptor.create({'router': 'caerSidi 71.35.133.197 9001 0 0'})])
+  @patch('stem.descriptor.collector.get_server_descriptors')
+  def test_mirror_mirror_on_the_wall_4(self, get_desc_mock, stdout_mock):
+    get_desc_mock.return_value = iter([RelayDescriptor.create({
+      'router': 'caerSidi 71.35.133.197 9001 0 0',
+      'fingerprint': '2C3C 4662 5698 B6D6 7DF3 2BC1 918A D3EE 1F99 06B1',
+    }, exit_policy = ExitPolicy('accept *:*'), validate = False)])
 
-    exec_documentation_example('past_descriptors.py')
-    self.assertEqual('found relay caerSidi (None)\n', stdout_mock.getvalue())
+    exec_documentation_example('collector_reading.py')
+    self.assertEqual('  caerSidi (2C3C46625698B6D67DF32BC1918AD3EE1F9906B1)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')

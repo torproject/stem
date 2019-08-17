@@ -48,7 +48,10 @@ content. For example...
     |- their_server_descriptor - provides the server descriptor of the relay we download from
     |- get_server_descriptors - provides present server descriptors
     |- get_extrainfo_descriptors - provides present extrainfo descriptors
-    +- get_consensus - provides the present consensus or router status entries
+    |- get_microdescriptors - provides present microdescriptors with the given digests
+    |- get_consensus - provides the present consensus or router status entries
+    |- get_bandwidth_file - provides bandwidth heuristics used to make the next consensus
+    +- get_detached_signatures - authority signatures used to make the next consensus
 
   Query - Asynchronous request to download tor descriptors
     |- start - issues the query if it isn't already running
@@ -63,7 +66,7 @@ content. For example...
     |- get_consensus - provides the present consensus or router status entries
     |- get_vote - provides an authority's vote for the next consensus
     |- get_key_certificates - provides present authority key certificates
-    |- get_bandwidth_file - provies bandwidth heuristics used to make the next consensus
+    |- get_bandwidth_file - provides bandwidth heuristics used to make the next consensus
     |- get_detached_signatures - authority signatures used to make the next consensus
     +- query - request an arbitrary descriptor resource
 
@@ -97,10 +100,10 @@ content. For example...
 
 import io
 import random
+import socket
 import sys
 import threading
 import time
-import zlib
 
 import stem
 import stem.client
@@ -119,12 +122,21 @@ try:
 except ImportError:
   import urllib2 as urllib
 
+# TODO: remove in stem 2.x, replaced with stem.descriptor.Compression
+
 Compression = stem.util.enum.Enum(
   ('PLAINTEXT', 'identity'),
   ('GZIP', 'gzip'),  # can also be 'deflate'
   ('ZSTD', 'x-zstd'),
   ('LZMA', 'x-tor-lzma'),
 )
+
+COMPRESSION_MIGRATION = {
+  'identity': stem.descriptor.Compression.PLAINTEXT,
+  'gzip': stem.descriptor.Compression.GZIP,
+  'x-zstd': stem.descriptor.Compression.ZSTD,
+  'x-tor-lzma': stem.descriptor.Compression.LZMA,
+}
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -156,11 +168,7 @@ DIR_PORT_BLACKLIST = ('tor26', 'Serge')
 def get_instance():
   """
   Provides the singleton :class:`~stem.descriptor.remote.DescriptorDownloader`
-  used for the following functions...
-
-    * :func:`stem.descriptor.remote.get_server_descriptors`
-    * :func:`stem.descriptor.remote.get_extrainfo_descriptors`
-    * :func:`stem.descriptor.remote.get_consensus`
+  used for this module's shorthand functions.
 
   .. versionadded:: 1.5.0
 
@@ -364,6 +372,11 @@ class Query(object):
   .. versionchanged:: 1.8.0
      Defaulting to gzip compression rather than plaintext downloads.
 
+  .. versionchanged:: 1.8.0
+     Using :class:`~stem.descriptor.__init__.Compression` for our compression
+     argument, usage of strings or this module's Compression enum is deprecated
+     and will be removed in stem 2.x.
+
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
     :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
@@ -371,7 +384,7 @@ class Query(object):
 
   :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
     authority or mirror we're querying, this uses authorities if undefined
-  :var list compression: list of :data:`stem.descriptor.remote.Compression`
+  :var list compression: list of :data:`stem.descriptor.Compression`
     we're willing to accept, when none are mutually supported downloads fall
     back to Compression.PLAINTEXT
   :var int retries: number of times to attempt the request if downloading it
@@ -429,6 +442,19 @@ class Query(object):
       if not compression:
         compression = [Compression.PLAINTEXT]
 
+    # TODO: Normalize from our old compression enum to
+    # stem.descriptor.Compression. This will get removed in Stem 2.x.
+
+    new_compression = []
+
+    for legacy_compression in compression:
+      if isinstance(legacy_compression, stem.descriptor._Compression):
+        new_compression.append(legacy_compression)
+      elif legacy_compression in COMPRESSION_MIGRATION:
+        new_compression.append(COMPRESSION_MIGRATION[legacy_compression])
+      else:
+        raise ValueError("'%s' (%s) is not a recognized type of compression" % (legacy_compression, type(legacy_compression).__name__))
+
     if descriptor_type:
       self.descriptor_type = descriptor_type
     else:
@@ -446,13 +472,12 @@ class Query(object):
           raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
-    self.compression = compression
+    self.compression = new_compression
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
     self.content = None
-    self.error = None  # TODO: maybe remove in favor of error_attr in stem 2.x
-    self._error_attr = None
+    self.error = None
     self.is_done = False
     self.download_url = None
 
@@ -504,11 +529,8 @@ class Query(object):
       **False**...
 
         * **ValueError** if the descriptor contents is malformed
-        * **socket.timeout** if our request timed out
-        * **urllib2.URLError** for most request failures
-
-      Note that the urllib2 module may fail with other exception types, in
-      which case we'll pass it along.
+        * :class:`~stem.DownloadTimeout` if our request timed out
+        * :class:`~stem.DownloadFailed` if our request fails
     """
 
     return list(self._run(suppress))
@@ -930,11 +952,11 @@ class DescriptorDownloader(object):
       Traceback (most recent call last):
         File "demo.py", line 3, in
           detached_sigs = stem.descriptor.remote.get_detached_signatures().run()[0]
-        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 476, in run
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 533, in run
           return list(self._run(suppress))
-        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 487, in _run
+        File "/home/atagar/Desktop/stem/stem/descriptor/remote.py", line 544, in _run
           raise self.error
-      urllib2.HTTPError: HTTP Error 404: Not found
+      stem.DownloadFailed: Failed to download from http://154.35.175.225:80/tor/status-vote/next/consensus-signatures (HTTPError): Not found
 
     .. versionadded:: 1.8.0
 
@@ -1009,7 +1031,7 @@ def _download_from_orport(endpoint, compression, resource):
     with relay.create_circuit() as circ:
       request = '\r\n'.join((
         'GET %s HTTP/1.0' % resource,
-        'Accept-Encoding: %s' % ', '.join(compression),
+        'Accept-Encoding: %s' % ', '.join(map(lambda c: c.encoding, compression)),
         'User-Agent: %s' % stem.USER_AGENT,
       )) + '\r\n\r\n'
 
@@ -1043,20 +1065,26 @@ def _download_from_dirport(url, compression, timeout):
   :returns: two value tuple of the form (data, reply_headers)
 
   :raises:
-    * **socket.timeout** if our request timed out
-    * **urllib2.URLError** for most request failures
+    * :class:`~stem.DownloadTimeout` if our request timed out
+    * :class:`~stem.DownloadFailed` if our request fails
   """
 
-  response = urllib.urlopen(
-    urllib.Request(
-      url,
-      headers = {
-        'Accept-Encoding': ', '.join(compression),
-        'User-Agent': stem.USER_AGENT,
-      }
-    ),
-    timeout = timeout,
-  )
+  try:
+    response = urllib.urlopen(
+      urllib.Request(
+        url,
+        headers = {
+          'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),
+          'User-Agent': stem.USER_AGENT,
+        }
+      ),
+      timeout = timeout,
+    )
+  except socket.timeout as exc:
+    raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
+  except:
+    exc, stacktrace = sys.exc_info()[1:3]
+    raise stem.DownloadFailed(url, exc, stacktrace)
 
   return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
 
@@ -1080,29 +1108,14 @@ def _decompress(data, encoding):
     * **ImportError** if missing the decompression module
   """
 
-  if encoding == Compression.PLAINTEXT:
-    return data
-  elif encoding in (Compression.GZIP, 'deflate'):
-    return zlib.decompress(data, zlib.MAX_WBITS | 32)
-  elif encoding == Compression.ZSTD:
-    if not stem.prereq.is_zstd_available():
-      raise ImportError('Decompressing zstd data requires https://pypi.org/project/zstandard/')
+  if encoding == 'deflate':
+    return stem.descriptor.Compression.GZIP.decompress(data)
 
-    import zstd
-    output_buffer = io.BytesIO()
+  for compression in stem.descriptor.Compression:
+    if encoding == compression.encoding:
+      return compression.decompress(data)
 
-    with zstd.ZstdDecompressor().write_to(output_buffer) as decompressor:
-      decompressor.write(data)
-
-    return output_buffer.getvalue()
-  elif encoding == Compression.LZMA:
-    if not stem.prereq.is_lzma_available():
-      raise ImportError('Decompressing lzma data requires https://docs.python.org/3/library/lzma.html')
-
-    import lzma
-    return lzma.decompress(data)
-  else:
-    raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
+  raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
 
 
 def _guess_descriptor_type(resource):

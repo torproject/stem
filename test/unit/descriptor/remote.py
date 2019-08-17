@@ -8,6 +8,7 @@ import time
 import unittest
 
 import stem
+import stem.descriptor
 import stem.descriptor.remote
 import stem.prereq
 import stem.util.str_tools
@@ -181,26 +182,26 @@ class TestDescriptorDownloader(unittest.TestCase):
 
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
-    self.assertEqual([Compression.GZIP], query.compression)
+    self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
 
   def test_zstd_support_check(self):
     with patch('stem.prereq.is_zstd_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
-      self.assertEqual([Compression.ZSTD], query.compression)
+      self.assertEqual([stem.descriptor.Compression.ZSTD], query.compression)
 
     with patch('stem.prereq.is_zstd_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
-      self.assertEqual([Compression.PLAINTEXT], query.compression)
+      self.assertEqual([stem.descriptor.Compression.PLAINTEXT], query.compression)
 
   def test_lzma_support_check(self):
     with patch('stem.prereq.is_lzma_available', Mock(return_value = True)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
-      self.assertEqual([Compression.LZMA], query.compression)
+      self.assertEqual([stem.descriptor.Compression.LZMA], query.compression)
 
     with patch('stem.prereq.is_lzma_available', Mock(return_value = False)):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
-      self.assertEqual([Compression.PLAINTEXT], query.compression)
+      self.assertEqual([stem.descriptor.Compression.PLAINTEXT], query.compression)
 
   @patch(URL_OPEN, _dirport_mock(read_resource('compressed_identity'), encoding = 'identity'))
   def test_compression_plaintext(self):
@@ -382,7 +383,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     # After two requests we'll have reached our total permissable timeout.
     # Check that we don't make a third.
 
-    self.assertRaises(socket.timeout, query.run)
+    self.assertRaises(stem.DownloadTimeout, query.run)
     self.assertEqual(2, dirport_mock.call_count)
 
   def test_query_with_invalid_endpoints(self):

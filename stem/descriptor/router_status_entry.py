@@ -15,6 +15,8 @@ sources...
 
   RouterStatusEntry - Common parent for router status entries
     |- RouterStatusEntryV2 - Entry for a network status v2 document
+    |   +- RouterStatusEntryBridgeV2 - Entry for a bridge flavored v2 document
+    |
     |- RouterStatusEntryV3 - Entry for a network status v3 document
     +- RouterStatusEntryMicroV3 - Entry for a microdescriptor flavored v3 document
 """
@@ -515,6 +517,8 @@ class RouterStatusEntryV2(RouterStatusEntry):
   a default value, others are left as **None** if undefined
   """
 
+  TYPE_ANNOTATION_NAME = 'network-status-consensus-2'
+
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'digest': (None, _parse_r_line),
   })
@@ -536,6 +540,17 @@ class RouterStatusEntryV2(RouterStatusEntry):
 
   def _single_fields(self):
     return ('r', 's', 'v')
+
+
+class RouterStatusEntryBridgeV2(RouterStatusEntryV2):
+  """
+  Information about an individual router stored within a bridge flavored
+  version 2 network status document.
+
+  .. versionadded:: 1.8.0
+  """
+
+  TYPE_ANNOTATION_NAME = 'bridge-network-status'
 
 
 class RouterStatusEntryV3(RouterStatusEntry):
@@ -574,6 +589,8 @@ class RouterStatusEntryV3(RouterStatusEntry):
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-consensus-3'
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'digest': (None, _parse_r_line),
@@ -651,6 +668,8 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
   """
+
+  TYPE_ANNOTATION_NAME = 'network-status-microdesc-consensus-3'
 
   ATTRIBUTES = dict(RouterStatusEntry.ATTRIBUTES, **{
     'or_addresses': ([], _parse_a_line),

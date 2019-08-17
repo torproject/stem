@@ -93,6 +93,7 @@ from stem.descriptor import (
 
 from stem.descriptor.router_status_entry import (
   RouterStatusEntryV2,
+  RouterStatusEntryBridgeV2,
   RouterStatusEntryV3,
   RouterStatusEntryMicroV3,
 )
@@ -322,7 +323,7 @@ def _parse_file(document_file, document_type = None, validate = False, is_microd
   elif document_type == NetworkStatusDocumentV3:
     router_type = RouterStatusEntryMicroV3 if is_microdescriptor else RouterStatusEntryV3
   elif document_type == BridgeNetworkStatusDocument:
-    document_type, router_type = BridgeNetworkStatusDocument, RouterStatusEntryV2
+    document_type, router_type = BridgeNetworkStatusDocument, RouterStatusEntryBridgeV2
   elif document_type == DetachedSignature:
     yield document_type(document_file.read(), validate, **kwargs)
     return
@@ -1228,7 +1229,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self._footer(document_file, validate)
 
   def type_annotation(self):
-    if not self.is_microdescriptor:
+    if isinstance(self, BridgeNetworkStatusDocument):
+      return TypeAnnotation('bridge-network-status', 1, 0)
+    elif not self.is_microdescriptor:
       return TypeAnnotation('network-status-consensus-3' if not self.is_vote else 'network-status-vote-3', 1, 0)
     else:
       # Directory authorities do not issue a 'microdescriptor consensus' vote,
