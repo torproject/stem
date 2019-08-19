@@ -155,10 +155,10 @@ class TestProcess(unittest.TestCase):
     Check that we only get warnings and errors when running 'tor --hush'.
     """
 
-    output = run_tor(tor_cmd, '--hush', '--invalid_argument', expect_failure = True)
+    output = run_tor(tor_cmd, '--hush', '--invalid_argument', with_torrc = True, expect_failure = True)
     assert_in("[warn] Command-line option '--invalid_argument' with no value. Failing.", output)
 
-    output = run_tor(tor_cmd, '--hush', '--invalid_argument', 'true', expect_failure = True)
+    output = run_tor(tor_cmd, '--hush', '--invalid_argument', 'true', with_torrc = True, expect_failure = True)
     assert_in("[warn] Failed to parse/validate config: Unknown option 'invalid_argument'.  Failing.", output)
 
   @asynchronous
