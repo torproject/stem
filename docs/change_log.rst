@@ -74,6 +74,7 @@ The following are only available within Stem's `git repository
   * Default the **version_flavor** attribute of :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3` to 'ns' (:spec:`d97f8d9`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
   * Don't download from Serge, a bridge authority that frequently timeout
+  * Updated dizum authority's address (:trac:`31406`)
 
  * **Client**
 

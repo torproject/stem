@@ -597,7 +597,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'dizum': Authority(
     nickname = 'dizum',
-    address = '194.109.206.212',
+    address = '45.66.33.45',
     or_port = 443,
     dir_port = 80,
     fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
