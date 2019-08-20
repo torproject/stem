@@ -1,5 +1,5 @@
 """
-Unit tests for stem.descriptor.hidden_service_descriptor.
+Unit tests for stem.descriptor.hidden_service.
 """
 
 import datetime
@@ -10,7 +10,7 @@ import stem.descriptor
 import stem.prereq
 import test.require
 
-from stem.descriptor.hidden_service_descriptor import (
+from stem.descriptor.hidden_service import (
   REQUIRED_FIELDS,
   DecryptionFailure,
   HiddenServiceDescriptor,

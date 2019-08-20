@@ -52,16 +52,16 @@ The following are only available within Stem's `git repository
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
   * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
   * ExitPolicies could raise TypeError when read concurrently (:trac:`29899`)
-  * **STALE_DESC** :data:`~stem.Flag` (:spec:`d14164d8`)
+  * **STALE_DESC** :data:`~stem.Flag` (:spec:`d14164d`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
   * **QUERY_RATE_LIMITED** :data:`~stem.HSDescReason` (:spec:`bd80679`)
-  * **EXTOR** and **HTTPTUNNEL** :data:`~stem.Listener`
+  * **EXTOR** and **HTTPTUNNEL** :data:`~stem.control.Listener`
 
  * **Descriptors**
 
   * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module (:trac:`17979`)
   * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
-  * `stem.descriptor.remote <api/descriptor/remote.html>`_ now raise :class:`stem.DownloadFailed`
+  * `stem.descriptor.remote <api/descriptor/remote.html>`_ methods now raise :class:`stem.DownloadFailed`
   * Check Ed25519 validity though the cryptography module rather than PyNaCl (:trac:`22022`)
   * Download compressed descriptors by default (:trac:`29186`)
   * Added :class:`~stem.descriptor.Compression` class
@@ -78,6 +78,7 @@ The following are only available within Stem's `git repository
   * Replaced the **digest** attribute of :class:`~stem.descriptor.microdescriptor.Microdescriptor` with a method by the same name (:trac:`28398`)
   * Default the **version_flavor** attribute of :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3` to 'ns' (:spec:`d97f8d9`)
   * DescriptorDownloader crashed if **use_mirrors** is set (:trac:`28393`)
+  * Renamed stem.descriptor.hidden_service_descriptor to stem.descriptor.hidden_service
   * Don't download from Serge, a bridge authority that frequently timeout
   * Updated dizum authority's address (:trac:`31406`)
 

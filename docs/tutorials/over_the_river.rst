@@ -171,7 +171,7 @@ its :func:`~stem.control.Controller.get_hidden_service_descriptor` method...
 A hidden service's introduction points are a base64 encoded field that's
 possibly encrypted. These can be decoded (and decrypted if necessary) with the
 descriptor's
-:func:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.introduction_points`
+:func:`~stem.descriptor.hidden_service.HiddenServiceDescriptor.introduction_points`
 method.
 
 .. literalinclude:: /_static/example/introduction_points.py

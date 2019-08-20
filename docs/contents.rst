@@ -50,7 +50,7 @@ Contents
    api/descriptor/microdescriptor
    api/descriptor/networkstatus
    api/descriptor/router_status_entry
-   api/descriptor/hidden_service_descriptor
+   api/descriptor/hidden_service
    api/descriptor/tordnsel
 
    api/descriptor/export

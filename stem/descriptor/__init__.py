@@ -118,7 +118,7 @@ __all__ = [
   'collector',
   'export',
   'extrainfo_descriptor',
-  'hidden_service_descriptor',
+  'hidden_service',
   'microdescriptor',
   'networkstatus',
   'reader',
@@ -329,7 +329,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
   tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
-  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
+  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptor`
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
@@ -536,10 +536,10 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor
+  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
+    document_type = stem.descriptor.hidden_service.HiddenServiceDescriptor
 
-    for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
+    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.bandwidth_file.BandwidthFile.TYPE_ANNOTATION_NAME and major_version == 1:
     document_type = stem.descriptor.bandwidth_file.BandwidthFile
@@ -1521,7 +1521,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
 
 import stem.descriptor.bandwidth_file
 import stem.descriptor.extrainfo_descriptor
-import stem.descriptor.hidden_service_descriptor
+import stem.descriptor.hidden_service
 import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.server_descriptor
