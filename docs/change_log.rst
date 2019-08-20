@@ -52,14 +52,19 @@ The following are only available within Stem's `git repository
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
   * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
   * ExitPolicies could raise TypeError when read concurrently (:trac:`29899`)
+  * **STALE_DESC** :data:`~stem.Flag` (:spec:`d14164d8`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
+  * **QUERY_RATE_LIMITED** :data:`~stem.HSDescReason` (:spec:`bd80679`)
+  * **EXTOR** and **HTTPTUNNEL** :data:`~stem.Listener`
 
  * **Descriptors**
 
-  * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module.
+  * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module (:trac:`17979`)
   * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
-  * Ed25519 validity checks are now done though the cryptography module rather than PyNaCl (:trac:`22022`)
+  * `stem.descriptor.remote <api/descriptor/remote.html>`_ now raise :class:`stem.DownloadFailed`
+  * Check Ed25519 validity though the cryptography module rather than PyNaCl (:trac:`22022`)
   * Download compressed descriptors by default (:trac:`29186`)
+  * Added :class:`~stem.descriptor.Compression` class
   * Added :func:`stem.descriptor.remote.get_microdescriptors`
   * Added :func:`stem.descriptor.remote.get_bandwidth_file` (:trac:`26902`)
   * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:trac:`28495`)
@@ -88,6 +93,7 @@ The following are only available within Stem's `git repository
  * **Website**
 
   * Added NetBSD to our `download page <download.html>`_
+  * Exemplify `manual SAFECOOKIE authentication <faq.html#i-m-using-safe-cookie-authentication>`_
   * `Update PyPI links <https://packaging.python.org/guides/migrating-to-pypi-org/>`_ (:trac:`30137`)
 
  * **Interpreter**

@@ -18,12 +18,12 @@ try:
 except ImportError:
   import urllib2 as urllib
 
-GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/src/app/config/fallback_dirs.inc'
+GITWEB_FALLBACK_LOG = 'https://gitweb.torproject.org/tor.git/log/src/app/config/fallback_dirs.inc'
 FALLBACK_DIR_LINK = "href='/tor.git/commit/src/app/config/fallback_dirs.inc\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
-    fallback_dir_page = urllib.urlopen(GITWEB_MAN_LOG).read()
+    fallback_dir_page = urllib.urlopen(GITWEB_FALLBACK_LOG).read()
     fallback_dir_commit = re.search(FALLBACK_DIR_LINK, fallback_dir_page).group(1)
   except:
     print("Unable to determine the latest commit to edit tor's fallback directories: %s" % sys.exc_info()[1])
