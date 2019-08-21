@@ -16,7 +16,8 @@ These are only available through the Controller's
 
 ::
 
-  HiddenServiceDescriptor - Tor hidden service descriptor.
+  BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
+    +- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
 
 .. versionadded:: 1.4.0
 """
@@ -111,7 +112,7 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
 
-  :returns: iterator for :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptor`
+  :returns: iterator for :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
     instances in the file
 
   :raises:
@@ -130,7 +131,7 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
       if descriptor_content[0].startswith(b'@type'):
         descriptor_content = descriptor_content[1:]
 
-      yield HiddenServiceDescriptor(bytes.join(b'', descriptor_content), validate, **kwargs)
+      yield HiddenServiceDescriptorV2(bytes.join(b'', descriptor_content), validate, **kwargs)
     else:
       break  # done parsing file
 
@@ -181,7 +182,17 @@ _parse_publication_time_line = _parse_timestamp_line('publication-time', 'publis
 _parse_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE')
 
 
-class HiddenServiceDescriptor(Descriptor):
+class BaseHiddenServiceDescriptor(Descriptor):
+  """
+  Hidden service descriptor.
+
+  .. versionadded:: 1.8.0
+  """
+
+  # TODO: rename this class to HiddenServiceDescriptor in stem 2.x
+
+
+class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   """
   Hidden service descriptor.
 
@@ -261,7 +272,7 @@ class HiddenServiceDescriptor(Descriptor):
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
-    super(HiddenServiceDescriptor, self).__init__(raw_contents, lazy_load = not validate)
+    super(HiddenServiceDescriptorV2, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
     if validate:
@@ -317,9 +328,9 @@ class HiddenServiceDescriptor(Descriptor):
       authentication_type = int(binascii.hexlify(content[0:1]), 16)
 
       if authentication_type == BASIC_AUTH:
-        content = HiddenServiceDescriptor._decrypt_basic_auth(content, authentication_cookie)
+        content = HiddenServiceDescriptorV2._decrypt_basic_auth(content, authentication_cookie)
       elif authentication_type == STEALTH_AUTH:
-        content = HiddenServiceDescriptor._decrypt_stealth_auth(content, authentication_cookie)
+        content = HiddenServiceDescriptorV2._decrypt_stealth_auth(content, authentication_cookie)
       else:
         raise DecryptionFailure("Unrecognized authentication type '%s', currently we only support basic auth (%s) and stealth auth (%s)" % (authentication_type, BASIC_AUTH, STEALTH_AUTH))
 
@@ -328,7 +339,7 @@ class HiddenServiceDescriptor(Descriptor):
     elif not content.startswith(b'introduction-point '):
       raise DecryptionFailure('introduction-points content is encrypted, you need to provide its authentication_cookie')
 
-    return HiddenServiceDescriptor._parse_introduction_points(content)
+    return HiddenServiceDescriptorV2._parse_introduction_points(content)
 
   @staticmethod
   def _decrypt_basic_auth(content, authentication_cookie):
@@ -439,3 +450,8 @@ class HiddenServiceDescriptor(Descriptor):
       introduction_points.append(IntroductionPoints(**attr))
 
     return introduction_points
+
+
+# TODO: drop this alias in stem 2.x
+
+HiddenServiceDescriptor = HiddenServiceDescriptorV2

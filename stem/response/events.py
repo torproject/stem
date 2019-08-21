@@ -701,7 +701,7 @@ class HSDescContentEvent(Event):
   :var str directory: hidden service directory servicing the request
   :var str directory_fingerprint: hidden service directory's finterprint
   :var str directory_nickname: hidden service directory's nickname if it was provided
-  :var stem.descriptor.hidden_service.HiddenServiceDescriptor descriptor: descriptor that was retrieved
+  :var stem.descriptor.hidden_service.HiddenServiceDescriptorV2 descriptor: descriptor that was retrieved
   """
 
   _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC_CONTENT

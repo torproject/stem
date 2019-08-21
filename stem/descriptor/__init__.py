@@ -329,7 +329,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
   tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
-  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptor`
+  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
@@ -536,8 +536,8 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
 
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.hidden_service.HiddenServiceDescriptor
+  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptorV2.TYPE_ANNOTATION_NAME and major_version == 1:
+    document_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV2
 
     for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
