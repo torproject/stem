@@ -1,5 +1,5 @@
 """
-Unit tests for stem.descriptor.hidden_service.
+Unit tests for stem.descriptor.hidden_service for version 2.
 """
 
 import datetime
@@ -250,27 +250,27 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     Parse duckduckgo's descriptor.
     """
 
-    descriptor_file = open(get_resource('hidden_service_duckduckgo'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
-    self._assert_matches_duckduckgo(desc)
+    with open(get_resource('hidden_service_duckduckgo'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
+      self._assert_matches_duckduckgo(desc)
 
   def test_for_duckduckgo_without_validation(self):
     """
     Parse duckduckgo's descriptor
     """
 
-    descriptor_file = open(get_resource('hidden_service_duckduckgo'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = False))
-    self._assert_matches_duckduckgo(desc)
+    with open(get_resource('hidden_service_duckduckgo'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = False))
+      self._assert_matches_duckduckgo(desc)
 
   def test_for_facebook(self):
     """
     Parse facebook's descriptor.
     """
 
-    descriptor_file = open(get_resource('hidden_service_facebook'), 'rb')
+    with open(get_resource('hidden_service_facebook'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('utjk4arxqg6s6zzo7n6cjnq6ot34udhr', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('6355jaerje3bqozopwq2qmpf4iviizdn', desc.secret_id_part)
@@ -287,9 +287,9 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     Parse a descriptor with introduction-points encrypted with basic auth.
     """
 
-    descriptor_file = open(get_resource('hidden_service_basic_auth'), 'rb')
+    with open(get_resource('hidden_service_basic_auth'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('yfmvdrkdbyquyqk5vygyeylgj2qmrvrd', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('fluw7z3s5cghuuirq3imh5jjj5ljips6', desc.secret_id_part)
@@ -334,9 +334,9 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     Parse a descriptor with introduction-points encrypted with stealth auth.
     """
 
-    descriptor_file = open(get_resource('hidden_service_stealth_auth'), 'rb')
+    with open(get_resource('hidden_service_stealth_auth'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('ubf3xeibzlfil6s4larq6y5peup2z3oj', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('jczvydhzetbpdiylj3d5nsnjvaigs7xm', desc.secret_id_part)

@@ -17,7 +17,8 @@ These are only available through the Controller's
 ::
 
   BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
-    +- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
+    |- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
+    +- HiddenServiceDescriptorV3 - Version 3 hidden service descriptor
 
 .. versionadded:: 1.4.0
 """
@@ -103,11 +104,12 @@ class DecryptionFailure(Exception):
   """
 
 
-def _parse_file(descriptor_file, validate = False, **kwargs):
+def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
   """
   Iterates over the hidden service descriptors in a file.
 
   :param file descriptor_file: file with descriptor content
+  :param class desc_type: BaseHiddenServiceDescriptor subclass
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
@@ -120,18 +122,24 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
     * **IOError** if the file can't be read
   """
 
+  if desc_type is None:
+    desc_type = HiddenServiceDescriptorV2
+
+  # Hidden service v3 ends with a signature line, whereas v2 has a pgp style
+  # block following it.
+
   while True:
     descriptor_content = _read_until_keywords('signature', descriptor_file)
 
-    # we've reached the 'signature', now include the pgp style block
-    block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
-    descriptor_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
+    if desc_type == HiddenServiceDescriptorV2:
+      block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
+      descriptor_content += _read_until_keywords(block_end_prefix, descriptor_file, True)
 
     if descriptor_content:
       if descriptor_content[0].startswith(b'@type'):
         descriptor_content = descriptor_content[1:]
 
-      yield HiddenServiceDescriptorV2(bytes.join(b'', descriptor_content), validate, **kwargs)
+      yield desc_type(bytes.join(b'', descriptor_content), validate, **kwargs)
     else:
       break  # done parsing file
 
@@ -194,7 +202,7 @@ class BaseHiddenServiceDescriptor(Descriptor):
 
 class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   """
-  Hidden service descriptor.
+  Version 2 hidden service descriptor.
 
   :var str descriptor_id: **\\*** identifier for this descriptor, this is a base32 hash of several fields
   :var int version: **\\*** hidden service descriptor version
@@ -450,6 +458,16 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
       introduction_points.append(IntroductionPoints(**attr))
 
     return introduction_points
+
+
+class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
+  """
+  Version 3 hidden service descriptor.
+  """
+
+  # TODO: requested this @type on https://trac.torproject.org/projects/tor/ticket/31481
+
+  TYPE_ANNOTATION_NAME = 'hidden-service-descriptor-3'
 
 
 # TODO: drop this alias in stem 2.x

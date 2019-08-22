@@ -532,18 +532,19 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.tordnsel.TorDNSEL.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.tordnsel.TorDNSEL
-
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptorV2.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV2
+    desc_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV2
 
-    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, validate = validate, **kwargs):
+    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, desc_type, validate = validate, **kwargs):
+      yield desc
+  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptorV3.TYPE_ANNOTATION_NAME and major_version == 1:
+    desc_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV3
+
+    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, desc_type, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.bandwidth_file.BandwidthFile.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.bandwidth_file.BandwidthFile
-
     for desc in stem.descriptor.bandwidth_file._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   else:
