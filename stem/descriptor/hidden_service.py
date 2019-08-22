@@ -145,7 +145,14 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
 
 
 def _parse_version_line(descriptor, entries):
-  value = _value('version', entries)
+  if isinstance(descriptor, HiddenServiceDescriptorV2):
+    keyword = 'version'
+  elif isinstance(descriptor, HiddenServiceDescriptorV3):
+    keyword = 'hs-descriptor'
+  else:
+    raise ValueError('BUG: unexpected descriptor type (%s)' % type(descriptor).__name__)
+
+  value = _value(keyword, entries)
 
   if value.isdigit():
     descriptor.version = int(value)
@@ -463,11 +470,51 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   """
   Version 3 hidden service descriptor.
+
+  :var int version: **\\*** hidden service descriptor version
+
+  **\\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
   """
 
   # TODO: requested this @type on https://trac.torproject.org/projects/tor/ticket/31481
 
   TYPE_ANNOTATION_NAME = 'hidden-service-descriptor-3'
+
+  ATTRIBUTES = {
+    'version': (None, _parse_version_line),
+  }
+
+  PARSER_FOR_LINE = {
+    'hs-descriptor': _parse_version_line,
+  }
+
+  @classmethod
+  def content(cls, attr = None, exclude = (), sign = False):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
+    return _descriptor_content(attr, exclude, (
+      ('hs-descriptor', '3'),
+      ('descriptor-lifetime', '180'),
+      ('descriptor-signing-key-cert', _random_crypto_blob('ED25519 CERT')),
+      ('revision-counter', '15'),
+      ('superencrypted', _random_crypto_blob('MESSAGE')),
+      ('signature', 'wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg'),
+    ), ())
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
+
+  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+    super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
+    entries = _descriptor_components(raw_contents, validate)
+
+    if validate:
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
 
 # TODO: drop this alias in stem 2.x
