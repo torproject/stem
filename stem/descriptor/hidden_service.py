@@ -157,7 +157,16 @@ def _parse_version_line(descriptor, entries):
   if value.isdigit():
     descriptor.version = int(value)
   else:
-    raise ValueError('version line must have a positive integer value: %s' % value)
+    raise ValueError('%s line must have a positive integer value: %s' % (keyword, value))
+
+
+def _parse_lifetime(descriptor, entries):
+  value = _value('descriptor-lifetime', entries)
+
+  if value.isdigit():
+    descriptor.lifetime = int(value)
+  else:
+    raise ValueError('descriptor-lifetime line must have a positive integer value: %s' % value)
 
 
 def _parse_protocol_versions_line(descriptor, entries):
@@ -472,6 +481,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   Version 3 hidden service descriptor.
 
   :var int version: **\\*** hidden service descriptor version
+  :var int lifetime: **\\*** minutes after publication this descriptor is valid
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -483,10 +493,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   ATTRIBUTES = {
     'version': (None, _parse_version_line),
+    'lifetime': (None, _parse_lifetime),
   }
 
   PARSER_FOR_LINE = {
     'hs-descriptor': _parse_version_line,
+    'descriptor-lifetime': _parse_lifetime,
   }
 
   @classmethod

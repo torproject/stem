@@ -29,6 +29,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True))
 
     self.assertEqual(3, desc.version)
+    self.assertEqual(180, desc.lifetime)
 
   def test_invalid_version(self):
     """
@@ -43,3 +44,17 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     for test_value in test_values:
       expect_invalid_attr(self, {'hs-descriptor': test_value}, 'version')
+
+  def test_invalid_lifetime(self):
+    """
+    Checks that our lifetime field expects a numeric value.
+    """
+
+    test_values = (
+      '',
+      '-10',
+      'hello',
+    )
+
+    for test_value in test_values:
+      expect_invalid_attr(self, {'descriptor-lifetime': test_value}, 'lifetime')
