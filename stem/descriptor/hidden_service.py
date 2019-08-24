@@ -42,6 +42,7 @@ from stem.descriptor import (
   _bytes_for_block,
   _value,
   _parse_simple_line,
+  _parse_int_line,
   _parse_timestamp_line,
   _parse_key_block,
   _random_date,
@@ -144,31 +145,6 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
       break  # done parsing file
 
 
-def _parse_version_line(descriptor, entries):
-  if isinstance(descriptor, HiddenServiceDescriptorV2):
-    keyword = 'version'
-  elif isinstance(descriptor, HiddenServiceDescriptorV3):
-    keyword = 'hs-descriptor'
-  else:
-    raise ValueError('BUG: unexpected descriptor type (%s)' % type(descriptor).__name__)
-
-  value = _value(keyword, entries)
-
-  if value.isdigit():
-    descriptor.version = int(value)
-  else:
-    raise ValueError('%s line must have a positive integer value: %s' % (keyword, value))
-
-
-def _parse_lifetime(descriptor, entries):
-  value = _value('descriptor-lifetime', entries)
-
-  if value.isdigit():
-    descriptor.lifetime = int(value)
-  else:
-    raise ValueError('descriptor-lifetime line must have a positive integer value: %s' % value)
-
-
 def _parse_protocol_versions_line(descriptor, entries):
   value = _value('protocol-versions', entries)
 
@@ -199,11 +175,15 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
 
+_parse_v2_version_line = _parse_int_line('version', 'version', allow_negative = False)
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
 _parse_secret_id_part_line = _parse_simple_line('secret-id-part', 'secret_id_part')
 _parse_publication_time_line = _parse_timestamp_line('publication-time', 'published')
 _parse_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE')
+
+_parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
+_parse_lifetime = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -252,7 +232,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
 
   ATTRIBUTES = {
     'descriptor_id': (None, _parse_rendezvous_service_descriptor_line),
-    'version': (None, _parse_version_line),
+    'version': (None, _parse_v2_version_line),
     'permanent_key': (None, _parse_permanent_key_line),
     'secret_id_part': (None, _parse_secret_id_part_line),
     'published': (None, _parse_publication_time_line),
@@ -265,7 +245,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
 
   PARSER_FOR_LINE = {
     'rendezvous-service-descriptor': _parse_rendezvous_service_descriptor_line,
-    'version': _parse_version_line,
+    'version': _parse_v2_version_line,
     'permanent-key': _parse_permanent_key_line,
     'secret-id-part': _parse_secret_id_part_line,
     'publication-time': _parse_publication_time_line,
@@ -492,12 +472,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   TYPE_ANNOTATION_NAME = 'hidden-service-descriptor-3'
 
   ATTRIBUTES = {
-    'version': (None, _parse_version_line),
+    'version': (None, _parse_v3_version_line),
     'lifetime': (None, _parse_lifetime),
   }
 
   PARSER_FOR_LINE = {
-    'hs-descriptor': _parse_version_line,
+    'hs-descriptor': _parse_v3_version_line,
     'descriptor-lifetime': _parse_lifetime,
   }
 

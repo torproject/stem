@@ -88,6 +88,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_simple_line,
+  _parse_int_line,
   _parse_timestamp_line,
   _parse_forty_character_hex,
   _parse_key_block,
@@ -304,19 +305,6 @@ def _parse_transport_line(descriptor, entries):
     transports[name] = (address, port, args)
 
   descriptor.transport = transports
-
-
-def _parse_cell_circuits_per_decline_line(descriptor, entries):
-  # "cell-circuits-per-decile" num
-
-  value = _value('cell-circuits-per-decile', entries)
-
-  if not value.isdigit():
-    raise ValueError('Non-numeric cell-circuits-per-decile value: %s' % value)
-  elif int(value) < 0:
-    raise ValueError('Negative cell-circuits-per-decile value: %s' % value)
-
-  descriptor.cell_circuits_per_decile = int(value)
 
 
 def _parse_padding_counts_line(descriptor, entries):
@@ -538,6 +526,7 @@ _parse_dirreq_v3_share_line = functools.partial(_parse_dirreq_share_line, 'dirre
 _parse_cell_processed_cells_line = functools.partial(_parse_cell_line, 'cell-processed-cells', 'cell_processed_cells')
 _parse_cell_queued_cells_line = functools.partial(_parse_cell_line, 'cell-queued-cells', 'cell_queued_cells')
 _parse_cell_time_in_queue_line = functools.partial(_parse_cell_line, 'cell-time-in-queue', 'cell_time_in_queue')
+_parse_cell_circuits_per_decline_line = _parse_int_line('cell-circuits-per-decile', 'cell_circuits_per_decile', allow_negative = False)
 _parse_published_line = _parse_timestamp_line('published', 'published')
 _parse_geoip_start_time_line = _parse_timestamp_line('geoip-start-time', 'geoip_start_time')
 _parse_cell_stats_end_line = functools.partial(_parse_timestamp_and_interval_line, 'cell-stats-end', 'cell_stats_end', 'cell_stats_interval')

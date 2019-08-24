@@ -657,6 +657,23 @@ def _parse_bytes_line(keyword, attribute):
   return _parse
 
 
+def _parse_int_line(keyword, attribute, allow_negative = True):
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    try:
+      int_val = int(value)
+    except ValueError:
+      raise ValueError('%s must have a numeric value: %s' % (keyword, value))
+
+    if not allow_negative and int_val < 0:
+      raise ValueError('%s must have a positive value: %s' % (keyword, value))
+
+    setattr(descriptor, attribute, int_val)
+
+  return _parse
+
+
 def _parse_timestamp_line(keyword, attribute):
   # "<keyword>" YYYY-MM-DD HH:MM:SS
 
