@@ -16,6 +16,14 @@ from test.unit.descriptor import (
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
 
+EXPECTED_SIGNING_CERT = """\
+-----BEGIN ED25519 CERT-----
+AQgABqKwAQVql1QZETyEwJjg+Cv6f2w/cp+c3juj01NPBaJqihboAQAgBACx+FKK
+oDrFE1+ztSxzN8sApKOb5UuDtoe/E03DxZU5+r/K5AV6G0hYn21V7Xbu2pZHvIkT
+2oVY4hypWNJE58eFBRFRzBA0J2h0GyFs1pIuRh5QDJuxB5j92V0aRCNZFgM=
+-----END ED25519 CERT-----\
+"""
+
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_for_riseup(self):
@@ -30,6 +38,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     self.assertEqual(3, desc.version)
     self.assertEqual(180, desc.lifetime)
+    self.assertEqual(EXPECTED_SIGNING_CERT, desc.signing_cert)
 
   def test_invalid_version(self):
     """

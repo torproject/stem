@@ -183,7 +183,8 @@ _parse_publication_time_line = _parse_timestamp_line('publication-time', 'publis
 _parse_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE')
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
-_parse_lifetime = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
+_parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
+_parse_signing_key_line = _parse_key_block('descriptor-signing-key-cert', 'signing_cert', 'ED25519 CERT')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -462,6 +463,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   :var int version: **\\*** hidden service descriptor version
   :var int lifetime: **\\*** minutes after publication this descriptor is valid
+  :var str signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -473,12 +475,14 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   ATTRIBUTES = {
     'version': (None, _parse_v3_version_line),
-    'lifetime': (None, _parse_lifetime),
+    'lifetime': (None, _parse_lifetime_line),
+    'signing_cert': (None, _parse_signing_key_line),
   }
 
   PARSER_FOR_LINE = {
     'hs-descriptor': _parse_v3_version_line,
-    'descriptor-lifetime': _parse_lifetime,
+    'descriptor-lifetime': _parse_lifetime_line,
+    'descriptor-signing-key-cert': _parse_signing_key_line,
   }
 
   @classmethod
