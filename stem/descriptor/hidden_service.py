@@ -186,6 +186,7 @@ _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negat
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
 _parse_signing_key_line = _parse_key_block('descriptor-signing-key-cert', 'signing_cert', 'ED25519 CERT')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
+_parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -466,6 +467,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   :var int lifetime: **\\*** minutes after publication this descriptor is valid
   :var str signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
   :var int revision_counter: **\\*** descriptor revision number
+  :var str superencrypted: **\\*** encrypted HS-DESC-ENC payload
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -480,6 +482,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     'lifetime': (None, _parse_lifetime_line),
     'signing_cert': (None, _parse_signing_key_line),
     'revision_counter': (None, _parse_revision_counter_line),
+    'superencrypted': (None, _parse_superencrypted_line),
   }
 
   PARSER_FOR_LINE = {
@@ -487,6 +490,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     'descriptor-lifetime': _parse_lifetime_line,
     'descriptor-signing-key-cert': _parse_signing_key_line,
     'revision-counter': _parse_revision_counter_line,
+    'superencrypted': _parse_superencrypted_line,
   }
 
   @classmethod
