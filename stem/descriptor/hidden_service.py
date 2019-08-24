@@ -130,7 +130,7 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
   # block following it.
 
   while True:
-    descriptor_content = _read_until_keywords('signature', descriptor_file)
+    descriptor_content = _read_until_keywords('signature', descriptor_file, True)
 
     if desc_type == HiddenServiceDescriptorV2:
       block_end_prefix = PGP_BLOCK_END.split(' ', 1)[0]
@@ -180,13 +180,14 @@ _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-servi
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
 _parse_secret_id_part_line = _parse_simple_line('secret-id-part', 'secret_id_part')
 _parse_publication_time_line = _parse_timestamp_line('publication-time', 'published')
-_parse_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE')
+_parse_v2_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE')
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
 _parse_signing_key_line = _parse_key_block('descriptor-signing-key-cert', 'signing_cert', 'ED25519 CERT')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
+_parse_v3_signature_line = _parse_simple_line('signature', 'signature')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -243,7 +244,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     'introduction_points_encoded': (None, _parse_introduction_points_line),
     'introduction_points_auth': ([], _parse_introduction_points_line),
     'introduction_points_content': (None, _parse_introduction_points_line),
-    'signature': (None, _parse_signature_line),
+    'signature': (None, _parse_v2_signature_line),
   }
 
   PARSER_FOR_LINE = {
@@ -254,7 +255,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     'publication-time': _parse_publication_time_line,
     'protocol-versions': _parse_protocol_versions_line,
     'introduction-points': _parse_introduction_points_line,
-    'signature': _parse_signature_line,
+    'signature': _parse_v2_signature_line,
   }
 
   @classmethod
@@ -468,6 +469,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   :var str signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
   :var int revision_counter: **\\*** descriptor revision number
   :var str superencrypted: **\\*** encrypted HS-DESC-ENC payload
+  :var str signature: **\\*** signature of this descriptor
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
@@ -483,6 +485,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     'signing_cert': (None, _parse_signing_key_line),
     'revision_counter': (None, _parse_revision_counter_line),
     'superencrypted': (None, _parse_superencrypted_line),
+    'signature': (None, _parse_v3_signature_line),
   }
 
   PARSER_FOR_LINE = {
@@ -491,6 +494,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     'descriptor-signing-key-cert': _parse_signing_key_line,
     'revision-counter': _parse_revision_counter_line,
     'superencrypted': _parse_superencrypted_line,
+    'signature': _parse_v3_signature_line,
   }
 
   @classmethod

@@ -41,6 +41,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(EXPECTED_SIGNING_CERT, desc.signing_cert)
     self.assertEqual(15, desc.revision_counter)
     self.assertTrue('k9uKnDpxhkH0h1h' in desc.superencrypted)
+    self.assertEqual('wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg', desc.signature)
 
   def test_invalid_version(self):
     """
