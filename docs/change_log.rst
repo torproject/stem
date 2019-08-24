@@ -60,6 +60,7 @@ The following are only available within Stem's `git repository
  * **Descriptors**
 
   * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module (:trac:`17979`)
+  * Added `v3 hidden service descriptor support <api/descriptor/hidden_service.html>`_ (:trac:`31369`)
   * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:trac:`29056`)
   * `stem.descriptor.remote <api/descriptor/remote.html>`_ methods now raise :class:`stem.DownloadFailed`
   * Check Ed25519 validity though the cryptography module rather than PyNaCl (:trac:`22022`)
@@ -364,7 +365,7 @@ And last, Stem also now runs directly under both python2 and python3 without a
  * **Descriptors**
 
   * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:trac:`14011`)
-  * Added `support for hidden service descriptors <api/descriptor/hidden_service_descriptor.html>`_ (:trac:`15004`)
+  * Added `support for hidden service descriptors <api/descriptor/hidden_service.html>`_ (:trac:`15004`)
   * When reading sanitised bridge descriptors (server or extrainfo), :func:`~stem.descriptor.__init__.parse_file` treated the whole file as a single descriptor
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
   * Added consensus' new package attribute (:spec:`ab64534`)

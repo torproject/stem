@@ -14,6 +14,7 @@ Contents
    tutorials/down_the_rabbit_hole
    tutorials/double_double_toil_and_trouble
 
+   tutorials/examples/bandwidth_stats
    tutorials/examples/check_digests
    tutorials/examples/compare_flags
    tutorials/examples/download_descriptor

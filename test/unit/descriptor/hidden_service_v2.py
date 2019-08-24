@@ -11,7 +11,7 @@ import stem.prereq
 import test.require
 
 from stem.descriptor.hidden_service import (
-  REQUIRED_FIELDS,
+  REQUIRED_V2_FIELDS,
   DecryptionFailure,
   HiddenServiceDescriptorV2,
 )
@@ -468,7 +468,7 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
       'signature': 'signature',
     }
 
-    for line in REQUIRED_FIELDS:
+    for line in REQUIRED_V2_FIELDS:
       desc_text = HiddenServiceDescriptorV2.content(exclude = (line,))
 
       expected = [] if line == 'protocol-versions' else None

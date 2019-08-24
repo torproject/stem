@@ -2,15 +2,17 @@
 # See LICENSE for licensing information
 
 """
-Parsing for Tor hidden service descriptors as described in Tor's `rend-spec
-<https://gitweb.torproject.org/torspec.git/tree/rend-spec.txt>`_.
+Parsing for Tor hidden service descriptors as described in Tor's `version 2
+<https://gitweb.torproject.org/torspec.git/tree/rend-spec-v2.txt>`_ and
+`version 3 <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_
+rend-spec.
 
 Unlike other descriptor types these describe a hidden service rather than a
 relay. They're created by the service, and can only be fetched via relays with
 the HSDir flag.
 
 These are only available through the Controller's
-:func:`~stem.control.get_hidden_service_descriptor` method.
+:func:`~stem.control.Controller.get_hidden_service_descriptor` method.
 
 **Module Overview:**
 
@@ -54,13 +56,22 @@ if stem.prereq._is_lru_cache_available():
 else:
   from stem.util.lru_cache import lru_cache
 
-REQUIRED_FIELDS = (
+REQUIRED_V2_FIELDS = (
   'rendezvous-service-descriptor',
   'version',
   'permanent-key',
   'secret-id-part',
   'publication-time',
   'protocol-versions',
+  'signature',
+)
+
+REQUIRED_V3_FIELDS = (
+  'hs-descriptor',
+  'descriptor-lifetime',
+  'descriptor-signing-key-cert',
+  'revision-counter',
+  'superencrypted',
   'signature',
 )
 
@@ -284,7 +295,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     entries = _descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
     if validate:
-      for keyword in REQUIRED_FIELDS:
+      for keyword in REQUIRED_V2_FIELDS:
         if keyword not in entries:
           raise ValueError("Hidden service descriptor must have a '%s' entry" % keyword)
         elif keyword in entries and len(entries[keyword]) > 1:
@@ -520,6 +531,17 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
+      for keyword in REQUIRED_V3_FIELDS:
+        if keyword not in entries:
+          raise ValueError("Hidden service descriptor must have a '%s' entry" % keyword)
+        elif keyword in entries and len(entries[keyword]) > 1:
+          raise ValueError("The '%s' entry can only appear once in a hidden service descriptor" % keyword)
+
+      if 'hs-descriptor' != list(entries.keys())[0]:
+        raise ValueError("Hidden service descriptor must start with a 'hs-descriptor' entry")
+      elif 'signature' != list(entries.keys())[-1]:
+        raise ValueError("Hidden service descriptor must end with a 'signature' entry")
+
       self._parse(entries, validate)
     else:
       self._entries = entries

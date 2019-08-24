@@ -7,14 +7,19 @@ import unittest
 
 import stem.descriptor
 
-from stem.descriptor.hidden_service import HiddenServiceDescriptorV3
+from stem.descriptor.hidden_service import (
+  REQUIRED_V3_FIELDS,
+  HiddenServiceDescriptorV3,
+)
 
 from test.unit.descriptor import (
   get_resource,
   base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
 )
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV3, 'version', 3)
 
 EXPECTED_SIGNING_CERT = """\
 -----BEGIN ED25519 CERT-----
@@ -42,6 +47,24 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(15, desc.revision_counter)
     self.assertTrue('k9uKnDpxhkH0h1h' in desc.superencrypted)
     self.assertEqual('wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg', desc.signature)
+
+  def test_required_fields(self):
+    """
+    Check that we require the mandatory fields.
+    """
+
+    line_to_attr = {
+      'hs-descriptor': 'version',
+      'descriptor-lifetime': 'lifetime',
+      'descriptor-signing-key-cert': 'signing_cert',
+      'revision-counter': 'revision_counter',
+      'superencrypted': 'superencrypted',
+      'signature': 'signature',
+    }
+
+    for line in REQUIRED_V3_FIELDS:
+      desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
+      expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
   def test_invalid_version(self):
     """
