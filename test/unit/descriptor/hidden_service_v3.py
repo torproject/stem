@@ -39,6 +39,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(3, desc.version)
     self.assertEqual(180, desc.lifetime)
     self.assertEqual(EXPECTED_SIGNING_CERT, desc.signing_cert)
+    self.assertEqual(15, desc.revision_counter)
 
   def test_invalid_version(self):
     """
@@ -67,3 +68,17 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     for test_value in test_values:
       expect_invalid_attr(self, {'descriptor-lifetime': test_value}, 'lifetime')
+
+  def test_invalid_revision_counter(self):
+    """
+    Checks that our revision counter field expects a numeric value.
+    """
+
+    test_values = (
+      '',
+      '-10',
+      'hello',
+    )
+
+    for test_value in test_values:
+      expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
