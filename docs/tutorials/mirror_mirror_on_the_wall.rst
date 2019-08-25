@@ -34,7 +34,7 @@ Descriptor Type                                                                 
 `Microdescriptor <../api/descriptor/microdescriptor.html>`_                      Minimalistic document that just includes the information necessary for Tor clients to work.
 `Network Status Document <../api/descriptor/networkstatus.html>`_                Though Tor relays are decentralized, the directories that track the overall network are not. These central points are called **directory authorities**, and every hour they publish a document called a **consensus** (aka, network status document). The consensus in turn is made up of **router status entries**.
 `Router Status Entry <../api/descriptor/router_status_entry.html>`_              Relay information provided by the directory authorities including flags, heuristics used for relay selection, etc.
-`Hidden Service Descriptor <../api/descriptor/hidden_service_descriptor.html>`_  Information pertaining to a `Hidden Service <https://www.torproject.org/docs/hidden-services.html.en>`_. These can only be `queried through the tor process <over_the_river.html#hidden-service-descriptors>`_.
+`Hidden Service Descriptor <../api/descriptor/hidden_service.html>`_             Information pertaining to a `Hidden Service <https://www.torproject.org/docs/hidden-services.html.en>`_. These can only be `queried through the tor process <over_the_river.html#hidden-service-descriptors>`_.
 ================================================================================ ===========
 
 .. _where-do-descriptors-come-from:

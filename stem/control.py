@@ -2136,7 +2136,7 @@ class Controller(BaseController):
     :param list servers: requrest the descriptor from these specific servers
     :param float timeout: seconds to wait when **await_result** is **True**
 
-    :returns: :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
+    :returns: :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
       for the given service if **await_result** is **True**, or **None** otherwise
 
     :raises:

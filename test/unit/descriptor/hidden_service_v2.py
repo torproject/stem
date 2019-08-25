@@ -1,5 +1,5 @@
 """
-Unit tests for stem.descriptor.hidden_service_descriptor.
+Unit tests for stem.descriptor.hidden_service for version 2.
 """
 
 import datetime
@@ -10,10 +10,10 @@ import stem.descriptor
 import stem.prereq
 import test.require
 
-from stem.descriptor.hidden_service_descriptor import (
-  REQUIRED_FIELDS,
+from stem.descriptor.hidden_service import (
+  REQUIRED_V2_FIELDS,
   DecryptionFailure,
-  HiddenServiceDescriptor,
+  HiddenServiceDescriptorV2,
 )
 
 from test.unit.descriptor import (
@@ -236,41 +236,41 @@ lj/7xMZWDrfyw5H86L0QiaZnkmD+nig1+S+Rn39mmuEgl2iwZO/ihlncUJQTEULb
 -----END MESSAGE-----\
 """
 
-expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptor, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
-expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptor, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
+expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV2, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
+expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV2, 'descriptor_id', 'y3olqqblqw2gbh6phimfuiroechjjafa')
 
 
-class TestHiddenServiceDescriptor(unittest.TestCase):
+class TestHiddenServiceDescriptorV2(unittest.TestCase):
   def test_from_str(self):
-    sig = HiddenServiceDescriptor.create()
-    self.assertEqual(sig, HiddenServiceDescriptor.from_str(str(sig)))
+    sig = HiddenServiceDescriptorV2.create()
+    self.assertEqual(sig, HiddenServiceDescriptorV2.from_str(str(sig)))
 
   def test_for_duckduckgo_with_validation(self):
     """
     Parse duckduckgo's descriptor.
     """
 
-    descriptor_file = open(get_resource('hidden_service_duckduckgo'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
-    self._assert_matches_duckduckgo(desc)
+    with open(get_resource('hidden_service_duckduckgo'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
+      self._assert_matches_duckduckgo(desc)
 
   def test_for_duckduckgo_without_validation(self):
     """
     Parse duckduckgo's descriptor
     """
 
-    descriptor_file = open(get_resource('hidden_service_duckduckgo'), 'rb')
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = False))
-    self._assert_matches_duckduckgo(desc)
+    with open(get_resource('hidden_service_duckduckgo'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = False))
+      self._assert_matches_duckduckgo(desc)
 
   def test_for_facebook(self):
     """
     Parse facebook's descriptor.
     """
 
-    descriptor_file = open(get_resource('hidden_service_facebook'), 'rb')
+    with open(get_resource('hidden_service_facebook'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('utjk4arxqg6s6zzo7n6cjnq6ot34udhr', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('6355jaerje3bqozopwq2qmpf4iviizdn', desc.secret_id_part)
@@ -279,7 +279,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
 
   @test.require.cryptography
   def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of HiddenServiceDescriptor not implemented', HiddenServiceDescriptor.create, sign = True)
+    self.assertRaisesWith(NotImplementedError, 'Signing of HiddenServiceDescriptorV2 not implemented', HiddenServiceDescriptorV2.create, sign = True)
 
   @test.require.cryptography
   def test_with_basic_auth(self):
@@ -287,9 +287,9 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Parse a descriptor with introduction-points encrypted with basic auth.
     """
 
-    descriptor_file = open(get_resource('hidden_service_basic_auth'), 'rb')
+    with open(get_resource('hidden_service_basic_auth'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('yfmvdrkdbyquyqk5vygyeylgj2qmrvrd', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('fluw7z3s5cghuuirq3imh5jjj5ljips6', desc.secret_id_part)
@@ -334,9 +334,9 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Parse a descriptor with introduction-points encrypted with stealth auth.
     """
 
-    descriptor_file = open(get_resource('hidden_service_stealth_auth'), 'rb')
+    with open(get_resource('hidden_service_stealth_auth'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
 
-    desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
     self.assertEqual('ubf3xeibzlfil6s4larq6y5peup2z3oj', desc.descriptor_id)
     self.assertEqual(2, desc.version)
     self.assertEqual('jczvydhzetbpdiylj3d5nsnjvaigs7xm', desc.secret_id_part)
@@ -418,7 +418,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Basic sanity check that we can parse a hidden service descriptor with minimal attributes.
     """
 
-    desc = HiddenServiceDescriptor.create()
+    desc = HiddenServiceDescriptorV2.create()
 
     self.assertEqual('y3olqqblqw2gbh6phimfuiroechjjafa', desc.descriptor_id)
     self.assertEqual(2, desc.version)
@@ -435,7 +435,7 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Includes unrecognized content in the descriptor.
     """
 
-    desc = HiddenServiceDescriptor.create({'pepperjack': 'is oh so tasty!'})
+    desc = HiddenServiceDescriptorV2.create({'pepperjack': 'is oh so tasty!'})
     self.assertEqual(['pepperjack is oh so tasty!'], desc.get_unrecognized_lines())
 
   def test_proceeding_line(self):
@@ -443,14 +443,14 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     Includes a line prior to the 'rendezvous-service-descriptor' entry.
     """
 
-    expect_invalid_attr_for_text(self, b'hibernate 1\n' + HiddenServiceDescriptor.content())
+    expect_invalid_attr_for_text(self, b'hibernate 1\n' + HiddenServiceDescriptorV2.content())
 
   def test_trailing_line(self):
     """
     Includes a line after the 'router-signature' entry.
     """
 
-    expect_invalid_attr_for_text(self, HiddenServiceDescriptor.content() + b'\nhibernate 1')
+    expect_invalid_attr_for_text(self, HiddenServiceDescriptorV2.content() + b'\nhibernate 1')
 
   def test_required_fields(self):
     """
@@ -468,8 +468,8 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
       'signature': 'signature',
     }
 
-    for line in REQUIRED_FIELDS:
-      desc_text = HiddenServiceDescriptor.content(exclude = (line,))
+    for line in REQUIRED_V2_FIELDS:
+      desc_text = HiddenServiceDescriptorV2.content(exclude = (line,))
 
       expected = [] if line == 'protocol-versions' else None
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], expected)
@@ -514,14 +514,14 @@ class TestHiddenServiceDescriptor(unittest.TestCase):
     are valid according to the spec.
     """
 
-    missing_field_desc = HiddenServiceDescriptor.create(exclude = ('introduction-points',))
+    missing_field_desc = HiddenServiceDescriptorV2.create(exclude = ('introduction-points',))
 
     self.assertEqual(None, missing_field_desc.introduction_points_encoded)
     self.assertEqual([], missing_field_desc.introduction_points_auth)
     self.assertEqual(None, missing_field_desc.introduction_points_content)
     self.assertEqual([], missing_field_desc.introduction_points())
 
-    empty_field_desc = HiddenServiceDescriptor.create({'introduction-points': MESSAGE_BLOCK % ''})
+    empty_field_desc = HiddenServiceDescriptorV2.create({'introduction-points': MESSAGE_BLOCK % ''})
 
     self.assertEqual((MESSAGE_BLOCK % '').strip(), empty_field_desc.introduction_points_encoded)
     self.assertEqual([], empty_field_desc.introduction_points_auth)

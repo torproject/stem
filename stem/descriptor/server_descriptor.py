@@ -78,6 +78,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_simple_line,
+  _parse_int_line,
   _parse_if_present,
   _parse_bytes_line,
   _parse_timestamp_line,
@@ -337,26 +338,6 @@ def _parse_hibernating_line(descriptor, entries):
   descriptor.hibernating = value == '1'
 
 
-def _parse_uptime_line(descriptor, entries):
-  # We need to be tolerant of negative uptimes to accommodate a past tor
-  # bug...
-  #
-  # Changes in version 0.1.2.7-alpha - 2007-02-06
-  #  - If our system clock jumps back in time, don't publish a negative
-  #    uptime in the descriptor. Also, don't let the global rate limiting
-  #    buckets go absurdly negative.
-  #
-  # After parsing all of the attributes we'll double check that negative
-  # uptimes only occurred prior to this fix.
-
-  value = _value('uptime', entries)
-
-  try:
-    descriptor.uptime = int(value)
-  except ValueError:
-    raise ValueError('Uptime line must have an integer value: %s' % value)
-
-
 def _parse_protocols_line(descriptor, entries):
   value = _value('protocols', entries)
   protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
@@ -453,6 +434,19 @@ _parse_ntor_onion_key_crosscert_line = _parse_key_block('ntor-onion-key-crosscer
 _parse_router_sig_ed25519_line = _parse_simple_line('router-sig-ed25519', 'ed25519_signature')
 _parse_router_digest_sha256_line = _parse_simple_line('router-digest-sha256', 'router_digest_sha256')
 _parse_router_digest_line = _parse_forty_character_hex('router-digest', '_digest')
+
+# TODO: We need to be tolerant of negative uptimes to accommodate a past tor
+# bug...
+#
+# Changes in version 0.1.2.7-alpha - 2007-02-06
+#  - If our system clock jumps back in time, don't publish a negative
+#    uptime in the descriptor. Also, don't let the global rate limiting
+#    buckets go absurdly negative.
+#
+# After parsing all of the attributes we'll double check that negative
+# uptimes only occurred prior to this fix.
+
+_parse_uptime_line = _parse_int_line('uptime', 'uptime', allow_negative = True)
 
 
 class ServerDescriptor(Descriptor):

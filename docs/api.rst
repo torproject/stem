@@ -35,7 +35,7 @@ remotely like Tor does.
  * `stem.descriptor.microdescriptor <api/descriptor/microdescriptor.html>`_ - Minimalistic counterpart for server descriptors.
  * `stem.descriptor.networkstatus <api/descriptor/networkstatus.html>`_ - Network status documents which make up the Tor consensus.
  * `stem.descriptor.router_status_entry <api/descriptor/router_status_entry.html>`_ - Relay entries within a network status document.
- * `stem.descriptor.hidden_service_descriptor <api/descriptor/hidden_service_descriptor.html>`_ - Descriptors generated for hidden services.
+ * `stem.descriptor.hidden_service <api/descriptor/hidden_service.html>`_ - Descriptors generated for hidden services.
  * `stem.descriptor.bandwidth_file <api/descriptor/bandwidth_file.html>`_ - Bandwidth authority metrics.
  * `stem.descriptor.tordnsel <api/descriptor/tordnsel.html>`_ - `TorDNSEL <https://www.torproject.org/projects/tordnsel.html.en>`_ exit lists.
  * `stem.descriptor.certificate <api/descriptor/certificate.html>`_ - `Ed25519 certificates <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_.

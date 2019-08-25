@@ -118,7 +118,7 @@ __all__ = [
   'collector',
   'export',
   'extrainfo_descriptor',
-  'hidden_service_descriptor',
+  'hidden_service',
   'microdescriptor',
   'networkstatus',
   'reader',
@@ -329,7 +329,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
   torperf 1.0                               **unsupported**
   bridge-pool-assignment 1.0                **unsupported**
   tordnsel 1.0                              :class:`~stem.descriptor.tordnsel.TorDNSEL`
-  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor`
+  hidden-service-descriptor 1.0             :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
   ========================================= =====
 
   If you're using **python 3** then beware that the open() function defaults to
@@ -532,18 +532,19 @@ def _parse_metrics_file(descriptor_type, major_version, minor_version, descripto
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.tordnsel.TorDNSEL.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.tordnsel.TorDNSEL
-
     for desc in stem.descriptor.tordnsel._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
-  elif descriptor_type == stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.hidden_service_descriptor.HiddenServiceDescriptor
+  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptorV2.TYPE_ANNOTATION_NAME and major_version == 1:
+    desc_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV2
 
-    for desc in stem.descriptor.hidden_service_descriptor._parse_file(descriptor_file, validate = validate, **kwargs):
+    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, desc_type, validate = validate, **kwargs):
+      yield desc
+  elif descriptor_type == stem.descriptor.hidden_service.HiddenServiceDescriptorV3.TYPE_ANNOTATION_NAME and major_version == 1:
+    desc_type = stem.descriptor.hidden_service.HiddenServiceDescriptorV3
+
+    for desc in stem.descriptor.hidden_service._parse_file(descriptor_file, desc_type, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.bandwidth_file.BandwidthFile.TYPE_ANNOTATION_NAME and major_version == 1:
-    document_type = stem.descriptor.bandwidth_file.BandwidthFile
-
     for desc in stem.descriptor.bandwidth_file._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   else:
@@ -652,6 +653,23 @@ def _parse_bytes_line(keyword, attribute):
       result = b'' if value is None else value
 
     setattr(descriptor, attribute, result)
+
+  return _parse
+
+
+def _parse_int_line(keyword, attribute, allow_negative = True):
+  def _parse(descriptor, entries):
+    value = _value(keyword, entries)
+
+    try:
+      int_val = int(value)
+    except ValueError:
+      raise ValueError('%s must have a numeric value: %s' % (keyword, value))
+
+    if not allow_negative and int_val < 0:
+      raise ValueError('%s must have a positive value: %s' % (keyword, value))
+
+    setattr(descriptor, attribute, int_val)
 
   return _parse
 
@@ -1521,7 +1539,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
 
 import stem.descriptor.bandwidth_file
 import stem.descriptor.extrainfo_descriptor
-import stem.descriptor.hidden_service_descriptor
+import stem.descriptor.hidden_service
 import stem.descriptor.microdescriptor
 import stem.descriptor.networkstatus
 import stem.descriptor.server_descriptor
