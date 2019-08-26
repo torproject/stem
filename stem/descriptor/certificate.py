@@ -26,13 +26,16 @@ used to validate the key used to sign server descriptors.
   Purpose of Ed25519 certificate. As new certificate versions are added this
   enumeration will expand.
 
-  ==============  ===========
-  CertType        Description
-  ==============  ===========
-  **SIGNING**     signing a signing key with an identity key
-  **LINK_CERT**   TLS link certificate signed with ed25519 signing key
-  **AUTH**        authentication key signed with ed25519 signing key
-  ==============  ===========
+  ==============                     ===========
+  CertType                           Description
+  ==============                     ===========
+  **SIGNING**                        signing a signing key with an identity key
+  **LINK_CERT**                      TLS link certificate signed with ed25519 signing key
+  **AUTH**                           authentication key signed with ed25519 signing key
+  **HS_V3_DESC_SIGNING_KEY**         onion service v3 descriptor signing key cert (see rend-spec-v3.txt)
+  **HS_V3_INTRO_POINT_AUTH_KEY**     onion service v3 intro point authentication key cert (see rend-spec-v3.txt)
+  **HS_V3_INTRO_POINT_ENC_KEY**      onion service v3 intro point encryption key cert (see rend-spec-v3.txt)
+  ==============                     ===========
 
 .. data:: ExtensionType (enum)
 
@@ -70,7 +73,8 @@ ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
-CertType = stem.util.enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
+CertType = stem.util.enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH',
+                                        "HS_V3_DESC_SIGNING_KEY", "HS_V3_INTRO_POINT_AUTH_KEY", "HS_V3_INTRO_POINT_ENC_KEY")
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = stem.util.enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
 
@@ -158,8 +162,14 @@ class Ed25519CertificateV1(Ed25519Certificate):
       self.type = CertType.AUTH
     elif cert_type == 7:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    elif cert_type == 8: # see rend-spec-v3.txt appendix E for these defintions
+      self.type = CertType.HS_V3_DESC_SIGNING_KEY
+    elif cert_type == 9:
+      self.type = CertType.HS_V3_INTRO_POINT_AUTH_KEY
+    elif cert_type == 0x0B:
+      self.type = CertType.HS_V3_INTRO_POINT_ENC_KEY
     else:
-      raise ValueError("BUG: Ed25519 certificate type is decoded from one byte. It shouldn't be possible to have a value of %i." % cert_type)
+      raise ValueError("Ed25519 certificate type is an unknown value %i." % cert_type)
 
     # expiration time is in hours since epoch
     try:
@@ -214,6 +224,9 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
+  # ATAGAR XXX certificates are generic and not just for descriptor, however
+  # this function assumes they are. this needs to be moved to the descriptor
+  # module. the new verify() function is more generic and should be used.
   def validate(self, server_descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
@@ -269,3 +282,30 @@ class Ed25519CertificateV1(Ed25519Certificate):
       verify_key.verify(signature_bytes, descriptor_sha256_digest)
     except InvalidSignature:
       raise ValueError('Descriptor Ed25519 certificate signature invalid (Signature was forged or corrupt)')
+
+  def get_signing_key(self):
+    """
+    Get the signing key for this certificate. This is included in the extensions.
+    WARNING: This is the key that signed the certificate, not the key that got
+    certified.
+
+    :returns: Raw bytes of an ed25519 key.
+
+    :raises: **ValueError** if the signing key cannot be found.
+    """
+    signing_key_extension = None
+
+    for extension in self.extensions:
+      if extension.type == ExtensionType.HAS_SIGNING_KEY:
+        signing_key_extension = extension
+        break
+
+    if not signing_key_extension:
+      raise ValueError('Signing key extension could not be found')
+
+    if (len(signing_key_extension.data) != 32):
+      raise ValueError('Signing key extension has malformed key')
+
+    return signing_key_extension.data
+
+
