@@ -526,9 +526,17 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
-  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+  def __init__(self, raw_contents, validate = False, onion_address = None, skip_crypto_validation = False):
+    """
+    The onion_address is needed so that we can decrypt the descriptor, which is
+    impossible without the full onion address.
+    """
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate)
+
+    if onion_address == None:
+      raise ValueError("The onion address MUST be provided to parse a V3 descriptor")
+    self.onion_address = onion_address
 
     if validate:
       for keyword in REQUIRED_V3_FIELDS:
