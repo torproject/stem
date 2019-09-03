@@ -31,6 +31,21 @@ oDrFE1+ztSxzN8sApKOb5UuDtoe/E03DxZU5+r/K5AV6G0hYn21V7Xbu2pZHvIkT
 
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
+  def test_for_decrypt(self):
+    """
+    Parse a test descriptor (used while making the v3 decode function)...
+
+      sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion
+    """
+
+    with open(get_resource('hidden_service_v3_test'), 'rb') as descriptor_file:
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True,
+                  onion_address="sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion"))
+
+    self.assertEqual(3, desc.version)
+    self.assertEqual(180, desc.lifetime)
+    self.assertEqual(42, desc.revision_counter)
+
   def test_for_riseup(self):
     """
     Parse riseup's descriptor...
