@@ -15,6 +15,8 @@ import test.require
 from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
 
+from cryptography.hazmat.primitives import serialization
+
 ED25519_CERT = """
 AQQABhtZAaW2GoBED1IjY3A6f6GNqBEl5A83fD2Za9upGke51JGqAQAgBABnprVR
 ptIr43bWPo2fIzo3uOywfoMrryprpbm4HhCkZMaO064LP+1KNuLvlc8sGG8lTjx1
@@ -193,3 +195,35 @@ class TestEd25519Certificate(unittest.TestCase):
 
     cert = Ed25519Certificate.parse(certificate())
     self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)', cert.validate, desc)
+
+  @test.require.ed25519_support
+  def test_encode_decode_certificate(self):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    certified_priv_key = Ed25519PrivateKey.generate()
+    certified_pub_key = certified_priv_key.public_key()
+
+    signing_priv_key = Ed25519PrivateKey.generate()
+
+    expiration_date = datetime.datetime(2037, 8, 28, 17, 0)
+
+    my_ed_cert = stem.descriptor.certificate.MyED25519Certificate(1, CertType.HS_V3_DESC_SIGNING_KEY, expiration_date,
+                                                                  1, certified_pub_key,
+                                                                  signing_priv_key,
+                                                                  True)
+
+    ed_cert_bytes = my_ed_cert.encode()
+    self.assertTrue(my_ed_cert)
+
+    # base64 the cert since that's what the parsing func expects
+    ed_cert_bytes_b64 = base64.b64encode(ed_cert_bytes)
+
+    ed_cert_parsed = stem.descriptor.certificate.Ed25519Certificate.parse(ed_cert_bytes_b64)
+
+    self.assertEqual(ed_cert_parsed.type, my_ed_cert.cert_type)
+    self.assertEqual(ed_cert_parsed.expiration, my_ed_cert.expiration_date)
+    self.assertEqual(ed_cert_parsed.key_type, my_ed_cert.cert_key_type)
+    self.assertEqual(ed_cert_parsed.key, my_ed_cert.certified_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                                                   format=serialization.PublicFormat.Raw))
+    self.assertEqual(ed_cert_parsed.get_signing_key(), my_ed_cert.signing_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                                                   format=serialization.PublicFormat.Raw))
