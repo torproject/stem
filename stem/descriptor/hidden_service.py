@@ -554,12 +554,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-    # ATAGAR XXX need to do this cert extraction in the parsing handler
-    assert(self.signing_cert)
-    cert_lines = self.signing_cert.split('\n')
-    assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
-    desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
-
     # crypto validation (check skip_crypto_validation)
     # ASN XXX need to verify descriptor signing certificate (for now we trust Tor to do it)
     # ASN XXX need to verify descriptor signature (for now we trust Tor to do it)
@@ -568,6 +562,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       if self.onion_address is None:
         raise ValueError("Onion address is required to decrypt v3 hidden service descriptors")
 
+      # ATAGAR XXX need to do this cert extraction in the parsing handler
+      assert(self.signing_cert)
+      cert_lines = self.signing_cert.split('\n')
+      assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
+
+      desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
       plaintext = self.decrypt_descriptor(desc_signing_cert)
 
   def decrypt_descriptor(self, desc_signing_cert):

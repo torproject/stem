@@ -6,6 +6,7 @@ import functools
 import unittest
 
 import stem.descriptor
+import stem.prereq
 
 from stem.descriptor.hidden_service import (
   REQUIRED_V3_FIELDS,
@@ -38,6 +39,10 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion
     """
 
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      self.skipTest('(requires cryptography ed25519 support)')  # TODO: note version here
+      return
+
     with open(get_resource('hidden_service_v3_test'), 'rb') as descriptor_file:
       desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True,
                   onion_address="sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion"))
@@ -54,7 +59,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     """
 
     with open(get_resource('hidden_service_v3'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True, skip_crypto_validation = True))
 
     self.assertEqual(3, desc.version)
     self.assertEqual(180, desc.lifetime)
