@@ -46,6 +46,15 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(180, desc.lifetime)
     self.assertEqual(42, desc.revision_counter)
 
+  def test_for_encoding(self):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    private_identity_key = Ed25519PrivateKey.generate()
+
+    desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key=private_identity_key)
+
+    print("")
+    print(desc_string.decode())
+
   def test_for_riseup(self):
     """
     Parse riseup's descriptor...

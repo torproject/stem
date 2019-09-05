@@ -512,21 +512,77 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = (), sign = False, ed25519_private_identity_key = None):
+    """
+    Creates descriptor content with the given attributes. Mandatory fields are
+    filled with dummy information unless data is supplied. This doesn't yet
+    create a valid signature.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool sign: includes cryptographic signatures and digests if True
+    :param ED25519PrivateKey ed25519_private_identity_key: the private identity key of
+      this onion service
+
+    :returns: **str** with the content of a descriptor
+
+    :raises:
+      * **ImportError** if cryptography is unavailable and sign is True
+      * **NotImplementedError** if not implemented for this descriptor type
+    """
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
+    # We need an private identity key for the onion service to create its
+    # descriptor. We could make a new one on the spot, but we also need to
+    # return it to the caller, otherwise the caller will have no way to decode
+    # the descriptor without knowing the private key or the onion address, so
+    # for now we consider it a mandatory argument.
+    if not ed25519_private_identity_key:
+      raise ValueError('Need to provide a private ed25519 identity key to create a descriptor')
+
 
     return _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
       ('descriptor-lifetime', '180'),
+      # here we need to write a crypto blob
       ('descriptor-signing-key-cert', _random_crypto_blob('ED25519 CERT')),
+      # here we need the OEP scheme
       ('revision-counter', '15'),
+      # here we need the encrypted blob
       ('superencrypted', _random_crypto_blob('MESSAGE')),
+      # here we need an actual signature
       ('signature', 'wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg'),
     ), ())
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
+    """
+    Creates a descriptor with the given attributes. Mandatory fields are filled
+    with dummy information unless data is supplied. This doesn't yet create a
+    valid signature.
+
+    .. versionadded:: 1.6.0
+
+    :param dict attr: keyword/value mappings to be included in the descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool validate: checks the validity of the descriptor's content if
+      **True**, skips these checks otherwise
+    :param bool sign: includes cryptographic signatures and digests if True
+
+    :returns: :class:`~stem.descriptor.Descriptor` subclass
+
+    :raises:
+      * **ValueError** if the contents is malformed and validate is True
+      * **ImportError** if cryptography is unavailable and sign is True
+      * **NotImplementedError** if not implemented for this descriptor type
+    """
+    # Create a string-representation of the descriptor and then parse it
+    # immediately to create an object.
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False, onion_address = None, skip_crypto_validation = False):
