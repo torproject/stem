@@ -535,9 +535,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     """
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate)
-
-    if onion_address == None:
-      raise ValueError("The onion address MUST be provided to parse a V3 descriptor")
     self.onion_address = onion_address
 
     # XXX Do this parsing in its own function
@@ -568,6 +565,9 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # ASN XXX need to verify descriptor signature (for now we trust Tor to do it)
 
     if not skip_crypto_validation and stem.prereq.is_crypto_available():
+      if self.onion_address is None:
+        raise ValueError("Onion address is required to decrypt v3 hidden service descriptors")
+
       plaintext = self.decrypt_descriptor(desc_signing_cert)
 
   def decrypt_descriptor(self, desc_signing_cert):
