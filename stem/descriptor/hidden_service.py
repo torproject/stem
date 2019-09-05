@@ -31,6 +31,8 @@ import collections
 import hashlib
 import io
 
+import stem.descriptor.certificate
+import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
@@ -470,9 +472,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
 
     return introduction_points
 
-import stem.descriptor.certificate
-import stem.descriptor.hsv3_crypto as hsv3_crypto
-from cryptography.hazmat.primitives import serialization
 
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   """
@@ -568,29 +567,32 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # ASN XXX need to verify descriptor signing certificate (for now we trust Tor to do it)
     # ASN XXX need to verify descriptor signature (for now we trust Tor to do it)
 
-    plaintext = self.decrypt_descriptor(desc_signing_cert)
+    if not skip_crypto_validation and stem.prereq.is_crypto_available():
+      plaintext = self.decrypt_descriptor(desc_signing_cert)
 
   def decrypt_descriptor(self, desc_signing_cert):
     # Get crypto material.
     # ASN XXX Extract to its own function and assign them to class variables
+    from cryptography.hazmat.primitives import serialization
+
     blinded_key_bytes = desc_signing_cert.get_signing_key()
-    identity_public_key = hsv3_crypto.decode_address(self.onion_address)
+    identity_public_key = stem.descriptor.hsv3_crypto.decode_address(self.onion_address)
     identity_public_key_bytes = identity_public_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                  format=serialization.PublicFormat.Raw)
     assert(len(identity_public_key_bytes) == 32)
     assert(len(blinded_key_bytes) == 32)
 
-    subcredential_bytes = hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
+    subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
 
     ####################################### Do the decryption ###################################
 
-    outter_layer_plaintext = hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter,
+    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter,
                                                               identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
 
     # ATAGAR XXX this parsing function is a hack. need to replace it with some stem parsing.
-    inner_layer_ciphertext = hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
+    inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
 
-    inner_layer_plaintext =  hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter,
+    inner_layer_plaintext =  stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter,
                                                               identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
 
     print(inner_layer_plaintext)

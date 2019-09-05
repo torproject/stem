@@ -1,10 +1,7 @@
 import base64
 import hashlib
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-
+import stem.prereq
 
 """
 Onion addresses
@@ -32,6 +29,14 @@ def decode_address(onion_address_str):
 
     :raises: ValueError
     """
+
+    # TODO: note the module version
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Onion address decoding requires cryptography version XXX')
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
     if (len(onion_address_str) != 56 + len(".onion")):
         raise ValueError("Wrong address length")
 
@@ -149,6 +154,9 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
 def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter,
                               public_identity_key, subcredential,
                               secret_data, string_constant):
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+
     # decode the thing
     ciphertext_blob = base64.b64decode(ciphertext_blob_b64)
 
