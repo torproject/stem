@@ -30,10 +30,8 @@ def decode_address(onion_address_str):
     :raises: ValueError
     """
 
-    # TODO: note the module version
-
     if not stem.prereq.is_crypto_available(ed25519 = True):
-      raise ImportError('Onion address decoding requires cryptography version XXX')
+      raise ImportError('Onion address decoding requires cryptography version 2.6')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 

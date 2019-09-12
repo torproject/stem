@@ -40,7 +40,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     """
 
     if not stem.prereq.is_crypto_available(ed25519 = True):
-      self.skipTest('(requires cryptography ed25519 support)')  # TODO: note version here
+      self.skipTest('(requires cryptography v2.6)')
       return
 
     with open(get_resource('hidden_service_v3_test'), 'rb') as descriptor_file:

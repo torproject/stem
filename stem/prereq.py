@@ -119,7 +119,9 @@ def is_crypto_available(ed25519 = False):
   Checks if the cryptography functions we use are available. This is used for
   verifying relay descriptor signatures.
 
-  :param bool ed25519: check for ed25519 support
+  :param bool ed25519: check for `ed25519 support
+    <https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ed25519/>`_,
+    which was added in version 2.6
 
   :returns: **True** if we can use the cryptography module and **False**
     otherwise
@@ -135,9 +137,6 @@ def is_crypto_available(ed25519 = False):
 
     if not hasattr(rsa.RSAPrivateKey, 'sign'):
       raise ImportError()
-
-    # TODO: Check when the cryptography module's ed25519 class was added
-    # (it's not present in 2.0.3).
 
     if ed25519:
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
