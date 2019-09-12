@@ -73,8 +73,15 @@ ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
-CertType = stem.util.enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH',
-                                        "HS_V3_DESC_SIGNING_KEY", "HS_V3_INTRO_POINT_AUTH_KEY", "HS_V3_INTRO_POINT_ENC_KEY")
+CertType = stem.util.enum.UppercaseEnum(
+  'SIGNING',
+  'LINK_CERT',
+  'AUTH',
+  'HS_V3_DESC_SIGNING_KEY',
+  'HS_V3_INTRO_POINT_AUTH_KEY',
+  'HS_V3_INTRO_POINT_ENC_KEY',
+)
+
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = stem.util.enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
 
@@ -162,14 +169,15 @@ class Ed25519CertificateV1(Ed25519Certificate):
       self.type = CertType.AUTH
     elif cert_type == 7:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
-    elif cert_type == 8: # see rend-spec-v3.txt appendix E for these defintions
+    elif cert_type == 8:
+      # see rend-spec-v3.txt appendix E for these defintions
       self.type = CertType.HS_V3_DESC_SIGNING_KEY
     elif cert_type == 9:
       self.type = CertType.HS_V3_INTRO_POINT_AUTH_KEY
     elif cert_type == 0x0B:
       self.type = CertType.HS_V3_INTRO_POINT_ENC_KEY
     else:
-      raise ValueError("Ed25519 certificate type is an unknown value %i." % cert_type)
+      raise ValueError('Ed25519 certificate type %i is unrecognized' % cert_type)
 
     # expiration time is in hours since epoch
     try:
@@ -307,5 +315,3 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Signing key extension has malformed key')
 
     return signing_key_extension.data
-
-

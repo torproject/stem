@@ -560,7 +560,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     if not skip_crypto_validation and stem.prereq.is_crypto_available():
       if self.onion_address is None:
-        raise ValueError("Onion address is required to decrypt v3 hidden service descriptors")
+        raise ValueError('Onion address is required to decrypt v3 hidden service descriptors')
 
       # ATAGAR XXX need to do this cert extraction in the parsing handler
       assert(self.signing_cert)
@@ -568,7 +568,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
 
       desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
-      plaintext = self.decrypt_descriptor(desc_signing_cert)
+      self.plaintext = self.decrypt_descriptor(desc_signing_cert)
 
   def decrypt_descriptor(self, desc_signing_cert):
     # Get crypto material.
@@ -584,18 +584,15 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
 
-    ####################################### Do the decryption ###################################
-
-    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter,
-                                                              identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
+    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
 
     # ATAGAR XXX this parsing function is a hack. need to replace it with some stem parsing.
     inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
 
-    inner_layer_plaintext =  stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter,
-                                                              identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
+    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
 
     print(inner_layer_plaintext)
+
 
 # TODO: drop this alias in stem 2.x
 
