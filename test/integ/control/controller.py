@@ -1122,6 +1122,83 @@ class TestController(unittest.TestCase):
       ip_addr = response[response.find(b'\r\n\r\n'):].strip()
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)), "'%s' isn't an address" % ip_addr)
 
+
+  @test.require.controller
+  def test_mapaddress_offline(self):
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      # Try mapping one element, make sure the result is as expected.
+      map1 = {'1.2.1.2': 'ifconfig.me'}
+      x = controller.map_address(map1)
+      self.assertEqual(x, map1)
+
+      # Try mapping two elements, make sure the result is as expected.
+      map2 = {'1.2.3.4': 'foobar.example.com',
+              '1.2.3.5': 'barfuzz.example.com'}
+      x = controller.map_address(map2)
+      self.assertEqual(x, map2)
+
+      # Try mapping zero elements, get an error.
+      self.assertRaises(stem.InvalidRequest, controller.map_address, {})
+
+      # Try a virtual mapping to IPv4
+      map3 = {'0.0.0.0': 'quux'}
+      x = controller.map_address(map3)
+      self.assertEquals(len(x), 1)
+      (addr1, target) = x.items()[0]
+      # The default IPv4 virtualaddressrange is 127.192.0.0/10
+      self.assertTrue(addr1.startswith("127."),
+                      "%s did not start with 127."%addr1)
+      self.assertEquals(target, "quux")
+
+      # Try a virtual mapping to IPv6
+      map4 = {'::': 'quibble'}
+      x = controller.map_address(map4)
+      self.assertEquals(len(x), 1)
+      (addr2, target) = x.items()[0]
+      # The default IPv6 virtualaddressrange is FE80::/10
+      self.assertTrue(addr2.startswith("[fe"),
+                      "%s did not start with [fe."%addr2)
+      self.assertEquals(target, "quibble")
+
+      def parse_mapping_list(s):
+        # Helper function -- parse the response from getinfo address-mappings
+        # into a dict.
+        result = dict()
+        for line in s.split("\n"):
+          if not line.strip(): continue
+          k,v,timeout = line.split()
+          result[k] = v
+        return result
+
+      # Ask for a list of all the address mappings we've added.
+      x = controller.get_info(['address-mappings/control'])
+      m = parse_mapping_list(x['address-mappings/control'])
+      self.assertEquals(m["1.2.1.2"], "ifconfig.me")
+      self.assertEquals(m["1.2.3.4"], "foobar.example.com")
+      self.assertEquals(m["1.2.3.5"], "barfuzz.example.com")
+      self.assertEquals(m[addr1], "quux")
+      self.assertEquals(m[addr2], "quibble")
+
+      # Ask for a list of all the address mappings.
+      x = controller.get_info(['address-mappings/all'])
+      m = parse_mapping_list(x['address-mappings/all'])
+      self.assertEquals(m["1.2.1.2"], "ifconfig.me")
+      self.assertEquals(m["1.2.3.4"], "foobar.example.com")
+      self.assertEquals(m["1.2.3.5"], "barfuzz.example.com")
+      self.assertEquals(m[addr1], "quux")
+      self.assertEquals(m[addr2], "quibble")
+
+      # Now ask for a list of only the mappings configured with the
+      # configuration.  Ours should not be there.
+      x = controller.get_info(['address-mappings/config'])
+      m = parse_mapping_list(x['address-mappings/config'])
+      self.assertEquals(m.get("1.2.1.2"), None)
+      self.assertEquals(m.get("1.2.3.4"), None)
+      self.assertEquals(m.get(addr1), None)
+      self.assertEquals(m.get(addr2), None)
+
   @test.require.controller
   @test.require.online
   @test.require.version(Requirement.MICRODESCRIPTOR_IS_DEFAULT)
