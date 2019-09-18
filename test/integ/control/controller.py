@@ -1146,7 +1146,7 @@ class TestController(unittest.TestCase):
       map3 = {'0.0.0.0': 'quux'}
       x = controller.map_address(map3)
       self.assertEquals(len(x), 1)
-      (addr1, target) = x.items()[0]
+      (addr1, target) = list(x.items())[0]
       # The default IPv4 virtualaddressrange is 127.192.0.0/10
       self.assertTrue(addr1.startswith("127."),
                       "%s did not start with 127."%addr1)
@@ -1156,7 +1156,7 @@ class TestController(unittest.TestCase):
       map4 = {'::': 'quibble'}
       x = controller.map_address(map4)
       self.assertEquals(len(x), 1)
-      (addr2, target) = x.items()[0]
+      (addr2, target) = list(x.items())[0]
       # The default IPv6 virtualaddressrange is FE80::/10
       self.assertTrue(addr2.startswith("[fe"),
                       "%s did not start with [fe."%addr2)
