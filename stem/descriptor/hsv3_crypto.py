@@ -3,6 +3,22 @@ import hashlib
 
 import stem.prereq
 
+# SHA3 requires Python 3.6+ *or* the pysha3 module...
+#
+#   https://github.com/tiran/pysha3
+#
+# If pysha3 is present then importing sha3 will monkey patch the methods we
+# want onto hashlib.
+
+if not hasattr(hashlib, 'sha3_256') or not hasattr(hashlib, 'shake_256'):
+  try:
+    import sha3
+  except ImportError:
+    pass
+
+SHA3_AVAILABLE = hasattr(hashlib, 'sha3_256') and hasattr(hashlib, 'shake_256')
+SHA3_ERROR_MSG = '%s requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)'
+
 """
 Onion addresses
 
@@ -32,6 +48,8 @@ def decode_address(onion_address_str):
 
   if not stem.prereq.is_crypto_available(ed25519 = True):
     raise ImportError('Onion address decoding requires cryptography version 2.6')
+  elif not SHA3_AVAILABLE:
+    raise ImportError(SHA3_ERROR_MSG % 'Onion address decoding')
 
   from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
@@ -82,6 +100,9 @@ Both keys are in bytes
 
 
 def get_subcredential(public_identity_key, blinded_key):
+  if not SHA3_AVAILABLE:
+    raise ImportError(SHA3_ERROR_MSG % 'Hidden service subcredentials')
+
   cred_bytes_constant = 'credential'.encode()
   subcred_bytes_constant = 'subcredential'.encode()
 
@@ -141,6 +162,9 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
   XXX spec:   H(mac_key_len | mac_key | salt_len | salt | encrypted)
   """
 
+  if not SHA3_AVAILABLE:
+    raise ImportError(SHA3_ERROR_MSG % 'Hidden service validation')
+
   # Construct our own MAC first
   key_len = len(key).to_bytes(8, 'big')
   salt_len = len(salt).to_bytes(8, 'big')
@@ -157,6 +181,9 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
 
 
 def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_identity_key, subcredential, secret_data, string_constant):
+  if not SHA3_AVAILABLE:
+    raise ImportError(SHA3_ERROR_MSG % 'Hidden service descriptor decryption')
+
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
   from cryptography.hazmat.backends import default_backend
 

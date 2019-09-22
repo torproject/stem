@@ -6,6 +6,7 @@ import functools
 import unittest
 
 import stem.descriptor
+import stem.descriptor.hsv3_crypto
 import stem.prereq
 
 from stem.descriptor.hidden_service import (
@@ -41,6 +42,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     if not stem.prereq.is_crypto_available(ed25519 = True):
       self.skipTest('(requires cryptography v2.6)')
+      return
+    elif not stem.descriptor.hsv3_crypto.SHA3_AVAILABLE:
+      self.skipTest('(requires python 3.6 or pysha3)')
       return
 
     with open(get_resource('hidden_service_v3_test'), 'rb') as descriptor_file:
