@@ -530,16 +530,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
-  def __init__(self, raw_contents, validate = False, onion_address = None, skip_crypto_validation = False):
-    """
-    The onion_address is needed so that we can decrypt the descriptor, which is
-    impossible without the full onion address.
-    """
+  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate)
-    self.onion_address = onion_address
 
-    # XXX Do this parsing in its own function
     if validate:
       for keyword in REQUIRED_V3_FIELDS:
         if keyword not in entries:
@@ -556,23 +550,17 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-    # crypto validation (check skip_crypto_validation)
-    # ASN XXX need to verify descriptor signing certificate (for now we trust Tor to do it)
-    # ASN XXX need to verify descriptor signature (for now we trust Tor to do it)
+  # TODO: The following is only marked as private because it is a work in
+  # progress. This will probably become something like "body()" which decrypts
+  # and parses the internal descriptor content.
 
-    if not skip_crypto_validation and stem.prereq.is_crypto_available():
-      if self.onion_address is None:
-        raise ValueError('Onion address is required to decrypt v3 hidden service descriptors')
+  def _decrypt(self, onion_address):
+    assert(self.signing_cert)
+    cert_lines = self.signing_cert.split('\n')
+    assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
 
-      # ATAGAR XXX need to do this cert extraction in the parsing handler
-      assert(self.signing_cert)
-      cert_lines = self.signing_cert.split('\n')
-      assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
+    desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
 
-      desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
-      self.plaintext = self.decrypt_descriptor(desc_signing_cert)
-
-  def decrypt_descriptor(self, desc_signing_cert):
     # Get crypto material.
     # ASN XXX Extract to its own function and assign them to class variables
     from cryptography.hazmat.primitives import serialization
@@ -585,7 +573,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if not blinded_key_bytes:
       raise ValueError('No signing key extension present')
 
-    identity_public_key = stem.descriptor.hsv3_crypto.decode_address(self.onion_address)
+    identity_public_key = stem.descriptor.hsv3_crypto.decode_address(onion_address)
     identity_public_key_bytes = identity_public_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                  format=serialization.PublicFormat.Raw)
     assert(len(identity_public_key_bytes) == 32)

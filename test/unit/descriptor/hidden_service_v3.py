@@ -44,12 +44,13 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       return
 
     with open(get_resource('hidden_service_v3_test'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True,
-                  onion_address = 'sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion'))
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor-3 1.0', validate = True))
 
     self.assertEqual(3, desc.version)
     self.assertEqual(180, desc.lifetime)
     self.assertEqual(42, desc.revision_counter)
+
+    desc._decrypt('sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion')
 
   def test_for_riseup(self):
     """
