@@ -53,6 +53,8 @@ from stem.descriptor import (
   _random_crypto_blob,
 )
 
+from stem.descriptor.certificate import ExtensionType
+
 if stem.prereq._is_lru_cache_available():
   from functools import lru_cache
 else:
@@ -575,12 +577,18 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # ASN XXX Extract to its own function and assign them to class variables
     from cryptography.hazmat.primitives import serialization
 
-    blinded_key_bytes = desc_signing_cert.get_signing_key()
+    for extension in desc_signing_cert.extensions:
+      if extension.type == ExtensionType.HAS_SIGNING_KEY:
+        blinded_key_bytes = extension.data
+        break
+
+    if not blinded_key_bytes:
+      raise ValueError('No signing key extension present')
+
     identity_public_key = stem.descriptor.hsv3_crypto.decode_address(self.onion_address)
     identity_public_key_bytes = identity_public_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                  format=serialization.PublicFormat.Raw)
     assert(len(identity_public_key_bytes) == 32)
-    assert(len(blinded_key_bytes) == 32)
 
     subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
 

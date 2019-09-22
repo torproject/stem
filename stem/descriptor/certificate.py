@@ -4,7 +4,11 @@
 """
 Parsing for `Tor Ed25519 certificates
 <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, which are
-used to validate the key used to sign server descriptors.
+used to for a variety of purposes...
+
+  * validating the key used to sign server descriptors
+  * validating the key used to sign hidden service v3 descriptors
+  * signing and encrypting hidden service v3 indroductory points
 
 .. versionadded:: 1.6.0
 
@@ -295,28 +299,3 @@ class Ed25519CertificateV1(Ed25519Certificate):
       verify_key.verify(signature_bytes, descriptor_sha256_digest)
     except InvalidSignature:
       raise ValueError('Descriptor Ed25519 certificate signature invalid (Signature was forged or corrupt)')
-
-  def get_signing_key(self):
-    """
-    Get the signing key for this certificate. This is included in the extensions.
-    WARNING: This is the key that signed the certificate, not the key that got
-    certified.
-
-    :returns: Raw bytes of an ed25519 key.
-
-    :raises: **ValueError** if the signing key cannot be found.
-    """
-    signing_key_extension = None
-
-    for extension in self.extensions:
-      if extension.type == ExtensionType.HAS_SIGNING_KEY:
-        signing_key_extension = extension
-        break
-
-    if not signing_key_extension:
-      raise ValueError('Signing key extension could not be found')
-
-    if (len(signing_key_extension.data) != 32):
-      raise ValueError('Signing key extension has malformed key')
-
-    return signing_key_extension.data
