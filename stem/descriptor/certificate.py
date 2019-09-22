@@ -26,16 +26,21 @@ used to validate the key used to sign server descriptors.
   Purpose of Ed25519 certificate. As new certificate versions are added this
   enumeration will expand.
 
-  ==============                     ===========
-  CertType                           Description
-  ==============                     ===========
-  **SIGNING**                        signing a signing key with an identity key
-  **LINK_CERT**                      TLS link certificate signed with ed25519 signing key
-  **AUTH**                           authentication key signed with ed25519 signing key
-  **HS_V3_DESC_SIGNING_KEY**         onion service v3 descriptor signing key cert (see rend-spec-v3.txt)
-  **HS_V3_INTRO_POINT_AUTH_KEY**     onion service v3 intro point authentication key cert (see rend-spec-v3.txt)
-  **HS_V3_INTRO_POINT_ENC_KEY**      onion service v3 intro point encryption key cert (see rend-spec-v3.txt)
-  ==============                     ===========
+  For more information see...
+
+    * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
+    * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
+
+  ========================  ===========
+  CertType                  Description
+  ========================  ===========
+  **SIGNING**               signing key with an identity key
+  **LINK_CERT**             TLS link certificate signed with ed25519 signing key
+  **AUTH**                  authentication key signed with ed25519 signing key
+  **HS_V3_DESC_SIGNING**    hidden service v3 short-term descriptor signing key
+  **HS_V3_INTRO_AUTH**      hidden service v3 introductory point authentication key
+  **HS_V3_INTRO_ENCRYPT**   hidden service v3 introductory point encryption key
+  ========================  ===========
 
 .. data:: ExtensionType (enum)
 
@@ -77,9 +82,9 @@ CertType = stem.util.enum.UppercaseEnum(
   'SIGNING',
   'LINK_CERT',
   'AUTH',
-  'HS_V3_DESC_SIGNING_KEY',
-  'HS_V3_INTRO_POINT_AUTH_KEY',
-  'HS_V3_INTRO_POINT_ENC_KEY',
+  'HS_V3_DESC_SIGNING',
+  'HS_V3_INTRO_AUTH',
+  'HS_V3_INTRO_ENCRYPT',
 )
 
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
@@ -171,11 +176,11 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
     elif cert_type == 8:
       # see rend-spec-v3.txt appendix E for these defintions
-      self.type = CertType.HS_V3_DESC_SIGNING_KEY
+      self.type = CertType.HS_V3_DESC_SIGNING
     elif cert_type == 9:
-      self.type = CertType.HS_V3_INTRO_POINT_AUTH_KEY
+      self.type = CertType.HS_V3_INTRO_AUTH
     elif cert_type == 0x0B:
-      self.type = CertType.HS_V3_INTRO_POINT_ENC_KEY
+      self.type = CertType.HS_V3_INTRO_ENCRYPT
     else:
       raise ValueError('Ed25519 certificate type %i is unrecognized' % cert_type)
 
