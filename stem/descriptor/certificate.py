@@ -241,9 +241,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
-  # ATAGAR XXX certificates are generic and not just for descriptor, however
-  # this function assumes they are. this needs to be moved to the descriptor
-  # module. the new verify() function is more generic and should be used.
+  # TODO: This method is too specific to server descriptors. We should
+  # deprecate this if possible in favor of a more generic method that covers
+  # hidden service v3 descriptors as well.
+
   def validate(self, server_descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
