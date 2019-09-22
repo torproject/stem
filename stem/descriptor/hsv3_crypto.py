@@ -1,6 +1,6 @@
 import base64
+import binascii
 import hashlib
-
 import stem.prereq
 
 # SHA3 requires Python 3.6+ *or* the pysha3 module...
@@ -109,10 +109,10 @@ def get_subcredential(public_identity_key, blinded_key):
   credential = hashlib.sha3_256(b'%s%s' % (cred_bytes_constant, public_identity_key)).digest()
   subcredential = hashlib.sha3_256(b'%s%s%s' % (subcred_bytes_constant, credential, blinded_key)).digest()
 
-  print('public_identity_key: %s' % (public_identity_key.hex()))
-  print('credential: %s' % (credential.hex()))
-  print('blinded_key: %s' % (blinded_key.hex()))
-  print('subcredential: %s' % (subcredential.hex()))
+  print('public_identity_key: %s' % (binascii.hexlify(public_identity_key)))
+  print('credential: %s' % (binascii.hexlify(credential)))
+  print('blinded_key: %s' % (binascii.hexlify(blinded_key)))
+  print('subcredential: %s' % (binascii.hexlify(subcredential)))
 
   print('===')
 
@@ -173,8 +173,8 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
   my_mac = hashlib.sha3_256(my_mac_body).digest()
 
   print('===')
-  print('my mac: %s' % my_mac.hex())
-  print('their mac: %s' % mac.hex())
+  print('my mac: %s' % binascii.hexlify(my_mac))
+  print('their mac: %s' % binascii.hexlify(mac))
 
   # Compare the two MACs
   return my_mac == mac
@@ -198,9 +198,9 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   mac = ciphertext_blob[-32:]
 
   print('encrypted blob lenth :%s' % len(ciphertext_blob))
-  print('salt: %s' % salt.hex())
+  print('salt: %s' % binascii.hexlify(salt))
   print('ciphertext length: %s' % len(ciphertext))
-  print('mac: %s' % mac.hex())
+  print('mac: %s' % binascii.hexlify(mac))
   print('===')
 
   # INT_8(revision_counter)
@@ -208,10 +208,10 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   secret_input = b'%s%s%s' % (secret_data, subcredential, rev_counter_int_8)
   secret_input = secret_input
 
-  print('secret_data (%d): %s' % (len(secret_data), secret_data.hex()))
-  print('subcredential (%d): %s' % (len(subcredential), subcredential.hex()))
-  print('rev counter int 8 (%d): %s' % (len(rev_counter_int_8), rev_counter_int_8.hex()))
-  print('secret_input (%s): %s' % (len(secret_input), secret_input.hex()))
+  print('secret_data (%d): %s' % (len(secret_data), binascii.hexlify(secret_data)))
+  print('subcredential (%d): %s' % (len(subcredential), binascii.hexlify(subcredential)))
+  print('rev counter int 8 (%d): %s' % (len(rev_counter_int_8), binascii.hexlify(rev_counter_int_8)))
+  print('secret_input (%s): %s' % (len(secret_input), binascii.hexlify(secret_input)))
   print('===')
 
   kdf = hashlib.shake_256(b'%s%s%s' % (secret_input, salt, string_constant))
@@ -221,9 +221,9 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
   mac_key = keys[S_KEY_LEN + S_IV_LEN:]
 
-  print('secret_key: %s' % secret_key.hex())
-  print('secret_iv: %s' % secret_iv.hex())
-  print('mac_key: %s' % mac_key.hex())
+  print('secret_key: %s' % binascii.hexlify(secret_key))
+  print('secret_iv: %s' % binascii.hexlify(secret_iv))
+  print('mac_key: %s' % binascii.hexlify(mac_key))
 
   # Now time to decrypt descriptor
   cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
