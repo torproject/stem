@@ -73,7 +73,7 @@ def decode_address(onion_address_str):
   my_checksum = hashlib.sha3_256(my_checksum_body).digest()
 
   if (checksum != my_checksum[:2]):
-    raise ValueError('Bad checksum')
+    raise ValueError('Bad checksum (expected %s but was %s)' % (binascii.hexlify(checksum), binascii.hexlify(my_checksum)))
 
   return Ed25519PublicKey.from_public_bytes(pubkey)
 
