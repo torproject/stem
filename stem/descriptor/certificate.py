@@ -250,7 +250,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     Validates our signing key and that the given descriptor content matches its
     Ed25519 signature.
 
-    :param stem.descriptor.server_descriptor.Ed25519 server_descriptor: relay
+    :param stem.descriptor.server_descriptor.RelayDescriptor server_descriptor: relay
       server descriptor to validate
 
     :raises:
