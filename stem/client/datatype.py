@@ -381,6 +381,15 @@ class Size(Field):
       elif content < 0:
         raise ValueError('Packed values must be positive (attempted to pack %i as a %s)' % (content, self.name))
 
+    # TODO: When we drop python 2.x support this can be simplified via
+    # integer's to_bytes() method. For example...
+    #
+    #   struct.pack('>Q', my_number)
+    #
+    # ... is the same as...
+    #
+    #   my_number.to_bytes(8, 'big')
+
     try:
       packed = struct.pack(self.format, content)
     except struct.error:

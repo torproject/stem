@@ -1,6 +1,8 @@
 import base64
 import binascii
 import hashlib
+import struct
+
 import stem.prereq
 
 # SHA3 requires Python 3.6+ *or* the pysha3 module...
@@ -166,8 +168,8 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
     raise ImportError(SHA3_ERROR_MSG % 'Hidden service validation')
 
   # Construct our own MAC first
-  key_len = len(key).to_bytes(8, 'big')
-  salt_len = len(salt).to_bytes(8, 'big')
+  key_len = struct.pack('>Q', len(key))
+  salt_len = struct.pack('>Q', len(salt))
 
   my_mac_body = b'%s%s%s%s%s' % (key_len, key, salt_len, salt, ciphertext)
   my_mac = hashlib.sha3_256(my_mac_body).digest()
@@ -204,7 +206,7 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   print('===')
 
   # INT_8(revision_counter)
-  rev_counter_int_8 = revision_counter.to_bytes(8, 'big')
+  rev_counter_int_8 = struct.pack('>Q', revision_counter)
   secret_input = b'%s%s%s' % (secret_data, subcredential, rev_counter_int_8)
   secret_input = secret_input
 
