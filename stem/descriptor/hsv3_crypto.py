@@ -63,7 +63,6 @@ def decode_address(onion_address_str):
 
   # base32 decode the addr (convert to uppercase since that's what python expects)
   onion_address = base64.b32decode(onion_address.upper())
-  assert(len(onion_address) == 35)
 
   # extract pieces of information
   pubkey = onion_address[:32]
@@ -245,8 +244,6 @@ def decrypt_outter_layer(superencrypted_blob_b64, revision_counter, public_ident
 
   # XXX Remove the BEGIN MESSSAGE around the thing
   superencrypted_blob_b64_lines = superencrypted_blob_b64.split('\n')
-  assert(superencrypted_blob_b64_lines[0] == '-----BEGIN MESSAGE-----')
-  assert(superencrypted_blob_b64_lines[-1] == '-----END MESSAGE-----')
   superencrypted_blob_b64 = ''.join(superencrypted_blob_b64_lines[1:-1])
 
   print('====== Decrypting outter layer =======')

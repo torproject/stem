@@ -555,10 +555,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   # and parses the internal descriptor content.
 
   def _decrypt(self, onion_address):
-    assert(self.signing_cert)
     cert_lines = self.signing_cert.split('\n')
-    assert(cert_lines[0] == '-----BEGIN ED25519 CERT-----' and cert_lines[-1] == '-----END ED25519 CERT-----')
-
     desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
 
     # Get crypto material.
@@ -576,8 +573,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     identity_public_key = stem.descriptor.hsv3_crypto.decode_address(onion_address)
     identity_public_key_bytes = identity_public_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                  format=serialization.PublicFormat.Raw)
-    assert(len(identity_public_key_bytes) == 32)
-
     subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
 
     outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
