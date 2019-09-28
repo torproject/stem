@@ -75,6 +75,7 @@ import datetime
 import hashlib
 
 import stem.prereq
+import stem.descriptor.server_descriptor
 import stem.util.enum
 import stem.util.str_tools
 
@@ -241,17 +242,14 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
-  # TODO: This method is too specific to server descriptors. We should
-  # deprecate this if possible in favor of a more generic method that covers
-  # hidden service v3 descriptors as well.
-
-  def validate(self, server_descriptor):
+  def validate(self, descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
-    Ed25519 signature.
+    Ed25519 signature. Supported descriptor types include...
 
-    :param stem.descriptor.server_descriptor.RelayDescriptor server_descriptor: relay
-      server descriptor to validate
+      * server descriptors
+
+    :param stem.descriptor.__init__.Descriptor descriptor: descriptor to validate
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid
@@ -265,11 +263,14 @@ class Ed25519CertificateV1(Ed25519Certificate):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     from cryptography.exceptions import InvalidSignature
 
-    descriptor_content = server_descriptor.get_bytes()
+    if not isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
+      raise ValueError('Certificate validation only supported for server descriptors, not %s' % type(descriptor).__name__)
+
+    descriptor_content = descriptor.get_bytes()
     signing_key = None
 
-    if server_descriptor.ed25519_master_key:
-      signing_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_master_key) + b'='))
+    if descriptor.ed25519_master_key:
+      signing_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'='))
     else:
       for extension in self.extensions:
         if extension.type == ExtensionType.HAS_SIGNING_KEY:
@@ -292,8 +293,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
     signed_content = descriptor_content[:descriptor_content.index(b'router-sig-ed25519 ') + 19]
     descriptor_sha256_digest = hashlib.sha256(ED25519_ROUTER_SIGNATURE_PREFIX + signed_content).digest()
 
-    missing_padding = len(server_descriptor.ed25519_signature) % 4
-    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_signature) + b'=' * missing_padding)
+    missing_padding = len(descriptor.ed25519_signature) % 4
+    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_signature) + b'=' * missing_padding)
 
     try:
       verify_key = Ed25519PublicKey.from_public_bytes(self.key)
