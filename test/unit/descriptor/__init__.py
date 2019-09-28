@@ -4,8 +4,6 @@ Unit tests for stem.descriptor.
 
 import os
 
-import stem.descriptor.hidden_service
-
 __all__ = [
   'bandwidth_file',
   'collector',
@@ -51,11 +49,7 @@ def base_expect_invalid_attr_for_text(cls, default_attr, default_prefix, test, d
   """
 
   test.assertRaises(ValueError, cls, desc_text, True)
-
-  if cls == stem.descriptor.hidden_service.HiddenServiceDescriptorV3:
-    desc = cls(desc_text, validate = False, skip_crypto_validation = True)
-  else:
-    desc = cls(desc_text, validate = False)
+  desc = cls(desc_text, validate = False)
 
   if attr:
     # check that the invalid attribute matches the expected value when
