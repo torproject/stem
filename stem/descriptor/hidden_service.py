@@ -554,7 +554,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   # progress. This will probably become something like "body()" which decrypts
   # and parses the internal descriptor content.
 
-  def _decrypt(self, onion_address):
+  def _decrypt(self, onion_address, outer_layer = False):
     cert_lines = self.signing_cert.split('\n')
     desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
 
@@ -576,6 +576,9 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
 
     outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
+
+    if outer_layer:
+      return outter_layer_plaintext
 
     # ATAGAR XXX this parsing function is a hack. need to replace it with some stem parsing.
     inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)

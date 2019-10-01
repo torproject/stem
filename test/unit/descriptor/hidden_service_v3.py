@@ -23,6 +23,8 @@ from test.unit.descriptor import (
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
 expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV3, 'version', 3)
 
+HS_ADDRESS = 'sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion'
+
 EXPECTED_SIGNING_CERT = """\
 -----BEGIN ED25519 CERT-----
 AQgABl5/AZLmgPpXVS59SEydKj7bRvvAduVOqQt3u4Tj5tVlfVKhAQAgBABUhpfe
@@ -51,7 +53,11 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
 
     if stem.prereq.is_crypto_available(ed25519 = True) and stem.descriptor.hsv3_crypto.SHA3_AVAILABLE:
-      desc._decrypt('sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion')
+      with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as outer_layer_file:
+        self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = True))
+
+      with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as outer_layer_file:
+        self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = False))
 
   def test_required_fields(self):
     """
