@@ -582,7 +582,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
 
-    print(inner_layer_plaintext)
+    return inner_layer_plaintext
 
 
 # TODO: drop this alias in stem 2.x
