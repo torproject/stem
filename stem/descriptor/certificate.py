@@ -152,6 +152,21 @@ class Ed25519Certificate(object):
     else:
       raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
 
+  @staticmethod
+  def _from_descriptor(keyword, attribute):
+    def _parse(descriptor, entries):
+      value, block_type, block_contents = entries[keyword][0]
+
+      if not block_contents or block_type != 'ED25519 CERT':
+        raise ValueError("'%s' should be followed by a ED25519 CERT block, but was a %s" % (keyword, block_type))
+
+      setattr(descriptor, attribute, Ed25519Certificate.parse(block_contents))
+
+    return _parse
+
+  def __str__(self):
+    return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
+
 
 class Ed25519CertificateV1(Ed25519Certificate):
   """

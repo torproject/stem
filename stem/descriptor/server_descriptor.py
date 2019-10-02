@@ -401,6 +401,8 @@ def _parse_exit_policy(descriptor, entries):
 
 
 def _parse_identity_ed25519_line(descriptor, entries):
+  # TODO: replace this with Ed25519Certificate._from_descriptor() in stem 2.x
+
   _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
 
   if descriptor.ed25519_certificate:

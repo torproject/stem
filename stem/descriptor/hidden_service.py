@@ -31,12 +31,13 @@ import collections
 import hashlib
 import io
 
-import stem.descriptor.certificate
 import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
+
+from stem.descriptor.certificate import Ed25519Certificate
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -199,7 +200,7 @@ _parse_v2_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
-_parse_signing_key_line = _parse_key_block('descriptor-signing-key-cert', 'signing_cert', 'ED25519 CERT')
+_parse_signing_cert = Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
@@ -481,7 +482,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   :var int version: **\\*** hidden service descriptor version
   :var int lifetime: **\\*** minutes after publication this descriptor is valid
-  :var str signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
+  :var stem.certificate.Ed25519Certificate signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
   :var int revision_counter: **\\*** descriptor revision number
   :var str superencrypted: **\\*** encrypted HS-DESC-ENC payload
   :var str signature: **\\*** signature of this descriptor
@@ -497,7 +498,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   ATTRIBUTES = {
     'version': (None, _parse_v3_version_line),
     'lifetime': (None, _parse_lifetime_line),
-    'signing_cert': (None, _parse_signing_key_line),
+    'signing_cert': (None, _parse_signing_cert),
     'revision_counter': (None, _parse_revision_counter_line),
     'superencrypted': (None, _parse_superencrypted_line),
     'signature': (None, _parse_v3_signature_line),
@@ -506,7 +507,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   PARSER_FOR_LINE = {
     'hs-descriptor': _parse_v3_version_line,
     'descriptor-lifetime': _parse_lifetime_line,
-    'descriptor-signing-key-cert': _parse_signing_key_line,
+    'descriptor-signing-key-cert': _parse_signing_cert,
     'revision-counter': _parse_revision_counter_line,
     'superencrypted': _parse_superencrypted_line,
     'signature': _parse_v3_signature_line,
@@ -560,8 +561,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
-    cert = stem.descriptor.certificate.Ed25519Certificate.parse(self.signing_cert)
-    blinded_key = cert.signing_key()
+    blinded_key = self.signing_cert.signing_key()
 
     if not blinded_key:
       raise ValueError('No signing key extension present')

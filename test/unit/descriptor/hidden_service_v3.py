@@ -46,7 +46,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     self.assertEqual(3, desc.version)
     self.assertEqual(180, desc.lifetime)
-    self.assertEqual(EXPECTED_SIGNING_CERT, desc.signing_cert)
+    self.assertEqual(EXPECTED_SIGNING_CERT, str(desc.signing_cert))
     self.assertEqual(42, desc.revision_counter)
     self.assertTrue('eaH8VdaTKS' in desc.superencrypted)
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
