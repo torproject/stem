@@ -27,26 +27,6 @@ Blinded key stuff
 pass
 
 """
-Subcredential:
-
-  subcredential = H('subcredential' | credential | blinded-public-key
-  credential = H('credential' | public-identity-key)
-
-Both keys are in bytes
-"""
-
-
-def get_subcredential(public_identity_key, blinded_key):
-  cred_bytes_constant = 'credential'.encode()
-  subcred_bytes_constant = 'subcredential'.encode()
-
-  credential = hashlib.sha3_256(b'%s%s' % (cred_bytes_constant, public_identity_key)).digest()
-  subcredential = hashlib.sha3_256(b'%s%s%s' % (subcred_bytes_constant, credential, blinded_key)).digest()
-
-  return subcredential
-
-
-"""
 Basic descriptor logic:
 
   SALT = 16 bytes from H(random), changes each time we rebuld the

@@ -566,23 +566,28 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     for extension in desc_signing_cert.extensions:
       if extension.type == ExtensionType.HAS_SIGNING_KEY:
-        blinded_key_bytes = extension.data
+        blinded_key = extension.data
         break
 
-    if not blinded_key_bytes:
+    if not blinded_key:
       raise ValueError('No signing key extension present')
 
     identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
-    subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key, blinded_key_bytes)
 
-    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key, blinded_key_bytes, subcredential_bytes)
+    # credential = H('credential' | public-identity-key)
+    # subcredential = H('subcredential' | credential | blinded-public-key)
+
+    credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
+    subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
+
+    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key, blinded_key, subcredential)
 
     if outer_layer:
       return outter_layer_plaintext
 
     inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
 
-    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key, blinded_key_bytes, subcredential_bytes)
+    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key, blinded_key, subcredential)
 
     return inner_layer_plaintext
 
