@@ -247,6 +247,22 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
+  def signing_key(self):
+    """
+    Provides this certificate's signing key.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **bytes** with the first signing key on the certificate, None if
+      not present
+    """
+
+    for extension in self.extensions:
+      if extension.type == ExtensionType.HAS_SIGNING_KEY:
+        return extension.data
+
+    return None
+
   def validate(self, descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
@@ -271,26 +287,22 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if not isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
       raise ValueError('Certificate validation only supported for server descriptors, not %s' % type(descriptor).__name__)
 
-    descriptor_content = descriptor.get_bytes()
-    signing_key = None
-
     if descriptor.ed25519_master_key:
-      signing_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'='))
+      signing_key = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'=')
     else:
-      for extension in self.extensions:
-        if extension.type == ExtensionType.HAS_SIGNING_KEY:
-          signing_key = Ed25519PublicKey.from_public_bytes(extension.data)
-          break
+      signing_key = self.signing_key()
 
     if not signing_key:
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      signing_key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
+      Ed25519PublicKey.from_public_bytes(signing_key).verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
     except InvalidSignature:
       raise ValueError('Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)')
 
     # ed25519 signature validates descriptor content up until the signature itself
+
+    descriptor_content = descriptor.get_bytes()
 
     if b'router-sig-ed25519 ' not in descriptor_content:
       raise ValueError("Descriptor doesn't have a router-sig-ed25519 entry.")

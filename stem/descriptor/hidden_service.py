@@ -54,8 +54,6 @@ from stem.descriptor import (
   _random_crypto_blob,
 )
 
-from stem.descriptor.certificate import ExtensionType
-
 if stem.prereq._is_lru_cache_available():
   from functools import lru_cache
 else:
@@ -562,12 +560,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
-    desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(self.signing_cert)
-
-    for extension in desc_signing_cert.extensions:
-      if extension.type == ExtensionType.HAS_SIGNING_KEY:
-        blinded_key = extension.data
-        break
+    cert = stem.descriptor.certificate.Ed25519Certificate.parse(self.signing_cert)
+    blinded_key = cert.signing_key()
 
     if not blinded_key:
       raise ValueError('No signing key extension present')
