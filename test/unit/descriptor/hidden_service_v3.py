@@ -6,7 +6,6 @@ import functools
 import unittest
 
 import stem.descriptor
-import stem.descriptor.hsv3_crypto
 import stem.prereq
 
 from stem.descriptor.hidden_service import (
@@ -52,7 +51,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue('eaH8VdaTKS' in desc.superencrypted)
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
 
-    if stem.prereq.is_crypto_available(ed25519 = True) and stem.descriptor.hsv3_crypto.SHA3_AVAILABLE:
+    if stem.prereq.is_crypto_available(ed25519 = True) and stem.prereq._is_sha3_available():
       with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as outer_layer_file:
         self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = True))
 

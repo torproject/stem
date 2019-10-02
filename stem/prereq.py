@@ -2,13 +2,12 @@
 # See LICENSE for licensing information
 
 """
-Checks for stem dependencies. We require python 2.6 or greater (including the
-3.x series), but note we'll be bumping our requirements to python 2.7 in stem
-2.0. Other requirements for complete functionality are...
+Checks for stem dependencies.
 
-* cryptography module
-
-  * validating descriptor signature integrity
+Aside from Python itself Stem only has soft dependencies, which is to say
+module unavailability only impacts features that require it. For example,
+descriptor signature validation requires 'cryptography'. If unavailable
+stem will still read descriptors - just without signature checks.
 
 ::
 
@@ -22,6 +21,7 @@ Checks for stem dependencies. We require python 2.6 or greater (including the
 """
 
 import functools
+import hashlib
 import inspect
 import platform
 import sys
@@ -52,6 +52,9 @@ def _is_python_26():
   Checks if we're running python 2.6. This isn't for users as it'll be removed
   in stem 2.0 (when python 2.6 support goes away).
 
+  .. deprecated:: 1.8.0
+     Stem 2.x will remove this method along with Python 2.x support.
+
   :returns: **True** if we're running python 2.6, **False** otherwise
   """
 
@@ -65,7 +68,7 @@ def is_python_27():
   Checks if we're running python 2.7 or above (including the 3.x series).
 
   .. deprecated:: 1.5.0
-     Function lacks much utility and will be eventually removed.
+     Stem 2.x will remove this method along with Python 2.x support.
 
   :returns: **True** if we meet this requirement and **False** otherwise
   """
@@ -78,6 +81,9 @@ def is_python_27():
 def is_python_3():
   """
   Checks if we're in the 3.0 - 3.x range.
+
+  .. deprecated:: 1.8.0
+     Stem 2.x will remove this method along with Python 2.x support.
 
   :returns: **True** if we meet this requirement and **False** otherwise
   """
@@ -267,3 +273,21 @@ def _is_crypto_ed25519_supported():
   else:
     log.log_once('stem.prereq._is_crypto_ed25519_supported', log.INFO, ED25519_UNSUPPORTED)
     return False
+
+
+def _is_sha3_available():
+  """
+  Check if hashlib has sha3 support. This requires Python 3.6+ *or* the `pysha3
+  module <https://github.com/tiran/pysha3>`_.
+  """
+
+  # If pysha3 is present then importing sha3 will monkey patch the methods we
+  # want onto hashlib.
+
+  if not hasattr(hashlib, 'sha3_256') or not hasattr(hashlib, 'shake_256'):
+    try:
+      import sha3
+    except ImportError:
+      pass
+
+  return hasattr(hashlib, 'sha3_256') and hasattr(hashlib, 'shake_256')

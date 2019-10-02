@@ -36,6 +36,7 @@ import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
+import stem.util.tor_tools
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -555,6 +556,16 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   # and parses the internal descriptor content.
 
   def _decrypt(self, onion_address, outer_layer = False):
+    if onion_address.endswith('.onion'):
+      onion_address = onion_address[:-6]
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
+    elif not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+    elif not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
+      raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
+
     cert_lines = self.signing_cert.split('\n')
     desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
 
