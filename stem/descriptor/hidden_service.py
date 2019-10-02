@@ -101,6 +101,7 @@ SINGLE_INTRODUCTION_POINT_FIELDS = [
 
 BASIC_AUTH = 1
 STEALTH_AUTH = 2
+CHECKSUM_CONSTANT = b'.onion checksum'
 
 
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
@@ -556,22 +557,13 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   # and parses the internal descriptor content.
 
   def _decrypt(self, onion_address, outer_layer = False):
-    if onion_address.endswith('.onion'):
-      onion_address = onion_address[:-6]
-
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-    elif not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
-      raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
 
     cert_lines = self.signing_cert.split('\n')
     desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
-
-    # Get crypto material.
-    # ASN XXX Extract to its own function and assign them to class variables
-    from cryptography.hazmat.primitives import serialization
 
     for extension in desc_signing_cert.extensions:
       if extension.type == ExtensionType.HAS_SIGNING_KEY:
@@ -581,22 +573,54 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if not blinded_key_bytes:
       raise ValueError('No signing key extension present')
 
-    identity_public_key = stem.descriptor.hsv3_crypto.decode_address(onion_address)
-    identity_public_key_bytes = identity_public_key.public_bytes(encoding=serialization.Encoding.Raw,
-                                                                 format=serialization.PublicFormat.Raw)
-    subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key_bytes, blinded_key_bytes)
+    identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
+    subcredential_bytes = stem.descriptor.hsv3_crypto.get_subcredential(identity_public_key, blinded_key_bytes)
 
-    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
+    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key, blinded_key_bytes, subcredential_bytes)
 
     if outer_layer:
       return outter_layer_plaintext
 
-    # ATAGAR XXX this parsing function is a hack. need to replace it with some stem parsing.
     inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
 
-    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key_bytes, blinded_key_bytes, subcredential_bytes)
+    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key, blinded_key_bytes, subcredential_bytes)
 
     return inner_layer_plaintext
+
+  @staticmethod
+  def _public_key_from_address(onion_address):
+    # provides our hidden service ed25519 public key
+
+    if onion_address.endswith('.onion'):
+      onion_address = onion_address[:-6]
+
+    if not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
+      raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
+
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+    # onion_address = base32(PUBKEY | CHECKSUM | VERSION) + '.onion'
+    # CHECKSUM = H('.onion checksum' | PUBKEY | VERSION)[:2]
+
+    decoded_address = base64.b32decode(onion_address.upper())
+
+    pubkey = decoded_address[:32]
+    checksum = decoded_address[32:34]
+    version = decoded_address[34:35]
+
+    # validate our address checksum
+
+    my_checksum_body = b'%s%s%s' % (CHECKSUM_CONSTANT, pubkey, version)
+    my_checksum = hashlib.sha3_256(my_checksum_body).digest()[:2]
+
+    if (checksum != my_checksum):
+      raise ValueError('Bad checksum (expected %s but was %s)' % (binascii.hexlify(checksum), binascii.hexlify(my_checksum)))
+
+    return Ed25519PublicKey.from_public_bytes(pubkey).public_bytes(
+      encoding = serialization.Encoding.Raw,
+      format = serialization.PublicFormat.Raw
+    )
 
 
 # TODO: drop this alias in stem 2.x

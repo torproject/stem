@@ -117,3 +117,15 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     for test_value in test_values:
       expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
+
+  def test_public_key_from_address(self):
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      self.skipTest('(requires cryptography ed25519 support)')
+      return
+    elif not stem.prereq._is_sha3_available():
+      self.skipTest('(requires sha3 support)')
+      return
+
+    self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
+    self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
+    self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
