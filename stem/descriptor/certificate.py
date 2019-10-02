@@ -112,7 +112,7 @@ class Ed25519Certificate(object):
   Base class for an Ed25519 certificate.
 
   :var int version: certificate format version
-  :var str encoded: base64 encoded ed25519 certificate
+  :var unicode encoded: base64 encoded ed25519 certificate
   """
 
   def __init__(self, version, encoded):
@@ -132,8 +132,13 @@ class Ed25519Certificate(object):
     :raises: **ValueError** if content is malformed
     """
 
+    content = stem.util.str_tools._to_unicode(content)
+
+    if content.startswith('-----BEGIN ED25519 CERT-----\n') and content.endswith('\n-----END ED25519 CERT-----'):
+      content = content[29:-27]
+
     try:
-      decoded = base64.b64decode(stem.util.str_tools._to_bytes(content))
+      decoded = base64.b64decode(content)
 
       if not decoded:
         raise TypeError('empty')

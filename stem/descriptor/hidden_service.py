@@ -562,8 +562,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
-    cert_lines = self.signing_cert.split('\n')
-    desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(''.join(cert_lines[1:-1]))
+    desc_signing_cert = stem.descriptor.certificate.Ed25519Certificate.parse(self.signing_cert)
 
     for extension in desc_signing_cert.extensions:
       if extension.type == ExtensionType.HAS_SIGNING_KEY:
