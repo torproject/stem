@@ -47,6 +47,7 @@ from stem.descriptor import (
   _read_until_keywords,
   _bytes_for_block,
   _value,
+  _values,
   _parse_simple_line,
   _parse_int_line,
   _parse_timestamp_line,
@@ -103,6 +104,12 @@ STEALTH_AUTH = 2
 CHECKSUM_CONSTANT = b'.onion checksum'
 
 
+class DecryptionFailure(Exception):
+  """
+  Failure to decrypt the hidden service descriptor's introduction-points.
+  """
+
+
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
   """
   :var str identifier: hash of this introduction point's identity key
@@ -115,9 +122,15 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   """
 
 
-class DecryptionFailure(Exception):
+class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
   """
-  Failure to decrypt the hidden service descriptor's introduction-points.
+  Client authorized to use a v3 hidden service.
+
+  .. versionadded:: 1.8.0
+
+  :var str id: base64 encoded client id
+  :var str iv: base64 encoded randomized initialization vector
+  :var str cookie: base64 encoded authentication cookie
   """
 
 
@@ -191,6 +204,22 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
 
+def _parse_v3_outer_clients(descriptor, entries):
+  # "auth-client" client-id iv encrypted-cookie
+
+  clients = {}
+
+  for value in _values('auth-client', entries):
+    value_comp = value.split()
+
+    if len(value_comp) < 3:
+      raise ValueError('auth-client should have a client-id, iv, and cookie: auth-client %s' % value)
+
+    clients[value_comp[0]] = AuthorizedClient(value_comp[0], value_comp[1], value_comp[2])
+
+  descriptor.clients = clients
+
+
 _parse_v2_version_line = _parse_int_line('version', 'version', allow_negative = False)
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
@@ -204,6 +233,10 @@ _parse_signing_cert = Ed25519Certificate._from_descriptor('descriptor-signing-ke
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
+
+_parse_v3_outer_auth_type = _parse_simple_line('desc-auth-type', 'auth_type')
+_parse_v3_outer_ephemeral_key = _parse_simple_line('desc-auth-ephemeral-key', 'ephemeral_key')
+_parse_v3_outer_encrypted = _parse_key_block('encrypted', 'encrypted', 'MESSAGE')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -579,7 +612,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if outer_layer:
       return outter_layer_plaintext
 
-    inner_layer_ciphertext = stem.descriptor.hsv3_crypto.parse_superencrypted_plaintext(outter_layer_plaintext)
+    inner_layer_ciphertext = OuterLayer(outter_layer_plaintext).encrypted
 
     inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key, blinded_key, subcredential)
 
@@ -613,6 +646,49 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       raise ValueError('Bad checksum (expected %s but was %s)' % (binascii.hexlify(checksum), binascii.hexlify(my_checksum)))
 
     return pubkey
+
+
+class OuterLayer(Descriptor):
+  """
+  Initial encryped layer of a hidden service v3 descriptor (`spec
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1154>`_).
+
+  .. versionadded:: 1.8.0
+
+  :var str auth_type: **\\*** encryption scheme used for descriptor authorization
+  :var str ephemeral_key: **\\*** base64 encoded x25519 public key
+  :var dict clients: **\\*** mapping of authorized client ids to their
+    :class:`~stem.descriptor.hidden_service.AuthorizedClient`
+  :var str encrypted: **\\*** encrypted descriptor inner layer
+
+  **\\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
+  """
+
+  ATTRIBUTES = {
+    'auth_type': (None, _parse_v3_outer_auth_type),
+    'ephemeral_key': (None, _parse_v3_outer_ephemeral_key),
+    'clients': ({}, _parse_v3_outer_clients),
+    'encrypted': (None, _parse_v3_outer_encrypted),
+  }
+
+  PARSER_FOR_LINE = {
+    'desc-auth-type': _parse_v3_outer_auth_type,
+    'desc-auth-ephemeral-key': _parse_v3_outer_ephemeral_key,
+    'auth-client': _parse_v3_outer_clients,
+    'encrypted': _parse_v3_outer_encrypted,
+  }
+
+  def __init__(self, content, validate = False):
+    content = content.rstrip(b'\x00')  # strip null byte padding
+
+    super(OuterLayer, self).__init__(content, lazy_load = not validate)
+    entries = _descriptor_components(content, validate)
+
+    if validate:
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
 
 
 # TODO: drop this alias in stem 2.x

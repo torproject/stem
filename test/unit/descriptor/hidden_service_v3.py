@@ -11,6 +11,7 @@ import stem.prereq
 from stem.descriptor.hidden_service import (
   REQUIRED_V3_FIELDS,
   HiddenServiceDescriptorV3,
+  OuterLayer,
 )
 
 from test.unit.descriptor import (
@@ -57,6 +58,25 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
       with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as outer_layer_file:
         self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = False))
+
+  def test_outer_layer(self):
+    """
+    Parse the outer layer of our test descriptor.
+    """
+
+    with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as descriptor_file:
+      desc = OuterLayer(descriptor_file.read())
+
+    self.assertEqual('x25519', desc.auth_type)
+    self.assertEqual('WjZCU9sV1oxkxaPcd7/YozeZgq0lEs6DhWyrdYRNJR4=', desc.ephemeral_key)
+    self.assertTrue('BsRYMH/No+LgetIFv' in desc.encrypted)
+
+    client = desc.clients['D0Bz0OlEMCg']
+
+    self.assertEqual(16, len(desc.clients))
+    self.assertEqual('D0Bz0OlEMCg', client.id)
+    self.assertEqual('or3nS3ScSPYfLJuP9osGiQ', client.iv)
+    self.assertEqual('B40RdIWhw7kdA7lt3KJPvQ', client.cookie)
 
   def test_required_fields(self):
     """

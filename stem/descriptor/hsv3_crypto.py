@@ -84,6 +84,9 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
   from cryptography.hazmat.backends import default_backend
 
+  if ciphertext_blob_b64.startswith('-----BEGIN MESSAGE-----\n') and ciphertext_blob_b64.endswith('\n-----END MESSAGE-----'):
+    ciphertext_blob_b64 = ciphertext_blob_b64[24:-22]
+
   # decode the thing
   ciphertext_blob = base64.b64decode(ciphertext_blob_b64)
 
@@ -119,32 +122,8 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
 
 
 def decrypt_outter_layer(superencrypted_blob_b64, revision_counter, public_identity_key, blinded_key, subcredential):
-  secret_data = blinded_key
-  string_constant = b'hsdir-superencrypted-data'
-
-  # XXX Remove the BEGIN MESSSAGE around the thing
-  superencrypted_blob_b64_lines = superencrypted_blob_b64.split('\n')
-  superencrypted_blob_b64 = ''.join(superencrypted_blob_b64_lines[1:-1])
-
-  return _decrypt_descriptor_layer(superencrypted_blob_b64, revision_counter, public_identity_key, subcredential, secret_data, string_constant)
+  return _decrypt_descriptor_layer(superencrypted_blob_b64, revision_counter, public_identity_key, subcredential, blinded_key, b'hsdir-superencrypted-data')
 
 
 def decrypt_inner_layer(encrypted_blob_b64, revision_counter, public_identity_key, blinded_key, subcredential):
-  secret_data = blinded_key
-  string_constant = b'hsdir-encrypted-data'
-
-  return _decrypt_descriptor_layer(encrypted_blob_b64, revision_counter, public_identity_key, subcredential, secret_data, string_constant)
-
-
-def parse_superencrypted_plaintext(outter_layer_plaintext):
-  """Super hacky function to parse the superencrypted plaintext. This will need to be replaced by proper stem code."""
-
-  START_CONSTANT = b'-----BEGIN MESSAGE-----\n'
-  END_CONSTANT = b'\n-----END MESSAGE-----'
-
-  start = outter_layer_plaintext.find(START_CONSTANT)
-  end = outter_layer_plaintext.find(END_CONSTANT)
-
-  start = start + len(START_CONSTANT)
-
-  return outter_layer_plaintext[start:end]
+  return _decrypt_descriptor_layer(encrypted_blob_b64, revision_counter, public_identity_key, subcredential, blinded_key, b'hsdir-encrypted-data')
