@@ -80,7 +80,7 @@ def _ciphertext_mac_is_valid(key, salt, ciphertext, mac):
   return my_mac == mac
 
 
-def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_identity_key, subcredential, secret_data, string_constant):
+def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, subcredential, secret_data, string_constant):
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
   from cryptography.hazmat.backends import default_backend
 
@@ -100,7 +100,6 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   # INT_8(revision_counter)
   rev_counter_int_8 = struct.pack('>Q', revision_counter)
   secret_input = b'%s%s%s' % (secret_data, subcredential, rev_counter_int_8)
-  secret_input = secret_input
 
   kdf = hashlib.shake_256(b'%s%s%s' % (secret_input, salt, string_constant))
   keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_KEY_LEN)
@@ -121,9 +120,9 @@ def _decrypt_descriptor_layer(ciphertext_blob_b64, revision_counter, public_iden
   return decrypted
 
 
-def decrypt_outter_layer(superencrypted_blob_b64, revision_counter, public_identity_key, blinded_key, subcredential):
-  return _decrypt_descriptor_layer(superencrypted_blob_b64, revision_counter, public_identity_key, subcredential, blinded_key, b'hsdir-superencrypted-data')
+def decrypt_outter_layer(superencrypted_blob_b64, revision_counter, blinded_key, subcredential):
+  return _decrypt_descriptor_layer(superencrypted_blob_b64, revision_counter, subcredential, blinded_key, b'hsdir-superencrypted-data')
 
 
-def decrypt_inner_layer(encrypted_blob_b64, revision_counter, public_identity_key, blinded_key, subcredential):
-  return _decrypt_descriptor_layer(encrypted_blob_b64, revision_counter, public_identity_key, subcredential, blinded_key, b'hsdir-encrypted-data')
+def decrypt_inner_layer(encrypted_blob_b64, revision_counter, blinded_key, subcredential):
+  return _decrypt_descriptor_layer(encrypted_blob_b64, revision_counter, subcredential, blinded_key, b'hsdir-encrypted-data')

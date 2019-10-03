@@ -607,14 +607,14 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
     subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
 
-    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, identity_public_key, blinded_key, subcredential)
+    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, blinded_key, subcredential)
 
     if outer_layer:
       return outter_layer_plaintext
 
     inner_layer_ciphertext = OuterLayer(outter_layer_plaintext).encrypted
 
-    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, identity_public_key, blinded_key, subcredential)
+    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, blinded_key, subcredential)
 
     return inner_layer_plaintext
 
