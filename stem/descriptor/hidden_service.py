@@ -564,7 +564,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     blinded_key = self.signing_cert.signing_key()
 
     if not blinded_key:
-      raise ValueError('No signing key extension present')
+      raise ValueError('No signing key is present')
 
     identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
 
@@ -595,9 +595,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
       raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
 
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
     # onion_address = base32(PUBKEY | CHECKSUM | VERSION) + '.onion'
     # CHECKSUM = H('.onion checksum' | PUBKEY | VERSION)[:2]
 
@@ -615,10 +612,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if (checksum != my_checksum):
       raise ValueError('Bad checksum (expected %s but was %s)' % (binascii.hexlify(checksum), binascii.hexlify(my_checksum)))
 
-    return Ed25519PublicKey.from_public_bytes(pubkey).public_bytes(
-      encoding = serialization.Encoding.Raw,
-      format = serialization.PublicFormat.Raw
-    )
+    return pubkey
 
 
 # TODO: drop this alias in stem 2.x
