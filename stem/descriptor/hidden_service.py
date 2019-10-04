@@ -31,6 +31,7 @@ import collections
 import hashlib
 import io
 
+import stem.client.datatype
 import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
@@ -49,6 +50,7 @@ from stem.descriptor import (
   _value,
   _values,
   _parse_simple_line,
+  _parse_if_present,
   _parse_int_line,
   _parse_timestamp_line,
   _parse_key_block,
@@ -110,8 +112,12 @@ class DecryptionFailure(Exception):
   """
 
 
+# TODO: rename in stem 2.x (add 'V2' and drop plural)
+
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
   """
+  Introduction point for a v2 hidden service.
+
   :var str identifier: hash of this introduction point's identity key
   :var str address: address of this introduction point
   :var int port: port where this introduction point is listening
@@ -119,6 +125,20 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   :var str service_key: public key for communicating with this hidden service
   :var list intro_authentication: tuples of the form (auth_type, auth_data) for
     establishing a connection
+  """
+
+
+class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
+  """
+  Introduction point for a v3 hidden service.
+
+  :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
+  :var str onion_key: ntor introduction point public key
+  :var str auth_key: cross-certifier of the signing key
+  :var str enc_key: introduction request encryption key
+  :var str enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var str legacy_key: legacy introduction point RSA public key
+  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
   """
 
 
@@ -220,6 +240,90 @@ def _parse_v3_outer_clients(descriptor, entries):
   descriptor.clients = clients
 
 
+def _parse_v3_inner_formats(descriptor, entries):
+  value, formats = _value('create2-formats', entries), []
+
+  for entry in value.split(' '):
+    if not entry.isdigit():
+      raise ValueError("create2-formats should only contain integers, but was '%s'" % value)
+
+    formats.append(int(entry))
+
+  descriptor.formats = formats
+
+
+def _parse_v3_introduction_points(descriptor, entries):
+  if hasattr(descriptor, '_unparsed_introduction_points'):
+    introduction_points = []
+    remaining = descriptor._unparsed_introduction_points
+
+    while remaining:
+      div = remaining.find('\nintroduction-point ', 10)
+
+      if div == -1:
+        intro_point_str = remaining
+        remaining = ''
+      else:
+        intro_point_str = remaining[:div]
+        remaining = remaining[div + 1:]
+
+      entry = _descriptor_components(intro_point_str, False)
+      link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
+
+      onion_key_line = _value('onion-key', entry)
+      onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+
+      _, block_type, auth_key = entry['auth-key'][0]
+
+      if block_type != 'ED25519 CERT':
+        raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
+
+      enc_key_line = _value('enc-key', entry)
+      enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+
+      _, block_type, enc_key_cert = entry['enc-key-cert'][0]
+
+      if block_type != 'ED25519 CERT':
+        raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
+
+      legacy_key = entry['legacy-key'][0][2] if 'legacy-key' in entry else None
+      legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
+
+      introduction_points.append(
+        IntroductionPointV3(
+          link_specifiers,
+          onion_key,
+          auth_key,
+          enc_key,
+          enc_key_cert,
+          legacy_key,
+          legacy_key_cert,
+        )
+      )
+
+    descriptor.introduction_points = introduction_points
+    del descriptor._unparsed_introduction_points
+
+
+def _parse_link_specifiers(val):
+  try:
+    val = base64.b64decode(val)
+  except Exception as exc:
+    raise ValueError('Unable to base64 decode introduction point (%s): %s' % (exc, val))
+
+  link_specifiers = []
+  count, val = stem.client.datatype.Size.CHAR.pop(val)
+
+  for i in range(count):
+    link_specifier, val = stem.client.datatype.LinkSpecifier.pop(val)
+    link_specifiers.append(link_specifier)
+
+  if val:
+    raise ValueError('Introduction point had excessive data (%s)' % val)
+
+  return link_specifiers
+
+
 _parse_v2_version_line = _parse_int_line('version', 'version', allow_negative = False)
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
@@ -237,6 +341,9 @@ _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
 _parse_v3_outer_auth_type = _parse_simple_line('desc-auth-type', 'auth_type')
 _parse_v3_outer_ephemeral_key = _parse_simple_line('desc-auth-ephemeral-key', 'ephemeral_key')
 _parse_v3_outer_encrypted = _parse_key_block('encrypted', 'encrypted', 'MESSAGE')
+
+_parse_v3_inner_intro_auth = _parse_simple_line('intro-auth-required', 'intro_auth', func = lambda v: v.split(' '))
+_parse_v3_inner_single_service = _parse_if_present('single-onion-service', 'is_single_service')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -687,6 +794,58 @@ class OuterLayer(Descriptor):
 
     if validate:
       self._parse(entries, validate)
+    else:
+      self._entries = entries
+
+
+class InnerLayer(Descriptor):
+  """
+  Second encryped layer of a hidden service v3 descriptor (`spec
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1308>`_).
+
+  .. versionadded:: 1.8.0
+
+  :var list formats: **\\*** recognized CREATE2 cell formats
+  :var list intro_auth: **\\*** introduction-layer authentication types
+  :var bool is_single_service: **\\*** **True** if this is a `single onion service <https://gitweb.torproject.org/torspec.git/tree/proposals/260-rend-single-onion.txt>`_, **False** otherwise
+  :var list introduction_points: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` where this service is reachable
+
+  **\\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
+  """
+
+  ATTRIBUTES = {
+    'formats': ([], _parse_v3_inner_formats),
+    'intro_auth': ([], _parse_v3_inner_intro_auth),
+    'is_single_service': (False, _parse_v3_inner_single_service),
+    'introduction_points': ([], _parse_v3_introduction_points),
+  }
+
+  PARSER_FOR_LINE = {
+    'create2-formats': _parse_v3_inner_formats,
+    'intro-auth-required': _parse_v3_inner_intro_auth,
+    'single-onion-service': _parse_v3_inner_single_service,
+  }
+
+  def __init__(self, content, validate = False):
+    super(InnerLayer, self).__init__(content, lazy_load = not validate)
+
+    # inner layer begins with a few header fields, followed by multiple any
+    # number of introduction-points
+
+    div = content.find('\nintroduction-point ')
+
+    if div != -1:
+      self._unparsed_introduction_points = content[div + 1:]
+      content = content[:div]
+    else:
+      self._unparsed_introduction_points = None
+
+    entries = _descriptor_components(content, validate)
+
+    if validate:
+      self._parse(entries, validate)
+      _parse_v3_introduction_points(self, entries)
     else:
       self._entries = entries
 

@@ -5,6 +5,7 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 import functools
 import unittest
 
+import stem.client.datatype
 import stem.descriptor
 import stem.prereq
 
@@ -12,6 +13,7 @@ from stem.descriptor.hidden_service import (
   REQUIRED_V3_FIELDS,
   HiddenServiceDescriptorV3,
   OuterLayer,
+  InnerLayer,
 )
 
 from test.unit.descriptor import (
@@ -77,6 +79,39 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual('D0Bz0OlEMCg', client.id)
     self.assertEqual('or3nS3ScSPYfLJuP9osGiQ', client.iv)
     self.assertEqual('B40RdIWhw7kdA7lt3KJPvQ', client.cookie)
+
+  def test_inner_layer(self):
+    """
+    Parse the inner layer of our test descriptor.
+    """
+
+    with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as descriptor_file:
+      desc = InnerLayer(descriptor_file.read())
+
+    self.assertEqual([2], desc.formats)
+    self.assertEqual(['ed25519'], desc.intro_auth)
+    self.assertEqual(True, desc.is_single_service)
+    self.assertEqual(4, len(desc.introduction_points))
+
+    intro_point = desc.introduction_points[0]
+
+    self.assertEqual(2, len(intro_point.link_specifiers))
+
+    link_specifier = intro_point.link_specifiers[0]
+    self.assertEqual(stem.client.datatype.LinkByFingerprint, type(link_specifier))
+    self.assertEqual('CCCCCCCCCCCCCCCCCCCC', link_specifier.fingerprint)
+
+    link_specifier = intro_point.link_specifiers[1]
+    self.assertEqual(stem.client.datatype.LinkByIPv4, type(link_specifier))
+    self.assertEqual('1.2.3.4', link_specifier.address)
+    self.assertEqual(9001, link_specifier.port)
+
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.onion_key)
+    self.assertTrue('ID2l9EFNrp' in intro_point.auth_key)
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.enc_key)
+    self.assertTrue('ZvjPt5IfeQ', intro_point.enc_key_cert)
+    self.assertEqual(None, intro_point.legacy_key)
+    self.assertEqual(None, intro_point.legacy_key_cert)
 
   def test_required_fields(self):
     """
