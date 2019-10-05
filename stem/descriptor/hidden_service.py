@@ -671,8 +671,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
-  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+  def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
+
+    self._inner_layer = None
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
@@ -691,39 +693,49 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-  # TODO: The following is only marked as private because it is a work in
-  # progress. This will probably become something like "body()" which decrypts
-  # and parses the internal descriptor content.
+  def decrypt(self, onion_address, validate = False):
+    """
+    Decrypt this descriptor. Hidden serice descriptors contain two encryption
+    layers (:class:`~stem.descriptor.hidden_service.OuterLayer` and
+    :class:`~stem.descriptor.hidden_service.InnerLayer`).
 
-  def _decrypt(self, onion_address, outer_layer = False):
+    :param str onion_address: hidden service address this descriptor is from
+    :param bool validate: perform validation checks on decrypted content
+
+    :returns: :class:`~stem.descriptor.hidden_service.InnerLayer` with our
+      decrypted content
+
+    :raises:
+      * **ImportError** if required cryptography or sha3 module is unavailable
+      * **ValueError** if unable to decrypt or validation fails
+    """
+
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
-    blinded_key = self.signing_cert.signing_key()
+    if self._inner_layer is None:
+      blinded_key = self.signing_cert.signing_key()
 
-    if not blinded_key:
-      raise ValueError('No signing key is present')
+      if not blinded_key:
+        raise ValueError('No signing key is present')
 
-    identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
+      identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
 
-    # credential = H('credential' | public-identity-key)
-    # subcredential = H('subcredential' | credential | blinded-public-key)
+      # credential = H('credential' | public-identity-key)
+      # subcredential = H('subcredential' | credential | blinded-public-key)
 
-    credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
-    subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
+      credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
+      subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
 
-    outter_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, blinded_key, subcredential)
+      outer_layer = OuterLayer(stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, blinded_key, subcredential), validate)
 
-    if outer_layer:
-      return outter_layer_plaintext
+      inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(outer_layer.encrypted, self.revision_counter, blinded_key, subcredential)
 
-    inner_layer_ciphertext = OuterLayer(outter_layer_plaintext).encrypted
+      self._inner_layer = InnerLayer(inner_layer_plaintext, validate, outer_layer)
 
-    inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(inner_layer_ciphertext, self.revision_counter, blinded_key, subcredential)
-
-    return inner_layer_plaintext
+    return self._inner_layer
 
   @staticmethod
   def _public_key_from_address(onion_address):
@@ -805,6 +817,8 @@ class InnerLayer(Descriptor):
 
   .. versionadded:: 1.8.0
 
+  :var stem.descriptor.hidden_service.OuterLayer outer: enclosing encryption layer
+
   :var list formats: **\\*** recognized CREATE2 cell formats
   :var list intro_auth: **\\*** introduction-layer authentication types
   :var bool is_single_service: **\\*** **True** if this is a `single onion service <https://gitweb.torproject.org/torspec.git/tree/proposals/260-rend-single-onion.txt>`_, **False** otherwise
@@ -827,8 +841,10 @@ class InnerLayer(Descriptor):
     'single-onion-service': _parse_v3_inner_single_service,
   }
 
-  def __init__(self, content, validate = False):
+  def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
+
+    self.outer = outer_layer
 
     # inner layer begins with a few header fields, followed by multiple any
     # number of introduction-points

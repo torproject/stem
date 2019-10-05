@@ -35,6 +35,15 @@ BDwQZ8rhp05oCqhhY3oFHqG9KS7HGzv9g2v1/PrVJMbkfpwu1YK4b3zIZAk=
 -----END ED25519 CERT-----\
 """
 
+with open(get_resource('hidden_service_v3'), 'rb') as descriptor_file:
+  HS_DESC_STR = descriptor_file.read()
+
+with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as outer_layer_file:
+  OUTER_LAYER_STR = outer_layer_file.read()
+
+with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as inner_layer_file:
+  INNER_LAYER_STR = inner_layer_file.read()
+
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_real_descriptor(self):
@@ -54,20 +63,30 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue('eaH8VdaTKS' in desc.superencrypted)
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
 
-    if stem.prereq.is_crypto_available(ed25519 = True) and stem.prereq._is_sha3_available():
-      with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as outer_layer_file:
-        self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = True))
+  def test_decryption(self):
+    """
+    Decrypt our descriptor and validate its content.
+    """
 
-      with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as outer_layer_file:
-        self.assertEqual(outer_layer_file.read(), desc._decrypt(HS_ADDRESS, outer_layer = False))
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      self.skipTest('(requires cryptography ed25519 support)')
+      return
+    elif not stem.prereq._is_sha3_available():
+      self.skipTest('(requires sha3 support)')
+      return
+
+    desc = HiddenServiceDescriptorV3.from_str(HS_DESC_STR)
+    inner_layer = desc.decrypt(HS_ADDRESS)
+
+    self.assertEqual(INNER_LAYER_STR, str(inner_layer))
+    self.assertEqual(OUTER_LAYER_STR.rstrip(b'\x00'), str(inner_layer.outer))
 
   def test_outer_layer(self):
     """
     Parse the outer layer of our test descriptor.
     """
 
-    with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as descriptor_file:
-      desc = OuterLayer(descriptor_file.read())
+    desc = OuterLayer(OUTER_LAYER_STR)
 
     self.assertEqual('x25519', desc.auth_type)
     self.assertEqual('WjZCU9sV1oxkxaPcd7/YozeZgq0lEs6DhWyrdYRNJR4=', desc.ephemeral_key)
@@ -85,8 +104,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     Parse the inner layer of our test descriptor.
     """
 
-    with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as descriptor_file:
-      desc = InnerLayer(descriptor_file.read())
+    desc = InnerLayer(INNER_LAYER_STR)
 
     self.assertEqual([2], desc.formats)
     self.assertEqual(['ed25519'], desc.intro_auth)
