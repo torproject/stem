@@ -4,7 +4,11 @@
 """
 Parsing for `Tor Ed25519 certificates
 <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, which are
-used to validate the key used to sign server descriptors.
+used to for a variety of purposes...
+
+  * validating the key used to sign server descriptors
+  * validating the key used to sign hidden service v3 descriptors
+  * signing and encrypting hidden service v3 indroductory points
 
 .. versionadded:: 1.6.0
 
@@ -26,13 +30,21 @@ used to validate the key used to sign server descriptors.
   Purpose of Ed25519 certificate. As new certificate versions are added this
   enumeration will expand.
 
-  ==============  ===========
-  CertType        Description
-  ==============  ===========
-  **SIGNING**     signing a signing key with an identity key
-  **LINK_CERT**   TLS link certificate signed with ed25519 signing key
-  **AUTH**        authentication key signed with ed25519 signing key
-  ==============  ===========
+  For more information see...
+
+    * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
+    * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
+
+  ========================  ===========
+  CertType                  Description
+  ========================  ===========
+  **SIGNING**               signing key with an identity key
+  **LINK_CERT**             TLS link certificate signed with ed25519 signing key
+  **AUTH**                  authentication key signed with ed25519 signing key
+  **HS_V3_DESC_SIGNING**    hidden service v3 short-term descriptor signing key
+  **HS_V3_INTRO_AUTH**      hidden service v3 introductory point authentication key
+  **HS_V3_INTRO_ENCRYPT**   hidden service v3 introductory point encryption key
+  ========================  ===========
 
 .. data:: ExtensionType (enum)
 
@@ -63,6 +75,7 @@ import datetime
 import hashlib
 
 import stem.prereq
+import stem.descriptor.server_descriptor
 import stem.util.enum
 import stem.util.str_tools
 
@@ -70,7 +83,15 @@ ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
-CertType = stem.util.enum.UppercaseEnum('SIGNING', 'LINK_CERT', 'AUTH')
+CertType = stem.util.enum.UppercaseEnum(
+  'SIGNING',
+  'LINK_CERT',
+  'AUTH',
+  'HS_V3_DESC_SIGNING',
+  'HS_V3_INTRO_AUTH',
+  'HS_V3_INTRO_ENCRYPT',
+)
+
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = stem.util.enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
 
@@ -91,7 +112,7 @@ class Ed25519Certificate(object):
   Base class for an Ed25519 certificate.
 
   :var int version: certificate format version
-  :var str encoded: base64 encoded ed25519 certificate
+  :var unicode encoded: base64 encoded ed25519 certificate
   """
 
   def __init__(self, version, encoded):
@@ -111,8 +132,13 @@ class Ed25519Certificate(object):
     :raises: **ValueError** if content is malformed
     """
 
+    content = stem.util.str_tools._to_unicode(content)
+
+    if content.startswith('-----BEGIN ED25519 CERT-----\n') and content.endswith('\n-----END ED25519 CERT-----'):
+      content = content[29:-27]
+
     try:
-      decoded = base64.b64decode(stem.util.str_tools._to_bytes(content))
+      decoded = base64.b64decode(content)
 
       if not decoded:
         raise TypeError('empty')
@@ -125,6 +151,21 @@ class Ed25519Certificate(object):
       return Ed25519CertificateV1(version, content, decoded)
     else:
       raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
+
+  @staticmethod
+  def _from_descriptor(keyword, attribute):
+    def _parse(descriptor, entries):
+      value, block_type, block_contents = entries[keyword][0]
+
+      if not block_contents or block_type != 'ED25519 CERT':
+        raise ValueError("'%s' should be followed by a ED25519 CERT block, but was a %s" % (keyword, block_type))
+
+      setattr(descriptor, attribute, Ed25519Certificate.parse(block_contents))
+
+    return _parse
+
+  def __str__(self):
+    return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
 
 
 class Ed25519CertificateV1(Ed25519Certificate):
@@ -158,8 +199,15 @@ class Ed25519CertificateV1(Ed25519Certificate):
       self.type = CertType.AUTH
     elif cert_type == 7:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    elif cert_type == 8:
+      # see rend-spec-v3.txt appendix E for these defintions
+      self.type = CertType.HS_V3_DESC_SIGNING
+    elif cert_type == 9:
+      self.type = CertType.HS_V3_INTRO_AUTH
+    elif cert_type == 0x0B:
+      self.type = CertType.HS_V3_INTRO_ENCRYPT
     else:
-      raise ValueError("BUG: Ed25519 certificate type is decoded from one byte. It shouldn't be possible to have a value of %i." % cert_type)
+      raise ValueError('Ed25519 certificate type %i is unrecognized' % cert_type)
 
     # expiration time is in hours since epoch
     try:
@@ -214,13 +262,30 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
-  def validate(self, server_descriptor):
+  def signing_key(self):
+    """
+    Provides this certificate's signing key.
+
+    .. versionadded:: 1.8.0
+
+    :returns: **bytes** with the first signing key on the certificate, None if
+      not present
+    """
+
+    for extension in self.extensions:
+      if extension.type == ExtensionType.HAS_SIGNING_KEY:
+        return extension.data
+
+    return None
+
+  def validate(self, descriptor):
     """
     Validates our signing key and that the given descriptor content matches its
-    Ed25519 signature.
+    Ed25519 signature. Supported descriptor types include...
 
-    :param stem.descriptor.server_descriptor.Ed25519 server_descriptor: relay
-      server descriptor to validate
+      * server descriptors
+
+    :param stem.descriptor.__init__.Descriptor descriptor: descriptor to validate
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid
@@ -234,26 +299,25 @@ class Ed25519CertificateV1(Ed25519Certificate):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     from cryptography.exceptions import InvalidSignature
 
-    descriptor_content = server_descriptor.get_bytes()
-    signing_key = None
+    if not isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
+      raise ValueError('Certificate validation only supported for server descriptors, not %s' % type(descriptor).__name__)
 
-    if server_descriptor.ed25519_master_key:
-      signing_key = Ed25519PublicKey.from_public_bytes(base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_master_key) + b'='))
+    if descriptor.ed25519_master_key:
+      signing_key = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'=')
     else:
-      for extension in self.extensions:
-        if extension.type == ExtensionType.HAS_SIGNING_KEY:
-          signing_key = Ed25519PublicKey.from_public_bytes(extension.data)
-          break
+      signing_key = self.signing_key()
 
     if not signing_key:
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      signing_key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
+      Ed25519PublicKey.from_public_bytes(signing_key).verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
     except InvalidSignature:
       raise ValueError('Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)')
 
     # ed25519 signature validates descriptor content up until the signature itself
+
+    descriptor_content = descriptor.get_bytes()
 
     if b'router-sig-ed25519 ' not in descriptor_content:
       raise ValueError("Descriptor doesn't have a router-sig-ed25519 entry.")
@@ -261,8 +325,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
     signed_content = descriptor_content[:descriptor_content.index(b'router-sig-ed25519 ') + 19]
     descriptor_sha256_digest = hashlib.sha256(ED25519_ROUTER_SIGNATURE_PREFIX + signed_content).digest()
 
-    missing_padding = len(server_descriptor.ed25519_signature) % 4
-    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(server_descriptor.ed25519_signature) + b'=' * missing_padding)
+    missing_padding = len(descriptor.ed25519_signature) % 4
+    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_signature) + b'=' * missing_padding)
 
     try:
       verify_key = Ed25519PublicKey.from_public_bytes(self.key)

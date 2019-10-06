@@ -58,7 +58,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
-    self.assertEqual(cert_bytes, cert.encoded)
+    self.assertEqual(stem.util.str_tools._to_unicode(cert_bytes), cert.encoded)
     self.assertEqual(CertType.SIGNING, cert.type)
     self.assertEqual(datetime.datetime(1970, 1, 1, 0, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)

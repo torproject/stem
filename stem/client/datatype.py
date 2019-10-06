@@ -25,6 +25,12 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
     |- unpack - decodes content
     +- pop - decodes content with remainder
 
+  LinkSpecifier - Communication method relays in a circuit.
+    |- LinkByIPv4 - TLS connection to an IPv4 address.
+    |- LinkByIPv6 - TLS connection to an IPv6 address.
+    |- LinkByFingerprint - SHA1 identity fingerprint.
+    +- LinkByEd25519 - Ed25519 identity fingerprint.
+
   KDF - KDF-TOR derivatived attributes
     +- from_value - parses key material
 
@@ -112,6 +118,7 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
   ===================== ===========
 """
 
+import binascii
 import collections
 import hashlib
 import struct
@@ -381,6 +388,15 @@ class Size(Field):
       elif content < 0:
         raise ValueError('Packed values must be positive (attempted to pack %i as a %s)' % (content, self.name))
 
+    # TODO: When we drop python 2.x support this can be simplified via
+    # integer's to_bytes() method. For example...
+    #
+    #   struct.pack('>Q', my_number)
+    #
+    # ... is the same as...
+    #
+    #   my_number.to_bytes(8, 'big')
+
     try:
       packed = struct.pack(self.format, content)
     except struct.error:
@@ -440,7 +456,7 @@ class Address(Field):
         if len(value) != 4:
           raise ValueError('Packed IPv4 addresses should be four bytes, but was: %s' % repr(value))
 
-        self.value = '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
+        self.value = _unpack_ipv4_address(value)
         self.value_bin = value
     elif self.type == AddrType.IPv6:
       if stem.util.connection.is_valid_ipv6_address(value):
@@ -450,7 +466,7 @@ class Address(Field):
         if len(value) != 16:
           raise ValueError('Packed IPv6 addresses should be sixteen bytes, but was: %s' % repr(value))
 
-        self.value = ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
+        self.value = _unpack_ipv6_address(value)
         self.value_bin = value
     else:
       # The spec doesn't really tell us what form to expect errors to be. For
@@ -518,6 +534,119 @@ class Certificate(Field):
     return stem.util._hash_attr(self, 'type_int', 'value')
 
 
+class LinkSpecifier(object):
+  """
+  Method of communicating with a circuit's relay. Recognized link specification
+  types are an instantiation of a subclass. For more information see the
+  `EXTEND cell specification
+  <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt#n975>`_.
+
+  :var int type: numeric identifier of our type
+  :var bytes value: encoded link specification destination
+  """
+
+  def __init__(self, link_type, value):
+    self.type = link_type
+    self.value = value
+
+  @staticmethod
+  def pop(content):
+    # LSTYPE (Link specifier type)           [1 byte]
+    # LSLEN  (Link specifier length)         [1 byte]
+    # LSPEC  (Link specifier)                [LSLEN bytes]
+
+    link_type, content = Size.CHAR.pop(content)
+    value_size, content = Size.CHAR.pop(content)
+
+    if value_size > len(content):
+      raise ValueError('Link specifier should have %i bytes, but only had %i remaining' % (value_size, len(content)))
+
+    value, content = split(content, value_size)
+
+    if link_type == 0:
+      return LinkByIPv4(value), content
+    elif link_type == 1:
+      return LinkByIPv6(value), content
+    elif link_type == 2:
+      return LinkByFingerprint(value), content
+    elif link_type == 3:
+      return LinkByEd25519(value), content
+    else:
+      return LinkSpecifier(link_type, value), content  # unrecognized type
+
+
+class LinkByIPv4(LinkSpecifier):
+  """
+  TLS connection to an IPv4 address.
+
+  :var str address: relay IPv4 address
+  :var int port: relay ORPort
+  """
+
+  def __init__(self, value):
+    super(LinkByIPv4, self).__init__(0, value)
+
+    if len(value) != 6:
+      raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+
+    address_bin, value = split(value, 4)
+    self.address = _unpack_ipv4_address(address_bin)
+
+    self.port, _ = Size.SHORT.pop(value)
+
+
+class LinkByIPv6(LinkSpecifier):
+  """
+  TLS connection to an IPv6 address.
+
+  :var str address: relay IPv6 address
+  :var int port: relay ORPort
+  """
+
+  def __init__(self, value):
+    super(LinkByIPv6, self).__init__(1, value)
+
+    if len(value) != 18:
+      raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+
+    address_bin, value = split(value, 16)
+    self.address = _unpack_ipv6_address(address_bin)
+
+    self.port, _ = Size.SHORT.pop(value)
+
+
+class LinkByFingerprint(LinkSpecifier):
+  """
+  Connection to a SHA1 identity fingerprint.
+
+  :var str fingerprint: relay sha1 fingerprint
+  """
+
+  def __init__(self, value):
+    super(LinkByFingerprint, self).__init__(2, value)
+
+    if len(value) != 20:
+      raise ValueError('Fingerprint link specifiers should be twenty bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+
+    self.fingerprint = stem.util.str_tools._to_unicode(value)
+
+
+class LinkByEd25519(LinkSpecifier):
+  """
+  Connection to a Ed25519 identity fingerprint.
+
+  :var str fingerprint: relay ed25519 fingerprint
+  """
+
+  def __init__(self, value):
+    super(LinkByEd25519, self).__init__(3, value)
+
+    if len(value) != 32:
+      raise ValueError('Fingerprint link specifiers should be thirty two bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+
+    self.fingerprint = stem.util.str_tools._to_unicode(value)
+
+
 class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):
   """
   Computed KDF-TOR derived values for TAP, CREATE_FAST handshakes, and hidden
@@ -550,6 +679,18 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     backward_key, derived_key = split(derived_key, KEY_LEN)
 
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
+
+
+def _unpack_ipv4_address(value):
+  # convert bytes to a standard IPv4 address
+
+  return '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
+
+
+def _unpack_ipv6_address(value):
+  # convert bytes to a standard IPv6 address
+
+  return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 
 setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))

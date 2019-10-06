@@ -128,14 +128,17 @@ def is_valid_connection_id(entry):
   return is_valid_circuit_id(entry)
 
 
-def is_valid_hidden_service_address(entry):
+def is_valid_hidden_service_address(entry, version = None):
   """
   Checks if a string is a valid format for being a hidden service address (not
   including the '.onion' suffix).
 
   .. versionchanged:: 1.8.0
-     Responds with **True** if a version 3 hidden service address, rather than
-     just version 2 addresses.
+     Added the **version** argument, and responds with **True** if a version 3
+     hidden service address rather than just version 2 addresses.
+
+  :param int,list version: versions to check for, if unspecified either v2 or v3
+    hidden service address will provide **True**
 
   :returns: **True** if the string could be a hidden service address, **False**
     otherwise
@@ -144,8 +147,21 @@ def is_valid_hidden_service_address(entry):
   if isinstance(entry, bytes):
     entry = stem.util.str_tools._to_unicode(entry)
 
+  if version is None:
+    version = (2, 3)
+  elif isinstance(version, int):
+    version = [version]
+  elif not isinstance(version, (list, tuple)):
+    raise ValueError('Hidden service version must be an integer or list, not a %s' % type(version).__name__)
+
   try:
-    return bool(HS_V2_ADDRESS_PATTERN.match(entry)) or bool(HS_V3_ADDRESS_PATTERN.match(entry))
+    if 2 in version and bool(HS_V2_ADDRESS_PATTERN.match(entry)):
+      return True
+
+    if 3 in version and bool(HS_V3_ADDRESS_PATTERN.match(entry)):
+      return True
+
+    return False
   except TypeError:
     return False
 

@@ -769,6 +769,9 @@ def _get_binary(value, bits):
   return ''.join([str((value >> y) & 1) for y in range(bits - 1, -1, -1)])
 
 
+# TODO: In stem 2.x we should consider unifying this with
+# stem.client.datatype's _unpack_ipv4_address() and _unpack_ipv6_address().
+
 def _address_to_binary(address):
   """
   Provides the binary value for an IPv4 or IPv6 address.

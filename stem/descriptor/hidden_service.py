@@ -30,10 +30,15 @@ import binascii
 import collections
 import hashlib
 import io
+import struct
 
+import stem.client.datatype
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
+import stem.util.tor_tools
+
+from stem.descriptor.certificate import Ed25519Certificate
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -43,7 +48,9 @@ from stem.descriptor import (
   _read_until_keywords,
   _bytes_for_block,
   _value,
+  _values,
   _parse_simple_line,
+  _parse_if_present,
   _parse_int_line,
   _parse_timestamp_line,
   _parse_key_block,
@@ -96,10 +103,27 @@ SINGLE_INTRODUCTION_POINT_FIELDS = [
 
 BASIC_AUTH = 1
 STEALTH_AUTH = 2
+CHECKSUM_CONSTANT = b'.onion checksum'
 
+SALT_LEN = 16
+MAC_LEN = 32
+
+S_KEY_LEN = 32
+S_IV_LEN = 16
+
+
+class DecryptionFailure(Exception):
+  """
+  Failure to decrypt the hidden service descriptor's introduction-points.
+  """
+
+
+# TODO: rename in stem 2.x (add 'V2' and drop plural)
 
 class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
   """
+  Introduction point for a v2 hidden service.
+
   :var str identifier: hash of this introduction point's identity key
   :var str address: address of this introduction point
   :var int port: port where this introduction point is listening
@@ -110,9 +134,31 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   """
 
 
-class DecryptionFailure(Exception):
+class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
   """
-  Failure to decrypt the hidden service descriptor's introduction-points.
+  Introduction point for a v3 hidden service.
+
+  .. versionadded:: 1.8.0
+
+  :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
+  :var str onion_key: ntor introduction point public key
+  :var str auth_key: cross-certifier of the signing key
+  :var str enc_key: introduction request encryption key
+  :var str enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var str legacy_key: legacy introduction point RSA public key
+  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
+  """
+
+
+class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
+  """
+  Client authorized to use a v3 hidden service.
+
+  .. versionadded:: 1.8.0
+
+  :var str id: base64 encoded client id
+  :var str iv: base64 encoded randomized initialization vector
+  :var str cookie: base64 encoded authentication cookie
   """
 
 
@@ -156,6 +202,46 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
       break  # done parsing file
 
 
+def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, blinded_key):
+  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+  from cryptography.hazmat.backends import default_backend
+
+  def pack(val):
+    return struct.pack('>Q', val)
+
+  if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
+    encrypted_block = encrypted_block[24:-22]
+
+  try:
+    encrypted = base64.b64decode(encrypted_block)
+  except:
+    raise ValueError('Unable to decode encrypted block as base64')
+
+  if len(encrypted) < SALT_LEN + MAC_LEN:
+    raise ValueError('Encrypted block malformed (only %i bytes)' % len(encrypted))
+
+  salt = encrypted[:SALT_LEN]
+  ciphertext = encrypted[SALT_LEN:-MAC_LEN]
+  expected_mac = encrypted[-MAC_LEN:]
+
+  kdf = hashlib.shake_256(blinded_key + subcredential + pack(revision_counter) + salt + constant)
+  keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
+
+  secret_key = keys[:S_KEY_LEN]
+  secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
+  mac_key = keys[S_KEY_LEN + S_IV_LEN:]
+
+  mac = hashlib.sha3_256(pack(len(mac_key)) + mac_key + pack(len(salt)) + salt + ciphertext).digest()
+
+  if mac != expected_mac:
+    raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac))
+
+  cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
+  decryptor = cipher.decryptor()
+
+  return stem.util.str_tools._to_unicode(decryptor.update(ciphertext) + decryptor.finalize())
+
+
 def _parse_protocol_versions_line(descriptor, entries):
   value = _value('protocol-versions', entries)
 
@@ -186,6 +272,106 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
 
+def _parse_v3_outer_clients(descriptor, entries):
+  # "auth-client" client-id iv encrypted-cookie
+
+  clients = {}
+
+  for value in _values('auth-client', entries):
+    value_comp = value.split()
+
+    if len(value_comp) < 3:
+      raise ValueError('auth-client should have a client-id, iv, and cookie: auth-client %s' % value)
+
+    clients[value_comp[0]] = AuthorizedClient(value_comp[0], value_comp[1], value_comp[2])
+
+  descriptor.clients = clients
+
+
+def _parse_v3_inner_formats(descriptor, entries):
+  value, formats = _value('create2-formats', entries), []
+
+  for entry in value.split(' '):
+    if not entry.isdigit():
+      raise ValueError("create2-formats should only contain integers, but was '%s'" % value)
+
+    formats.append(int(entry))
+
+  descriptor.formats = formats
+
+
+def _parse_v3_introduction_points(descriptor, entries):
+  if hasattr(descriptor, '_unparsed_introduction_points'):
+    introduction_points = []
+    remaining = descriptor._unparsed_introduction_points
+
+    while remaining:
+      div = remaining.find('\nintroduction-point ', 10)
+
+      if div == -1:
+        intro_point_str = remaining
+        remaining = ''
+      else:
+        intro_point_str = remaining[:div]
+        remaining = remaining[div + 1:]
+
+      entry = _descriptor_components(intro_point_str, False)
+      link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
+
+      onion_key_line = _value('onion-key', entry)
+      onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+
+      _, block_type, auth_key = entry['auth-key'][0]
+
+      if block_type != 'ED25519 CERT':
+        raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
+
+      enc_key_line = _value('enc-key', entry)
+      enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+
+      _, block_type, enc_key_cert = entry['enc-key-cert'][0]
+
+      if block_type != 'ED25519 CERT':
+        raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
+
+      legacy_key = entry['legacy-key'][0][2] if 'legacy-key' in entry else None
+      legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
+
+      introduction_points.append(
+        IntroductionPointV3(
+          link_specifiers,
+          onion_key,
+          auth_key,
+          enc_key,
+          enc_key_cert,
+          legacy_key,
+          legacy_key_cert,
+        )
+      )
+
+    descriptor.introduction_points = introduction_points
+    del descriptor._unparsed_introduction_points
+
+
+def _parse_link_specifiers(val):
+  try:
+    val = base64.b64decode(val)
+  except Exception as exc:
+    raise ValueError('Unable to base64 decode introduction point (%s): %s' % (exc, val))
+
+  link_specifiers = []
+  count, val = stem.client.datatype.Size.CHAR.pop(val)
+
+  for i in range(count):
+    link_specifier, val = stem.client.datatype.LinkSpecifier.pop(val)
+    link_specifiers.append(link_specifier)
+
+  if val:
+    raise ValueError('Introduction point had excessive data (%s)' % val)
+
+  return link_specifiers
+
+
 _parse_v2_version_line = _parse_int_line('version', 'version', allow_negative = False)
 _parse_rendezvous_service_descriptor_line = _parse_simple_line('rendezvous-service-descriptor', 'descriptor_id')
 _parse_permanent_key_line = _parse_key_block('permanent-key', 'permanent_key', 'RSA PUBLIC KEY')
@@ -195,10 +381,17 @@ _parse_v2_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
-_parse_signing_key_line = _parse_key_block('descriptor-signing-key-cert', 'signing_cert', 'ED25519 CERT')
+_parse_signing_cert = Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
+
+_parse_v3_outer_auth_type = _parse_simple_line('desc-auth-type', 'auth_type')
+_parse_v3_outer_ephemeral_key = _parse_simple_line('desc-auth-ephemeral-key', 'ephemeral_key')
+_parse_v3_outer_encrypted = _parse_key_block('encrypted', 'encrypted', 'MESSAGE')
+
+_parse_v3_inner_intro_auth = _parse_simple_line('intro-auth-required', 'intro_auth', func = lambda v: v.split(' '))
+_parse_v3_inner_single_service = _parse_if_present('single-onion-service', 'is_single_service')
 
 
 class BaseHiddenServiceDescriptor(Descriptor):
@@ -477,7 +670,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   :var int version: **\\*** hidden service descriptor version
   :var int lifetime: **\\*** minutes after publication this descriptor is valid
-  :var str signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
+  :var stem.certificate.Ed25519Certificate signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
   :var int revision_counter: **\\*** descriptor revision number
   :var str superencrypted: **\\*** encrypted HS-DESC-ENC payload
   :var str signature: **\\*** signature of this descriptor
@@ -493,7 +686,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   ATTRIBUTES = {
     'version': (None, _parse_v3_version_line),
     'lifetime': (None, _parse_lifetime_line),
-    'signing_cert': (None, _parse_signing_key_line),
+    'signing_cert': (None, _parse_signing_cert),
     'revision_counter': (None, _parse_revision_counter_line),
     'superencrypted': (None, _parse_superencrypted_line),
     'signature': (None, _parse_v3_signature_line),
@@ -502,7 +695,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   PARSER_FOR_LINE = {
     'hs-descriptor': _parse_v3_version_line,
     'descriptor-lifetime': _parse_lifetime_line,
-    'descriptor-signing-key-cert': _parse_signing_key_line,
+    'descriptor-signing-key-cert': _parse_signing_cert,
     'revision-counter': _parse_revision_counter_line,
     'superencrypted': _parse_superencrypted_line,
     'signature': _parse_v3_signature_line,
@@ -526,8 +719,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
-  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+  def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
+
+    self._inner_layer = None
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
@@ -543,6 +738,182 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
         raise ValueError("Hidden service descriptor must end with a 'signature' entry")
 
       self._parse(entries, validate)
+    else:
+      self._entries = entries
+
+  def decrypt(self, onion_address):
+    """
+    Decrypt this descriptor. Hidden serice descriptors contain two encryption
+    layers (:class:`~stem.descriptor.hidden_service.OuterLayer` and
+    :class:`~stem.descriptor.hidden_service.InnerLayer`).
+
+    :param str onion_address: hidden service address this descriptor is from
+
+    :returns: :class:`~stem.descriptor.hidden_service.InnerLayer` with our
+      decrypted content
+
+    :raises:
+      * **ImportError** if required cryptography or sha3 module is unavailable
+      * **ValueError** if unable to decrypt or validation fails
+    """
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
+    elif not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+
+    if self._inner_layer is None:
+      blinded_key = self.signing_cert.signing_key()
+
+      if not blinded_key:
+        raise ValueError('No signing key is present')
+
+      # credential = H('credential' | public-identity-key)
+      # subcredential = H('subcredential' | credential | blinded-public-key)
+
+      identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
+      credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
+      subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
+
+      outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
+      self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
+
+    return self._inner_layer
+
+  @staticmethod
+  def _public_key_from_address(onion_address):
+    # provides our hidden service ed25519 public key
+
+    if onion_address.endswith('.onion'):
+      onion_address = onion_address[:-6]
+
+    if not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
+      raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
+
+    # onion_address = base32(PUBKEY | CHECKSUM | VERSION) + '.onion'
+    # CHECKSUM = H('.onion checksum' | PUBKEY | VERSION)[:2]
+
+    decoded_address = base64.b32decode(onion_address.upper())
+
+    pubkey = decoded_address[:32]
+    expected_checksum = decoded_address[32:34]
+    version = decoded_address[34:35]
+
+    checksum = hashlib.sha3_256(CHECKSUM_CONSTANT + pubkey + version).digest()[:2]
+
+    if expected_checksum != checksum:
+      checksum_str = stem.util.str_tools._to_unicode(binascii.hexlify(checksum))
+      expected_checksum_str = stem.util.str_tools._to_unicode(binascii.hexlify(expected_checksum))
+
+      raise ValueError('Bad checksum (expected %s but was %s)' % (expected_checksum_str, checksum_str))
+
+    return pubkey
+
+
+class OuterLayer(Descriptor):
+  """
+  Initial encryped layer of a hidden service v3 descriptor (`spec
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1154>`_).
+
+  .. versionadded:: 1.8.0
+
+  :var str auth_type: **\\*** encryption scheme used for descriptor authorization
+  :var str ephemeral_key: **\\*** base64 encoded x25519 public key
+  :var dict clients: **\\*** mapping of authorized client ids to their
+    :class:`~stem.descriptor.hidden_service.AuthorizedClient`
+  :var str encrypted: **\\*** encrypted descriptor inner layer
+
+  **\\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
+  """
+
+  ATTRIBUTES = {
+    'auth_type': (None, _parse_v3_outer_auth_type),
+    'ephemeral_key': (None, _parse_v3_outer_ephemeral_key),
+    'clients': ({}, _parse_v3_outer_clients),
+    'encrypted': (None, _parse_v3_outer_encrypted),
+  }
+
+  PARSER_FOR_LINE = {
+    'desc-auth-type': _parse_v3_outer_auth_type,
+    'desc-auth-ephemeral-key': _parse_v3_outer_ephemeral_key,
+    'auth-client': _parse_v3_outer_clients,
+    'encrypted': _parse_v3_outer_encrypted,
+  }
+
+  @staticmethod
+  def _decrypt(encrypted, revision_counter, subcredential, blinded_key):
+    plaintext = _decrypt_layer(encrypted, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
+    return OuterLayer(plaintext)
+
+  def __init__(self, content, validate = False):
+    content = content.rstrip('\x00')  # strip null byte padding
+
+    super(OuterLayer, self).__init__(content, lazy_load = not validate)
+    entries = _descriptor_components(content, validate)
+
+    if validate:
+      self._parse(entries, validate)
+    else:
+      self._entries = entries
+
+
+class InnerLayer(Descriptor):
+  """
+  Second encryped layer of a hidden service v3 descriptor (`spec
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1308>`_).
+
+  .. versionadded:: 1.8.0
+
+  :var stem.descriptor.hidden_service.OuterLayer outer: enclosing encryption layer
+
+  :var list formats: **\\*** recognized CREATE2 cell formats
+  :var list intro_auth: **\\*** introduction-layer authentication types
+  :var bool is_single_service: **\\*** **True** if this is a `single onion service <https://gitweb.torproject.org/torspec.git/tree/proposals/260-rend-single-onion.txt>`_, **False** otherwise
+  :var list introduction_points: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` where this service is reachable
+
+  **\\*** attribute is either required when we're parsed with validation or has
+  a default value, others are left as **None** if undefined
+  """
+
+  ATTRIBUTES = {
+    'formats': ([], _parse_v3_inner_formats),
+    'intro_auth': ([], _parse_v3_inner_intro_auth),
+    'is_single_service': (False, _parse_v3_inner_single_service),
+    'introduction_points': ([], _parse_v3_introduction_points),
+  }
+
+  PARSER_FOR_LINE = {
+    'create2-formats': _parse_v3_inner_formats,
+    'intro-auth-required': _parse_v3_inner_intro_auth,
+    'single-onion-service': _parse_v3_inner_single_service,
+  }
+
+  @staticmethod
+  def _decrypt(outer_layer, revision_counter, subcredential, blinded_key):
+    plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
+    return InnerLayer(plaintext, outer_layer = outer_layer)
+
+  def __init__(self, content, validate = False, outer_layer = None):
+    super(InnerLayer, self).__init__(content, lazy_load = not validate)
+    self.outer = outer_layer
+
+    # inner layer begins with a few header fields, followed by multiple any
+    # number of introduction-points
+
+    div = content.find('\nintroduction-point ')
+
+    if div != -1:
+      self._unparsed_introduction_points = content[div + 1:]
+      content = content[:div]
+    else:
+      self._unparsed_introduction_points = None
+
+    entries = _descriptor_components(content, validate)
+
+    if validate:
+      self._parse(entries, validate)
+      _parse_v3_introduction_points(self, entries)
     else:
       self._entries = entries
 
