@@ -30,9 +30,9 @@ import binascii
 import collections
 import hashlib
 import io
+import struct
 
 import stem.client.datatype
-import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
@@ -105,6 +105,12 @@ BASIC_AUTH = 1
 STEALTH_AUTH = 2
 CHECKSUM_CONSTANT = b'.onion checksum'
 
+SALT_LEN = 16
+MAC_LEN = 32
+
+S_KEY_LEN = 32
+S_IV_LEN = 16
+
 
 class DecryptionFailure(Exception):
   """
@@ -131,6 +137,8 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
 class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
   """
   Introduction point for a v3 hidden service.
+
+  .. versionadded:: 1.8.0
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
   :var str onion_key: ntor introduction point public key
@@ -192,6 +200,46 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
       yield desc_type(bytes.join(b'', descriptor_content), validate, **kwargs)
     else:
       break  # done parsing file
+
+
+def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, blinded_key):
+  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+  from cryptography.hazmat.backends import default_backend
+
+  def pack(val):
+    return struct.pack('>Q', val)
+
+  if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
+    encrypted_block = encrypted_block[24:-22]
+
+  try:
+    encrypted = base64.b64decode(encrypted_block)
+  except:
+    raise ValueError('Unable to decode encrypted block as base64')
+
+  if len(encrypted) < SALT_LEN + MAC_LEN:
+    raise ValueError('Encrypted block malformed (only %i bytes)' % len(encrypted))
+
+  salt = encrypted[:SALT_LEN]
+  ciphertext = encrypted[SALT_LEN:-MAC_LEN]
+  expected_mac = encrypted[-MAC_LEN:]
+
+  kdf = hashlib.shake_256(blinded_key + subcredential + pack(revision_counter) + salt + constant)
+  keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
+
+  secret_key = keys[:S_KEY_LEN]
+  secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
+  mac_key = keys[S_KEY_LEN + S_IV_LEN:]
+
+  mac = hashlib.sha3_256(pack(len(mac_key)) + mac_key + pack(len(salt)) + salt + ciphertext).digest()
+
+  if mac != expected_mac:
+    raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac))
+
+  cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
+  decryptor = cipher.decryptor()
+
+  return stem.util.str_tools._to_unicode(decryptor.update(ciphertext) + decryptor.finalize())
 
 
 def _parse_protocol_versions_line(descriptor, entries):
@@ -693,14 +741,13 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-  def decrypt(self, onion_address, validate = False):
+  def decrypt(self, onion_address):
     """
     Decrypt this descriptor. Hidden serice descriptors contain two encryption
     layers (:class:`~stem.descriptor.hidden_service.OuterLayer` and
     :class:`~stem.descriptor.hidden_service.InnerLayer`).
 
     :param str onion_address: hidden service address this descriptor is from
-    :param bool validate: perform validation checks on decrypted content
 
     :returns: :class:`~stem.descriptor.hidden_service.InnerLayer` with our
       decrypted content
@@ -721,19 +768,15 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       if not blinded_key:
         raise ValueError('No signing key is present')
 
-      identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
-
       # credential = H('credential' | public-identity-key)
       # subcredential = H('subcredential' | credential | blinded-public-key)
 
+      identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
       credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
       subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
 
-      outer_layer = OuterLayer(stem.descriptor.hsv3_crypto.decrypt_outter_layer(self.superencrypted, self.revision_counter, blinded_key, subcredential), validate)
-
-      inner_layer_plaintext = stem.descriptor.hsv3_crypto.decrypt_inner_layer(outer_layer.encrypted, self.revision_counter, blinded_key, subcredential)
-
-      self._inner_layer = InnerLayer(inner_layer_plaintext, validate, outer_layer)
+      outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
+      self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
 
     return self._inner_layer
 
@@ -753,16 +796,16 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     decoded_address = base64.b32decode(onion_address.upper())
 
     pubkey = decoded_address[:32]
-    checksum = decoded_address[32:34]
+    expected_checksum = decoded_address[32:34]
     version = decoded_address[34:35]
 
-    # validate our address checksum
+    checksum = hashlib.sha3_256(CHECKSUM_CONSTANT + pubkey + version).digest()[:2]
 
-    my_checksum_body = b'%s%s%s' % (CHECKSUM_CONSTANT, pubkey, version)
-    my_checksum = hashlib.sha3_256(my_checksum_body).digest()[:2]
+    if expected_checksum != checksum:
+      checksum_str = stem.util.str_tools._to_unicode(binascii.hexlify(checksum))
+      expected_checksum_str = stem.util.str_tools._to_unicode(binascii.hexlify(expected_checksum))
 
-    if (checksum != my_checksum):
-      raise ValueError('Bad checksum (expected %s but was %s)' % (binascii.hexlify(checksum), binascii.hexlify(my_checksum)))
+      raise ValueError('Bad checksum (expected %s but was %s)' % (expected_checksum_str, checksum_str))
 
     return pubkey
 
@@ -798,8 +841,13 @@ class OuterLayer(Descriptor):
     'encrypted': _parse_v3_outer_encrypted,
   }
 
+  @staticmethod
+  def _decrypt(encrypted, revision_counter, subcredential, blinded_key):
+    plaintext = _decrypt_layer(encrypted, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
+    return OuterLayer(plaintext)
+
   def __init__(self, content, validate = False):
-    content = content.rstrip(b'\x00')  # strip null byte padding
+    content = content.rstrip('\x00')  # strip null byte padding
 
     super(OuterLayer, self).__init__(content, lazy_load = not validate)
     entries = _descriptor_components(content, validate)
@@ -841,9 +889,13 @@ class InnerLayer(Descriptor):
     'single-onion-service': _parse_v3_inner_single_service,
   }
 
+  @staticmethod
+  def _decrypt(outer_layer, revision_counter, subcredential, blinded_key):
+    plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
+    return InnerLayer(plaintext, outer_layer = outer_layer)
+
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
-
     self.outer = outer_layer
 
     # inner layer begins with a few header fields, followed by multiple any

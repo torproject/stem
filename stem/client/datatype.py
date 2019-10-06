@@ -628,7 +628,7 @@ class LinkByFingerprint(LinkSpecifier):
     if len(value) != 20:
       raise ValueError('Fingerprint link specifiers should be twenty bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    self.fingerprint = value
+    self.fingerprint = stem.util.str_tools._to_unicode(value)
 
 
 class LinkByEd25519(LinkSpecifier):
@@ -644,7 +644,7 @@ class LinkByEd25519(LinkSpecifier):
     if len(value) != 32:
       raise ValueError('Fingerprint link specifiers should be thirty two bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    self.fingerprint = value
+    self.fingerprint = stem.util.str_tools._to_unicode(value)
 
 
 class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward_digest', 'forward_key', 'backward_key'])):

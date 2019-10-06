@@ -35,13 +35,13 @@ BDwQZ8rhp05oCqhhY3oFHqG9KS7HGzv9g2v1/PrVJMbkfpwu1YK4b3zIZAk=
 -----END ED25519 CERT-----\
 """
 
-with open(get_resource('hidden_service_v3'), 'rb') as descriptor_file:
+with open(get_resource('hidden_service_v3')) as descriptor_file:
   HS_DESC_STR = descriptor_file.read()
 
-with open(get_resource('hidden_service_v3_outer_layer'), 'rb') as outer_layer_file:
+with open(get_resource('hidden_service_v3_outer_layer')) as outer_layer_file:
   OUTER_LAYER_STR = outer_layer_file.read()
 
-with open(get_resource('hidden_service_v3_inner_layer'), 'rb') as inner_layer_file:
+with open(get_resource('hidden_service_v3_inner_layer')) as inner_layer_file:
   INNER_LAYER_STR = inner_layer_file.read()
 
 
@@ -79,7 +79,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     inner_layer = desc.decrypt(HS_ADDRESS)
 
     self.assertEqual(INNER_LAYER_STR, str(inner_layer))
-    self.assertEqual(OUTER_LAYER_STR.rstrip(b'\x00'), str(inner_layer.outer))
+    self.assertEqual(OUTER_LAYER_STR.rstrip('\x00'), str(inner_layer.outer))
 
   def test_outer_layer(self):
     """
