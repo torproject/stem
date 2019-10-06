@@ -21,6 +21,10 @@ These are only available through the Controller's
   BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
     |- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
     +- HiddenServiceDescriptorV3 - Version 3 hidden service descriptor
+         +- decrypt - decrypt and parse encrypted layers
+
+  OuterLayer - First encrypted layer of a hidden service v3 descriptor
+  InnerLayer - Second encrypted layer of a hidden service v3 descriptor
 
 .. versionadded:: 1.4.0
 """

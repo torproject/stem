@@ -200,7 +200,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     elif cert_type == 7:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
     elif cert_type == 8:
-      # see rend-spec-v3.txt appendix E for these defintions
+      # see rend-spec-v3.txt appendix E for these definitions
       self.type = CertType.HS_V3_DESC_SIGNING
     elif cert_type == 9:
       self.type = CertType.HS_V3_INTRO_AUTH
