@@ -1123,6 +1123,84 @@ class TestController(unittest.TestCase):
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)), "'%s' isn't an address" % ip_addr)
 
   @test.require.controller
+  def test_mapaddress_offline(self):
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      # try mapping one element, ensuring results are as expected
+
+      map1 = {'1.2.1.2': 'ifconfig.me'}
+      x = controller.map_address(map1)
+      self.assertEqual(x, map1)
+
+      # try mapping two elements, ensuring results are as expected
+
+      map2 = {'1.2.3.4': 'foobar.example.com',
+              '1.2.3.5': 'barfuzz.example.com'}
+
+      x = controller.map_address(map2)
+      self.assertEqual(x, map2)
+
+      # try mapping zero elements
+
+      self.assertRaises(stem.InvalidRequest, controller.map_address, {})
+
+      # try a virtual mapping to IPv4, the default virtualaddressrange is 127.192.0.0/10
+
+      map3 = {'0.0.0.0': 'quux'}
+      x = controller.map_address(map3)
+      self.assertEquals(len(x), 1)
+      addr1, target = list(x.items())[0]
+
+      self.assertTrue(addr1.startswith('127.'), '%s did not start with 127.' % addr1)
+      self.assertEquals(target, 'quux')
+
+      # try a virtual mapping to IPv6, the default IPv6 virtualaddressrange is FE80::/10
+
+      map4 = {'::': 'quibble'}
+      x = controller.map_address(map4)
+      self.assertEquals(len(x), 1)
+      addr2, target = list(x.items())[0]
+
+      self.assertTrue(addr2.startswith('[fe'), '%s did not start with [fe.' % addr2)
+      self.assertEquals(target, 'quibble')
+
+      def address_mappings(addr_type):
+        response = controller.get_info(['address-mappings/%s' % addr_type])
+        result = {}
+
+        for line in response['address-mappings/%s' % addr_type].splitlines():
+          k, v, timeout = line.split()
+          result[k] = v
+
+        return result
+
+      # ask for a list of all the address mappings we've added
+
+      self.assertEquals({
+        '1.2.1.2': 'ifconfig.me',
+        '1.2.3.4': 'foobar.example.com',
+        '1.2.3.5': 'barfuzz.example.com',
+        addr1: 'quux',
+        addr2: 'quibble',
+      }, address_mappings('control'))
+
+      # ask for a list of all the address mappings
+
+      self.assertEquals({
+        '1.2.1.2': 'ifconfig.me',
+        '1.2.3.4': 'foobar.example.com',
+        '1.2.3.5': 'barfuzz.example.com',
+        addr1: 'quux',
+        addr2: 'quibble',
+      }, address_mappings('all'))
+
+      # Now ask for a list of only the mappings configured with the
+      # configuration.  Ours should not be there.
+
+      self.assertEquals({}, address_mappings('config'))
+
+  @test.require.controller
   @test.require.online
   @test.require.version(Requirement.MICRODESCRIPTOR_IS_DEFAULT)
   def test_get_microdescriptor(self):
