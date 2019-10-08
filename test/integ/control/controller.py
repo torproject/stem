@@ -637,7 +637,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      response = controller.create_ephemeral_hidden_service(4567, basic_auth = {'alice': 'nKwfvVPmTNr2k2pG0pzV4g', 'bob': None})
+      response = controller.create_ephemeral_hidden_service(4567, key_content = 'RSA1024', basic_auth = {'alice': 'nKwfvVPmTNr2k2pG0pzV4g', 'bob': None})
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
       self.assertTrue(response.private_key is not None)
       self.assertEqual(['bob'], list(response.client_auth.keys()))  # newly created credentials were only created for bob
