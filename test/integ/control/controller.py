@@ -784,6 +784,23 @@ class TestController(unittest.TestCase):
         shutil.rmtree(tmpdir)
 
   @test.require.controller
+  def test_set_conf_31495_regression(self):
+    """
+    Make sure that we can set UseBridges=1 and set a Bridge, to
+    check for a regression in Tor bug 31945.
+    """
+    with test.runner.get_runner().get_tor_controller() as controller:
+      # Make sure we aren't a relay, so that we can set UseBridges.
+      controller.set_conf("ORPort", "0")
+
+      # Try setting UseBridges, to make sure we don't reject the request.
+      controller.set_options([("UseBridges", "1"),
+                              ("Bridge", "127.0.0.1:9999")])
+
+      # Set UseBridges back again to avoid problems in later tests.
+      controller.set_conf("UseBridges", "0")
+
+  @test.require.controller
   def test_set_conf_when_immutable(self):
     """
     Issue a SETCONF for tor options that cannot be changed while running.
