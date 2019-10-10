@@ -138,24 +138,132 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   """
 
 
-class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
+class IntroductionPointV3(object):
   """
   Introduction point for a v3 hidden service.
+
+  We want this class to satisfy two use cases:
+
+  - Parsing introduction points directly from the HSv3 descriptor and saving
+    their data here.
+
+  - Creating introduction points for inclusion to an HSv3 descriptor at a point
+    where a descriptor signing key is not yet known (because the descriptor is
+    not yet made). In which case, the certificates cannot be created yet and
+    hence need to be created at encoding time.
 
   .. versionadded:: 1.8.0
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
-  :var str onion_key: ntor introduction point public key
-  :var str auth_key: cross-certifier of the signing key
-  :var str enc_key: introduction request encryption key
-  :var str enc_key_cert: cross-certifier of the signing key by the encryption key
-  :var str legacy_key: legacy introduction point RSA public key
-  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
-  """
+  :var X25519PublicKey onion_key: ntor introduction point public key
+  :var Ed25519PublicKey auth_key: ed25519 authentication key for this intro point
+  :var stem.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
+  :var X25519PublicKey enc_key: introduction request encryption key
+  :var stem.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var XXX legacy_key: legacy introduction point RSA public key
+  :var stem.certificate.Ed25519Certificate legacy_key_cert: cross-certifier of the signing key by the legacy key
 
+  :var Ed25519Certificate descriptor_signing_key: hsv3 descriptor signing key (needed to encode the intro point)
+  """
+  def __init__(self, link_specifiers, onion_key, enc_key,
+               auth_key=None, auth_key_cert=None, legacy_key=None, enc_key_cert=None, legacy_key_cert=None):
+    """
+    Initialize this intro point.
+
+    While not all attributes are mandatory, at the very least the link
+    specifiers, the auth key, the onion key and the encryption key need to be
+    provided.
+
+    The certificates can be left out (for example in the case of creating a new
+    intro point), and they will be created at encode time when the
+    descriptor_signing_key is provided.
+    """
+    if not link_specifiers or not onion_key or not enc_key:
+      raise ValueError("Introduction point missing essential keys")
+
+    if not auth_key and not auth_key_cert:
+      raise ValueError("Either auth key or auth key cert needs to be provided")
+
+    # If we have an auth key cert but not an auth key, extract the key
+    if auth_key_cert and not auth_key:
+      auth_key = auth_key_cert.certified_ed25519_key()
+
+    self.link_specifiers = link_specifiers
+    self.onion_key = enc_key
+    self.enc_key = enc_key
+    self.legacy_key = legacy_key
+    self.auth_key = auth_key
+    self.auth_key_cert = auth_key_cert
+    self.enc_key_cert = enc_key_cert
+    self.legacy_key_cert = legacy_key_cert
+
+  def _encode_link_specifier_block(self):
+    """
+    See BUILDING-BLOCKS in rend-spec-v3.txt
+
+         NSPEC      (Number of link specifiers)   [1 byte]
+         NSPEC times:
+           LSTYPE (Link specifier type)           [1 byte]
+           LSLEN  (Link specifier length)         [1 byte]
+           LSPEC  (Link specifier)                [LSLEN bytes]
+    """
+    ls_block = b""
+    ls_block += bytes([len(self.link_specifiers)])
+    for ls in self.link_specifiers:
+      ls_block += ls.encode()
+
+    return base64.b64encode(ls_block)
+
+  def encode(self, descriptor_signing_privkey):
+    """
+    Encode this introduction point into bytes
+    """
+    if not descriptor_signing_privkey:
+      raise ValueError("Cannot encode: Descriptor signing key not provided")
+
+    cert_expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
+
+    body = b""
+
+    body += b"introduction-point %s\n" % (self._encode_link_specifier_block())
+
+    # Onion key
+    onion_key_bytes = self.onion_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                 format=serialization.PublicFormat.Raw)
+    body += b"onion-key ntor %s\n" % (base64.b64encode(onion_key_bytes))
+
+    # Build auth key certificate
+    auth_key_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type=CertType.HS_V3_INTRO_AUTH,
+                                                                     expiration_date=cert_expiration_date,
+                                                                     cert_key_type=1, certified_pub_key=self.auth_key,
+                                                                     signing_priv_key=descriptor_signing_privkey,
+                                                                     include_signing_key=True)
+    auth_key_cert_b64_blob = auth_key_cert.encode_for_descriptor()
+    body += b"auth-key\n%s\n" % (auth_key_cert_b64_blob)
+
+    # Build enc key line
+    enc_key_bytes = self.enc_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                              format=serialization.PublicFormat.Raw)
+    body += b"enc-key ntor %s\n" % (base64.b64encode(enc_key_bytes))
+
+    # Build enc key cert (this does not actually need to certify anything because of #29583)
+    enc_key_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type=CertType.HS_V3_INTRO_ENC,
+                                                                    expiration_date=cert_expiration_date,
+                                                                    cert_key_type=1, certified_pub_key=self.auth_key,
+                                                                    signing_priv_key=descriptor_signing_privkey,
+                                                                    include_signing_key=True)
+    enc_key_cert_b64_blob = enc_key_cert.encode_for_descriptor()
+    body += b"enc-key-cert\n%s\n" % (enc_key_cert_b64_blob)
+
+    # We are called to encode legacy key, but we don't know how
+    # TODO do legacy keys!
+    if self.legacy_key or self.legacy_key_cert:
+      raise NotImplementedError
+
+    return body
 
 class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
-  """
+    """
   Client authorized to use a v3 hidden service.
 
   .. versionadded:: 1.8.0
@@ -305,6 +413,8 @@ def _parse_v3_inner_formats(descriptor, entries):
 
 
 def _parse_v3_introduction_points(descriptor, entries):
+  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+
   if hasattr(descriptor, '_unparsed_introduction_points'):
     introduction_points = []
     remaining = descriptor._unparsed_introduction_points
@@ -323,33 +433,40 @@ def _parse_v3_introduction_points(descriptor, entries):
       link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
 
       onion_key_line = _value('onion-key', entry)
-      onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+      onion_key_b64 = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+      onion_key = X25519PublicKey.from_public_bytes(base64.b64decode(onion_key_b64))
 
-      _, block_type, auth_key = entry['auth-key'][0]
+      _, block_type, auth_key_cert = entry['auth-key'][0]
+      auth_key_cert = Ed25519Certificate.parse(auth_key_cert)
 
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
 
       enc_key_line = _value('enc-key', entry)
-      enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+      enc_key_b64 = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+      enc_key = X25519PublicKey.from_public_bytes(base64.b64decode(enc_key_b64))
 
       _, block_type, enc_key_cert = entry['enc-key-cert'][0]
+      enc_key_cert = Ed25519Certificate.parse(enc_key_cert)
 
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
 
       legacy_key = entry['legacy-key'][0][2] if 'legacy-key' in entry else None
       legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
+#      if legacy_key_cert:
+#      legacy_key_cert = Ed25519Certificate.parse(legacy_key_cert)
+
 
       introduction_points.append(
         IntroductionPointV3(
-          link_specifiers,
-          onion_key,
-          auth_key,
-          enc_key,
-          enc_key_cert,
-          legacy_key,
-          legacy_key_cert,
+          link_specifiers=link_specifiers,
+          onion_key=onion_key,
+          auth_key_cert=auth_key_cert,
+          enc_key=enc_key,
+          enc_key_cert=enc_key_cert,
+          legacy_key=legacy_key,
+          legacy_key_cert=legacy_key_cert,
         )
       )
 
