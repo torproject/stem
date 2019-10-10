@@ -574,6 +574,21 @@ class LinkSpecifier(object):
     else:
       return LinkSpecifier(link_type, value), content  # unrecognized type
 
+  def encode(self):
+    """
+    Encode this link specifier to bytes
+
+      LSTYPE (Link specifier type)           [1 byte]
+      LSLEN  (Link specifier length)         [1 byte]
+      LSPEC  (Link specifier)                [LSLEN bytes]
+    """
+    ls = b""
+
+    ls += bytes([self.type])
+    ls += bytes([len(self.value)])
+    ls += self.value
+
+    return ls
 
 class LinkByIPv4(LinkSpecifier):
   """
