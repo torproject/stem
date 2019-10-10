@@ -57,3 +57,15 @@ class TestLinkSpecifier(unittest.TestCase):
 
   def test_wrong_size(self):
     self.assertRaisesWith(ValueError, 'Link specifier should have 32 bytes, but only had 7 remaining', LinkSpecifier.pop, b'\x04\x20CCCCCCC')
+
+  def test_encode_decode(self):
+    test_cases = [b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+                  b'\x04\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+                  b'\x01\x12&\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01#)',
+                  b'\x00\x06\x01\x02\x03\x04#)' ]
+
+    for test_case in test_cases:
+      destination, _ = LinkSpecifier.pop(test_case)
+      test_bytes = destination.encode()
+      self.assertEqual(test_bytes, test_case)
+
