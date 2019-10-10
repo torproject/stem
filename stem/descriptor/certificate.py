@@ -253,6 +253,23 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
+  def certified_ed25519_key(self):
+    """
+    Provide this certificate's certified ed25519 key (the one that got signed)
+
+    :returns: **Ed25519PublicKey**
+
+    :raises: **ValueError** if it's not an ed25519 cert
+    """
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+    # Make sure it's an ed25519 cert
+    if (self.key_type != 1):
+      raise ValueError("Certificate is not an ed25519 cert (%d)" % key_type)
+
+    ed_key = Ed25519PublicKey.from_public_bytes(self.key)
+    return ed_key
+
   def signing_key(self):
     """
     Provides this certificate's signing key.
