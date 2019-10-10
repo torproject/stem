@@ -5,12 +5,19 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 import functools
 import unittest
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+from cryptography.hazmat.primitives import serialization
+
 import stem.client.datatype
 import stem.descriptor
 import stem.prereq
 
+import stem.descriptor.hsv3_crypto as hsv3_crypto
+
 from stem.descriptor.hidden_service import (
   REQUIRED_V3_FIELDS,
+  IntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
   InnerLayer,
@@ -43,7 +50,6 @@ with open(get_resource('hidden_service_v3_outer_layer')) as outer_layer_file:
 
 with open(get_resource('hidden_service_v3_inner_layer')) as inner_layer_file:
   INNER_LAYER_STR = inner_layer_file.read()
-
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_real_descriptor(self):
@@ -145,8 +151,10 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       'signature': 'signature',
     }
 
+    private_identity_key = Ed25519PrivateKey.generate()
     for line in REQUIRED_V3_FIELDS:
-      desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
+      desc_text = HiddenServiceDescriptorV3.content(exclude = (line,),
+                                                      ed25519_private_identity_key=private_identity_key)
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
   def test_invalid_version(self):
@@ -202,3 +210,73 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
+
+  def _helper_get_intro(self):
+    link_specifiers = []
+
+    link1, _ = stem.client.datatype.LinkSpecifier.pop(b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
+    link_specifiers.append(link1)
+
+    onion_privkey = X25519PrivateKey.generate()
+    onion_pubkey = onion_privkey.public_key()
+
+    auth_privkey = Ed25519PrivateKey.generate()
+    auth_pubkey = auth_privkey.public_key()
+
+    enc_privkey = X25519PrivateKey.generate()
+    enc_pubkey = enc_privkey.public_key()
+
+    intro = IntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
+
+    return intro
+
+  def test_encode_decode_descriptor(self):
+    """
+    Encode an HSv3 descriptor and then decode it and make sure you get the intended results.
+
+    This test is from the point of view of the onionbalance, so the object that
+    this test generates is the data that onionbalance also has available when
+    making onion service descriptors.
+    """
+    # Build the service
+    private_identity_key = Ed25519PrivateKey.from_private_bytes(b"a"*32)
+    public_identity_key = private_identity_key.public_key()
+    pubkey_bytes = public_identity_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                    format=serialization.PublicFormat.Raw)
+
+    onion_address = hsv3_crypto.encode_onion_address(pubkey_bytes).decode()
+
+    # Build the introduction points
+    intro1 = self._helper_get_intro()
+    intro2 = self._helper_get_intro()
+    intro3 = self._helper_get_intro()
+    intro_points = [intro1, intro2, intro3]
+
+    blind_param = bytes.fromhex("677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3")
+
+    # Build the descriptor
+    desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key=private_identity_key,
+                                                    intro_points=intro_points,
+                                                    blinding_param=blind_param)
+    desc_string = desc_string.decode()
+
+    # Parse the descriptor
+    desc = HiddenServiceDescriptorV3.from_str(desc_string)
+    inner_layer = desc.decrypt(onion_address)
+
+    self.assertEqual(len(inner_layer.introduction_points), 3)
+
+    # Match introduction points of the parsed descriptor and the generated
+    # descriptor and do some sanity checks between them to make sure that
+    # parsing was done right!
+    for desc_intro in inner_layer.introduction_points:
+      original_found = False # Make sure we found all the intro points
+
+      for original_intro in intro_points:
+        # Match intro points
+        if hsv3_crypto.pubkeys_are_equal(desc_intro.auth_key, original_intro.auth_key):
+          original_found = True
+          self.assertTrue(hsv3_crypto.pubkeys_are_equal(desc_intro.enc_key, original_intro.enc_key))
+          self.assertTrue(hsv3_crypto.pubkeys_are_equal(desc_intro.onion_key, original_intro.onion_key))
+
+      self.assertTrue(original_found)
