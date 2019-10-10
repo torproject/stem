@@ -35,6 +35,7 @@ import collections
 import hashlib
 import io
 import struct
+import os
 
 import stem.client.datatype
 import stem.prereq
@@ -779,6 +780,135 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
 
     return introduction_points
 
+import stem.descriptor.certificate
+import stem.descriptor.hsv3_crypto as hsv3_crypto
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+import datetime
+
+def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key):
+  """
+  Get the string representation of the descriptor signing cert
+
+  'descriptor_signing_public_key' key that gets certified by certificate
+
+  'blinded_priv_key' key that signs the certificate
+  """
+  # 54 hours expiration date like tor does
+  expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
+
+  desc_signing_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type='HS_V3_DESC_SIGNING',
+                                                                       expiration_date=expiration_date,
+                                                                       cert_key_type=1,
+                                                                       certified_pub_key=descriptor_signing_public_key,
+                                                                       signing_priv_key=blinded_priv_key,
+                                                                       include_signing_key=True)
+
+  signing_cert_bytes = desc_signing_cert.encode()
+
+  cert_base64 = stem.util.str_tools._to_unicode(base64.b64encode(signing_cert_bytes))
+  cert_blob = '\n'.join(stem.util.str_tools._split_by_length(cert_base64, 64))
+
+  return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % ("ED25519 CERT", cert_blob, "ED25519 CERT")
+
+def _get_descriptor_revision_counter():
+  # TODO replace with OPE scheme
+  return int(datetime.datetime.utcnow().timestamp())
+
+def b64_and_wrap_desc_layer(layer_bytes, prefix_bytes=b""):
+  """
+  Encode the descriptor layer in 'layer_bytes' to base64, and then wrap it up
+  so that it can be included in the descriptor.
+  """
+  layer_b64 = base64.b64encode(layer_bytes)
+  layer_blob = b'\n'.join(stem.util.str_tools._split_by_length(layer_b64, 64))
+  return b'%s\n-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % (prefix_bytes, layer_blob)
+
+def _get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey):
+  """
+  Get the inner descriptor layer into bytes.
+
+  'intro_points' is the list of introduction points that should be embedded to
+  this layer, and we also need the descriptor signing key to encode the intro
+  points.
+  """
+  if (not intro_points or len(intro_points) == 0):
+    raise ValueError("Need a proper intro points set")
+
+  final_body = b"create2-formats 2\n"
+
+  # Now encode all the intro points
+  for intro_point in intro_points:
+    final_body += intro_point.encode(descriptor_signing_privkey)
+
+  return final_body
+
+def _get_fake_clients_bytes():
+  """
+  Generate fake client authorization data for the middle layer
+  """
+  final_bytes = b""
+
+  num_fake_clients = 16 # default for when client auth is disabled
+
+  for _ in range(num_fake_clients):
+    client_id = base64.b64encode(os.urandom(8)).rstrip(b"=")
+    client_iv = base64.b64encode(os.urandom(16)).rstrip(b"=")
+    descriptor_cookie = base64.b64encode(os.urandom(16)).rstrip(b"=")
+
+    final_bytes += b"%s %s %s %s\n" % (b"auth-client", client_id, client_iv, descriptor_cookie)
+
+  return final_bytes
+
+def _get_middle_descriptor_layer_body(encrypted):
+  """
+  Get the middle descriptor layer as bytes
+  (It's just fake client auth data since client auth is disabled)
+  """
+  fake_priv_key = X25519PrivateKey.generate()
+  fake_pub_key = X25519PrivateKey.generate().public_key()
+  fake_pub_key_bytes = fake_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                 format=serialization.PublicFormat.Raw)
+  fake_pub_key_bytes_b64 = base64.b64encode(fake_pub_key_bytes)
+  fake_clients = _get_fake_clients_bytes()
+
+  return b"desc-auth-type x25519\n" \
+    b"desc-auth-ephemeral-key %s\n" \
+    b"%s" \
+    b"%s" % (fake_pub_key_bytes_b64, fake_clients, encrypted)
+
+def _get_superencrypted_blob(intro_points, descriptor_signing_privkey,
+                             revision_counter, blinded_key_bytes, subcredential):
+  """
+  Get the superencrypted blob (which also includes the encrypted blob) that
+  should be attached to the descriptor
+  """
+  inner_descriptor_layer = _get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey)
+
+  inner_ciphertext = hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer,
+                                                     revision_counter, blinded_key_bytes, subcredential)
+
+
+  inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b"encrypted")
+
+  middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
+
+  outter_ciphertext = hsv3_crypto.encrypt_outter_layer(middle_descriptor_layer,
+                                                       revision_counter, blinded_key_bytes, subcredential)
+
+  return b64_and_wrap_desc_layer(outter_ciphertext)
+
+def _get_v3_desc_signature(desc_str, signing_key):
+  """
+  Compute the descriptor signature and return it as bytes
+  """
+  desc_str = b"Tor onion service descriptor sig v3" + desc_str
+
+  signature = base64.b64encode(signing_key.sign(desc_str))
+  signature = signature.rstrip(b"=")
+  return b"signature %s" % (signature)
+
 
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   """
@@ -818,21 +948,83 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = (), sign = False,
+              ed25519_private_identity_key = None, intro_points = None,
+              blinding_param = None):
+    """
+    'ed25519_private_identity_key' is the Ed25519PrivateKey  of the onion service
+
+    'intro_points' is a list of IntroductionPointV3 objects
+
+    'blinding_param' is a 32 byte blinding factor that should be used to derive
+    the blinded key from the identity key
+    """
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    return _descriptor_content(attr, exclude, (
+    # We need an private identity key for the onion service to create its
+    # descriptor. We could make a new one on the spot, but we also need to
+    # return it to the caller, otherwise the caller will have no way to decode
+    # the descriptor without knowing the private key or the onion address, so
+    # for now we consider it a mandatory argument.
+    if not ed25519_private_identity_key:
+      raise ValueError('Need to provide a private ed25519 identity key to create a descriptor')
+
+    if not intro_points:
+      raise ValueError('Need to provide the introduction points for this descriptor')
+
+    if not blinding_param:
+      raise ValueError('Need to provide a blinding param for this descriptor')
+
+    # Get the identity public key
+    public_identity_key = ed25519_private_identity_key.public_key()
+    public_identity_key_bytes = public_identity_key.public_bytes(encoding=serialization.Encoding.Raw,
+                                                                 format=serialization.PublicFormat.Raw)
+
+
+    # Blind the identity key to get ephemeral blinded key
+    blinded_privkey = hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key,
+                                                        blinding_param=blinding_param)
+    blinded_pubkey = blinded_privkey.public_key()
+    blinded_pubkey_bytes = blinded_pubkey.public_bytes(encoding=serialization.Encoding.Raw,
+                                                             format=serialization.PublicFormat.Raw)
+
+    # Generate descriptor signing key
+    descriptor_signing_private_key = Ed25519PrivateKey.generate()
+    descriptor_signing_public_key = descriptor_signing_private_key.public_key()
+
+    # Get the main encrypted descriptor body
+    revision_counter_int = _get_descriptor_revision_counter()
+    subcredential = hsv3_crypto.get_subcredential(public_identity_key_bytes, blinded_pubkey_bytes)
+
+    # XXX It would be more elegant to have all the above variables attached to
+    # this descriptor object so that we don't have to carry them around
+    # functions and instead we could use e.g. self.descriptor_signing_public_key
+    # But because this is a @classmethod this is not possible :/
+    superencrypted_blob = _get_superencrypted_blob(intro_points, descriptor_signing_private_key,
+                                                   revision_counter_int, blinded_pubkey_bytes, subcredential)
+
+    desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
       ('descriptor-lifetime', '180'),
-      ('descriptor-signing-key-cert', _random_crypto_blob('ED25519 CERT')),
-      ('revision-counter', '15'),
-      ('superencrypted', _random_crypto_blob('MESSAGE')),
-      ('signature', 'wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg'),
+      ('descriptor-signing-key-cert', _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_privkey)),
+      ('revision-counter', str(revision_counter_int)),
+      ('superencrypted', superencrypted_blob),
     ), ())
+
+    # Add a final newline before the signature block
+    desc_content += b"\n"
+
+    # Compute the signature and append it to the descriptor
+    signature = _get_v3_desc_signature(desc_content, descriptor_signing_private_key)
+    final_desc = desc_content + signature
+    return final_desc
+
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
+    # Create a string-representation of the descriptor and then parse it
+    # immediately to create an object.
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False):
@@ -857,6 +1049,19 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
+
+    # Verify the signature!
+    # First compute the body that was signed
+    descriptor_signing_key = self.signing_cert.certified_ed25519_key()
+    descriptor_body = raw_contents.split(b"signature")[0] # everything before the signature
+    signature_body = b"Tor onion service descriptor sig v3" + descriptor_body
+
+    # Decode base64 signature
+    missing_padding = len(self.signature) % 4
+    signature = base64.b64decode(self.signature + '=' * missing_padding)
+
+    # Verify signature
+    descriptor_signing_key.verify(signature, signature_body)
 
   def decrypt(self, onion_address):
     """
@@ -1006,7 +1211,7 @@ class InnerLayer(Descriptor):
   @staticmethod
   def _decrypt(outer_layer, revision_counter, subcredential, blinded_key):
     plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
-    return InnerLayer(plaintext, outer_layer = outer_layer)
+    return InnerLayer(plaintext, outer_layer = outer_layer, validate=True)
 
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)

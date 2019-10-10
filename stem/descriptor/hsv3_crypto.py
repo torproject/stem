@@ -155,3 +155,66 @@ def get_desc_encryption_mac(key, salt, ciphertext):
     mac = hashlib.sha3_256(pack(len(key)) + key + pack(len(salt)) + salt + ciphertext).digest()
     return mac
 
+def _encrypt_descriptor_layer(plaintext, revision_counter,
+                              subcredential,
+                              secret_data, string_constant):
+    """
+    Encrypt descriptor layer at 'plaintext'
+    """
+    salt = os.urandom(16)
+
+    secret_key, secret_iv, mac_key = get_desc_keys(secret_data, string_constant,
+                                                   subcredential, revision_counter, salt)
+
+    # Now time to encrypt descriptor
+    cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
+    encryptor = cipher.encryptor()
+    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+    mac = get_desc_encryption_mac(mac_key, salt, ciphertext)
+
+    return salt + ciphertext + mac
+
+
+def encrypt_inner_layer(plaintext, revision_counter, blinded_key_bytes, subcredential):
+    """
+    Encrypt the inner layer of the descriptor
+    """
+    secret_data = blinded_key_bytes
+    string_constant = b"hsdir-encrypted-data"
+
+    return _encrypt_descriptor_layer(plaintext, revision_counter, subcredential,
+                                     secret_data, string_constant)
+
+
+def ceildiv(a,b):
+    """
+    Like // division but return the ceiling instead of the floor
+    """
+    return -(-a // b)
+
+def _get_padding_needed(plaintext_len):
+    """
+    Get descriptor padding needed for this descriptor layer.
+    From the spec:
+       Before encryption the plaintext is padded with NUL bytes to the nearest
+       multiple of 10k bytes.
+    """
+    PAD_MULTIPLE_BYTES = 10000
+
+    final_size = ceildiv(plaintext_len, PAD_MULTIPLE_BYTES)*PAD_MULTIPLE_BYTES
+    return final_size - plaintext_len
+
+def encrypt_outter_layer(plaintext, revision_counter, blinded_key_bytes, subcredential):
+    """
+    Encrypt the outer layer of the descriptor
+    """
+    secret_data = blinded_key_bytes
+    string_constant = b"hsdir-superencrypted-data"
+
+    # In the outter layer we first need to pad the plaintext
+    padding_bytes_needed = _get_padding_needed(len(plaintext))
+    padded_plaintext = plaintext + b'\x00'*padding_bytes_needed
+
+    return _encrypt_descriptor_layer(padded_plaintext, revision_counter, subcredential,
+                                     secret_data, string_constant)
