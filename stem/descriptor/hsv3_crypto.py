@@ -57,3 +57,101 @@ class HSv3PublicBlindedKey(object):
         """
         ext.slow_ed25519.checkvalid(signature, message, self.public_key)
 
+"""
+subcredential
+
+       subcredential = H("subcredential" | credential | blinded-public-ke
+       credential = H("credential" | public-identity-key)
+"""
+def get_subcredential(public_identity_key, blinded_key):
+    cred_bytes_constant = "credential".encode()
+    subcred_bytes_constant = "subcredential".encode()
+
+    credential = hashlib.sha3_256(b"%s%s" % (cred_bytes_constant, public_identity_key)).digest()
+    subcredential = hashlib.sha3_256(b"%s%s%s" % (subcred_bytes_constant, credential, blinded_key)).digest()
+
+    return subcredential
+
+
+"""
+Basic descriptor logic:
+
+       SALT = 16 bytes from H(random), changes each time we rebuld the
+              descriptor even if the content of the descriptor hasn't changed.
+              (So that we don't leak whether the intro point list etc. changed)
+
+       secret_input = SECRET_DATA | subcredential | INT_8(revision_counter)
+
+       keys = KDF(secret_input | salt | STRING_CONSTANT, S_KEY_LEN + S_IV_LEN + MAC_KEY_LEN)
+
+       SECRET_KEY = first S_KEY_LEN bytes of keys
+       SECRET_IV  = next S_IV_LEN bytes of keys
+       MAC_KEY    = last MAC_KEY_LEN bytes of keys
+
+
+Layer data:
+
+ 2.5.1.1. First layer encryption logic
+     SECRET_DATA = blinded-public-key
+     STRING_CONSTANT = "hsdir-superencrypted-data"
+
+ 2.5.2.1. Second layer encryption keys
+     SECRET_DATA = blinded-public-key | descriptor_cookie
+     STRING_CONSTANT = "hsdir-encrypted-data"
+"""
+
+SALT_LEN = 16
+MAC_LEN = 32
+
+S_KEY_LEN = 32
+S_IV_LEN = 16
+MAC_KEY_LEN = 32
+
+"""
+
+Descriptor encryption
+
+"""
+
+def pack(val):
+    return struct.pack('>Q', val)
+
+
+def get_desc_keys(secret_data, string_constant,
+                  subcredential, revision_counter, salt):
+    """
+       secret_input = SECRET_DATA | subcredential | INT_8(revision_counter)
+
+       keys = KDF(secret_input | salt | STRING_CONSTANT, S_KEY_LEN + S_IV_LEN + MAC_KEY_LEN)
+
+       SECRET_KEY = first S_KEY_LEN bytes of keys
+       SECRET_IV  = next S_IV_LEN bytes of keys
+       MAC_KEY    = last MAC_KEY_LEN bytes of keys
+
+    where
+
+    2.5.1.1. First layer encryption logic
+     SECRET_DATA = blinded-public-key
+     STRING_CONSTANT = "hsdir-superencrypted-data"
+
+    2.5.2.1. Second layer encryption keys
+     SECRET_DATA = blinded-public-key | descriptor_cookie
+     STRING_CONSTANT = "hsdir-encrypted-data"
+    """
+    secret_input = b"%s%s%s" % (secret_data, subcredential, pack(revision_counter))
+
+    kdf = hashlib.shake_256(secret_input + salt + string_constant)
+
+    keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
+
+    secret_key = keys[:S_KEY_LEN]
+    secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
+    mac_key = keys[S_KEY_LEN + S_IV_LEN:]
+
+    return secret_key, secret_iv, mac_key
+
+def get_desc_encryption_mac(key, salt, ciphertext):
+
+    mac = hashlib.sha3_256(pack(len(key)) + key + pack(len(salt)) + salt + ciphertext).digest()
+    return mac
+

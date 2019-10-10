@@ -42,7 +42,9 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
-from stem.descriptor.certificate import Ed25519Certificate
+import stem.descriptor.hsv3_crypto as hsv3_crypto
+
+from stem.descriptor.certificate import Ed25519Certificate, CertType
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -263,7 +265,7 @@ class IntroductionPointV3(object):
     return body
 
 class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
-    """
+  """
   Client authorized to use a v3 hidden service.
 
   .. versionadded:: 1.8.0
@@ -318,9 +320,6 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
   from cryptography.hazmat.backends import default_backend
 
-  def pack(val):
-    return struct.pack('>Q', val)
-
   if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
     encrypted_block = encrypted_block[24:-22]
 
@@ -336,14 +335,10 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   ciphertext = encrypted[SALT_LEN:-MAC_LEN]
   expected_mac = encrypted[-MAC_LEN:]
 
-  kdf = hashlib.shake_256(blinded_key + subcredential + pack(revision_counter) + salt + constant)
-  keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
+  secret_key, secret_iv, mac_key = hsv3_crypto.get_desc_keys(blinded_key, constant,
+                                                             subcredential, revision_counter, salt, )
 
-  secret_key = keys[:S_KEY_LEN]
-  secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
-  mac_key = keys[S_KEY_LEN + S_IV_LEN:]
-
-  mac = hashlib.sha3_256(pack(len(mac_key)) + mac_key + pack(len(salt)) + salt + ciphertext).digest()
+  mac = hsv3_crypto.get_desc_encryption_mac(mac_key, salt, ciphertext)
 
   if mac != expected_mac:
     raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac))
@@ -844,6 +839,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
 
     self._inner_layer = None
+    self._outer_layer = None
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
@@ -889,15 +885,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       if not blinded_key:
         raise ValueError('No signing key is present')
 
-      # credential = H('credential' | public-identity-key)
-      # subcredential = H('subcredential' | credential | blinded-public-key)
-
       identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
-      credential = hashlib.sha3_256(b'credential%s' % (identity_public_key)).digest()
-      subcredential = hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
 
-      outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
-      self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
+      subcredential = hsv3_crypto.get_subcredential(identity_public_key, blinded_key)
+
+      self._outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
+      self._inner_layer = InnerLayer._decrypt(self._outer_layer, self.revision_counter, subcredential, blinded_key)
 
     return self._inner_layer
 
