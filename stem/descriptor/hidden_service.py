@@ -43,7 +43,7 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
-import stem.descriptor.hsv3_crypto as hsv3_crypto
+from stem.descriptor import hsv3_crypto
 
 from stem.descriptor.certificate import Ed25519Certificate, CertType
 
@@ -781,7 +781,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     return introduction_points
 
 import stem.descriptor.certificate
-import stem.descriptor.hsv3_crypto as hsv3_crypto
+from stem.descriptor import hsv3_crypto
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey

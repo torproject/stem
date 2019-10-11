@@ -3,13 +3,13 @@ import hashlib
 import struct
 import os
 
+from stem.descriptor import ed25519_exts_ref
+from stem.descriptor import slow_ed25519
+
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-
-import stem.descriptor.ed25519_exts_ref as ed25519_exts_ref
-import stem.descriptor.slow_ed25519 as slow_ed25519
 
 def pubkeys_are_equal(pubkey1, pubkey2):
     """
