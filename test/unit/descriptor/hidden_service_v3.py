@@ -5,6 +5,7 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 import functools
 import unittest
 
+from cryptography.hazmat.backends.openssl.backend import backend
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives import serialization
@@ -142,6 +143,10 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     Check that we require the mandatory fields.
     """
 
+    if not backend.x25519_supported():
+      self.skipTest('(requires openssl ed25519 support)')
+      return
+
     line_to_attr = {
       'hs-descriptor': 'version',
       'descriptor-lifetime': 'lifetime',
@@ -206,6 +211,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     elif not stem.prereq._is_sha3_available():
       self.skipTest('(requires sha3 support)')
       return
+    elif not backend.x25519_supported():
+      self.skipTest('(requires openssl ed25519 support)')
+      return
 
     self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
@@ -238,6 +246,11 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     this test generates is the data that onionbalance also has available when
     making onion service descriptors.
     """
+
+    if not backend.x25519_supported():
+      self.skipTest('(requires openssl ed25519 support)')
+      return
+
     # Build the service
     private_identity_key = Ed25519PrivateKey.from_private_bytes(b"a"*32)
     public_identity_key = private_identity_key.public_key()

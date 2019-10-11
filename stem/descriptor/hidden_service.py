@@ -409,6 +409,7 @@ def _parse_v3_inner_formats(descriptor, entries):
 
 
 def _parse_v3_introduction_points(descriptor, entries):
+  from cryptography.hazmat.backends.openssl.backend import backend
   from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
   if hasattr(descriptor, '_unparsed_introduction_points'):
@@ -428,9 +429,12 @@ def _parse_v3_introduction_points(descriptor, entries):
       entry = _descriptor_components(intro_point_str, False)
       link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
 
-      onion_key_line = _value('onion-key', entry)
-      onion_key_b64 = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
-      onion_key = X25519PublicKey.from_public_bytes(base64.b64decode(onion_key_b64))
+      if backend.x25519_supported():
+        onion_key_line = _value('onion-key', entry)
+        onion_key_b64 = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+        onion_key = X25519PublicKey.from_public_bytes(base64.b64decode(onion_key_b64))
+      else:
+        onion_key = None
 
       _, block_type, auth_key_cert = entry['auth-key'][0]
       auth_key_cert = Ed25519Certificate.parse(auth_key_cert)
@@ -438,9 +442,12 @@ def _parse_v3_introduction_points(descriptor, entries):
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
 
-      enc_key_line = _value('enc-key', entry)
-      enc_key_b64 = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
-      enc_key = X25519PublicKey.from_public_bytes(base64.b64decode(enc_key_b64))
+      if backend.x25519_supported():
+        enc_key_line = _value('enc-key', entry)
+        enc_key_b64 = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+        enc_key = X25519PublicKey.from_public_bytes(base64.b64decode(enc_key_b64))
+      else:
+        enc_key = None
 
       _, block_type, enc_key_cert = entry['enc-key-cert'][0]
       enc_key_cert = Ed25519Certificate.parse(enc_key_cert)
@@ -1050,18 +1057,21 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-    # Verify the signature!
-    # First compute the body that was signed
-    descriptor_signing_key = self.signing_cert.certified_ed25519_key()
-    descriptor_body = raw_contents.split(b"signature")[0] # everything before the signature
-    signature_body = b"Tor onion service descriptor sig v3" + descriptor_body
+    from cryptography.hazmat.backends.openssl.backend import backend
 
-    # Decode base64 signature
-    missing_padding = len(self.signature) % 4
-    signature = base64.b64decode(self.signature + '=' * missing_padding)
+    if backend.x25519_supported():
+      # Verify the signature!
+      # First compute the body that was signed
+      descriptor_signing_key = self.signing_cert.certified_ed25519_key()
+      descriptor_body = raw_contents.split(b"signature")[0] # everything before the signature
+      signature_body = b"Tor onion service descriptor sig v3" + descriptor_body
 
-    # Verify signature
-    descriptor_signing_key.verify(signature, signature_body)
+      # Decode base64 signature
+      missing_padding = len(self.signature) % 4
+      signature = base64.b64decode(self.signature + '=' * missing_padding)
+
+      # Verify signature
+      descriptor_signing_key.verify(signature, signature_body)
 
   def decrypt(self, onion_address):
     """
