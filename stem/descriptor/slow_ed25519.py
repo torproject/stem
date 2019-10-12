@@ -67,7 +67,7 @@ def encodepoint(P):
   return b''.join([bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b//8)])
 
 def bit(h,i):
-  return (h[i//8] >> (i%8)) & 1
+  return (ord(h[i//8]) >> (i%8)) & 1
 
 def publickey(sk):
   h = H(sk)
