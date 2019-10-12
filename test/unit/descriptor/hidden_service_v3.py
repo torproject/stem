@@ -269,7 +269,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     intro3 = self._helper_get_intro()
     intro_points = [intro1, intro2, intro3]
 
-    blind_param = bytes.fromhex("677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3")
+    # TODO: replace with bytes.fromhex() when we drop python 2.x support
+
+    blind_param = bytearray.fromhex("677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3")
 
     # Build the descriptor
     desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key=private_identity_key,
