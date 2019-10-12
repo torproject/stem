@@ -969,6 +969,20 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
+    # TODO: When these additional arguments are not present simply constructing
+    # a descriptor that looks reasonable. This might not be the fallback we use
+    # later on.
+
+    if not ed25519_private_identity_key or not intro_points or not blinding_param:
+      return _descriptor_content(attr, exclude, (
+        ('hs-descriptor', '3'),
+        ('descriptor-lifetime', '180'),
+        ('descriptor-signing-key-cert', _random_crypto_blob('ED25519 CERT')),
+        ('revision-counter', '15'),
+        ('superencrypted', _random_crypto_blob('MESSAGE')),
+        ('signature', 'wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg'),
+      ), ())
+
     # We need an private identity key for the onion service to create its
     # descriptor. We could make a new one on the spot, but we also need to
     # return it to the caller, otherwise the caller will have no way to decode
