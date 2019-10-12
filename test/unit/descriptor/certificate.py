@@ -207,7 +207,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     expiration_date = datetime.datetime(2037, 8, 28, 17, 0)
 
-    my_ed_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type=CertType.HS_V3_DESC_SIGNING_KEY,
+    my_ed_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type=CertType.HS_V3_DESC_SIGNING,
                                                                   expiration_date=expiration_date,
                                                                   cert_key_type=1,
                                                                   certified_pub_key=certified_pub_key,
