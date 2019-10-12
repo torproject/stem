@@ -227,5 +227,5 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(ed_cert_parsed.key_type, my_ed_cert.cert_key_type)
     self.assertEqual(ed_cert_parsed.key, my_ed_cert.certified_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                                    format=serialization.PublicFormat.Raw))
-    self.assertEqual(ed_cert_parsed.get_signing_key(), my_ed_cert.signing_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
+    self.assertEqual(ed_cert_parsed.signing_key(), my_ed_cert.signing_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
                                                                                    format=serialization.PublicFormat.Raw))

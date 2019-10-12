@@ -80,6 +80,7 @@ import stem.util.enum
 import stem.util.str_tools
 import stem.util
 
+from stem.client.datatype import Size
 from cryptography.hazmat.primitives import serialization
 
 ED25519_HEADER_LENGTH = 40
@@ -380,6 +381,7 @@ class MyED25519Certificate(object):
     """
     Build the cert extensions part of the certificate
     """
+
     n_extensions = 0
 
     # If we need to include the signing key, let's create the extension body
@@ -399,23 +401,23 @@ class MyED25519Certificate(object):
       ext_data = signing_pubkey_bytes
 
     # Now build the actual byte representation of any extensions
-    ext_obj = bytes()
-    ext_obj += n_extensions.to_bytes(1, 'big')
+    ext_obj = bytearray()
+    ext_obj += Size.CHAR.pack(n_extensions)
 
     if self.include_signing_key:
-      ext_obj += ext_length.to_bytes(2, 'big')
-      ext_obj += ext_type.to_bytes(1, 'big')
-      ext_obj += ext_flags.to_bytes(1, 'big')
+      ext_obj += Size.SHORT.pack(ext_length)
+      ext_obj += Size.CHAR.pack(ext_type)
+      ext_obj += Size.CHAR.pack(ext_flags)
       ext_obj += ext_data
 
-    return ext_obj
+    return bytes(ext_obj)
 
   def encode(self):
     """Return a bytes representation of this certificate."""
-    obj = bytes()
+    obj = bytearray()
 
     # Encode VERSION
-    obj += self.version.to_bytes(1, 'big')
+    obj += Size.CHAR.pack(self.version)
 
     # Encode CERT_TYPE
     try:
@@ -423,15 +425,15 @@ class MyED25519Certificate(object):
     except ValueError:
       raise ValueError("Bad cert type %s" % self.cert_type)
 
-    obj += cert_type_int.to_bytes(1, 'big')
+    obj += Size.CHAR.pack(cert_type_int)
 
     # Encode EXPIRATION_DATE
     expiration_seconds_since_epoch = stem.util.datetime_to_unix(self.expiration_date)
     expiration_hours_since_epoch = int(expiration_seconds_since_epoch) // 3600
-    obj += expiration_hours_since_epoch.to_bytes(4, 'big')
+    obj += Size.LONG.pack(expiration_hours_since_epoch)
 
     # Encode CERT_KEY_TYPE
-    obj += self.cert_key_type.to_bytes(1, 'big')
+    obj += Size.CHAR.pack(self.cert_key_type)
 
     # Encode CERTIFIED_KEY
     certified_pub_key_bytes = self.certified_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
@@ -443,9 +445,9 @@ class MyED25519Certificate(object):
     obj += self._get_cert_extensions_bytes()
 
     # Do the signature on the body we have so far
-    obj += self._get_certificate_signature(obj)
+    obj += self._get_certificate_signature(bytes(obj))
 
-    return obj
+    return bytes(obj)
 
   def encode_for_descriptor(self):
     cert_bytes = self.encode()
