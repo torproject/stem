@@ -1074,7 +1074,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     from cryptography.hazmat.backends.openssl.backend import backend
 
-    if backend.x25519_supported():
+    if backend.x25519_supported() and self.signing_cert:
       # Verify the signature!
       # First compute the body that was signed
       descriptor_signing_key = self.signing_cert.certified_ed25519_key()
