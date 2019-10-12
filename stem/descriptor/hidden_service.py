@@ -181,15 +181,16 @@ class IntroductionPointV3(object):
     intro point), and they will be created at encode time when the
     descriptor_signing_key is provided.
     """
-    if not link_specifiers or not onion_key or not enc_key:
-      raise ValueError("Introduction point missing essential keys")
 
-    if not auth_key and not auth_key_cert:
-      raise ValueError("Either auth key or auth key cert needs to be provided")
+    # if not link_specifiers or not onion_key or not enc_key:
+    #   raise ValueError("Introduction point missing essential keys")
+
+    # if not auth_key and not auth_key_cert:
+    #   raise ValueError("Either auth key or auth key cert needs to be provided")
 
     # If we have an auth key cert but not an auth key, extract the key
-    if auth_key_cert and not auth_key:
-      auth_key = auth_key_cert.certified_ed25519_key()
+    # if auth_key_cert and not auth_key:
+    #   auth_key = auth_key_cert.certified_ed25519_key()
 
     self.link_specifiers = link_specifiers
     self.onion_key = enc_key
