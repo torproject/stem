@@ -40,7 +40,7 @@ def blindPK(pk, param):
 def expandSK(sk):
     h = H(sk)
     a = 2**(b-2) + sum(2**i * bit(h,i) for i in range(3,b-2))
-    k = b''.join([bytes([h[i]]) for i in range(b//8,b//4)])
+    k = b''.join([h[i:i+1] for i in range(b//8,b//4)])
     assert len(k) == 32
     return encodeint(a)+k
 
@@ -51,7 +51,7 @@ def publickeyFromESK(h):
 
 def signatureWithESK(m,h,pk):
     a = decodeint(h[:32])
-    r = Hint(b''.join([bytes([h[i]]) for i in range(b//8,b//4)]) + m)
+    r = Hint(b''.join([h[i:i+1] for i in range(b//8,b//4)]) + m)
     R = scalarmult(B,r)
     S = (r + Hint(encodepoint(R) + pk + m) * a) % l
     return encodepoint(R) + encodeint(S)

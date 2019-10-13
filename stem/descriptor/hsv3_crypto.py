@@ -3,6 +3,8 @@ import hashlib
 import struct
 import os
 
+import stem.prereq
+
 from stem.descriptor import ed25519_exts_ref
 from stem.descriptor import slow_ed25519
 
@@ -100,6 +102,10 @@ def encode_onion_address(ed25519_pub_key_bytes):
     """
     Given the public key, return the onion address
     """
+
+    if not stem.prereq._is_sha3_available(): 
+      raise ImportError('Encoding onion addresses requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+
     version = 3
     checksum_body = b"%s%s%d" % (CHECKSUM_CONSTANT, ed25519_pub_key_bytes, version)
     checksum = hashlib.sha3_256(checksum_body).digest()[:2]

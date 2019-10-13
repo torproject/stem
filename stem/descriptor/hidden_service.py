@@ -34,8 +34,9 @@ import binascii
 import collections
 import hashlib
 import io
-import struct
 import os
+import struct
+import time
 
 import stem.client.datatype
 import stem.prereq
@@ -185,12 +186,12 @@ class IntroductionPointV3(object):
     # if not link_specifiers or not onion_key or not enc_key:
     #   raise ValueError("Introduction point missing essential keys")
 
-    # if not auth_key and not auth_key_cert:
-    #   raise ValueError("Either auth key or auth key cert needs to be provided")
+    if not auth_key and not auth_key_cert:
+      raise ValueError("Either auth key or auth key cert needs to be provided")
 
     # If we have an auth key cert but not an auth key, extract the key
-    # if auth_key_cert and not auth_key:
-    #   auth_key = auth_key_cert.certified_ed25519_key()
+    if auth_key_cert and not auth_key:
+      auth_key = auth_key_cert.certified_ed25519_key()
 
     self.link_specifiers = link_specifiers
     self.onion_key = enc_key
@@ -212,9 +213,9 @@ class IntroductionPointV3(object):
            LSPEC  (Link specifier)                [LSLEN bytes]
     """
     ls_block = b""
-    ls_block += bytes([len(self.link_specifiers)])
+    ls_block += chr(len(self.link_specifiers))
     for ls in self.link_specifiers:
-      ls_block += ls.encode()
+      ls_block += ls.pack()
 
     return base64.b64encode(ls_block)
 
@@ -822,7 +823,7 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
 
 def _get_descriptor_revision_counter():
   # TODO replace with OPE scheme
-  return int(datetime.datetime.utcnow().timestamp())
+  return int(time.time())
 
 def b64_and_wrap_desc_layer(layer_bytes, prefix_bytes=b""):
   """

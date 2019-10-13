@@ -58,16 +58,16 @@ def scalarmult(P,e):
 
 def encodeint(y):
   bits = [(y >> i) & 1 for i in range(b)]
-  return b''.join([bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b//8)])
+  return b''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b//8)])
 
 def encodepoint(P):
   x = P[0]
   y = P[1]
   bits = [(y >> i) & 1 for i in range(b - 1)] + [x & 1]
-  return b''.join([bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b//8)])
+  return b''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b//8)])
 
 def bit(h,i):
-  return (ord(h[i//8]) >> (i%8)) & 1
+  return (ord(h[i//8:i//8+1]) >> (i%8)) & 1
 
 def publickey(sk):
   h = H(sk)
@@ -82,7 +82,7 @@ def Hint(m):
 def signature(m,sk,pk):
   h = H(sk)
   a = 2**(b-2) + sum(2**i * bit(h,i) for i in range(3,b-2))
-  r = Hint(b''.join([bytes([h[i]]) for i in range(b//8,b//4)]) + m)
+  r = Hint(b''.join([h[i:i+1] for i in range(b//8,b//4)]) + m)
   R = scalarmult(B,r)
   S = (r + Hint(encodepoint(R) + pk + m) * a) % l
   return encodepoint(R) + encodeint(S)
