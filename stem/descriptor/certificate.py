@@ -266,7 +266,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     # Make sure it's an ed25519 cert
     if (self.key_type != 1):
-      raise ValueError("Certificate is not an ed25519 cert (%d)" % key_type)
+      raise ValueError('Certificate is not an ed25519 cert (%d)' % self.key_type)
 
     ed_key = Ed25519PublicKey.from_public_bytes(self.key)
     return ed_key
@@ -342,6 +342,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       verify_key.verify(signature_bytes, descriptor_sha256_digest)
     except InvalidSignature:
       raise ValueError('Descriptor Ed25519 certificate signature invalid (Signature was forged or corrupt)')
+
 
 class MyED25519Certificate(object):
   """
@@ -436,8 +437,7 @@ class MyED25519Certificate(object):
     obj += Size.CHAR.pack(self.cert_key_type)
 
     # Encode CERTIFIED_KEY
-    certified_pub_key_bytes = self.certified_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
-                                                          format=serialization.PublicFormat.Raw)
+    certified_pub_key_bytes = self.certified_pub_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
     assert(len(certified_pub_key_bytes) == 32)
     obj += certified_pub_key_bytes
 

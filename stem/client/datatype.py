@@ -581,6 +581,7 @@ class LinkSpecifier(object):
     cell += self.value
     return bytes(cell)
 
+
 class LinkByIPv4(LinkSpecifier):
   """
   TLS connection to an IPv4 address.

@@ -52,6 +52,7 @@ with open(get_resource('hidden_service_v3_outer_layer')) as outer_layer_file:
 with open(get_resource('hidden_service_v3_inner_layer')) as inner_layer_file:
   INNER_LAYER_STR = inner_layer_file.read()
 
+
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_real_descriptor(self):
     """
@@ -256,10 +257,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       return
 
     # Build the service
-    private_identity_key = Ed25519PrivateKey.from_private_bytes(b"a"*32)
+    private_identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32)
     public_identity_key = private_identity_key.public_key()
-    pubkey_bytes = public_identity_key.public_bytes(encoding=serialization.Encoding.Raw,
-                                                    format=serialization.PublicFormat.Raw)
+    pubkey_bytes = public_identity_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
     onion_address = hsv3_crypto.encode_onion_address(pubkey_bytes).decode()
 
@@ -271,12 +271,10 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # TODO: replace with bytes.fromhex() when we drop python 2.x support
 
-    blind_param = bytearray.fromhex("677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3")
+    blind_param = bytearray.fromhex('677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3')
 
     # Build the descriptor
-    desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key=private_identity_key,
-                                                    intro_points=intro_points,
-                                                    blinding_param=blind_param)
+    desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key = private_identity_key, intro_points = intro_points, blinding_param = blind_param)
     desc_string = desc_string.decode()
 
     # Parse the descriptor
@@ -288,11 +286,13 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     # Match introduction points of the parsed descriptor and the generated
     # descriptor and do some sanity checks between them to make sure that
     # parsing was done right!
+
     for desc_intro in inner_layer.introduction_points:
-      original_found = False # Make sure we found all the intro points
+      original_found = False  # Make sure we found all the intro points
 
       for original_intro in intro_points:
         # Match intro points
+
         if hsv3_crypto.pubkeys_are_equal(desc_intro.auth_key, original_intro.auth_key):
           original_found = True
           self.assertTrue(hsv3_crypto.pubkeys_are_equal(desc_intro.enc_key, original_intro.enc_key))

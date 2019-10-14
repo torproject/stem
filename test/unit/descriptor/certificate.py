@@ -207,12 +207,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     expiration_date = datetime.datetime(2037, 8, 28, 17, 0)
 
-    my_ed_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type=CertType.HS_V3_DESC_SIGNING,
-                                                                  expiration_date=expiration_date,
-                                                                  cert_key_type=1,
-                                                                  certified_pub_key=certified_pub_key,
-                                                                  signing_priv_key=signing_priv_key,
-                                                                  include_signing_key=True)
+    my_ed_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type = CertType.HS_V3_DESC_SIGNING, expiration_date = expiration_date, cert_key_type = 1, certified_pub_key = certified_pub_key, signing_priv_key = signing_priv_key, include_signing_key = True)
 
     ed_cert_bytes = my_ed_cert.encode()
     self.assertTrue(my_ed_cert)
@@ -225,7 +220,5 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(ed_cert_parsed.type, my_ed_cert.cert_type)
     self.assertEqual(ed_cert_parsed.expiration, my_ed_cert.expiration_date)
     self.assertEqual(ed_cert_parsed.key_type, my_ed_cert.cert_key_type)
-    self.assertEqual(ed_cert_parsed.key, my_ed_cert.certified_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
-                                                                                   format=serialization.PublicFormat.Raw))
-    self.assertEqual(ed_cert_parsed.signing_key(), my_ed_cert.signing_pub_key.public_bytes(encoding=serialization.Encoding.Raw,
-                                                                                   format=serialization.PublicFormat.Raw))
+    self.assertEqual(ed_cert_parsed.key, my_ed_cert.certified_pub_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw))
+    self.assertEqual(ed_cert_parsed.signing_key(), my_ed_cert.signing_pub_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw))
