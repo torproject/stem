@@ -812,11 +812,6 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
   return '\n-----BEGIN %s-----\n%s\n-----END %s-----' % ('ED25519 CERT', cert_blob, 'ED25519 CERT')
 
 
-def _get_descriptor_revision_counter():
-  # TODO replace with OPE scheme
-  return int(time.time())
-
-
 def b64_and_wrap_desc_layer(layer_bytes, prefix_bytes=b''):
   """
   Encode the descriptor layer in 'layer_bytes' to base64, and then wrap it up
@@ -1007,7 +1002,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     descriptor_signing_public_key = descriptor_signing_private_key.public_key()
 
     # Get the main encrypted descriptor body
-    revision_counter_int = _get_descriptor_revision_counter()
+    revision_counter_int = int(time.time())
     subcredential = hsv3_crypto.get_subcredential(public_identity_key_bytes, blinded_pubkey_bytes)
 
     # XXX It would be more elegant to have all the above variables attached to
@@ -1224,7 +1219,7 @@ class InnerLayer(Descriptor):
   @staticmethod
   def _decrypt(outer_layer, revision_counter, subcredential, blinded_key):
     plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
-    return InnerLayer(plaintext, outer_layer = outer_layer, validate=True)
+    return InnerLayer(plaintext, validate = True, outer_layer = outer_layer)
 
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
