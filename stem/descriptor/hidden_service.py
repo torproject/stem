@@ -1042,7 +1042,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
 
     self._inner_layer = None
-    self._outer_layer = None
     entries = _descriptor_components(raw_contents, validate)
 
     if validate:
@@ -1108,8 +1107,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
       subcredential = hsv3_crypto.get_subcredential(identity_public_key, blinded_key)
 
-      self._outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
-      self._inner_layer = InnerLayer._decrypt(self._outer_layer, self.revision_counter, subcredential, blinded_key)
+      outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
+      self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
 
     return self._inner_layer
 
