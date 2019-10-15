@@ -75,24 +75,6 @@ class HSv3PublicBlindedKey(object):
 
 
 """
-subcredential
-
-       subcredential = H("subcredential" | credential | blinded-public-ke
-       credential = H("credential" | public-identity-key)
-"""
-
-
-def get_subcredential(public_identity_key, blinded_key):
-  cred_bytes_constant = 'credential'.encode()
-  subcred_bytes_constant = 'subcredential'.encode()
-
-  credential = hashlib.sha3_256(b'%s%s' % (cred_bytes_constant, public_identity_key)).digest()
-  subcredential = hashlib.sha3_256(b'%s%s%s' % (subcred_bytes_constant, credential, blinded_key)).digest()
-
-  return subcredential
-
-
-"""
 Onion address
 
      onion_address = base32(PUBKEY | CHECKSUM | VERSION) + ".onion"

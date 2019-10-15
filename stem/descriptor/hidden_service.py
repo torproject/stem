@@ -1003,7 +1003,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     # Get the main encrypted descriptor body
     revision_counter_int = int(time.time())
-    subcredential = hsv3_crypto.get_subcredential(public_identity_key_bytes, blinded_pubkey_bytes)
+    subcredential = HiddenServiceDescriptorV3._subcredential(public_identity_key_bytes, blinded_pubkey_bytes)
 
     # XXX It would be more elegant to have all the above variables attached to
     # this descriptor object so that we don't have to carry them around
@@ -1099,8 +1099,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
         raise ValueError('No signing key is present')
 
       identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
-
-      subcredential = hsv3_crypto.get_subcredential(identity_public_key, blinded_key)
+      subcredential = HiddenServiceDescriptorV3._subcredential(identity_public_key, blinded_key)
 
       outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
       self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
@@ -1135,6 +1134,14 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       raise ValueError('Bad checksum (expected %s but was %s)' % (expected_checksum_str, checksum_str))
 
     return pubkey
+
+  @staticmethod
+  def _subcredential(public_key, blinded_key):
+    # credential = H('credential' | public-identity-key)
+    # subcredential = H('subcredential' | credential | blinded-public-key)
+
+    credential = hashlib.sha3_256(b'credential%s' % public_key).digest()
+    return hashlib.sha3_256(b'subcredential%s%s' % (credential, blinded_key)).digest()
 
 
 class OuterLayer(Descriptor):
