@@ -187,6 +187,8 @@ class IntroductionPointV3(object):
     descriptor_signing_key is provided.
     """
 
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
     # if not link_specifiers or not onion_key or not enc_key:
     #   raise ValueError('Introduction point missing essential keys')
 
@@ -195,7 +197,7 @@ class IntroductionPointV3(object):
 
     # If we have an auth key cert but not an auth key, extract the key
     if auth_key_cert and not auth_key:
-      auth_key = auth_key_cert.certified_ed25519_key()
+      auth_key = Ed25519PublicKey.from_public_bytes(auth_key_cert.key)
 
     self.link_specifiers = link_specifiers
     self.onion_key = enc_key
@@ -1058,9 +1060,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     from cryptography.hazmat.backends.openssl.backend import backend
 
     if backend.x25519_supported() and self.signing_cert:
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
       # Verify the signature!
       # First compute the body that was signed
-      descriptor_signing_key = self.signing_cert.certified_ed25519_key()
+
+      descriptor_signing_key = Ed25519PublicKey.from_public_bytes(self.signing_cert.key)
       descriptor_body = raw_contents.split(b'signature')[0]  # everything before the signature
       signature_body = b'Tor onion service descriptor sig v3' + descriptor_body
 
