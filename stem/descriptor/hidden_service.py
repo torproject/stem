@@ -655,8 +655,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
         raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
       try:
-        missing_padding = len(authentication_cookie) % 4
-        authentication_cookie = base64.b64decode(stem.util.str_tools._to_bytes(authentication_cookie) + b'=' * missing_padding)
+        authentication_cookie = stem.util.str_tools._decode_b64(authentication_cookie)
       except TypeError as exc:
         raise DecryptionFailure('authentication_cookie must be a base64 encoded string (%s)' % exc)
 
@@ -1054,27 +1053,11 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
         raise ValueError("Hidden service descriptor must end with a 'signature' entry")
 
       self._parse(entries, validate)
+
+      if self.signing_cert:
+        self.signing_cert.validate(self)
     else:
       self._entries = entries
-
-    from cryptography.hazmat.backends.openssl.backend import backend
-
-    if backend.x25519_supported() and self.signing_cert:
-      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
-      # Verify the signature!
-      # First compute the body that was signed
-
-      descriptor_signing_key = Ed25519PublicKey.from_public_bytes(self.signing_cert.key)
-      descriptor_body = raw_contents.split(b'signature')[0]  # everything before the signature
-      signature_body = b'Tor onion service descriptor sig v3' + descriptor_body
-
-      # Decode base64 signature
-      missing_padding = len(self.signature) % 4
-      signature = base64.b64decode(self.signature + '=' * missing_padding)
-
-      # Verify signature
-      descriptor_signing_key.verify(signature, signature_body)
 
   def decrypt(self, onion_address):
     """

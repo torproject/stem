@@ -73,8 +73,10 @@ import binascii
 import collections
 import datetime
 import hashlib
+import re
 
 import stem.prereq
+import stem.descriptor.hidden_service
 import stem.descriptor.server_descriptor
 import stem.util.enum
 import stem.util.str_tools
@@ -85,7 +87,6 @@ from cryptography.hazmat.primitives import serialization
 
 ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
-ED25519_ROUTER_SIGNATURE_PREFIX = b'Tor router descriptor signature v1'
 
 CertType = stem.util.enum.UppercaseEnum(
   'RESERVED_0', 'RESERVED_1', 'RESERVED_2', 'RESERVED_3',
@@ -272,27 +273,69 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
   def validate(self, descriptor):
     """
-    Validates our signing key and that the given descriptor content matches its
-    Ed25519 signature. Supported descriptor types include...
+    Validate our descriptor content matches its ed25519 signature. Supported
+    descriptor types include...
 
-      * server descriptors
+      * :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
+      * :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV3`
 
     :param stem.descriptor.__init__.Descriptor descriptor: descriptor to validate
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid
-      * **ImportError** if cryptography module is unavailable or ed25519 is
-        unsupported
+      * **TypeError** if descriptor type is unsupported
+      * **ImportError** if cryptography module or ed25519 support unavailable
     """
 
     if not stem.prereq._is_crypto_ed25519_supported():
       raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
 
+    if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
+      signed_content = hashlib.sha256(Ed25519CertificateV1._signed_content(descriptor)).digest()
+      signature = stem.util.str_tools._decode_b64(descriptor.ed25519_signature)
+
+      self._validate_server_desc_signing_key(descriptor)
+    elif isinstance(descriptor, stem.descriptor.hidden_service.HiddenServiceDescriptorV3):
+      signed_content = Ed25519CertificateV1._signed_content(descriptor)
+      signature = stem.util.str_tools._decode_b64(descriptor.signature)
+    else:
+      raise TypeError('Certificate validation only supported for server and hidden service descriptors, not %s' % type(descriptor).__name__)
+
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     from cryptography.exceptions import InvalidSignature
 
-    if not isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
-      raise ValueError('Certificate validation only supported for server descriptors, not %s' % type(descriptor).__name__)
+    try:
+      key = Ed25519PublicKey.from_public_bytes(self.key)
+      key.verify(signature, signed_content)
+    except InvalidSignature:
+      raise ValueError('Descriptor Ed25519 certificate signature invalid (signature forged or corrupt)')
+
+  @staticmethod
+  def _signed_content(descriptor):
+    """
+    Provides this descriptor's signing constant, appended with the portion of
+    the descriptor that's signed.
+    """
+
+    if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
+      prefix = b'Tor router descriptor signature v1'
+      regex = '(.+router-sig-ed25519 )'
+    elif isinstance(descriptor, stem.descriptor.hidden_service.HiddenServiceDescriptorV3):
+      prefix = b'Tor onion service descriptor sig v3'
+      regex = '(.+)signature '
+    else:
+      raise ValueError('BUG: %s type unexpected' % type(descriptor).__name__)
+
+    match = re.search(regex, descriptor.get_bytes(), re.DOTALL)
+
+    if not match:
+      raise ValueError('Malformed descriptor missing signature line')
+
+    return prefix + match.group(1)
+
+  def _validate_server_desc_signing_key(self, descriptor):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    from cryptography.exceptions import InvalidSignature
 
     if descriptor.ed25519_master_key:
       signing_key = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'=')
@@ -303,28 +346,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Server descriptor missing an ed25519 signing key')
 
     try:
-      Ed25519PublicKey.from_public_bytes(signing_key).verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
+      key = Ed25519PublicKey.from_public_bytes(signing_key)
+      key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
     except InvalidSignature:
-      raise ValueError('Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)')
-
-    # ed25519 signature validates descriptor content up until the signature itself
-
-    descriptor_content = descriptor.get_bytes()
-
-    if b'router-sig-ed25519 ' not in descriptor_content:
-      raise ValueError("Descriptor doesn't have a router-sig-ed25519 entry.")
-
-    signed_content = descriptor_content[:descriptor_content.index(b'router-sig-ed25519 ') + 19]
-    descriptor_sha256_digest = hashlib.sha256(ED25519_ROUTER_SIGNATURE_PREFIX + signed_content).digest()
-
-    missing_padding = len(descriptor.ed25519_signature) % 4
-    signature_bytes = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_signature) + b'=' * missing_padding)
-
-    try:
-      verify_key = Ed25519PublicKey.from_public_bytes(self.key)
-      verify_key.verify(signature_bytes, descriptor_sha256_digest)
-    except InvalidSignature:
-      raise ValueError('Descriptor Ed25519 certificate signature invalid (Signature was forged or corrupt)')
+      raise ValueError('Ed25519KeyCertificate signing key is invalid (signature forged or corrupt)')
 
 
 class MyED25519Certificate(object):

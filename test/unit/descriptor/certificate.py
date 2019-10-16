@@ -194,7 +194,7 @@ class TestEd25519Certificate(unittest.TestCase):
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))
 
     cert = Ed25519Certificate.parse(certificate())
-    self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)', cert.validate, desc)
+    self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (signature forged or corrupt)', cert.validate, desc)
 
   @test.require.ed25519_support
   def test_encode_decode_certificate(self):

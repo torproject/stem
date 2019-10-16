@@ -21,7 +21,6 @@ sources...
     +- RouterStatusEntryMicroV3 - Entry for a microdescriptor flavored v3 document
 """
 
-import base64
 import binascii
 import io
 
@@ -369,12 +368,8 @@ def _base64_to_hex(identity, check_if_fingerprint = True):
   :raises: **ValueError** if the result isn't a valid fingerprint
   """
 
-  # trailing equal signs were stripped from the identity
-  missing_padding = len(identity) % 4
-  identity += '=' * missing_padding
-
   try:
-    identity_decoded = base64.b64decode(stem.util.str_tools._to_bytes(identity))
+    identity_decoded = stem.util.str_tools._decode_b64(stem.util.str_tools._to_bytes(identity))
   except (TypeError, binascii.Error):
     raise ValueError("Unable to decode identity string '%s'" % identity)
 
