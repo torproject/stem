@@ -148,9 +148,9 @@ class TestCell(unittest.TestCase):
     expected_certs = (
       (CertType.LINK, 1, b'0\x82\x02F0\x82\x01\xaf'),
       (CertType.IDENTITY, 2, b'0\x82\x01\xc90\x82\x012'),
-      (CertType.UNKNOWN, 4, b'\x01\x04\x00\x06m\x1f'),
-      (CertType.UNKNOWN, 5, b'\x01\x05\x00\x06m\n\x01'),
-      (CertType.UNKNOWN, 7, b'\x1a\xa5\xb3\xbd\x88\xb1C'),
+      (CertType.ED25519_SIGNING, 4, b'\x01\x04\x00\x06m\x1f'),
+      (CertType.LINK_CERT, 5, b'\x01\x05\x00\x06m\n\x01'),
+      (CertType.ED25519_IDENTITY, 7, b'\x1a\xa5\xb3\xbd\x88\xb1C'),
     )
 
     content = test_data('new_link_cells')

@@ -20,8 +20,9 @@ import stem.version
 import stem.util.str_tools
 import test.require
 
+from stem.client.datatype import CertType
 from stem.descriptor import DigestHash, DigestEncoding
-from stem.descriptor.certificate import CertType, ExtensionType
+from stem.descriptor.certificate import ExtensionType
 from stem.descriptor.server_descriptor import BridgeDistribution, RelayDescriptor, BridgeDescriptor
 
 from test.unit.descriptor import (
@@ -366,7 +367,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     ])
 
     self.assertEqual(1, desc.certificate.version)
-    self.assertEqual(CertType.SIGNING, desc.certificate.type)
+    self.assertEqual(CertType.ED25519_SIGNING, desc.certificate.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0, 0), desc.certificate.expiration)
     self.assertEqual(1, desc.certificate.key_type)
     self.assertTrue(desc.certificate.key.startswith(b'\xa5\xb6\x1a\x80D\x0f'))

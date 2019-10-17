@@ -12,7 +12,8 @@ import stem.util.str_tools
 import stem.prereq
 import test.require
 
-from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
+from stem.client.datatype import CertType
+from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
 
 from cryptography.hazmat.primitives import serialization
@@ -61,7 +62,7 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(stem.util.str_tools._to_unicode(cert_bytes), cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.type)
+    self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(1970, 1, 1, 0, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(b'\x03' * 32, cert.key)
@@ -85,7 +86,7 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(ED25519_CERT, cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.type)
+    self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(EXPECTED_CERT_KEY, cert.key)
@@ -126,8 +127,11 @@ class TestEd25519Certificate(unittest.TestCase):
     are reserved.
     """
 
-    exc_msg = 'Ed25519 certificate cannot have a type of 0. This is reserved to avoid conflicts with tor CERTS cells.'
+    exc_msg = 'Ed25519 certificate type 0 is unrecognized'
     self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 0))
+
+    exc_msg = 'Ed25519 certificate cannot have a type of 1. This is reserved for CERTS cells.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 1))
 
     exc_msg = 'Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.'
     self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 7))

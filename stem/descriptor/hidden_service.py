@@ -45,8 +45,9 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
+from stem.client.datatype import CertType
 from stem.descriptor import hsv3_crypto
-from stem.descriptor.certificate import Ed25519Certificate, CertType
+from stem.descriptor.certificate import Ed25519Certificate
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -255,7 +256,7 @@ class IntroductionPointV3(object):
     body += b'enc-key ntor %s\n' % (base64.b64encode(enc_key_bytes))
 
     # Build enc key cert (this does not actually need to certify anything because of #29583)
-    enc_key_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type = CertType.HS_V3_INTRO_ENC, expiration_date = cert_expiration_date, cert_key_type = 1, certified_pub_key = self.auth_key, signing_priv_key = descriptor_signing_privkey, include_signing_key = True)
+    enc_key_cert = stem.descriptor.certificate.MyED25519Certificate(cert_type = CertType.HS_V3_NTOR_ENC, expiration_date = cert_expiration_date, cert_key_type = 1, certified_pub_key = self.auth_key, signing_priv_key = descriptor_signing_privkey, include_signing_key = True)
     enc_key_cert_b64_blob = enc_key_cert.encode_for_descriptor()
     body += b'enc-key-cert\n%s\n' % (enc_key_cert_b64_blob)
 

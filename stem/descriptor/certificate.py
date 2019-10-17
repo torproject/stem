@@ -27,13 +27,13 @@ used to for a variety of purposes...
 
 .. data:: CertType (enum)
 
-  Purpose of Ed25519 certificate. As new certificate versions are added this
-  enumeration will expand.
-
-  For more information see...
+  Purpose of Ed25519 certificate. For more information see...
 
     * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
     * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
+
+  .. deprecated:: 1.8.0
+     Replaced with :data:`stem.client.datatype.CertType`
 
   ========================  ===========
   CertType                  Description
@@ -80,19 +80,25 @@ import stem.descriptor.hidden_service
 import stem.descriptor.server_descriptor
 import stem.util.enum
 import stem.util.str_tools
-import stem.util
 
 from stem.client.datatype import Size
-from cryptography.hazmat.primitives import serialization
+
+# TODO: Importing under an alternate name until we can deprecate our redundant
+# CertType enum in Stem 2.x.
+
+from stem.client.datatype import CertType as ClientCertType
 
 ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 
 CertType = stem.util.enum.UppercaseEnum(
-  'RESERVED_0', 'RESERVED_1', 'RESERVED_2', 'RESERVED_3',
-  'SIGNING', 'LINK_CERT', 'AUTH', 'RESERVED_RSA',
-  'HS_V3_DESC_SIGNING', 'HS_V3_INTRO_AUTH', 'RESERVED_0A',
-  'HS_V3_INTRO_ENC', 'HS_V3_NTOR_ENC')
+  'SIGNING',
+  'LINK_CERT',
+  'AUTH',
+  'HS_V3_DESC_SIGNING',
+  'HS_V3_INTRO_AUTH',
+  'HS_V3_INTRO_ENCRYPT',
+)
 
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = stem.util.enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
@@ -159,7 +165,6 @@ class Ed25519Certificate(object):
     def _parse(descriptor, entries):
       value, block_type, block_contents = entries[keyword][0]
 
-      # XXX ATAGAR This ValueError never actually surfaces if it triggers...
       if not block_contents or block_type != 'ED25519 CERT':
         raise ValueError("'%s' should be followed by a ED25519 CERT block, but was a %s" % (keyword, block_type))
 
@@ -176,7 +181,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
   Version 1 Ed25519 certificate, which are used for signing tor server
   descriptors.
 
-  :var CertType type: certificate purpose
+  :var stem.client.datatype.CertType type: certificate purpose
+  :var int type_int: integer value of the certificate purpose
   :var datetime expiration: expiration of the certificate
   :var int key_type: format of the key
   :var bytes key: key content
@@ -190,17 +196,14 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
-    cert_type = stem.util.str_tools._to_int(decoded[1:2])
-    try:
-      self.type = CertType.keys()[cert_type]
-    except IndexError:
-      raise ValueError('Certificate has wrong cert type')
+    self.type, self.type_int = ClientCertType.get(stem.util.str_tools._to_int(decoded[1:2]))
 
-    # Catch some invalid cert types
-    if self.type in ('RESERVED_0', 'RESERVED_1', 'RESERVED_2', 'RESERVED_3'):
-      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved to avoid conflicts with tor CERTS cells.' % cert_type)
-    elif self.type == ('RESERVED_RSA'):
+    if self.type in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
+      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % self.type_int)
+    elif self.type == ClientCertType.ED25519_IDENTITY:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    elif self.type == ClientCertType.UNKNOWN:
+      raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
 
     # expiration time is in hours since epoch
     try:
@@ -363,8 +366,8 @@ class MyED25519Certificate(object):
                version=1):
     """
     :var int version
-    :var int cert_type
-    :var CertType cert_type
+    :var stem.client.datatype.CertType cert_type
+    :var int cert_type_int
     :var datetime expiration_date
     :var int cert_key_type
     :var ED25519PublicKey certified_pub_key
@@ -372,7 +375,7 @@ class MyED25519Certificate(object):
     :var bool include_signing_key
     """
     self.version = version
-    self.cert_type = cert_type
+    self.cert_type, self.cert_type_int = ClientCertType.get(cert_type)
     self.expiration_date = expiration_date
     self.cert_key_type = cert_key_type
     self.certified_pub_key = certified_pub_key
@@ -391,6 +394,7 @@ class MyED25519Certificate(object):
     Build the cert extensions part of the certificate
     """
 
+    from cryptography.hazmat.primitives import serialization
     n_extensions = 0
 
     # If we need to include the signing key, let's create the extension body
@@ -423,18 +427,11 @@ class MyED25519Certificate(object):
 
   def encode(self):
     """Return a bytes representation of this certificate."""
+    from cryptography.hazmat.primitives import serialization
     obj = bytearray()
 
-    # Encode VERSION
     obj += Size.CHAR.pack(self.version)
-
-    # Encode CERT_TYPE
-    try:
-      cert_type_int = CertType.index_of(self.cert_type)
-    except ValueError:
-      raise ValueError("Bad cert type %s" % self.cert_type)
-
-    obj += Size.CHAR.pack(cert_type_int)
+    obj += Size.CHAR.pack(self.cert_type_int)
 
     # Encode EXPIRATION_DATE
     expiration_seconds_since_epoch = stem.util.datetime_to_unix(self.expiration_date)

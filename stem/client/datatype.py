@@ -83,16 +83,33 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 
 .. data:: CertType (enum)
 
-  Relay certificate type.
+  Certificate purpose. For more information see...
 
-  ===================== ===========
-  CertType              Description
-  ===================== ===========
-  **LINK**              link key certificate certified by RSA1024 identity
-  **IDENTITY**          RSA1024 Identity certificate
-  **AUTHENTICATE**      RSA1024 AUTHENTICATE cell link certificate
-  **UNKNOWN**           unrecognized certificate type
-  ===================== ===========
+    * `tor-spec.txt <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_ section 4.2
+    * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
+    * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
+
+  .. versionchanged:: 1.8.0
+     Added the ED25519_SIGNING, LINK_CERT, ED25519_AUTHENTICATE,
+     ED25519_IDENTITY, HS_V3_DESC_SIGNING, HS_V3_INTRO_AUTH, NTOR_ONION_KEY,
+     and HS_V3_NTOR_ENC certificate types.
+
+  ========================= ===========
+  CertType                  Description
+  ========================= ===========
+  **LINK**                  link key certificate certified by RSA1024 identity
+  **IDENTITY**              RSA1024 Identity certificate
+  **AUTHENTICATE**          RSA1024 AUTHENTICATE cell link certificate
+  **ED25519_SIGNING**       Ed25519 signing key, signed with identity key
+  **LINK_CERT**             TLS link certificate, signed with ed25519 signing key
+  **ED25519_AUTHENTICATE**  Ed25519 AUTHENTICATE cell key, signed with ed25519 signing key
+  **ED25519_IDENTITY**      Ed25519 identity, signed with RSA identity
+  **HS_V3_DESC_SIGNING**    hidden service v3 short-term descriptor signing key
+  **HS_V3_INTRO_AUTH**      hidden service v3 introduction point authentication key
+  **NTOR_ONION_KEY**        ntor onion key cross-certifying ed25519 identity key
+  **HS_V3_NTOR_ENC**        hidden service v3 ntor-extra encryption key
+  **UNKNOWN**               unrecognized certificate type
+  ========================= ===========
 
 .. data:: CloseReason (enum)
 
@@ -201,9 +218,17 @@ RelayCommand = _IntegerEnum(
 )
 
 CertType = _IntegerEnum(
-  ('LINK', 1),
-  ('IDENTITY', 2),
-  ('AUTHENTICATE', 3),
+  ('LINK', 1),                  # (tor-spec.txt section 4.2)
+  ('IDENTITY', 2),              # (tor-spec.txt section 4.2)
+  ('AUTHENTICATE', 3),          # (tor-spec.txt section 4.2)
+  ('ED25519_SIGNING', 4),       # (prop220 section 4.2)
+  ('LINK_CERT', 5),             # (prop220 section 4.2)
+  ('ED25519_AUTHENTICATE', 6),  # (prop220 section 4.2)
+  ('ED25519_IDENTITY', 7),      # (prop220 section 4.2)
+  ('HS_V3_DESC_SIGNING', 8),    # (rend-spec-v3.txt, "DESC_OUTER" description)
+  ('HS_V3_INTRO_AUTH', 9),      # (rend-spec-v3.txt, "auth-key" description)
+  ('NTOR_ONION_KEY', 10),       # (dir-spec.txt, "ntor-onion-key-crosscert" description)
+  ('HS_V3_NTOR_ENC', 11),       # (rend-spec-v3.txt, "enc-key-cert" description)
 )
 
 CloseReason = _IntegerEnum(
