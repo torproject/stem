@@ -127,11 +127,13 @@ def is_crypto_available(ed25519 = False):
 
   :param bool ed25519: check for `ed25519 support
     <https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ed25519/>`_,
-    which was added in version 2.6
+    which requires both cryptography version 2.6 and OpenSSL support
 
   :returns: **True** if we can use the cryptography module and **False**
     otherwise
   """
+
+  from stem.util import log
 
   try:
     from cryptography.utils import int_from_bytes, int_to_bytes
@@ -145,11 +147,17 @@ def is_crypto_available(ed25519 = False):
       raise ImportError()
 
     if ed25519:
+      # The following import confirms cryptography support (ie. version 2.6+),
+      # whereas ed25519_supported() checks for OpenSSL bindings.
+
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+      if not hasattr(backend, 'ed25519_supported') or not backend.ed25519_supported():
+        log.log_once('stem.prereq._is_crypto_ed25519_supported', log.INFO, ED25519_UNSUPPORTED)
+        return False
 
     return True
   except ImportError:
-    from stem.util import log
     log.log_once('stem.prereq.is_crypto_available', log.INFO, CRYPTO_UNAVAILABLE)
     return False
 
@@ -251,28 +259,6 @@ def _is_lru_cache_available():
     return False
   else:
     return hasattr(functools, 'lru_cache')
-
-
-def _is_crypto_ed25519_supported():
-  """
-  Checks if ed25519 is supported by current versions of the cryptography
-  package and OpenSSL. This is used for verifying ed25519 certificates in relay
-  descriptor signatures.
-
-  :returns: **True** if ed25519 is supported and **False** otherwise
-  """
-
-  if not is_crypto_available():
-    return False
-
-  from stem.util import log
-  from cryptography.hazmat.backends.openssl.backend import backend
-
-  if hasattr(backend, 'ed25519_supported') and backend.ed25519_supported():
-    return True
-  else:
-    log.log_once('stem.prereq._is_crypto_ed25519_supported', log.INFO, ED25519_UNSUPPORTED)
-    return False
 
 
 def _is_sha3_available():

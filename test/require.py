@@ -98,7 +98,7 @@ def version(req_version):
 
 
 cryptography = needs(stem.prereq.is_crypto_available, 'requires cryptography')
-ed25519_support = needs(stem.prereq._is_crypto_ed25519_supported, 'requires ed25519 support')
+ed25519_support = needs(lambda: stem.prereq.is_crypto_available(ed25519 = True), 'requires ed25519 support')
 proc = needs(stem.util.proc.is_available, 'proc unavailable')
 controller = needs(_can_access_controller, 'no connection')
 ptrace = needs(_can_ptrace, 'DisableDebuggerAttachment is set')

@@ -188,8 +188,6 @@ class IntroductionPointV3(object):
     descriptor_signing_key is provided.
     """
 
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-
     # if not link_specifiers or not onion_key or not enc_key:
     #   raise ValueError('Introduction point missing essential keys')
 
@@ -197,7 +195,8 @@ class IntroductionPointV3(object):
       raise ValueError('Either auth key or auth key cert needs to be provided')
 
     # If we have an auth key cert but not an auth key, extract the key
-    if auth_key_cert and not auth_key:
+    if auth_key_cert and not auth_key and stem.prereq.is_crypto_available(ed25519 = True):
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
       auth_key = Ed25519PublicKey.from_public_bytes(auth_key_cert.key)
 
     self.link_specifiers = link_specifiers
@@ -1031,8 +1030,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    # Create a string-representation of the descriptor and then parse it
-    # immediately to create an object.
     return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False):
@@ -1055,7 +1052,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
       self._parse(entries, validate)
 
-      if self.signing_cert:
+      if self.signing_cert and stem.prereq.is_crypto_available(ed25519 = True):
         self.signing_cert.validate(self)
     else:
       self._entries = entries

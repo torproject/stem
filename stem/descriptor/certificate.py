@@ -290,7 +290,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       * **ImportError** if cryptography module or ed25519 support unavailable
     """
 
-    if not stem.prereq._is_crypto_ed25519_supported():
+    if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
