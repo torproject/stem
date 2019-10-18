@@ -9,15 +9,13 @@ import stem.prereq
 from stem.descriptor import ed25519_exts_ref
 from stem.descriptor import slow_ed25519
 
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-
 
 def pubkeys_are_equal(pubkey1, pubkey2):
   """
   Compare the raw bytes of the two pubkeys and return True if they are the same
   """
+
+  from cryptography.hazmat.primitives import serialization
 
   pubkey1_bytes = pubkey1.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
   pubkey2_bytes = pubkey2.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
@@ -42,6 +40,8 @@ certificate module.
 
 class HSv3PrivateBlindedKey(object):
   def __init__(self, hazmat_private_key, blinding_param):
+    from cryptography.hazmat.primitives import serialization
+
     secret_seed = hazmat_private_key.private_bytes(encoding = serialization.Encoding.Raw, format = serialization.PrivateFormat.Raw, encryption_algorithm = serialization.NoEncryption())
     assert(len(secret_seed) == 32)
 
@@ -194,6 +194,9 @@ def _encrypt_descriptor_layer(plaintext, revision_counter, subcredential, secret
   """
   Encrypt descriptor layer at 'plaintext'
   """
+
+  from cryptography.hazmat.backends import default_backend
+  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
   salt = os.urandom(16)
 

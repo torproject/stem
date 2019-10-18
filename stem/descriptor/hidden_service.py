@@ -49,10 +49,6 @@ from stem.client.datatype import CertType
 from stem.descriptor import hsv3_crypto
 from stem.descriptor.certificate import Ed25519Certificate
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -234,6 +230,8 @@ class IntroductionPointV3(object):
 
     if not descriptor_signing_privkey:
       raise ValueError('Cannot encode: Descriptor signing key not provided')
+
+    from cryptography.hazmat.primitives import serialization
 
     cert_expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
 
@@ -870,6 +868,9 @@ def _get_middle_descriptor_layer_body(encrypted):
   (It's just fake client auth data since client auth is disabled)
   """
 
+  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+  from cryptography.hazmat.primitives import serialization
+
   fake_pub_key = X25519PrivateKey.generate().public_key()
   fake_pub_key_bytes = fake_pub_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
   fake_pub_key_bytes_b64 = base64.b64encode(fake_pub_key_bytes)
@@ -956,6 +957,9 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     'blinding_param' is a 32 byte blinding factor that should be used to derive
     the blinded key from the identity key
     """
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
 
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)

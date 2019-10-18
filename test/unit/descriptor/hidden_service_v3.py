@@ -5,10 +5,6 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 import functools
 import unittest
 
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-from cryptography.hazmat.primitives import serialization
-
 import stem.client.datatype
 import stem.descriptor
 import stem.prereq
@@ -151,6 +147,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       self.skipTest('(requires cryptography ed25519 support)')
       return
 
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
     line_to_attr = {
       'hs-descriptor': 'version',
       'descriptor-lifetime': 'lifetime',
@@ -221,6 +219,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
 
   def _helper_get_intro(self):
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+
     link_specifiers = []
 
     link1, _ = stem.client.datatype.LinkSpecifier.pop(b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
@@ -251,6 +252,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     if not stem.prereq.is_crypto_available(ed25519 = True):
       self.skipTest('(requires cryptography ed25519 support)')
       return
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives import serialization
 
     # Build the service
     private_identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32)
