@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import struct
 import os
@@ -8,19 +7,6 @@ import stem.prereq
 
 from stem.descriptor import ed25519_exts_ref
 from stem.descriptor import slow_ed25519
-
-
-def pubkeys_are_equal(pubkey1, pubkey2):
-  """
-  Compare the raw bytes of the two pubkeys and return True if they are the same
-  """
-
-  from cryptography.hazmat.primitives import serialization
-
-  pubkey1_bytes = pubkey1.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-  pubkey2_bytes = pubkey2.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-
-  return pubkey1_bytes == pubkey2_bytes
 
 
 """
@@ -72,40 +58,6 @@ class HSv3PublicBlindedKey(object):
     """
 
     stem.descriptor.slow_ed25519.checkvalid(signature, message, self.public_key)
-
-
-"""
-Onion address
-
-     onion_address = base32(PUBKEY | CHECKSUM | VERSION) + ".onion"
-     CHECKSUM = H(".onion checksum" | PUBKEY | VERSION)[:2]
-
-       - PUBKEY is the 32 bytes ed25519 master pubkey of the hidden service.
-       - VERSION is an one byte version field (default value '\x03')
-       - ".onion checksum" is a constant string
-       - CHECKSUM is truncated to two bytes before inserting it in onion_address
-"""
-
-CHECKSUM_CONSTANT = b'.onion checksum'
-
-
-def encode_onion_address(ed25519_pub_key_bytes):
-  """
-  Given the public key, return the onion address
-  """
-
-  if not stem.prereq._is_sha3_available():
-    raise ImportError('Encoding onion addresses requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-
-  version = 3
-  checksum_body = b'%s%s%d' % (CHECKSUM_CONSTANT, ed25519_pub_key_bytes, version)
-  checksum = hashlib.sha3_256(checksum_body).digest()[:2]
-
-  onion_address_bytes = b'%s%s%d' % (ed25519_pub_key_bytes, checksum, version)
-  onion_address = base64.b32encode(onion_address_bytes) + b'.onion'
-  assert(len(onion_address) == 56 + len('.onion'))
-
-  return onion_address.lower()
 
 
 """

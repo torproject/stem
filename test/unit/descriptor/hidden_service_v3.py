@@ -2,16 +2,17 @@
 Unit tests for stem.descriptor.hidden_service for version 3.
 """
 
+import base64
 import functools
+import hashlib
 import unittest
 
 import stem.client.datatype
 import stem.descriptor
 import stem.prereq
 
-import stem.descriptor.hsv3_crypto as hsv3_crypto
-
 from stem.descriptor.hidden_service import (
+  CHECKSUM_CONSTANT,
   REQUIRED_V3_FIELDS,
   IntroductionPointV3,
   HiddenServiceDescriptorV3,
@@ -46,6 +47,59 @@ with open(get_resource('hidden_service_v3_outer_layer')) as outer_layer_file:
 
 with open(get_resource('hidden_service_v3_inner_layer')) as inner_layer_file:
   INNER_LAYER_STR = inner_layer_file.read()
+
+
+def _pubkeys_are_equal(pubkey1, pubkey2):
+  """
+  Compare the raw bytes of the two pubkeys and return True if they are the same
+  """
+
+  from cryptography.hazmat.primitives import serialization
+
+  pubkey1_bytes = pubkey1.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+  pubkey2_bytes = pubkey2.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+
+  return pubkey1_bytes == pubkey2_bytes
+
+
+def _encode_onion_address(ed25519_pub_key_bytes):
+  """
+  Given the public key, return the onion address
+  """
+
+  if not stem.prereq._is_sha3_available():
+    raise ImportError('Encoding onion addresses requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+
+  version = 3
+  checksum_body = b'%s%s%d' % (CHECKSUM_CONSTANT, ed25519_pub_key_bytes, version)
+  checksum = hashlib.sha3_256(checksum_body).digest()[:2]
+
+  onion_address_bytes = b'%s%s%d' % (ed25519_pub_key_bytes, checksum, version)
+  onion_address = base64.b32encode(onion_address_bytes) + b'.onion'
+  assert(len(onion_address) == 56 + len('.onion'))
+
+  return onion_address.lower()
+
+
+def _helper_get_intro():
+  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+
+  link_specifiers = []
+
+  link1, _ = stem.client.datatype.LinkSpecifier.pop(b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
+  link_specifiers.append(link1)
+
+  onion_privkey = X25519PrivateKey.generate()
+  onion_pubkey = onion_privkey.public_key()
+
+  auth_privkey = Ed25519PrivateKey.generate()
+  auth_pubkey = auth_privkey.public_key()
+
+  enc_privkey = X25519PrivateKey.generate()
+  enc_pubkey = enc_privkey.public_key()
+
+  return IntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
 
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
@@ -218,28 +272,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
 
-  def _helper_get_intro(self):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-
-    link_specifiers = []
-
-    link1, _ = stem.client.datatype.LinkSpecifier.pop(b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
-    link_specifiers.append(link1)
-
-    onion_privkey = X25519PrivateKey.generate()
-    onion_pubkey = onion_privkey.public_key()
-
-    auth_privkey = Ed25519PrivateKey.generate()
-    auth_pubkey = auth_privkey.public_key()
-
-    enc_privkey = X25519PrivateKey.generate()
-    enc_pubkey = enc_privkey.public_key()
-
-    intro = IntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
-
-    return intro
-
   def test_encode_decode_descriptor(self):
     """
     Encode an HSv3 descriptor and then decode it and make sure you get the intended results.
@@ -261,12 +293,12 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     public_identity_key = private_identity_key.public_key()
     pubkey_bytes = public_identity_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
-    onion_address = hsv3_crypto.encode_onion_address(pubkey_bytes).decode()
+    onion_address = _encode_onion_address(pubkey_bytes).decode()
 
     # Build the introduction points
-    intro1 = self._helper_get_intro()
-    intro2 = self._helper_get_intro()
-    intro3 = self._helper_get_intro()
+    intro1 = _helper_get_intro()
+    intro2 = _helper_get_intro()
+    intro3 = _helper_get_intro()
     intro_points = [intro1, intro2, intro3]
 
     # TODO: replace with bytes.fromhex() when we drop python 2.x support
@@ -293,9 +325,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       for original_intro in intro_points:
         # Match intro points
 
-        if hsv3_crypto.pubkeys_are_equal(desc_intro.auth_key, original_intro.auth_key):
+        if _pubkeys_are_equal(desc_intro.auth_key, original_intro.auth_key):
           original_found = True
-          self.assertTrue(hsv3_crypto.pubkeys_are_equal(desc_intro.enc_key, original_intro.enc_key))
-          self.assertTrue(hsv3_crypto.pubkeys_are_equal(desc_intro.onion_key, original_intro.onion_key))
+          self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key, original_intro.enc_key))
+          self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key, original_intro.onion_key))
 
       self.assertTrue(original_found)
