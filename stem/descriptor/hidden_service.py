@@ -144,7 +144,23 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   """
 
 
-class IntroductionPointV3(object):
+class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
+  """
+  Introduction point for a v3 hidden service.
+
+  .. versionadded:: 1.8.0
+
+  :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
+  :var str onion_key: ntor introduction point public key
+  :var str auth_key: cross-certifier of the signing key
+  :var str enc_key: introduction request encryption key
+  :var str enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var str legacy_key: legacy introduction point RSA public key
+  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
+  """
+
+
+class AlternateIntroductionPointV3(object):
   """
   Introduction point for a v3 hidden service.
 
@@ -459,7 +475,7 @@ def _parse_v3_introduction_points(descriptor, entries):
       legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
 
       introduction_points.append(
-        IntroductionPointV3(
+        AlternateIntroductionPointV3(
           link_specifiers = link_specifiers,
           onion_key = onion_key,
           auth_key_cert = auth_key_cert,

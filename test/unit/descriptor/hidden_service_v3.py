@@ -14,7 +14,7 @@ import stem.prereq
 from stem.descriptor.hidden_service import (
   CHECKSUM_CONSTANT,
   REQUIRED_V3_FIELDS,
-  IntroductionPointV3,
+  AlternateIntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
   InnerLayer,
@@ -99,7 +99,7 @@ def _helper_get_intro():
   enc_privkey = X25519PrivateKey.generate()
   enc_pubkey = enc_privkey.public_key()
 
-  return IntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
+  return AlternateIntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
 
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
