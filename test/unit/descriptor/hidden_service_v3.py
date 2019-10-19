@@ -197,12 +197,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     Check that we require the mandatory fields.
     """
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      self.skipTest('(requires cryptography ed25519 support)')
-      return
-
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
     line_to_attr = {
       'hs-descriptor': 'version',
       'descriptor-lifetime': 'lifetime',
@@ -212,10 +206,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       'signature': 'signature',
     }
 
-    private_identity_key = Ed25519PrivateKey.generate()
     for line in REQUIRED_V3_FIELDS:
-      desc_text = HiddenServiceDescriptorV3.content(exclude = (line,),
-                                                      ed25519_private_identity_key=private_identity_key)
+      desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
   def test_invalid_version(self):
