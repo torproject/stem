@@ -73,6 +73,13 @@ if stem.prereq._is_lru_cache_available():
 else:
   from stem.util.lru_cache import lru_cache
 
+try:
+  from cryptography.hazmat.backends.openssl.backend import backend
+  X25519_AVAILABLE = backend.x25519_supported()
+except ImportError:
+  X25519_AVAILABLE = False
+
+
 REQUIRED_V2_FIELDS = (
   'rendezvous-service-descriptor',
   'version',
@@ -144,20 +151,75 @@ class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTI
   """
 
 
-class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key', 'auth_key', 'enc_key', 'enc_key_cert', 'legacy_key', 'legacy_key_cert'])):
+class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_specifiers', 'onion_key_raw', 'auth_key_cert', 'enc_key_raw', 'enc_key_cert', 'legacy_key_raw', 'legacy_key_cert'])):
   """
   Introduction point for a v3 hidden service.
 
   .. versionadded:: 1.8.0
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
-  :var str onion_key: ntor introduction point public key
-  :var str auth_key: cross-certifier of the signing key
-  :var str enc_key: introduction request encryption key
-  :var str enc_key_cert: cross-certifier of the signing key by the encryption key
-  :var str legacy_key: legacy introduction point RSA public key
-  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
+  :var str onion_key_raw: base64 ntor introduction point public key
+  :var stem.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
+  :var str enc_key_raw: base64 introduction request encryption key
+  :var stem.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var str legacy_key_raw: base64 legacy introduction point RSA public key
+  :var stem.certificate.Ed25519Certificate legacy_key_cert: cross-certifier of the signing key by the legacy key
   """
+
+  def onion_key(self):
+    """
+    Provides our ntor introduction point public key.
+
+    :returns: ntor :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
+
+    :raises:
+      * **ImportError** if required the cryptography module is unavailable
+      * **EnvironmentError** if OpenSSL x25519 unsupported
+    """
+
+    return IntroductionPointV3._parse_key(self.onion_key_raw)
+
+  def enc_key(self):
+    """
+    Provides our encryption key.
+
+    :returns: encryption :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
+
+    :raises:
+      * **ImportError** if required the cryptography module is unavailable
+      * **EnvironmentError** if OpenSSL x25519 unsupported
+    """
+
+    return IntroductionPointV3._parse_key(self.enc_key_raw)
+
+  def legacy_key(self):
+    """
+    Provides our legacy introduction point public key.
+
+    :returns: legacy :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
+
+    :raises:
+      * **ImportError** if required the cryptography module is unavailable
+      * **EnvironmentError** if OpenSSL x25519 unsupported
+    """
+
+    return IntroductionPointV3._parse_key(self.legacy_key_raw)
+
+  @staticmethod
+  def _parse_key(value):
+    if value is None:
+      return value
+    elif not stem.prereq.is_crypto_available():
+      raise ImportError('cryptography module unavailable')
+    elif not X25519_AVAILABLE:
+      # without this the cryptography raises...
+      # cryptography.exceptions.UnsupportedAlgorithm: X25519 is not supported by this version of OpenSSL.
+
+      raise EnvironmentError('OpenSSL x25519 unsupported')
+
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+
+    return X25519PublicKey.from_public_bytes(base64.b64decode(value))
 
 
 class AlternateIntroductionPointV3(object):
@@ -425,9 +487,6 @@ def _parse_v3_inner_formats(descriptor, entries):
 
 
 def _parse_v3_introduction_points(descriptor, entries):
-  from cryptography.hazmat.backends.openssl.backend import backend
-  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
-
   if hasattr(descriptor, '_unparsed_introduction_points'):
     introduction_points = []
     remaining = descriptor._unparsed_introduction_points
@@ -445,12 +504,8 @@ def _parse_v3_introduction_points(descriptor, entries):
       entry = _descriptor_components(intro_point_str, False)
       link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
 
-      if backend.x25519_supported():
-        onion_key_line = _value('onion-key', entry)
-        onion_key_b64 = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
-        onion_key = X25519PublicKey.from_public_bytes(base64.b64decode(onion_key_b64))
-      else:
-        onion_key = None
+      onion_key_line = _value('onion-key', entry)
+      onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
 
       _, block_type, auth_key_cert = entry['auth-key'][0]
       auth_key_cert = Ed25519Certificate.parse(auth_key_cert)
@@ -458,12 +513,8 @@ def _parse_v3_introduction_points(descriptor, entries):
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
 
-      if backend.x25519_supported():
-        enc_key_line = _value('enc-key', entry)
-        enc_key_b64 = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
-        enc_key = X25519PublicKey.from_public_bytes(base64.b64decode(enc_key_b64))
-      else:
-        enc_key = None
+      enc_key_line = _value('enc-key', entry)
+      enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
 
       _, block_type, enc_key_cert = entry['enc-key-cert'][0]
       enc_key_cert = Ed25519Certificate.parse(enc_key_cert)
@@ -475,14 +526,14 @@ def _parse_v3_introduction_points(descriptor, entries):
       legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
 
       introduction_points.append(
-        AlternateIntroductionPointV3(
-          link_specifiers = link_specifiers,
-          onion_key = onion_key,
-          auth_key_cert = auth_key_cert,
-          enc_key = enc_key,
-          enc_key_cert = enc_key_cert,
-          legacy_key = legacy_key,
-          legacy_key_cert = legacy_key_cert,
+        IntroductionPointV3(
+          link_specifiers,
+          onion_key,
+          auth_key_cert,
+          enc_key,
+          enc_key_cert,
+          legacy_key,
+          legacy_key_cert,
         )
       )
 

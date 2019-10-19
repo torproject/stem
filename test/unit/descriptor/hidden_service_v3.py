@@ -14,6 +14,7 @@ import stem.prereq
 from stem.descriptor.hidden_service import (
   CHECKSUM_CONSTANT,
   REQUIRED_V3_FIELDS,
+  X25519_AVAILABLE,
   AlternateIntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
@@ -25,6 +26,12 @@ from test.unit.descriptor import (
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
 )
+
+try:
+  # added in python 3.3
+  from unittest.mock import patch, Mock, MagicMock
+except ImportError:
+  from mock import patch, Mock, MagicMock
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
 expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV3, 'version', 3)
@@ -264,6 +271,51 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
 
+  def test_intro_point_crypto(self):
+    """
+    Retrieve IntroductionPointV3 cryptographic materials.
+    """
+
+    if not stem.prereq.is_crypto_available():
+      self.skipTest('(requires cryptography support)')
+      return
+    elif not X25519_AVAILABLE:
+      self.skipTest('(openssl requires X25519 support)')
+      return
+
+    from cryptography.hazmat.backends.openssl.x25519 import X25519PublicKey
+    from cryptography.hazmat.primitives import serialization
+
+    intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
+
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.onion_key_raw)
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.enc_key_raw)
+
+    self.assertTrue(isinstance(intro_point.onion_key(), X25519PublicKey))
+    self.assertTrue(isinstance(intro_point.enc_key(), X25519PublicKey))
+
+    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(intro_point.onion_key().public_bytes(
+      encoding = serialization.Encoding.Raw,
+      format = serialization.PublicFormat.Raw,
+    )))
+
+    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(intro_point.enc_key().public_bytes(
+      encoding = serialization.Encoding.Raw,
+      format = serialization.PublicFormat.Raw,
+    )))
+
+    self.assertEqual(None, intro_point.legacy_key_raw)
+    self.assertEqual(None, intro_point.legacy_key())
+
+  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
+  def test_intro_point_crypto_without_prereq(self):
+    """
+    Fetch cryptographic materials when the module is unavailable.
+    """
+
+    intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
+    self.assertRaisesWith(ImportError, 'cryptography module unavailable', intro_point.onion_key)
+
   def test_encode_decode_descriptor(self):
     """
     Encode an HSv3 descriptor and then decode it and make sure you get the intended results.
@@ -277,7 +329,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       self.skipTest('(requires cryptography ed25519 support)')
       return
 
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization
 
     # Build the service
@@ -317,9 +369,12 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       for original_intro in intro_points:
         # Match intro points
 
-        if _pubkeys_are_equal(desc_intro.auth_key, original_intro.auth_key):
+        auth_key_1 = Ed25519PublicKey.from_public_bytes(desc_intro.auth_key_cert.key)
+        auth_key_2 = original_intro.auth_key
+
+        if _pubkeys_are_equal(auth_key_1, auth_key_2):
           original_found = True
-          self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key, original_intro.enc_key))
-          self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key, original_intro.onion_key))
+          self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key))
+          self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key))
 
       self.assertTrue(original_found)
