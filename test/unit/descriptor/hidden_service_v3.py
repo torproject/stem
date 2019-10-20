@@ -11,6 +11,8 @@ import stem.client.datatype
 import stem.descriptor
 import stem.prereq
 
+import test.require
+
 from stem.descriptor.hidden_service import (
   CHECKSUM_CONSTANT,
   REQUIRED_V3_FIELDS,
@@ -29,9 +31,12 @@ from test.unit.descriptor import (
 
 try:
   # added in python 3.3
-  from unittest.mock import patch, Mock, MagicMock
+  from unittest.mock import patch, Mock
 except ImportError:
-  from mock import patch, Mock, MagicMock
+  from mock import patch, Mock
+
+require_sha3 = test.require.needs(stem.prereq._is_sha3_available, 'requires sha3')
+require_x25519 = test.require.needs(lambda: X25519_AVAILABLE, 'requires openssl x5509')
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
 expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV3, 'version', 3)
@@ -127,17 +132,12 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue('eaH8VdaTKS' in desc.superencrypted)
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
 
+  @require_sha3
+  @test.require.ed25519_support
   def test_decryption(self):
     """
     Decrypt our descriptor and validate its content.
     """
-
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      self.skipTest('(requires cryptography ed25519 support)')
-      return
-    elif not stem.prereq._is_sha3_available():
-      self.skipTest('(requires sha3 support)')
-      return
 
     desc = HiddenServiceDescriptorV3.from_str(HS_DESC_STR)
     inner_layer = desc.decrypt(HS_ADDRESS)
@@ -259,29 +259,19 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
 
+  @require_sha3
+  @test.require.ed25519_support
   def test_public_key_from_address(self):
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      self.skipTest('(requires cryptography ed25519 support)')
-      return
-    elif not stem.prereq._is_sha3_available():
-      self.skipTest('(requires sha3 support)')
-      return
-
     self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
 
+  @require_x25519
+  @test.require.ed25519_support
   def test_intro_point_crypto(self):
     """
     Retrieve IntroductionPointV3 cryptographic materials.
     """
-
-    if not stem.prereq.is_crypto_available():
-      self.skipTest('(requires cryptography support)')
-      return
-    elif not X25519_AVAILABLE:
-      self.skipTest('(openssl requires X25519 support)')
-      return
 
     from cryptography.hazmat.backends.openssl.x25519 import X25519PublicKey
     from cryptography.hazmat.primitives import serialization
@@ -316,6 +306,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
     self.assertRaisesWith(ImportError, 'cryptography module unavailable', intro_point.onion_key)
 
+  @test.require.ed25519_support
   def test_encode_decode_descriptor(self):
     """
     Encode an HSv3 descriptor and then decode it and make sure you get the intended results.
@@ -324,10 +315,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     this test generates is the data that onionbalance also has available when
     making onion service descriptors.
     """
-
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      self.skipTest('(requires cryptography ed25519 support)')
-      return
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
     from cryptography.hazmat.primitives import serialization

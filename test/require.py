@@ -12,6 +12,7 @@ run.
   |- needs - skips the test unless a requirement is met
   |
   |- cryptography - skips test unless the cryptography module is present
+  |- ed25519_support - skips test unless cryptography has ed25519 support
   |- command - requires a command to be on the path
   |- proc - requires the platform to have recognized /proc contents
   |
