@@ -75,9 +75,9 @@ import datetime
 import hashlib
 import re
 
-import stem.prereq
 import stem.descriptor.hidden_service
 import stem.descriptor.server_descriptor
+import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 
@@ -145,18 +145,10 @@ class Ed25519Certificate(object):
     if content.startswith('-----BEGIN ED25519 CERT-----\n') and content.endswith('\n-----END ED25519 CERT-----'):
       content = content[29:-27]
 
-    try:
-      decoded = base64.b64decode(content)
-
-      if not decoded:
-        raise TypeError('empty')
-    except (TypeError, binascii.Error) as exc:
-      raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
-
-    version = stem.util.str_tools._to_int(decoded[0:1])
+    version = stem.util.str_tools._to_int(Ed25519Certificate._b64_decode(content)[0:1])
 
     if version == 1:
-      return Ed25519CertificateV1(version, content, decoded)
+      return Ed25519CertificateV1(content)
     else:
       raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
 
@@ -171,6 +163,18 @@ class Ed25519Certificate(object):
       setattr(descriptor, attribute, Ed25519Certificate.parse(block_contents))
 
     return _parse
+
+  @staticmethod
+  def _b64_decode(content):
+    try:
+      decoded = base64.b64decode(content)
+
+      if not decoded:
+        raise TypeError('empty')
+
+      return decoded
+    except (TypeError, binascii.Error) as exc:
+      raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
   def __str__(self):
     return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
@@ -190,8 +194,9 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var bytes signature: certificate signature
   """
 
-  def __init__(self, version, encoded, decoded):
-    super(Ed25519CertificateV1, self).__init__(version, encoded)
+  def __init__(self, content):
+    super(Ed25519CertificateV1, self).__init__(1, content)
+    decoded = Ed25519Certificate._b64_decode(content)
 
     if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
