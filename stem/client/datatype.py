@@ -17,6 +17,12 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
   LinkProtocol - ORPort protocol version.
 
   Field - Packable and unpackable datatype.
+    |- LinkSpecifier - Communication method relays in a circuit.
+    |    |- LinkByIPv4 - TLS connection to an IPv4 address.
+    |    |- LinkByIPv6 - TLS connection to an IPv6 address.
+    |    |- LinkByFingerprint - SHA1 identity fingerprint.
+    |    +- LinkByEd25519 - Ed25519 identity fingerprint.
+    |
     |- Size - Field of a static size.
     |- Address - Relay address.
     |- Certificate - Relay certificate.
@@ -24,12 +30,6 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
     |- pack - encodes content
     |- unpack - decodes content
     +- pop - decodes content with remainder
-
-  LinkSpecifier - Communication method relays in a circuit.
-    |- LinkByIPv4 - TLS connection to an IPv4 address.
-    |- LinkByIPv6 - TLS connection to an IPv6 address.
-    |- LinkByFingerprint - SHA1 identity fingerprint.
-    +- LinkByEd25519 - Ed25519 identity fingerprint.
 
   KDF - KDF-TOR derivatived attributes
     +- from_value - parses key material
@@ -559,7 +559,7 @@ class Certificate(Field):
     return stem.util._hash_attr(self, 'type_int', 'value')
 
 
-class LinkSpecifier(object):
+class LinkSpecifier(Field):
   """
   Method of communicating with a circuit's relay. Recognized link specification
   types are an instantiation of a subclass. For more information see the
@@ -575,29 +575,29 @@ class LinkSpecifier(object):
     self.value = value
 
   @staticmethod
-  def pop(content):
+  def pop(packed):
     # LSTYPE (Link specifier type)           [1 byte]
     # LSLEN  (Link specifier length)         [1 byte]
     # LSPEC  (Link specifier)                [LSLEN bytes]
 
-    link_type, content = Size.CHAR.pop(content)
-    value_size, content = Size.CHAR.pop(content)
+    link_type, packed = Size.CHAR.pop(packed)
+    value_size, packed = Size.CHAR.pop(packed)
 
-    if value_size > len(content):
-      raise ValueError('Link specifier should have %i bytes, but only had %i remaining' % (value_size, len(content)))
+    if value_size > len(packed):
+      raise ValueError('Link specifier should have %i bytes, but only had %i remaining' % (value_size, len(packed)))
 
-    value, content = split(content, value_size)
+    value, packed = split(packed, value_size)
 
     if link_type == 0:
-      return LinkByIPv4(value), content
+      return LinkByIPv4(value), packed
     elif link_type == 1:
-      return LinkByIPv6(value), content
+      return LinkByIPv6(value), packed
     elif link_type == 2:
-      return LinkByFingerprint(value), content
+      return LinkByFingerprint(value), packed
     elif link_type == 3:
-      return LinkByEd25519(value), content
+      return LinkByEd25519(value), packed
     else:
-      return LinkSpecifier(link_type, value), content  # unrecognized type
+      return LinkSpecifier(link_type, value), packed  # unrecognized type
 
   def pack(self):
     cell = bytearray()
