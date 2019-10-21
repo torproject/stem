@@ -19,9 +19,11 @@ used to for a variety of purposes...
   Ed25519Certificate - Ed25519 signing key certificate
     | +- Ed25519CertificateV1 - version 1 Ed25519 certificate
     |      |- is_expired - checks if certificate is presently expired
-    |      +- validate - validates signature of a server descriptor
+    |      |- signing_key - certificate signing key
+    |      +- validate - validates a descriptor's signature
     |
-    +- parse - reads base64 encoded certificate data
+    |- from_base64 - decodes base64 encoded certificate data
+    +- to_base64 - encodes base64 encoded certificate data
 
   Ed25519Extension - extension included within an Ed25519Certificate
 
@@ -123,12 +125,12 @@ class Ed25519Certificate(object):
   :var unicode encoded: base64 encoded ed25519 certificate
   """
 
-  def __init__(self, version, encoded):
+  def __init__(self, version):
     self.version = version
-    self.encoded = encoded
+    self.encoded = None  # TODO: remove in stem 2.x
 
   @staticmethod
-  def parse(content):
+  def from_base64(content):
     """
     Parses the given base64 encoded data as an Ed25519 certificate.
 
@@ -148,9 +150,22 @@ class Ed25519Certificate(object):
     version = stem.util.str_tools._to_int(Ed25519Certificate._b64_decode(content)[0:1])
 
     if version == 1:
-      return Ed25519CertificateV1(content)
+      return Ed25519CertificateV1.from_base64(content)
     else:
       raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
+
+  def to_base64(self, pem = False):
+    """
+    Base64 encoded certificate data.
+
+    :param bool pem: include `PEM header/footer
+      <https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail>`_, for more
+      information see `RFC 7468 <https://tools.ietf.org/html/rfc7468>`_
+
+    :returns: **bytes** for our encoded certificate representation
+    """
+
+    raise NotImplementedError('Certificate encoding has not been implemented for %s' % type(self).__name__)
 
   @staticmethod
   def _from_descriptor(keyword, attribute):
@@ -160,7 +175,7 @@ class Ed25519Certificate(object):
       if not block_contents or block_type != 'ED25519 CERT':
         raise ValueError("'%s' should be followed by a ED25519 CERT block, but was a %s" % (keyword, block_type))
 
-      setattr(descriptor, attribute, Ed25519Certificate.parse(block_contents))
+      setattr(descriptor, attribute, Ed25519Certificate.from_base64(block_contents))
 
     return _parse
 
@@ -177,7 +192,11 @@ class Ed25519Certificate(object):
       raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
   def __str__(self):
-    return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
+    return self.to_base64(pem = True)
+
+  @staticmethod
+  def parse(content):
+    return Ed25519Certificate.from_base64(content)  # TODO: drop this alias in stem 2.x
 
 
 class Ed25519CertificateV1(Ed25519Certificate):
@@ -194,33 +213,60 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var bytes signature: certificate signature
   """
 
-  def __init__(self, content):
-    super(Ed25519CertificateV1, self).__init__(1, content)
+  def __init__(self, type_int, expiration, key_type, key, extensions, signature):
+    super(Ed25519CertificateV1, self).__init__(1)
+
+    self.type, self.type_int = ClientCertType.get(type_int)
+    self.expiration = expiration
+    self.key_type = key_type
+    self.key = key
+    self.extensions = extensions
+    self.signature = signature
+
+  def to_base64(self, pem = False):
+    if pem:
+      return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
+    else:
+      return self.encoded
+
+  @staticmethod
+  def from_base64(content):
+    """
+    Parses the given base64 encoded data as a version 1 Ed25519 certificate.
+
+    :param str content: base64 encoded certificate
+
+    :returns: :class:`~stem.descriptor.certificate.Ed25519CertificateV1` for
+      this content
+
+    :raises: **ValueError** if certificate is malformed
+    """
+
     decoded = Ed25519Certificate._b64_decode(content)
 
     if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
-    self.type, self.type_int = ClientCertType.get(stem.util.str_tools._to_int(decoded[1:2]))
+    type_enum, type_int = ClientCertType.get(stem.util.str_tools._to_int(decoded[1:2]))
 
-    if self.type in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
-      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % self.type_int)
-    elif self.type == ClientCertType.ED25519_IDENTITY:
+    if type_enum in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
+      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % type_int)
+    elif type_enum == ClientCertType.ED25519_IDENTITY:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
-    elif self.type == ClientCertType.UNKNOWN:
-      raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
+    elif type_enum == ClientCertType.UNKNOWN:
+      raise ValueError('Ed25519 certificate type %i is unrecognized' % type_int)
 
     # expiration time is in hours since epoch
     try:
-      self.expiration = datetime.datetime.utcfromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
+      expiration = datetime.datetime.utcfromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
     except ValueError as exc:
       raise ValueError('Invalid expiration timestamp (%s): %s' % (exc, stem.util.str_tools._to_int(decoded[2:6]) * 3600))
 
-    self.key_type = stem.util.str_tools._to_int(decoded[6:7])
-    self.key = decoded[7:39]
-    self.signature = decoded[-ED25519_SIGNATURE_LENGTH:]
+    key_type = stem.util.str_tools._to_int(decoded[6:7])
+    key = decoded[7:39]
+    signature = decoded[-ED25519_SIGNATURE_LENGTH:]
 
-    self.extensions = []
+    extensions = []
     extension_count = stem.util.str_tools._to_int(decoded[39:40])
     remaining_data = decoded[40:-ED25519_SIGNATURE_LENGTH]
 
@@ -248,11 +294,16 @@ class Ed25519CertificateV1(Ed25519Certificate):
       if extension_type == ExtensionType.HAS_SIGNING_KEY and len(extension_data) != 32:
         raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(extension_data))
 
-      self.extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_data))
+      extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_data))
       remaining_data = remaining_data[4 + extension_length:]
 
     if remaining_data:
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
+
+    instance = Ed25519CertificateV1(type_int, expiration, key_type, key, extensions, signature)
+    instance.encoded = content
+
+    return instance
 
   def is_expired(self):
     """

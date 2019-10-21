@@ -508,7 +508,7 @@ def _parse_v3_introduction_points(descriptor, entries):
       onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
 
       _, block_type, auth_key_cert = entry['auth-key'][0]
-      auth_key_cert = Ed25519Certificate.parse(auth_key_cert)
+      auth_key_cert = Ed25519Certificate.from_base64(auth_key_cert)
 
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
@@ -517,7 +517,7 @@ def _parse_v3_introduction_points(descriptor, entries):
       enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
 
       _, block_type, enc_key_cert = entry['enc-key-cert'][0]
-      enc_key_cert = Ed25519Certificate.parse(enc_key_cert)
+      enc_key_cert = Ed25519Certificate.from_base64(enc_key_cert)
 
       if block_type != 'ED25519 CERT':
         raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)

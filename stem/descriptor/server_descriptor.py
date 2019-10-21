@@ -406,7 +406,7 @@ def _parse_identity_ed25519_line(descriptor, entries):
   _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
 
   if descriptor.ed25519_certificate:
-    descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.parse(descriptor.ed25519_certificate)
+    descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.from_base64(descriptor.ed25519_certificate)
 
 
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
