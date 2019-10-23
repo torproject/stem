@@ -13,7 +13,7 @@ import stem.prereq
 import test.require
 
 from stem.client.datatype import CertType
-from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
+from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, ExtensionType, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
 
 from cryptography.hazmat.primitives import serialization
@@ -69,8 +69,8 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(b'\x01' * ED25519_SIGNATURE_LENGTH, cert.signature)
 
     self.assertEqual([
-      Ed25519Extension(type = ExtensionType.HAS_SIGNING_KEY, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = signing_key),
-      Ed25519Extension(type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
+      Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, 7, signing_key),
+      Ed25519Extension(5, 4, b''),
     ], cert.extensions)
 
     self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].type)
@@ -90,7 +90,7 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(EXPECTED_CERT_KEY, cert.key)
-    self.assertEqual([Ed25519Extension(type = 4, flags = [], flag_int = 0, data = EXPECTED_EXTENSION_DATA)], cert.extensions)
+    self.assertEqual([Ed25519Extension(4, 0, EXPECTED_EXTENSION_DATA)], cert.extensions)
     self.assertEqual(EXPECTED_SIGNATURE, cert.signature)
 
   def test_non_base64(self):
@@ -141,7 +141,7 @@ class TestEd25519Certificate(unittest.TestCase):
     Include an extension without as much data as it specifies.
     """
 
-    exc_msg = 'Ed25519 extension is missing header field data'
+    exc_msg = 'Ed25519 extension is missing header fields'
     self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'']))
 
     exc_msg = "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2."
