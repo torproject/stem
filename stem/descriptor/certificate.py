@@ -83,13 +83,14 @@ import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 
-from stem.client.datatype import Size
+from stem.client.datatype import Size, split
 
 # TODO: Importing under an alternate name until we can deprecate our redundant
 # CertType enum in Stem 2.x.
 
 from stem.client.datatype import CertType as ClientCertType
 
+ED25519_KEY_LENGTH = 32
 ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 
@@ -223,6 +224,13 @@ class Ed25519CertificateV1(Ed25519Certificate):
     self.extensions = extensions
     self.signature = signature
 
+    if self.type in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
+      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % self.type_int)
+    elif self.type == ClientCertType.ED25519_IDENTITY:
+      raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
+    elif self.type == ClientCertType.UNKNOWN:
+      raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
+
   def to_base64(self, pem = False):
     if pem:
       return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
@@ -247,40 +255,33 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
-    type_enum, type_int = ClientCertType.get(stem.util.str_tools._to_int(decoded[1:2]))
+    header, signature = split(decoded, len(decoded) - ED25519_SIGNATURE_LENGTH)
 
-    if type_enum in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
-      raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % type_int)
-    elif type_enum == ClientCertType.ED25519_IDENTITY:
-      raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
-    elif type_enum == ClientCertType.UNKNOWN:
-      raise ValueError('Ed25519 certificate type %i is unrecognized' % type_int)
+    version, header = Size.CHAR.pop(header)
+    cert_type, header = Size.CHAR.pop(header)
+    expiration_hours, header = Size.LONG.pop(header)
+    key_type, header = Size.CHAR.pop(header)
+    key, header = split(header, ED25519_KEY_LENGTH)
+    extension_count, extension_data = Size.CHAR.pop(header)
 
-    # expiration time is in hours since epoch
-    try:
-      expiration = datetime.datetime.utcfromtimestamp(stem.util.str_tools._to_int(decoded[2:6]) * 3600)
-    except ValueError as exc:
-      raise ValueError('Invalid expiration timestamp (%s): %s' % (exc, stem.util.str_tools._to_int(decoded[2:6]) * 3600))
-
-    key_type = stem.util.str_tools._to_int(decoded[6:7])
-    key = decoded[7:39]
-    signature = decoded[-ED25519_SIGNATURE_LENGTH:]
+    if version != 1:
+      raise ValueError('Ed25519 v1 parser cannot read version %i certificates' % version)
 
     extensions = []
-    extension_count = stem.util.str_tools._to_int(decoded[39:40])
-    remaining_data = decoded[40:-ED25519_SIGNATURE_LENGTH]
 
     for i in range(extension_count):
-      if len(remaining_data) < 4:
+      if len(extension_data) < 4:
         raise ValueError('Ed25519 extension is missing header field data')
 
-      extension_length = stem.util.str_tools._to_int(remaining_data[:2])
-      extension_type = stem.util.str_tools._to_int(remaining_data[2:3])
-      extension_flags = stem.util.str_tools._to_int(remaining_data[3:4])
-      extension_data = remaining_data[4:4 + extension_length]
+      extension_length, extension_data = Size.SHORT.pop(extension_data)
+      extension_type, extension_data = Size.CHAR.pop(extension_data)
+      extension_flags, extension_data = Size.CHAR.pop(extension_data)
+      extension_value, extension_data = split(extension_data, extension_length)
 
-      if extension_length != len(extension_data):
-        raise ValueError("Ed25519 extension is truncated. It should have %i bytes of data but there's only %i." % (extension_length, len(extension_data)))
+      if extension_length != len(extension_value):
+        raise ValueError("Ed25519 extension is truncated. It should have %i bytes of data but there's only %i." % (extension_length, len(extension_value)))
+      elif extension_type == ExtensionType.HAS_SIGNING_KEY and len(extension_value) != 32:
+        raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(extension_value))
 
       flags, remaining_flags = [], extension_flags
 
@@ -291,16 +292,12 @@ class Ed25519CertificateV1(Ed25519Certificate):
       if remaining_flags:
         flags.append(ExtensionFlag.UNKNOWN)
 
-      if extension_type == ExtensionType.HAS_SIGNING_KEY and len(extension_data) != 32:
-        raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(extension_data))
+      extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_value))
 
-      extensions.append(Ed25519Extension(extension_type, flags, extension_flags, extension_data))
-      remaining_data = remaining_data[4 + extension_length:]
+    if extension_data:
+      raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(extension_data))
 
-    if remaining_data:
-      raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(remaining_data))
-
-    instance = Ed25519CertificateV1(type_int, expiration, key_type, key, extensions, signature)
+    instance = Ed25519CertificateV1(cert_type, datetime.datetime.utcfromtimestamp(expiration_hours * 3600), key_type, key, extensions, signature)
     instance.encoded = content
 
     return instance
