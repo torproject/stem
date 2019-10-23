@@ -12,7 +12,7 @@ import stem.util.str_tools
 import stem.prereq
 import test.require
 
-from stem.client.datatype import CertType
+from stem.client.datatype import Size, CertType
 from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, ExtensionType, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
 
@@ -92,6 +92,30 @@ class TestEd25519Certificate(unittest.TestCase):
     self.assertEqual(EXPECTED_CERT_KEY, cert.key)
     self.assertEqual([Ed25519Extension(4, 0, EXPECTED_EXTENSION_DATA)], cert.extensions)
     self.assertEqual(EXPECTED_SIGNATURE, cert.signature)
+
+  def test_extension_encoding(self):
+    """
+    Pack an extension back into what we read.
+    """
+
+    extension = Ed25519Certificate.from_base64(ED25519_CERT).extensions[0]
+    expected = Size.SHORT.pack(len(EXPECTED_EXTENSION_DATA)) + Size.CHAR.pack(4) + Size.CHAR.pack(0) + EXPECTED_EXTENSION_DATA
+
+    self.assertEqual(4, extension.type)
+    self.assertEqual(0, extension.flag_int)
+    self.assertEqual(EXPECTED_EXTENSION_DATA, extension.data)
+    self.assertEqual(expected, extension.pack())
+
+  def test_certificate_encoding(self):
+    """
+    Pack a certificate back into what we read.
+    """
+
+    cert = Ed25519Certificate.from_base64(ED25519_CERT)
+    self.assertEqual(ED25519_CERT, cert.encoded)
+
+    cert.encoded = None  # clear cached encoding
+    self.assertEqual(ED25519_CERT, cert.to_base64())
 
   def test_non_base64(self):
     """

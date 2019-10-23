@@ -79,6 +79,7 @@ import re
 import stem.descriptor.hidden_service
 import stem.descriptor.server_descriptor
 import stem.prereq
+import stem.util
 import stem.util.enum
 import stem.util.str_tools
 
@@ -131,6 +132,14 @@ class Ed25519Extension(Field):
 
     if ext_type == ExtensionType.HAS_SIGNING_KEY and len(data) != 32:
       raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(data))
+
+  def pack(self):
+    encoded = bytearray()
+    encoded += Size.SHORT.pack(len(self.data))
+    encoded += Size.CHAR.pack(self.type)
+    encoded += Size.CHAR.pack(self.flag_int)
+    encoded += self.data
+    return bytes(encoded)
 
   @staticmethod
   def pop(content):
@@ -265,6 +274,20 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
 
   def to_base64(self, pem = False):
+    if self.encoded is None:
+      encoded = bytearray()
+      encoded += Size.CHAR.pack(self.version)
+      encoded += Size.CHAR.pack(self.type_int)
+      encoded += Size.LONG.pack(stem.util.datetime_to_unix(self.expiration) / 3600)
+      encoded += Size.CHAR.pack(self.key_type)
+      encoded += self.key
+      encoded += Size.CHAR.pack(len(self.extensions))
+
+      for extension in self.extensions:
+        encoded += extension.pack()
+
+      self.encoded = '\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(bytes(encoded + self.signature)), 64))
+
     if pem:
       return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
     else:
