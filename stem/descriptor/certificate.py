@@ -22,8 +22,11 @@ used to for a variety of purposes...
     |      |- signing_key - certificate signing key
     |      +- validate - validates a descriptor's signature
     |
-    |- from_base64 - decodes base64 encoded certificate data
-    +- to_base64 - encodes base64 encoded certificate data
+    |- from_base64 - decodes a base64 encoded certificate
+    |- to_base64 - base64 encoding of this certificate
+    |
+    |- unpack - decodes a byte encoded certificate
+    +- pack - byte encoding of this certificate
 
   Ed25519Extension - extension included within an Ed25519Certificate
 
@@ -173,9 +176,29 @@ class Ed25519Certificate(object):
     self.encoded = None  # TODO: remove in stem 2.x
 
   @staticmethod
+  def unpack(content):
+    """
+    Parses a byte encoded ED25519 certificate.
+
+    :param bytes content: encoded certificate
+
+    :returns: :class:`~stem.descriptor.certificate.Ed25519Certificate` subclsss
+      for the given certificate
+
+    :raises: **ValueError** if certificate is malformed
+    """
+
+    version = Size.CHAR.pop(content)[0]
+
+    if version == 1:
+      return Ed25519CertificateV1.unpack(content)
+    else:
+      raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
+
+  @staticmethod
   def from_base64(content):
     """
-    Parses the given base64 encoded data as an Ed25519 certificate.
+    Parses a base64 encoded ED25519 certificate.
 
     :param str content: base64 encoded certificate
 
@@ -190,12 +213,26 @@ class Ed25519Certificate(object):
     if content.startswith('-----BEGIN ED25519 CERT-----\n') and content.endswith('\n-----END ED25519 CERT-----'):
       content = content[29:-27]
 
-    version = stem.util.str_tools._to_int(Ed25519Certificate._b64_decode(content)[0:1])
+    try:
+      decoded = base64.b64decode(content)
 
-    if version == 1:
-      return Ed25519CertificateV1.from_base64(content)
-    else:
-      raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
+      if not decoded:
+        raise TypeError('empty')
+
+      instance = Ed25519Certificate.unpack(decoded)
+      instance.encoded = content
+      return instance
+    except (TypeError, binascii.Error) as exc:
+      raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
+
+  def pack(self):
+    """
+    Encoded byte representation of our certificate.
+
+    :returns: **bytes** for our encoded certificate representation
+    """
+
+    raise NotImplementedError('Certificate encoding has not been implemented for %s' % type(self).__name__)
 
   def to_base64(self, pem = False):
     """
@@ -208,7 +245,12 @@ class Ed25519Certificate(object):
     :returns: **bytes** for our encoded certificate representation
     """
 
-    raise NotImplementedError('Certificate encoding has not been implemented for %s' % type(self).__name__)
+    encoded = '\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(self.pack()), 64))
+
+    if pem:
+      return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % encoded
+    else:
+      return encoded
 
   @staticmethod
   def _from_descriptor(keyword, attribute):
@@ -221,18 +263,6 @@ class Ed25519Certificate(object):
       setattr(descriptor, attribute, Ed25519Certificate.from_base64(block_contents))
 
     return _parse
-
-  @staticmethod
-  def _b64_decode(content):
-    try:
-      decoded = base64.b64decode(content)
-
-      if not decoded:
-        raise TypeError('empty')
-
-      return decoded
-    except (TypeError, binascii.Error) as exc:
-      raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
   def __str__(self):
     return self.to_base64(pem = True)
@@ -273,45 +303,26 @@ class Ed25519CertificateV1(Ed25519Certificate):
     elif self.type == ClientCertType.UNKNOWN:
       raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
 
-  def to_base64(self, pem = False):
-    if self.encoded is None:
-      encoded = bytearray()
-      encoded += Size.CHAR.pack(self.version)
-      encoded += Size.CHAR.pack(self.type_int)
-      encoded += Size.LONG.pack(stem.util.datetime_to_unix(self.expiration) / 3600)
-      encoded += Size.CHAR.pack(self.key_type)
-      encoded += self.key
-      encoded += Size.CHAR.pack(len(self.extensions))
+  def pack(self):
+    encoded = bytearray()
+    encoded += Size.CHAR.pack(self.version)
+    encoded += Size.CHAR.pack(self.type_int)
+    encoded += Size.LONG.pack(stem.util.datetime_to_unix(self.expiration) / 3600)
+    encoded += Size.CHAR.pack(self.key_type)
+    encoded += self.key
+    encoded += Size.CHAR.pack(len(self.extensions))
 
-      for extension in self.extensions:
-        encoded += extension.pack()
+    for extension in self.extensions:
+      encoded += extension.pack()
 
-      self.encoded = '\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(bytes(encoded + self.signature)), 64))
-
-    if pem:
-      return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % self.encoded
-    else:
-      return self.encoded
+    return bytes(encoded + self.signature)
 
   @staticmethod
-  def from_base64(content):
-    """
-    Parses the given base64 encoded data as a version 1 Ed25519 certificate.
+  def unpack(content):
+    if len(content) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
+      raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(content), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
-    :param str content: base64 encoded certificate
-
-    :returns: :class:`~stem.descriptor.certificate.Ed25519CertificateV1` for
-      this content
-
-    :raises: **ValueError** if certificate is malformed
-    """
-
-    decoded = Ed25519Certificate._b64_decode(content)
-
-    if len(decoded) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
-      raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(decoded), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
-
-    header, signature = split(decoded, len(decoded) - ED25519_SIGNATURE_LENGTH)
+    header, signature = split(content, len(content) - ED25519_SIGNATURE_LENGTH)
 
     version, header = Size.CHAR.pop(header)
     cert_type, header = Size.CHAR.pop(header)
@@ -333,7 +344,6 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(extension_data))
 
     instance = Ed25519CertificateV1(cert_type, datetime.datetime.utcfromtimestamp(expiration_hours * 3600), key_type, key, extensions, signature)
-    instance.encoded = content
 
     return instance
 

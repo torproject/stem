@@ -112,10 +112,8 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     cert = Ed25519Certificate.from_base64(ED25519_CERT)
-    self.assertEqual(ED25519_CERT, cert.encoded)
-
-    cert.encoded = None  # clear cached encoding
-    self.assertEqual(ED25519_CERT, cert.to_base64())
+    self.assertEqual(ED25519_CERT, cert.encoded)  # read base64 encoding (getting removed in stem 2.x)
+    self.assertEqual(ED25519_CERT, cert.to_base64())  # computed base64 encoding
 
   def test_non_base64(self):
     """
