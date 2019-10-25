@@ -242,15 +242,15 @@ class Ed25519Certificate(object):
       <https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail>`_, for more
       information see `RFC 7468 <https://tools.ietf.org/html/rfc7468>`_
 
-    :returns: **bytes** for our encoded certificate representation
+    :returns: **unicode** for our encoded certificate representation
     """
 
-    encoded = '\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(self.pack()), 64))
+    encoded = b'\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(self.pack()), 64))
 
     if pem:
-      return '-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % encoded
-    else:
-      return encoded
+      encoded = b'-----BEGIN ED25519 CERT-----\n%s\n-----END ED25519 CERT-----' % encoded
+
+    return stem.util.str_tools._to_unicode(encoded)
 
   @staticmethod
   def _from_descriptor(keyword, attribute):
@@ -307,7 +307,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     encoded = bytearray()
     encoded += Size.CHAR.pack(self.version)
     encoded += Size.CHAR.pack(self.type_int)
-    encoded += Size.LONG.pack(stem.util.datetime_to_unix(self.expiration) / 3600)
+    encoded += Size.LONG.pack(int(stem.util.datetime_to_unix(self.expiration) / 3600))
     encoded += Size.CHAR.pack(self.key_type)
     encoded += self.key
     encoded += Size.CHAR.pack(len(self.extensions))
