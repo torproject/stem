@@ -350,18 +350,13 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     # descriptor and do some sanity checks between them to make sure that
     # parsing was done right!
 
-    for desc_intro in inner_layer.introduction_points:
-      original_found = False  # Make sure we found all the intro points
+    for i, desc_intro in enumerate(inner_layer.introduction_points):
+      original_intro = intro_points[i]
 
-      for original_intro in intro_points:
-        # Match intro points
+      auth_key_1 = Ed25519PublicKey.from_public_bytes(desc_intro.auth_key_cert.key)
+      auth_key_2 = original_intro.auth_key
 
-        auth_key_1 = Ed25519PublicKey.from_public_bytes(desc_intro.auth_key_cert.key)
-        auth_key_2 = original_intro.auth_key
+      self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key))
+      self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key))
 
-        if _pubkeys_are_equal(auth_key_1, auth_key_2):
-          original_found = True
-          self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key))
-          self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key))
-
-      self.assertTrue(original_found)
+      self.assertTrue(_pubkeys_are_equal(auth_key_1, auth_key_2))
