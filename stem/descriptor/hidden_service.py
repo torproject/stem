@@ -163,8 +163,46 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   :var str enc_key_raw: base64 introduction request encryption key
   :var stem.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
   :var str legacy_key_raw: base64 legacy introduction point RSA public key
-  :var stem.certificate.Ed25519Certificate legacy_key_cert: cross-certifier of the signing key by the legacy key
+  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
   """
+
+  @staticmethod
+  def parse(content):
+    """
+    Parses an introduction point from its descriptor content.
+
+    :param str content: descriptor content to parse
+
+    :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` for the descriptor content
+
+    :raises: **ValueError** if descriptor content is malformed
+    """
+
+    entry = _descriptor_components(content, False)
+    link_specifiers = IntroductionPointV3._parse_link_specifiers(_value('introduction-point', entry))
+
+    onion_key_line = _value('onion-key', entry)
+    onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
+
+    _, block_type, auth_key_cert = entry['auth-key'][0]
+    auth_key_cert = Ed25519Certificate.from_base64(auth_key_cert)
+
+    if block_type != 'ED25519 CERT':
+      raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
+
+    enc_key_line = _value('enc-key', entry)
+    enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
+
+    _, block_type, enc_key_cert = entry['enc-key-cert'][0]
+    enc_key_cert = Ed25519Certificate.from_base64(enc_key_cert)
+
+    if block_type != 'ED25519 CERT':
+      raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
+
+    legacy_key = entry['legacy-key'][0][2] if 'legacy-key' in entry else None
+    legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
+
+    return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
 
   def onion_key(self):
     """
@@ -220,6 +258,25 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
     return X25519PublicKey.from_public_bytes(base64.b64decode(value))
+
+  @staticmethod
+  def _parse_link_specifiers(content):
+    try:
+      content = base64.b64decode(content)
+    except Exception as exc:
+      raise ValueError('Unable to base64 decode introduction point (%s): %s' % (exc, content))
+
+    link_specifiers = []
+    count, content = stem.client.datatype.Size.CHAR.pop(content)
+
+    for i in range(count):
+      link_specifier, content = stem.client.datatype.LinkSpecifier.pop(content)
+      link_specifiers.append(link_specifier)
+
+    if content:
+      raise ValueError('Introduction point had excessive data (%s)' % content)
+
+    return link_specifiers
 
 
 class AlternateIntroductionPointV3(object):
@@ -493,71 +550,12 @@ def _parse_v3_introduction_points(descriptor, entries):
 
     while remaining:
       div = remaining.find('\nintroduction-point ', 10)
+      content, remaining = (remaining[:div], remaining[div + 1:]) if div != -1 else (remaining, '')
 
-      if div == -1:
-        intro_point_str = remaining
-        remaining = ''
-      else:
-        intro_point_str = remaining[:div]
-        remaining = remaining[div + 1:]
-
-      entry = _descriptor_components(intro_point_str, False)
-      link_specifiers = _parse_link_specifiers(_value('introduction-point', entry))
-
-      onion_key_line = _value('onion-key', entry)
-      onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
-
-      _, block_type, auth_key_cert = entry['auth-key'][0]
-      auth_key_cert = Ed25519Certificate.from_base64(auth_key_cert)
-
-      if block_type != 'ED25519 CERT':
-        raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
-
-      enc_key_line = _value('enc-key', entry)
-      enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
-
-      _, block_type, enc_key_cert = entry['enc-key-cert'][0]
-      enc_key_cert = Ed25519Certificate.from_base64(enc_key_cert)
-
-      if block_type != 'ED25519 CERT':
-        raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
-
-      legacy_key = entry['legacy-key'][0][2] if 'legacy-key' in entry else None
-      legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
-
-      introduction_points.append(
-        IntroductionPointV3(
-          link_specifiers,
-          onion_key,
-          auth_key_cert,
-          enc_key,
-          enc_key_cert,
-          legacy_key,
-          legacy_key_cert,
-        )
-      )
+      introduction_points.append(IntroductionPointV3.parse(content))
 
     descriptor.introduction_points = introduction_points
     del descriptor._unparsed_introduction_points
-
-
-def _parse_link_specifiers(val):
-  try:
-    val = base64.b64decode(val)
-  except Exception as exc:
-    raise ValueError('Unable to base64 decode introduction point (%s): %s' % (exc, val))
-
-  link_specifiers = []
-  count, val = stem.client.datatype.Size.CHAR.pop(val)
-
-  for i in range(count):
-    link_specifier, val = stem.client.datatype.LinkSpecifier.pop(val)
-    link_specifiers.append(link_specifier)
-
-  if val:
-    raise ValueError('Introduction point had excessive data (%s)' % val)
-
-  return link_specifiers
 
 
 _parse_v2_version_line = _parse_int_line('version', 'version', allow_negative = False)

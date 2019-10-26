@@ -17,6 +17,7 @@ from stem.descriptor.hidden_service import (
   CHECKSUM_CONSTANT,
   REQUIRED_V3_FIELDS,
   X25519_AVAILABLE,
+  IntroductionPointV3,
   AlternateIntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
@@ -59,6 +60,9 @@ with open(get_resource('hidden_service_v3_outer_layer')) as outer_layer_file:
 
 with open(get_resource('hidden_service_v3_inner_layer')) as inner_layer_file:
   INNER_LAYER_STR = inner_layer_file.read()
+
+with open(get_resource('hidden_service_v3_intro_point')) as intro_point_file:
+  INTRO_POINT_STR = intro_point_file.read()
 
 
 def _pubkeys_are_equal(pubkey1, pubkey2):
@@ -265,6 +269,20 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
     self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
+
+  def test_intro_point_parse(self):
+    """
+    Parse a v3 introduction point.
+    """
+
+    intro_point = IntroductionPointV3.parse(INTRO_POINT_STR)
+
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.onion_key_raw)
+    self.assertTrue('0Acq8QW8O7O' in intro_point.auth_key_cert.to_base64())
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.enc_key_raw)
+    self.assertTrue('4807i5', intro_point.enc_key_cert.to_base64())
+    self.assertTrue('JAoGBAMO3' in intro_point.legacy_key_raw)
+    self.assertTrue('Ln1ITJ0qP' in intro_point.legacy_key_cert)
 
   @require_x25519
   @test.require.ed25519_support
