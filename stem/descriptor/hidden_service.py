@@ -163,7 +163,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   :var str enc_key_raw: base64 introduction request encryption key
   :var stem.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
   :var str legacy_key_raw: base64 legacy introduction point RSA public key
-  :var str legacy_key_cert: cross-certifier of the signing key by the legacy key
+  :var str legacy_key_cert: base64 cross-certifier of the signing key by the legacy key
   """
 
   @staticmethod
@@ -203,6 +203,37 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
 
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
+
+  def encode(self):
+    """
+    Descriptor representation of this introduction point.
+
+    :returns: **str** for our descriptor representation
+    """
+
+    lines = []
+
+    link_count = stem.client.datatype.Size.CHAR.pack(len(self.link_specifiers))
+    link_specifiers = link_count + ''.join([l.pack() for l in self.link_specifiers])
+    lines.append('introduction-point %s' % base64.b64encode(link_specifiers))
+
+    if self.onion_key_raw:
+      lines.append('onion-key ntor %s' % self.onion_key_raw)
+
+    lines.append('auth-key\n' + self.auth_key_cert.to_base64(pem = True))
+
+    if self.enc_key_raw:
+      lines.append('enc-key ntor %s' % self.enc_key_raw)
+
+    lines.append('enc-key-cert\n' + self.enc_key_cert.to_base64(pem = True))
+
+    if self.legacy_key_raw:
+      lines.append('legacy-key\n' + self.legacy_key_raw)
+
+    if self.legacy_key_cert:
+      lines.append('legacy-key-cert\n' + self.legacy_key_cert)
+
+    return '\n'.join(lines)
 
   def onion_key(self):
     """

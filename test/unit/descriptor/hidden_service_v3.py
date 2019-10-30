@@ -284,6 +284,14 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue('JAoGBAMO3' in intro_point.legacy_key_raw)
     self.assertTrue('Ln1ITJ0qP' in intro_point.legacy_key_cert)
 
+  def test_intro_point_encode(self):
+    """
+    Encode an introduction point back into a string.
+    """
+
+    intro_point = IntroductionPointV3.parse(INTRO_POINT_STR)
+    self.assertEqual(INTRO_POINT_STR.rstrip(), intro_point.encode())
+
   @require_x25519
   @test.require.ed25519_support
   def test_intro_point_crypto(self):
