@@ -935,7 +935,10 @@ def _get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey):
 
   # Now encode all the intro points
   for intro_point in intro_points:
-    final_body += intro_point.encode(descriptor_signing_privkey)
+    if isinstance(intro_point, IntroductionPointV3):
+      final_body += intro_point.encode() + b'\n'
+    else:
+      final_body += intro_point.encode(descriptor_signing_privkey)
 
   return final_body
 
@@ -984,7 +987,7 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
   should be attached to the descriptor
   """
 
-  inner_descriptor_layer = _get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey)
+  inner_descriptor_layer = stem.util.str_tools._to_bytes(_get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey))
   inner_ciphertext = hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
   inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b'encrypted')
 
@@ -1179,7 +1182,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
     if self._inner_layer is None:
-      blinded_key = self.signing_cert.signing_key()
+      blinded_key = self.signing_cert.signing_key() if self.signing_cert else None
 
       if not blinded_key:
         raise ValueError('No signing key is present')

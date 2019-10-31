@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 """
 
 import base64
+import datetime
 import functools
 import hashlib
 import unittest
@@ -12,6 +13,9 @@ import stem.descriptor
 import stem.prereq
 
 import test.require
+
+from stem.client.datatype import CertType, LinkByIPv4
+from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519CertificateV1
 
 from stem.descriptor.hidden_service import (
   CHECKSUM_CONSTANT,
@@ -98,6 +102,28 @@ def _encode_onion_address(ed25519_pub_key_bytes):
 
 
 def _helper_get_intro():
+  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+  from cryptography.hazmat.primitives import serialization
+
+  def public_key(key):
+    return key.public_key().public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+
+  onion_key = public_key(X25519PrivateKey.generate())
+  enc_key = public_key(X25519PrivateKey.generate())
+  auth_key = public_key(Ed25519PrivateKey.generate())
+  signing_key = Ed25519PrivateKey.generate()
+
+  expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = 54)
+  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, public_key(signing_key))]
+
+  auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, auth_key, extensions, signing_key = signing_key)
+  enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, auth_key, extensions, signing_key = signing_key)
+
+  return IntroductionPointV3([LinkByIPv4('1.2.3.4', 9001)], base64.b64encode(onion_key), auth_key_cert, base64.b64encode(enc_key), enc_key_cert, None, None)
+
+
+def _helper_get_intro_old():
   from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
   from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
@@ -370,7 +396,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     desc = HiddenServiceDescriptorV3.from_str(desc_string)
     inner_layer = desc.decrypt(onion_address)
 
-    self.assertEqual(len(inner_layer.introduction_points), 3)
+    self.assertEqual(3, len(inner_layer.introduction_points))
 
     # Match introduction points of the parsed descriptor and the generated
     # descriptor and do some sanity checks between them to make sure that
@@ -380,9 +406,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       original_intro = intro_points[i]
 
       auth_key_1 = Ed25519PublicKey.from_public_bytes(desc_intro.auth_key_cert.key)
-      auth_key_2 = original_intro.auth_key
+      auth_key_2 = Ed25519PublicKey.from_public_bytes(original_intro.auth_key_cert.key)
 
-      self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key))
-      self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key))
+      self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key()))
+      self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key()))
 
       self.assertTrue(_pubkeys_are_equal(auth_key_1, auth_key_2))

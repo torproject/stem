@@ -123,10 +123,10 @@ class Ed25519Extension(Field):
   def __init__(self, ext_type, flag_val, data):
     self.type = ext_type
     self.flags = []
-    self.flag_int = flag_val
+    self.flag_int = flag_val if flag_val else 0
     self.data = data
 
-    if flag_val % 2 == 1:
+    if flag_val and flag_val % 2 == 1:
       self.flags.append(ExtensionFlag.AFFECTS_VALIDATION)
       flag_val -= 1
 
@@ -284,17 +284,33 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var bytes key: key content
   :var list extensions: :class:`~stem.descriptor.certificate.Ed25519Extension` in this certificate
   :var bytes signature: certificate signature
+
+  :param bytes signature: pre-calculated certificate signature
+  :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey: certificate signing key
   """
 
-  def __init__(self, type_int, expiration, key_type, key, extensions, signature):
+  def __init__(self, cert_type, expiration, key_type, key, extensions, signature = None, signing_key = None):
     super(Ed25519CertificateV1, self).__init__(1)
 
-    self.type, self.type_int = ClientCertType.get(type_int)
+    if not signature and not signing_key:
+      raise ValueError('Certificate signature or signing key is required')
+
+    self.type, self.type_int = ClientCertType.get(cert_type)
     self.expiration = expiration
     self.key_type = key_type
     self.key = key
     self.extensions = extensions
     self.signature = signature
+
+    if signing_key:
+      calculated_sig = signing_key.sign(self.pack())
+
+      # if caller provides both signing key *and* signature then ensure they match
+
+      if self.signature and self.signature != calculated_sig:
+        raise ValueError("Signature calculated from its key (%s) mismatches '%s'" % (calculated_sig, self.signature))
+
+      self.signature = calculated_sig
 
     if self.type in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
       raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % self.type_int)
@@ -315,7 +331,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
     for extension in self.extensions:
       encoded += extension.pack()
 
-    return bytes(encoded + self.signature)
+    if self.signature:
+      encoded += self.signature
+
+    return bytes(encoded)
 
   @staticmethod
   def unpack(content):
