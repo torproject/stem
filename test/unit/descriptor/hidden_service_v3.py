@@ -22,7 +22,6 @@ from stem.descriptor.hidden_service import (
   REQUIRED_V3_FIELDS,
   X25519_AVAILABLE,
   IntroductionPointV3,
-  AlternateIntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
   InnerLayer,
@@ -121,27 +120,6 @@ def _helper_get_intro():
   enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, auth_key, extensions, signing_key = signing_key)
 
   return IntroductionPointV3([LinkByIPv4('1.2.3.4', 9001)], base64.b64encode(onion_key), auth_key_cert, base64.b64encode(enc_key), enc_key_cert, None, None)
-
-
-def _helper_get_intro_old():
-  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-
-  link_specifiers = []
-
-  link1, _ = stem.client.datatype.LinkSpecifier.pop(b'\x03\x20CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC')
-  link_specifiers.append(link1)
-
-  onion_privkey = X25519PrivateKey.generate()
-  onion_pubkey = onion_privkey.public_key()
-
-  auth_privkey = Ed25519PrivateKey.generate()
-  auth_pubkey = auth_privkey.public_key()
-
-  enc_privkey = X25519PrivateKey.generate()
-  enc_pubkey = enc_privkey.public_key()
-
-  return AlternateIntroductionPointV3(link_specifiers, onion_key=onion_pubkey, enc_key=enc_pubkey, auth_key=auth_pubkey)
 
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
