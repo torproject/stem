@@ -36,6 +36,7 @@ import datetime
 import hashlib
 import io
 import os
+import struct
 import time
 
 import stem.client.datatype
@@ -213,8 +214,8 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     lines = []
 
     link_count = stem.client.datatype.Size.CHAR.pack(len(self.link_specifiers))
-    link_specifiers = link_count + ''.join([l.pack() for l in self.link_specifiers])
-    lines.append('introduction-point %s' % base64.b64encode(link_specifiers))
+    link_specifiers = link_count + b''.join([l.pack() for l in self.link_specifiers])
+    lines.append('introduction-point %s' % stem.util.str_tools._to_unicode(base64.b64encode(link_specifiers)))
 
     if self.onion_key_raw:
       lines.append('onion-key ntor %s' % self.onion_key_raw)
@@ -365,6 +366,9 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
   from cryptography.hazmat.backends import default_backend
 
+  def pack(val):
+    return struct.pack('>Q', val)
+
   if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
     encrypted_block = encrypted_block[24:-22]
 
@@ -380,10 +384,14 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   ciphertext = encrypted[SALT_LEN:-MAC_LEN]
   expected_mac = encrypted[-MAC_LEN:]
 
-  secret_key, secret_iv, mac_key = hsv3_crypto.get_desc_keys(blinded_key, constant,
-                                                             subcredential, revision_counter, salt, )
+  kdf = hashlib.shake_256(blinded_key + subcredential + pack(revision_counter) + salt + constant)
+  keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
 
-  mac = hsv3_crypto.get_desc_encryption_mac(mac_key, salt, ciphertext)
+  secret_key = keys[:S_KEY_LEN]
+  secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
+  mac_key = keys[S_KEY_LEN + S_IV_LEN:]
+
+  mac = hashlib.sha3_256(pack(len(mac_key)) + mac_key + pack(len(salt)) + salt + ciphertext).digest()
 
   if mac != expected_mac:
     raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac))
