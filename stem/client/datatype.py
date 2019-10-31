@@ -566,6 +566,8 @@ class LinkSpecifier(Field):
   `EXTEND cell specification
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt#n975>`_.
 
+  .. versionadded:: 1.8.0
+
   :var int type: numeric identifier of our type
   :var bytes value: encoded link specification destination
   """
@@ -589,9 +591,9 @@ class LinkSpecifier(Field):
     value, packed = split(packed, value_size)
 
     if link_type == 0:
-      return LinkByIPv4(value), packed
+      return LinkByIPv4.unpack(value), packed
     elif link_type == 1:
-      return LinkByIPv6(value), packed
+      return LinkByIPv6.unpack(value), packed
     elif link_type == 2:
       return LinkByFingerprint(value), packed
     elif link_type == 3:
@@ -611,45 +613,57 @@ class LinkByIPv4(LinkSpecifier):
   """
   TLS connection to an IPv4 address.
 
+  .. versionadded:: 1.8.0
+
   :var str address: relay IPv4 address
   :var int port: relay ORPort
   """
 
-  def __init__(self, value):
-    super(LinkByIPv4, self).__init__(0, value)
+  def __init__(self, address, port):
+    super(LinkByIPv4, self).__init__(0, _pack_ipv4_address(address) + Size.SHORT.pack(port))
 
+    self.address = address
+    self.port = port
+
+  @staticmethod
+  def unpack(value):
     if len(value) != 6:
       raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    address_bin, value = split(value, 4)
-    self.address = _unpack_ipv4_address(address_bin)
-
-    self.port, _ = Size.SHORT.pop(value)
+    addr, port = split(value, 4)
+    return LinkByIPv4(_unpack_ipv4_address(addr), Size.SHORT.unpack(port))
 
 
 class LinkByIPv6(LinkSpecifier):
   """
   TLS connection to an IPv6 address.
 
+  .. versionadded:: 1.8.0
+
   :var str address: relay IPv6 address
   :var int port: relay ORPort
   """
 
-  def __init__(self, value):
-    super(LinkByIPv6, self).__init__(1, value)
+  def __init__(self, address, port):
+    super(LinkByIPv6, self).__init__(1, _pack_ipv6_address(address) + Size.SHORT.pack(port))
 
+    self.address = address
+    self.port = port
+
+  @staticmethod
+  def unpack(value):
     if len(value) != 18:
       raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    address_bin, value = split(value, 16)
-    self.address = _unpack_ipv6_address(address_bin)
-
-    self.port, _ = Size.SHORT.pop(value)
+    addr, port = split(value, 16)
+    return LinkByIPv6(_unpack_ipv6_address(addr), Size.SHORT.unpack(port))
 
 
 class LinkByFingerprint(LinkSpecifier):
   """
   Connection to a SHA1 identity fingerprint.
+
+  .. versionadded:: 1.8.0
 
   :var str fingerprint: relay sha1 fingerprint
   """
@@ -666,6 +680,8 @@ class LinkByFingerprint(LinkSpecifier):
 class LinkByEd25519(LinkSpecifier):
   """
   Connection to a Ed25519 identity fingerprint.
+
+  .. versionadded:: 1.8.0
 
   :var str fingerprint: relay ed25519 fingerprint
   """
@@ -713,15 +729,19 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
 
 
-def _unpack_ipv4_address(value):
-  # convert bytes to a standard IPv4 address
+def _pack_ipv4_address(address):
+  return b''.join([Size.CHAR.pack(int(v)) for v in address.split('.')])
 
+
+def _unpack_ipv4_address(value):
   return '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
 
 
-def _unpack_ipv6_address(value):
-  # convert bytes to a standard IPv6 address
+def _pack_ipv6_address(address):
+  return b''.join([Size.SHORT.pack(int(v, 16)) for v in address.split(':')])
 
+
+def _unpack_ipv6_address(value):
   return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 
