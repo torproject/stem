@@ -47,8 +47,6 @@ import stem.util.str_tools
 import stem.util.tor_tools
 
 from stem.descriptor import hsv3_crypto
-from stem.descriptor.certificate import Ed25519Certificate
-
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -159,9 +157,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
   :var str onion_key_raw: base64 ntor introduction point public key
-  :var stem.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
+  :var stem.descriptor.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
   :var str enc_key_raw: base64 introduction request encryption key
-  :var stem.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
+  :var stem.descriptor.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
   :var str legacy_key_raw: base64 legacy introduction point RSA public key
   :var str legacy_key_cert: base64 cross-certifier of the signing key by the legacy key
   """
@@ -185,7 +183,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
 
     _, block_type, auth_key_cert = entry['auth-key'][0]
-    auth_key_cert = Ed25519Certificate.from_base64(auth_key_cert)
+    auth_key_cert = stem.descriptor.certificate.Ed25519Certificate.from_base64(auth_key_cert)
 
     if block_type != 'ED25519 CERT':
       raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
@@ -194,7 +192,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
 
     _, block_type, enc_key_cert = entry['enc-key-cert'][0]
-    enc_key_cert = Ed25519Certificate.from_base64(enc_key_cert)
+    enc_key_cert = stem.descriptor.certificate.Ed25519Certificate.from_base64(enc_key_cert)
 
     if block_type != 'ED25519 CERT':
       raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
@@ -484,7 +482,7 @@ _parse_v2_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
-_parse_signing_cert = Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
+_parse_signing_cert = stem.descriptor.certificate.Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
@@ -893,7 +891,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   :var int version: **\\*** hidden service descriptor version
   :var int lifetime: **\\*** minutes after publication this descriptor is valid
-  :var stem.certificate.Ed25519Certificate signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
+  :var stem.descriptor.certificate.Ed25519Certificate signing_cert: **\\*** cross-certifier for the short-term descriptor signing key
   :var int revision_counter: **\\*** descriptor revision number
   :var str superencrypted: **\\*** encrypted HS-DESC-ENC payload
   :var str signature: **\\*** signature of this descriptor
