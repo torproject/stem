@@ -5,32 +5,26 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 import base64
 import datetime
 import functools
-import hashlib
 import unittest
 
 import stem.client.datatype
 import stem.descriptor
+import stem.descriptor.hidden_service
 import stem.prereq
 
 import test.require
-
-from stem.client.datatype import CertType, LinkByIPv4
-from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519CertificateV1
-
-from stem.descriptor.hidden_service import (
-  CHECKSUM_CONSTANT,
-  REQUIRED_V3_FIELDS,
-  X25519_AVAILABLE,
-  IntroductionPointV3,
-  HiddenServiceDescriptorV3,
-  OuterLayer,
-  InnerLayer,
-)
 
 from test.unit.descriptor import (
   get_resource,
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
+)
+
+from stem.descriptor.hidden_service import (
+  IntroductionPointV3,
+  HiddenServiceDescriptorV3,
+  OuterLayer,
+  InnerLayer,
 )
 
 try:
@@ -40,12 +34,13 @@ except ImportError:
   from mock import patch, Mock
 
 require_sha3 = test.require.needs(stem.prereq._is_sha3_available, 'requires sha3')
-require_x25519 = test.require.needs(lambda: X25519_AVAILABLE, 'requires openssl x5509')
+require_x25519 = test.require.needs(lambda: stem.descriptor.hidden_service.X25519_AVAILABLE, 'requires openssl x5509')
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
 expect_invalid_attr_for_text = functools.partial(base_expect_invalid_attr_for_text, HiddenServiceDescriptorV3, 'version', 3)
 
-HS_ADDRESS = 'sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion'
+HS_ADDRESS = u'sltib6sxkuxh2scmtuvd5w2g7pahnzkovefxpo4e4ptnkzl5kkq5h2ad.onion'
+HS_PUBKEY = b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1'
 
 EXPECTED_SIGNING_CERT = """\
 -----BEGIN ED25519 CERT-----
@@ -68,58 +63,9 @@ with open(get_resource('hidden_service_v3_intro_point')) as intro_point_file:
   INTRO_POINT_STR = intro_point_file.read()
 
 
-def _pubkeys_are_equal(pubkey1, pubkey2):
-  """
-  Compare the raw bytes of the two pubkeys and return True if they are the same
-  """
-
+def key_bytes(key):
   from cryptography.hazmat.primitives import serialization
-
-  pubkey1_bytes = pubkey1.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-  pubkey2_bytes = pubkey2.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-
-  return pubkey1_bytes == pubkey2_bytes
-
-
-def _encode_onion_address(ed25519_pub_key_bytes):
-  """
-  Given the public key, return the onion address
-  """
-
-  if not stem.prereq._is_sha3_available():
-    raise ImportError('Encoding onion addresses requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-
-  version = 3
-  checksum_body = b'%s%s%d' % (CHECKSUM_CONSTANT, ed25519_pub_key_bytes, version)
-  checksum = hashlib.sha3_256(checksum_body).digest()[:2]
-
-  onion_address_bytes = b'%s%s%d' % (ed25519_pub_key_bytes, checksum, version)
-  onion_address = base64.b32encode(onion_address_bytes) + b'.onion'
-  assert(len(onion_address) == 56 + len('.onion'))
-
-  return onion_address.lower()
-
-
-def _helper_get_intro():
-  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-  from cryptography.hazmat.primitives import serialization
-
-  def public_key(key):
-    return key.public_key().public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-
-  onion_key = public_key(X25519PrivateKey.generate())
-  enc_key = public_key(X25519PrivateKey.generate())
-  auth_key = public_key(Ed25519PrivateKey.generate())
-  signing_key = Ed25519PrivateKey.generate()
-
-  expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = 54)
-  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, public_key(signing_key))]
-
-  auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, auth_key, extensions, signing_key = signing_key)
-  enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, auth_key, extensions, signing_key = signing_key)
-
-  return IntroductionPointV3([LinkByIPv4('1.2.3.4', 9001)], base64.b64encode(onion_key), auth_key_cert, base64.b64encode(enc_key), enc_key_cert, None, None)
+  return key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
 
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
@@ -221,7 +167,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       'signature': 'signature',
     }
 
-    for line in REQUIRED_V3_FIELDS:
+    for line in stem.descriptor.hidden_service.REQUIRED_V3_FIELDS:
       desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
@@ -268,11 +214,14 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
 
   @require_sha3
-  @test.require.ed25519_support
+  def test_address_from_public_key(self):
+    self.assertEqual(HS_ADDRESS, HiddenServiceDescriptorV3.address_from_public_key(HS_PUBKEY))
+
+  @require_sha3
   def test_public_key_from_address(self):
-    self.assertEqual(b'\x92\xe6\x80\xfaWU.}HL\x9d*>\xdbF\xfb\xc0v\xe5N\xa9\x0bw\xbb\x84\xe3\xe6\xd5e}R\xa1', HiddenServiceDescriptorV3._public_key_from_address(HS_ADDRESS))
-    self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3._public_key_from_address, 'boom')
-    self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3._public_key_from_address, '5' * 56)
+    self.assertEqual(HS_PUBKEY, HiddenServiceDescriptorV3.public_key_from_address(HS_ADDRESS))
+    self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3.public_key_from_address, 'boom')
+    self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3.public_key_from_address, '5' * 56)
 
   def test_intro_point_parse(self):
     """
@@ -304,7 +253,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     """
 
     from cryptography.hazmat.backends.openssl.x25519 import X25519PublicKey
-    from cryptography.hazmat.primitives import serialization
 
     intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
 
@@ -314,15 +262,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue(isinstance(intro_point.onion_key(), X25519PublicKey))
     self.assertTrue(isinstance(intro_point.enc_key(), X25519PublicKey))
 
-    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(intro_point.onion_key().public_bytes(
-      encoding = serialization.Encoding.Raw,
-      format = serialization.PublicFormat.Raw,
-    )))
-
-    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(intro_point.enc_key().public_bytes(
-      encoding = serialization.Encoding.Raw,
-      format = serialization.PublicFormat.Raw,
-    )))
+    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(key_bytes(intro_point.onion_key())))
+    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(key_bytes(intro_point.enc_key())))
 
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key())
@@ -346,21 +287,28 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     making onion service descriptors.
     """
 
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey, Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+
+    onion_key = X25519PrivateKey.generate()
+    enc_key = X25519PrivateKey.generate()
+    auth_key = Ed25519PrivateKey.generate()
+    signing_key = Ed25519PrivateKey.generate()
+
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = 54)
 
     # Build the service
     private_identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32)
     public_identity_key = private_identity_key.public_key()
-    pubkey_bytes = public_identity_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+    pubkey_bytes = key_bytes(public_identity_key)
 
-    onion_address = _encode_onion_address(pubkey_bytes).decode()
+    onion_address = HiddenServiceDescriptorV3.address_from_public_key(pubkey_bytes)
 
-    # Build the introduction points
-    intro1 = _helper_get_intro()
-    intro2 = _helper_get_intro()
-    intro3 = _helper_get_intro()
-    intro_points = [intro1, intro2, intro3]
+    intro_points = [
+      IntroductionPointV3.create('1.1.1.1', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
+      IntroductionPointV3.create('2.2.2.2', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
+      IntroductionPointV3.create('3.3.3.3', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
+    ]
 
     # TODO: replace with bytes.fromhex() when we drop python 2.x support
 
@@ -368,7 +316,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # Build the descriptor
     desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key = private_identity_key, intro_points = intro_points, blinding_param = blind_param)
-    desc_string = desc_string.decode()
 
     # Parse the descriptor
     desc = HiddenServiceDescriptorV3.from_str(desc_string)
@@ -376,17 +323,13 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     self.assertEqual(3, len(inner_layer.introduction_points))
 
-    # Match introduction points of the parsed descriptor and the generated
-    # descriptor and do some sanity checks between them to make sure that
-    # parsing was done right!
+    for i, intro_point in enumerate(inner_layer.introduction_points):
+      original = intro_points[i]
 
-    for i, desc_intro in enumerate(inner_layer.introduction_points):
-      original_intro = intro_points[i]
+      self.assertEqual(original.enc_key_raw, intro_point.enc_key_raw)
+      self.assertEqual(original.onion_key_raw, intro_point.onion_key_raw)
+      self.assertEqual(original.auth_key_cert.key, intro_point.auth_key_cert.key)
 
-      auth_key_1 = Ed25519PublicKey.from_public_bytes(desc_intro.auth_key_cert.key)
-      auth_key_2 = Ed25519PublicKey.from_public_bytes(original_intro.auth_key_cert.key)
-
-      self.assertTrue(_pubkeys_are_equal(desc_intro.enc_key(), original_intro.enc_key()))
-      self.assertTrue(_pubkeys_are_equal(desc_intro.onion_key(), original_intro.onion_key()))
-
-      self.assertTrue(_pubkeys_are_equal(auth_key_1, auth_key_2))
+      self.assertEqual(intro_point.enc_key_raw, base64.b64encode(key_bytes(intro_point.enc_key())))
+      self.assertEqual(intro_point.onion_key_raw, base64.b64encode(key_bytes(intro_point.onion_key())))
+      self.assertEqual(intro_point.auth_key_cert.key, key_bytes(intro_point.auth_key()))

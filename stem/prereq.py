@@ -26,6 +26,9 @@ import inspect
 import platform
 import sys
 
+# TODO: in stem 2.x consider replacing these functions with requirement
+# annotations (like our tests)
+
 CRYPTO_UNAVAILABLE = "Unable to import the cryptography module. Because of this we'll be unable to verify descriptor signature integrity. You can get cryptography from: https://pypi.org/project/cryptography/"
 ZSTD_UNAVAILABLE = 'ZSTD compression requires the zstandard module (https://pypi.org/project/zstandard/)'
 LZMA_UNAVAILABLE = 'LZMA compression requires the lzma module (https://docs.python.org/3/library/lzma.html)'

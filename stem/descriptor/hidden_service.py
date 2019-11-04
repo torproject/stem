@@ -41,12 +41,14 @@ import time
 
 import stem.client.datatype
 import stem.descriptor.certificate
+import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
-from stem.descriptor import hsv3_crypto
+from stem.client.datatype import CertType
+from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519Certificate, Ed25519CertificateV1
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -183,7 +185,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     onion_key = onion_key_line[5:] if onion_key_line.startswith('ntor ') else None
 
     _, block_type, auth_key_cert = entry['auth-key'][0]
-    auth_key_cert = stem.descriptor.certificate.Ed25519Certificate.from_base64(auth_key_cert)
+    auth_key_cert = Ed25519Certificate.from_base64(auth_key_cert)
 
     if block_type != 'ED25519 CERT':
       raise ValueError('Expected auth-key to have an ed25519 certificate, but was %s' % block_type)
@@ -192,7 +194,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     enc_key = enc_key_line[5:] if enc_key_line.startswith('ntor ') else None
 
     _, block_type, enc_key_cert = entry['enc-key-cert'][0]
-    enc_key_cert = stem.descriptor.certificate.Ed25519Certificate.from_base64(enc_key_cert)
+    enc_key_cert = Ed25519Certificate.from_base64(enc_key_cert)
 
     if block_type != 'ED25519 CERT':
       raise ValueError('Expected enc-key-cert to have an ed25519 certificate, but was %s' % block_type)
@@ -201,6 +203,64 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     legacy_key_cert = entry['legacy-key-cert'][0][2] if 'legacy-key-cert' in entry else None
 
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
+
+  @staticmethod
+  def create(address, port, expiration, onion_key, enc_key, auth_key, signing_key):
+    """
+    Simplified constructor. For more sophisticated use cases you can use this
+    as a template for how introduction points are properly created.
+
+    :param str address: IPv4 or IPv6 address where the service is reachable
+    :param int port: port where the service is reachable
+    :param datetime.datetime expiration: when certificates should expire
+    :param str onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
+    :param str enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
+    :param str auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: service signing key
+
+    :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
+
+    :raises: **ValueError** if the address, port, or keys are malformed
+    """
+
+    def _key_bytes(key):
+      class_name = type(key).__name__
+
+      if isinstance(key, str):
+        return key
+      elif not class_name.endswith('PublicKey') and not class_name.endswith('PrivateKey'):
+        raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % class_name)
+      elif not stem.prereq.is_crypto_available():
+        raise ImportError('Serializing keys requires the cryptography module')
+
+      from cryptography.hazmat.primitives import serialization
+
+      if class_name.endswith('PrivateKey'):
+        key = key.public_key()
+
+      return key.public_bytes(
+        encoding = serialization.Encoding.Raw,
+        format = serialization.PublicFormat.Raw,
+      )
+
+    if not stem.util.connection.is_valid_port(port):
+      raise ValueError("'%s' is an invalid port" % port)
+
+    if stem.util.connection.is_valid_ipv4_address(address):
+      link_specifiers = [stem.client.datatype.LinkByIPv4(address, port)]
+    elif stem.util.connection.is_valid_ipv6_address(address):
+      link_specifiers = [stem.client.datatype.LinkByIPv6(address, port)]
+    else:
+      raise ValueError("'%s' is not a valid IPv4 or IPv6 address" % address)
+
+    onion_key = base64.b64encode(_key_bytes(onion_key))
+    enc_key = base64.b64encode(_key_bytes(enc_key))
+
+    extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, _key_bytes(signing_key))]
+    auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, _key_bytes(auth_key), extensions, signing_key = signing_key)
+    enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, _key_bytes(auth_key), extensions, signing_key = signing_key)
+
+    return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, None, None)
 
   def encode(self):
     """
@@ -244,7 +304,20 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
-    return IntroductionPointV3._parse_key(self.onion_key_raw)
+    return IntroductionPointV3._key_as(self.onion_key_raw, x25519 = True)
+
+  def auth_key(self):
+    """
+    Provides our authentication certificate's public key.
+
+    :returns: :class:`~cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey`
+
+    :raises:
+      * **ImportError** if required the cryptography module is unavailable
+      * **EnvironmentError** if OpenSSL x25519 unsupported
+    """
+
+    return IntroductionPointV3._key_as(self.auth_key_cert.key, ed25519 = True)
 
   def enc_key(self):
     """
@@ -257,7 +330,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
-    return IntroductionPointV3._parse_key(self.enc_key_raw)
+    return IntroductionPointV3._key_as(self.enc_key_raw, x25519 = True)
 
   def legacy_key(self):
     """
@@ -270,23 +343,31 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
-    return IntroductionPointV3._parse_key(self.legacy_key_raw)
+    return IntroductionPointV3._key_as(self.legacy_key_raw, x25519 = True)
 
   @staticmethod
-  def _parse_key(value):
-    if value is None:
+  def _key_as(value, x25519 = False, ed25519 = False):
+    if value is None or (not x25519 and not ed25519):
       return value
     elif not stem.prereq.is_crypto_available():
       raise ImportError('cryptography module unavailable')
-    elif not X25519_AVAILABLE:
-      # without this the cryptography raises...
-      # cryptography.exceptions.UnsupportedAlgorithm: X25519 is not supported by this version of OpenSSL.
 
-      raise EnvironmentError('OpenSSL x25519 unsupported')
+    if x25519:
+      if not X25519_AVAILABLE:
+        # without this the cryptography raises...
+        # cryptography.exceptions.UnsupportedAlgorithm: X25519 is not supported by this version of OpenSSL.
 
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+        raise EnvironmentError('OpenSSL x25519 unsupported')
 
-    return X25519PublicKey.from_public_bytes(base64.b64decode(value))
+      from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+      return X25519PublicKey.from_public_bytes(base64.b64decode(value))
+
+    if ed25519:
+      if not stem.prereq.is_crypto_available(ed25519 = True):
+        raise EnvironmentError('cryptography ed25519 unsupported')
+
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+      return Ed25519PublicKey.from_public_bytes(value)
 
   @staticmethod
   def _parse_link_specifiers(content):
@@ -482,7 +563,7 @@ _parse_v2_signature_line = _parse_key_block('signature', 'signature', 'SIGNATURE
 
 _parse_v3_version_line = _parse_int_line('hs-descriptor', 'version', allow_negative = False)
 _parse_lifetime_line = _parse_int_line('descriptor-lifetime', 'lifetime', allow_negative = False)
-_parse_signing_cert = stem.descriptor.certificate.Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
+_parse_signing_cert = Ed25519Certificate._from_descriptor('descriptor-signing-key-cert', 'signing_cert')
 _parse_revision_counter_line = _parse_int_line('revision-counter', 'revision_counter', allow_negative = False)
 _parse_superencrypted_line = _parse_key_block('superencrypted', 'superencrypted', 'MESSAGE')
 _parse_v3_signature_line = _parse_simple_line('signature', 'signature')
@@ -779,9 +860,9 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
   expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
 
   signing_key = descriptor_signing_public_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-  extensions = [stem.descriptor.certificate.Ed25519Extension(stem.descriptor.certificate.ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.public_key().public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw))]
+  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.public_key().public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw))]
 
-  desc_signing_cert = stem.descriptor.certificate.Ed25519CertificateV1(stem.client.datatype.CertType.HS_V3_DESC_SIGNING, expiration_date, 1, signing_key, extensions, signing_key = blinded_priv_key)
+  desc_signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration_date, 1, signing_key, extensions, signing_key = blinded_priv_key)
 
   return '\n' + desc_signing_cert.to_base64(pem = True)
 
@@ -864,11 +945,11 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
   """
 
   inner_descriptor_layer = stem.util.str_tools._to_bytes(_get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey))
-  inner_ciphertext = hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
+  inner_ciphertext = stem.descriptor.hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
   inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b'encrypted')
 
   middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
-  outter_ciphertext = hsv3_crypto.encrypt_outter_layer(middle_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
+  outter_ciphertext = stem.descriptor.hsv3_crypto.encrypt_outter_layer(middle_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
 
   return b64_and_wrap_desc_layer(outter_ciphertext)
 
@@ -898,6 +979,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
+
+  .. versionadded:: 1.8.0
   """
 
   # TODO: requested this @type on https://trac.torproject.org/projects/tor/ticket/31481
@@ -973,7 +1056,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     public_identity_key_bytes = public_identity_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
     # Blind the identity key to get ephemeral blinded key
-    blinded_privkey = hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key, blinding_param = blinding_param)
+    blinded_privkey = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key, blinding_param = blinding_param)
     blinded_pubkey = blinded_privkey.public_key()
     blinded_pubkey_bytes = blinded_pubkey.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
@@ -1063,7 +1146,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       if not blinded_key:
         raise ValueError('No signing key is present')
 
-      identity_public_key = HiddenServiceDescriptorV3._public_key_from_address(onion_address)
+      identity_public_key = HiddenServiceDescriptorV3.public_key_from_address(onion_address)
       subcredential = HiddenServiceDescriptorV3._subcredential(identity_public_key, blinded_key)
 
       outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
@@ -1072,8 +1155,43 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     return self._inner_layer
 
   @staticmethod
-  def _public_key_from_address(onion_address):
-    # provides our hidden service ed25519 public key
+  def address_from_public_key(pubkey, suffix = True):
+    """
+    Converts a hidden service public key into its address.
+
+    :param bytes pubkey: hidden service public key
+    :param bool suffix: includes the '.onion' suffix if true, excluded otherwise
+
+    :returns: **unicode** hidden service address
+
+    :raises: **ImportError** if sha3 unsupported
+    """
+
+    if not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service address conversion requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+
+    version = stem.client.datatype.Size.CHAR.pack(3)
+    checksum = hashlib.sha3_256(CHECKSUM_CONSTANT + pubkey + version).digest()[:2]
+    onion_address = base64.b32encode(pubkey + checksum + version)
+
+    return stem.util.str_tools._to_unicode(onion_address + b'.onion' if suffix else onion_address).lower()
+
+  @staticmethod
+  def public_key_from_address(onion_address):
+    """
+    Converts a hidden service address into its public key.
+
+    :param str onion_address: hidden service address
+
+    :returns: **bytes** for the hidden service's public key
+
+    :raises:
+      * **ImportError** if sha3 unsupported
+      * **ValueError** if address malformed or checksum is invalid
+    """
+
+    if not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service address conversion requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
     if onion_address.endswith('.onion'):
       onion_address = onion_address[:-6]
