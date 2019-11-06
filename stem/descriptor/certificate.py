@@ -97,6 +97,9 @@ ED25519_KEY_LENGTH = 32
 ED25519_HEADER_LENGTH = 40
 ED25519_SIGNATURE_LENGTH = 64
 
+SIG_PREFIX_SERVER_DESC = b'Tor router descriptor signature v1'
+SIG_PREFIX_HS_V3 = b'Tor onion service descriptor sig v3'
+
 CertType = stem.util.enum.UppercaseEnum(
   'SIGNING',
   'LINK_CERT',
@@ -438,10 +441,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
     """
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
-      prefix = b'Tor router descriptor signature v1'
+      prefix = SIG_PREFIX_SERVER_DESC
       regex = '(.+router-sig-ed25519 )'
     elif isinstance(descriptor, stem.descriptor.hidden_service.HiddenServiceDescriptorV3):
-      prefix = b'Tor onion service descriptor sig v3'
+      prefix = SIG_PREFIX_HS_V3
       regex = '(.+)signature '
     else:
       raise ValueError('BUG: %s type unexpected' % type(descriptor).__name__)

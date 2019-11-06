@@ -954,18 +954,6 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
   return b64_and_wrap_desc_layer(outter_ciphertext)
 
 
-def _get_v3_desc_signature(desc_str, signing_key):
-  """
-  Compute the descriptor signature and return it as bytes
-  """
-
-  desc_str = b'Tor onion service descriptor sig v3' + desc_str
-
-  signature = base64.b64encode(signing_key.sign(desc_str))
-  signature = signature.rstrip(b'=')
-  return b'signature %s' % (signature)
-
-
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   """
   Version 3 hidden service descriptor.
@@ -1061,8 +1049,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     blinded_pubkey_bytes = blinded_pubkey.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
 
     # Generate descriptor signing key
-    descriptor_signing_private_key = Ed25519PrivateKey.generate()
-    descriptor_signing_public_key = descriptor_signing_private_key.public_key()
+    signing_key = Ed25519PrivateKey.generate()
+    descriptor_signing_public_key = signing_key.public_key()
 
     # Get the main encrypted descriptor body
     revision_counter_int = int(time.time())
@@ -1072,7 +1060,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # this descriptor object so that we don't have to carry them around
     # functions and instead we could use e.g. self.descriptor_signing_public_key
     # But because this is a @classmethod this is not possible :/
-    superencrypted_blob = _get_superencrypted_blob(intro_points, descriptor_signing_private_key, revision_counter_int, blinded_pubkey_bytes, subcredential)
+    superencrypted_blob = _get_superencrypted_blob(intro_points, signing_key, revision_counter_int, blinded_pubkey_bytes, subcredential)
 
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
@@ -1085,10 +1073,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # Add a final newline before the signature block
     desc_content += b'\n'
 
-    # Compute the signature and append it to the descriptor
-    signature = _get_v3_desc_signature(desc_content, descriptor_signing_private_key)
-    final_desc = desc_content + signature
-    return final_desc
+    sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
+    signature = b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
+
+    return desc_content + signature
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False):
