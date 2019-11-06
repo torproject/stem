@@ -14,17 +14,17 @@ import stem.prereq
 
 import test.require
 
-from test.unit.descriptor import (
-  get_resource,
-  base_expect_invalid_attr,
-  base_expect_invalid_attr_for_text,
-)
-
 from stem.descriptor.hidden_service import (
   IntroductionPointV3,
   HiddenServiceDescriptorV3,
   OuterLayer,
   InnerLayer,
+)
+
+from test.unit.descriptor import (
+  get_resource,
+  base_expect_invalid_attr,
+  base_expect_invalid_attr_for_text,
 )
 
 try:
@@ -142,15 +142,11 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual('1.2.3.4', link_specifier.address)
     self.assertEqual(9001, link_specifier.port)
 
-    # TODO: the following doesn't pass with recent HiddenServiceDescriptorV3 changes
-
-    return
-
-    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.onion_key)
-    self.assertTrue('ID2l9EFNrp' in intro_point.auth_key)
-    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.enc_key)
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.onion_key_raw)
+    self.assertTrue('ID2l9EFNrp' in intro_point.auth_key_cert.to_base64())
+    self.assertEqual('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=', intro_point.enc_key_raw)
     self.assertTrue('ZvjPt5IfeQ', intro_point.enc_key_cert)
-    self.assertEqual(None, intro_point.legacy_key)
+    self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key_cert)
 
   def test_required_fields(self):
