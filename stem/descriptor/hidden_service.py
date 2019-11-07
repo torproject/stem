@@ -868,27 +868,6 @@ def b64_and_wrap_desc_layer(layer_bytes, prefix_bytes=b''):
   return b'%s\n-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % (prefix_bytes, layer_blob)
 
 
-def _get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey):
-  """
-  Get the inner descriptor layer into bytes.
-
-  'intro_points' is the list of introduction points that should be embedded to
-  this layer, and we also need the descriptor signing key to encode the intro
-  points.
-  """
-
-  if (not intro_points or len(intro_points) == 0):
-    raise ValueError('Need a proper intro points set')
-
-  final_body = b'create2-formats 2\n'
-
-  # Now encode all the intro points
-  for intro_point in intro_points:
-    final_body += intro_point.encode() + b'\n'
-
-  return final_body
-
-
 def _get_fake_clients_bytes():
   """
   Generate fake client authorization data for the middle layer
@@ -932,7 +911,7 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
   should be attached to the descriptor
   """
 
-  inner_descriptor_layer = stem.util.str_tools._to_bytes(_get_inner_descriptor_layer_body(intro_points, descriptor_signing_privkey))
+  inner_descriptor_layer = stem.util.str_tools._to_bytes('create2-formats 2\n' + '\n'.join(map(IntroductionPointV3.encode, intro_points)) + '\n')
   inner_ciphertext = stem.descriptor.hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
   inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b'encrypted')
 
