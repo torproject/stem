@@ -2,11 +2,8 @@ import hashlib
 import struct
 import os
 
+import stem.descriptor.ed25519_exts_ref
 import stem.descriptor.slow_ed25519
-import stem.prereq
-
-from stem.descriptor import ed25519_exts_ref
-from stem.descriptor import slow_ed25519
 
 
 """
@@ -31,30 +28,14 @@ class HSv3PrivateBlindedKey(object):
     secret_seed = hazmat_private_key.private_bytes(encoding = serialization.Encoding.Raw, format = serialization.PrivateFormat.Raw, encryption_algorithm = serialization.NoEncryption())
     assert(len(secret_seed) == 32)
 
-    expanded_identity_priv_key = ed25519_exts_ref.expandSK(secret_seed)
-    identity_public_key = slow_ed25519.publickey(secret_seed)
+    expanded_identity_priv_key = stem.descriptor.ed25519_exts_ref.expandSK(secret_seed)
+    identity_public_key = stem.descriptor.slow_ed25519.publickey(secret_seed)
 
-    self.blinded_secret_key = ed25519_exts_ref.blindESK(expanded_identity_priv_key, blinding_param)
-    blinded_public_key = ed25519_exts_ref.blindPK(identity_public_key, blinding_param)
-    self.blinded_public_key = HSv3PublicBlindedKey(blinded_public_key)
-
-  def public_key(self):
-    return self.blinded_public_key
+    self.blinded_secret_key = stem.descriptor.ed25519_exts_ref.blindESK(expanded_identity_priv_key, blinding_param)
+    self.blinded_pubkey = stem.descriptor.ed25519_exts_ref.blindPK(identity_public_key, blinding_param)
 
   def sign(self, msg):
-    return ed25519_exts_ref.signatureWithESK(msg, self.blinded_secret_key, self.blinded_public_key.public_key)
-
-
-class HSv3PublicBlindedKey(object):
-  def __init__(self, public_key):
-    self.public_key = public_key
-
-  def verify(self, signature, message):
-    """
-    raises exception if sig not valid
-    """
-
-    stem.descriptor.slow_ed25519.checkvalid(signature, message, self.public_key)
+    return stem.descriptor.ed25519_exts_ref.signatureWithESK(msg, self.blinded_secret_key, self.blinded_pubkey)
 
 
 """

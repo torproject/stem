@@ -849,7 +849,7 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
   expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
 
   signing_key = stem.util._pubkey_bytes(descriptor_signing_public_key)
-  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.public_key().public_key)]
+  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.blinded_pubkey)]
 
   desc_signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration_date, 1, signing_key, extensions, signing_key = blinded_priv_key)
 
@@ -1027,13 +1027,11 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       raise ValueError('Need to provide a blinding param for this descriptor')
 
     # Get the identity public key
-    public_identity_key = ed25519_private_identity_key.public_key()
-    public_identity_key_bytes = stem.util._pubkey_bytes(public_identity_key)
+    public_identity_key_bytes = stem.util._pubkey_bytes(ed25519_private_identity_key)
 
     # Blind the identity key to get ephemeral blinded key
     blinded_privkey = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key, blinding_param = blinding_param)
-    blinded_pubkey = blinded_privkey.public_key()
-    blinded_pubkey_bytes = blinded_pubkey.public_key
+    blinded_pubkey_bytes = blinded_privkey.blinded_pubkey
 
     # Generate descriptor signing key
     signing_key = Ed25519PrivateKey.generate()
