@@ -43,6 +43,7 @@ import stem.client.datatype
 import stem.descriptor.certificate
 import stem.descriptor.hsv3_crypto
 import stem.prereq
+import stem.util
 import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
@@ -225,7 +226,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
-    if not stem.util.connection.is_valid_port(port):
+    elif not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' is an invalid port" % port)
 
     if stem.util.connection.is_valid_ipv4_address(address):
@@ -235,35 +236,18 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     else:
       raise ValueError("'%s' is not a valid IPv4 or IPv6 address" % address)
 
-    from cryptography.hazmat.primitives import serialization
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
-
-    def _key_bytes(key):
-      if isinstance(key, str):
-        return key
-      elif isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
-        return key.public_key().public_bytes(
-          encoding = serialization.Encoding.Raw,
-          format = serialization.PublicFormat.Raw,
-        )
-      elif isinstance(key, (X25519PublicKey, Ed25519PublicKey)):
-        return key.public_bytes(
-          encoding = serialization.Encoding.Raw,
-          format = serialization.PublicFormat.Raw,
-        )
-      else:
-        raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % type(key).__name__)
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
     if expiration is None:
       expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
 
-    onion_key = base64.b64encode(_key_bytes(onion_key if onion_key else X25519PrivateKey.generate()))
-    enc_key = base64.b64encode(_key_bytes(enc_key if enc_key else X25519PrivateKey.generate()))
-    auth_key = _key_bytes(auth_key if auth_key else Ed25519PrivateKey.generate())
+    onion_key = base64.b64encode(stem.util._pubkey_bytes(onion_key if onion_key else X25519PrivateKey.generate()))
+    enc_key = base64.b64encode(stem.util._pubkey_bytes(enc_key if enc_key else X25519PrivateKey.generate()))
+    auth_key = stem.util._pubkey_bytes(auth_key if auth_key else Ed25519PrivateKey.generate())
     signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
 
-    extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, _key_bytes(signing_key))]
+    extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, stem.util._pubkey_bytes(signing_key))]
     auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, auth_key, extensions, signing_key = signing_key)
     enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, auth_key, extensions, signing_key = signing_key)
 
@@ -861,13 +845,11 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
   'blinded_priv_key' key that signs the certificate
   """
 
-  from cryptography.hazmat.primitives import serialization
-
   # 54 hours expiration date like tor does
   expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
 
-  signing_key = descriptor_signing_public_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.public_key().public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw))]
+  signing_key = stem.util._pubkey_bytes(descriptor_signing_public_key)
+  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.public_key().public_key)]
 
   desc_signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration_date, 1, signing_key, extensions, signing_key = blinded_priv_key)
 
@@ -932,10 +914,9 @@ def _get_middle_descriptor_layer_body(encrypted):
   """
 
   from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
-  from cryptography.hazmat.primitives import serialization
 
   fake_pub_key = X25519PrivateKey.generate().public_key()
-  fake_pub_key_bytes = fake_pub_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+  fake_pub_key_bytes = stem.util._pubkey_bytes(fake_pub_key)
   fake_pub_key_bytes_b64 = base64.b64encode(fake_pub_key_bytes)
   fake_clients = _get_fake_clients_bytes()
 
@@ -1012,7 +993,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     """
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives import serialization
 
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
@@ -1048,12 +1028,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     # Get the identity public key
     public_identity_key = ed25519_private_identity_key.public_key()
-    public_identity_key_bytes = public_identity_key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+    public_identity_key_bytes = stem.util._pubkey_bytes(public_identity_key)
 
     # Blind the identity key to get ephemeral blinded key
     blinded_privkey = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key, blinding_param = blinding_param)
     blinded_pubkey = blinded_privkey.public_key()
-    blinded_pubkey_bytes = blinded_pubkey.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
+    blinded_pubkey_bytes = blinded_pubkey.public_key
 
     # Generate descriptor signing key
     signing_key = Ed25519PrivateKey.generate()

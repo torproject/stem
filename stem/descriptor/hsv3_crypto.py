@@ -42,15 +42,12 @@ class HSv3PrivateBlindedKey(object):
     return self.blinded_public_key
 
   def sign(self, msg):
-    return ed25519_exts_ref.signatureWithESK(msg, self.blinded_secret_key, self.blinded_public_key.public_bytes())
+    return ed25519_exts_ref.signatureWithESK(msg, self.blinded_secret_key, self.blinded_public_key.public_key)
 
 
 class HSv3PublicBlindedKey(object):
   def __init__(self, public_key):
     self.public_key = public_key
-
-  def public_bytes(self, encoding=None, format=None):
-    return self.public_key
 
   def verify(self, signature, message):
     """

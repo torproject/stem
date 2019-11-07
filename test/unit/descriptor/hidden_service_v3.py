@@ -63,11 +63,6 @@ with open(get_resource('hidden_service_v3_intro_point')) as intro_point_file:
   INTRO_POINT_STR = intro_point_file.read()
 
 
-def key_bytes(key):
-  from cryptography.hazmat.primitives import serialization
-  return key.public_bytes(encoding = serialization.Encoding.Raw, format = serialization.PublicFormat.Raw)
-
-
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_real_descriptor(self):
     """
@@ -258,8 +253,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue(isinstance(intro_point.onion_key(), X25519PublicKey))
     self.assertTrue(isinstance(intro_point.enc_key(), X25519PublicKey))
 
-    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(key_bytes(intro_point.onion_key())))
-    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(key_bytes(intro_point.enc_key())))
+    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.onion_key())))
+    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.enc_key())))
 
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key())
@@ -296,9 +291,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     # Build the service
     private_identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32)
     public_identity_key = private_identity_key.public_key()
-    pubkey_bytes = key_bytes(public_identity_key)
 
-    onion_address = HiddenServiceDescriptorV3.address_from_public_key(pubkey_bytes)
+    onion_address = HiddenServiceDescriptorV3.address_from_public_key(stem.util._pubkey_bytes(public_identity_key))
 
     intro_points = [
       IntroductionPointV3.create('1.1.1.1', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
@@ -326,6 +320,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       self.assertEqual(original.onion_key_raw, intro_point.onion_key_raw)
       self.assertEqual(original.auth_key_cert.key, intro_point.auth_key_cert.key)
 
-      self.assertEqual(intro_point.enc_key_raw, base64.b64encode(key_bytes(intro_point.enc_key())))
-      self.assertEqual(intro_point.onion_key_raw, base64.b64encode(key_bytes(intro_point.onion_key())))
-      self.assertEqual(intro_point.auth_key_cert.key, key_bytes(intro_point.auth_key()))
+      self.assertEqual(intro_point.enc_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.enc_key())))
+      self.assertEqual(intro_point.onion_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.onion_key())))
+      self.assertEqual(intro_point.auth_key_cert.key, stem.util._pubkey_bytes(intro_point.auth_key()))
