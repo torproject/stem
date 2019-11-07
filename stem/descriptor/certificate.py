@@ -100,6 +100,8 @@ ED25519_SIGNATURE_LENGTH = 64
 SIG_PREFIX_SERVER_DESC = b'Tor router descriptor signature v1'
 SIG_PREFIX_HS_V3 = b'Tor onion service descriptor sig v3'
 
+DEFAULT_EXPIRATION_HOURS = 54  # HSv3 certificate expiration of tor
+
 CertType = stem.util.enum.UppercaseEnum(
   'SIGNING',
   'LINK_CERT',

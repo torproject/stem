@@ -205,7 +205,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
 
   @staticmethod
-  def create(address, port, expiration, onion_key, enc_key, auth_key, signing_key):
+  def create(address, port, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
     """
     Simplified constructor. For more sophisticated use cases you can use this
     as a template for how introduction points are properly created.
@@ -223,26 +223,8 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :raises: **ValueError** if the address, port, or keys are malformed
     """
 
-    def _key_bytes(key):
-      class_name = type(key).__name__
-
-      if isinstance(key, str):
-        return key
-      elif not class_name.endswith('PublicKey') and not class_name.endswith('PrivateKey'):
-        raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % class_name)
-      elif not stem.prereq.is_crypto_available():
-        raise ImportError('Serializing keys requires the cryptography module')
-
-      from cryptography.hazmat.primitives import serialization
-
-      if class_name.endswith('PrivateKey'):
-        key = key.public_key()
-
-      return key.public_bytes(
-        encoding = serialization.Encoding.Raw,
-        format = serialization.PublicFormat.Raw,
-      )
-
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' is an invalid port" % port)
 
@@ -253,12 +235,37 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     else:
       raise ValueError("'%s' is not a valid IPv4 or IPv6 address" % address)
 
-    onion_key = base64.b64encode(_key_bytes(onion_key))
-    enc_key = base64.b64encode(_key_bytes(enc_key))
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+
+    def _key_bytes(key):
+      if isinstance(key, str):
+        return key
+      elif isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
+        return key.public_key().public_bytes(
+          encoding = serialization.Encoding.Raw,
+          format = serialization.PublicFormat.Raw,
+        )
+      elif isinstance(key, (X25519PublicKey, Ed25519PublicKey)):
+        return key.public_bytes(
+          encoding = serialization.Encoding.Raw,
+          format = serialization.PublicFormat.Raw,
+        )
+      else:
+        raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % type(key).__name__)
+
+    if expiration is None:
+      expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
+
+    onion_key = base64.b64encode(_key_bytes(onion_key if onion_key else X25519PrivateKey.generate()))
+    enc_key = base64.b64encode(_key_bytes(enc_key if enc_key else X25519PrivateKey.generate()))
+    auth_key = _key_bytes(auth_key if auth_key else Ed25519PrivateKey.generate())
+    signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
 
     extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, _key_bytes(signing_key))]
-    auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, _key_bytes(auth_key), extensions, signing_key = signing_key)
-    enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, _key_bytes(auth_key), extensions, signing_key = signing_key)
+    auth_key_cert = Ed25519CertificateV1(CertType.HS_V3_INTRO_AUTH, expiration, 1, auth_key, extensions, signing_key = signing_key)
+    enc_key_cert = Ed25519CertificateV1(CertType.HS_V3_NTOR_ENC, expiration, 1, auth_key, extensions, signing_key = signing_key)
 
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, None, None)
 
