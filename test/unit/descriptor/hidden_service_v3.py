@@ -269,6 +269,22 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertRaisesWith(ImportError, 'cryptography module unavailable', intro_point.onion_key)
 
   @test.require.ed25519_support
+  def test_intro_point_creation(self):
+    """
+    Create an introduction point, encode it, then re-parse.
+    """
+
+    intro_point = IntroductionPointV3.create('1.1.1.1', 9001)
+
+    self.assertEqual(1, len(intro_point.link_specifiers))
+    self.assertEqual(stem.client.datatype.LinkByIPv4, type(intro_point.link_specifiers[0]))
+    self.assertEqual('1.1.1.1', intro_point.link_specifiers[0].address)
+    self.assertEqual(9001, intro_point.link_specifiers[0].port)
+
+    reparsed = IntroductionPointV3.parse(intro_point.encode())
+    self.assertEqual(intro_point, reparsed)
+
+  @test.require.ed25519_support
   def test_encode_decode_descriptor(self):
     """
     Encode an HSv3 descriptor and then decode it and make sure you get the intended results.

@@ -379,6 +379,18 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return link_specifiers
 
+  def __hash__(self):
+    if not hasattr(self, '_hash'):
+      self._hash = hash(self.encode())
+
+    return self._hash
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, IntroductionPointV3) else False
+
+  def __ne__(self, other):
+    return not self == other
+
 
 class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
   """
