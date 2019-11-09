@@ -445,12 +445,6 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
 
 
 def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, blinded_key):
-  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-  from cryptography.hazmat.backends import default_backend
-
-  def pack(val):
-    return struct.pack('>Q', val)
-
   if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
     encrypted_block = encrypted_block[24:-22]
 
@@ -466,22 +460,42 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   ciphertext = encrypted[SALT_LEN:-MAC_LEN]
   expected_mac = encrypted[-MAC_LEN:]
 
-  kdf = hashlib.shake_256(blinded_key + subcredential + pack(revision_counter) + salt + constant)
+  cipher, mac_for = _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt)
+
+  if expected_mac != mac_for(ciphertext):
+    raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac_for(ciphertext)))
+
+  decryptor = cipher.decryptor()
+  plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+  return stem.util.str_tools._to_unicode(plaintext)
+
+
+def _encrypt_layer(plaintext, constant, revision_counter, subcredential, blinded_key):
+  salt = os.urandom(16)
+  cipher, mac_for = _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt)
+
+  encryptor = cipher.encryptor()
+  ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+
+  return salt + ciphertext + mac_for(ciphertext)
+
+
+def _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt):
+  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+  from cryptography.hazmat.backends import default_backend
+
+  kdf = hashlib.shake_256(blinded_key + subcredential + struct.pack('>Q', revision_counter) + salt + constant)
   keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
 
   secret_key = keys[:S_KEY_LEN]
   secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
   mac_key = keys[S_KEY_LEN + S_IV_LEN:]
 
-  mac = hashlib.sha3_256(pack(len(mac_key)) + mac_key + pack(len(salt)) + salt + ciphertext).digest()
-
-  if mac != expected_mac:
-    raise ValueError('Malformed mac (expected %s, but was %s)' % (expected_mac, mac))
-
   cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
-  decryptor = cipher.decryptor()
+  mac_prefix = struct.pack('>Q', len(mac_key)) + mac_key + struct.pack('>Q', len(salt)) + salt
 
-  return stem.util.str_tools._to_unicode(decryptor.update(ciphertext) + decryptor.finalize())
+  return cipher, lambda ciphertext: hashlib.sha3_256(mac_prefix + ciphertext).digest()
 
 
 def _parse_protocol_versions_line(descriptor, entries):
@@ -917,18 +931,22 @@ def _get_middle_descriptor_layer_body(encrypted):
     b'%s' % (fake_pub_key_bytes_b64, fake_clients, encrypted)
 
 
-def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_counter, blinded_key_bytes, subcredential):
+def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_counter, blinded_key, subcredential):
   """
   Get the superencrypted blob (which also includes the encrypted blob) that
   should be attached to the descriptor
   """
 
   inner_descriptor_layer = stem.util.str_tools._to_bytes('create2-formats 2\n' + '\n'.join(map(IntroductionPointV3.encode, intro_points)) + '\n')
-  inner_ciphertext = stem.descriptor.hsv3_crypto.encrypt_inner_layer(inner_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
+  inner_ciphertext = _encrypt_layer(inner_descriptor_layer, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
   inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b'encrypted')
 
   middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
-  outter_ciphertext = stem.descriptor.hsv3_crypto.encrypt_outter_layer(middle_descriptor_layer, revision_counter, blinded_key_bytes, subcredential)
+
+  padding_bytes_needed = stem.descriptor.hsv3_crypto._get_padding_needed(len(middle_descriptor_layer))
+  middle_descriptor_layer = middle_descriptor_layer + b'\x00' * padding_bytes_needed
+
+  outter_ciphertext = _encrypt_layer(middle_descriptor_layer, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
 
   return b64_and_wrap_desc_layer(outter_ciphertext)
 
@@ -1279,7 +1297,7 @@ class InnerLayer(Descriptor):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
     self.outer = outer_layer
 
-    # inner layer begins with a few header fields, followed by multiple any
+    # inner layer begins with a few header fields, followed by any
     # number of introduction-points
 
     div = content.find('\nintroduction-point ')
