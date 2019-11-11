@@ -477,8 +477,9 @@ def _encrypt_layer(plaintext, constant, revision_counter, subcredential, blinded
 
   encryptor = cipher.encryptor()
   ciphertext = encryptor.update(plaintext) + encryptor.finalize()
+  encoded = base64.b64encode(salt + ciphertext + mac_for(ciphertext))
 
-  return salt + ciphertext + mac_for(ciphertext)
+  return b'-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % b'\n'.join(stem.util.str_tools._split_by_length(encoded, 64))
 
 
 def _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt):
@@ -882,18 +883,6 @@ def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key
   return '\n' + desc_signing_cert.to_base64(pem = True)
 
 
-def b64_and_wrap_desc_layer(layer_bytes, prefix_bytes=b''):
-  """
-  Encode the descriptor layer in 'layer_bytes' to base64, and then wrap it up
-  so that it can be included in the descriptor.
-  """
-
-  layer_b64 = base64.b64encode(layer_bytes)
-  layer_blob = b'\n'.join(stem.util.str_tools._split_by_length(layer_b64, 64))
-
-  return b'%s\n-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % (prefix_bytes, layer_blob)
-
-
 def _get_fake_clients_bytes():
   """
   Generate fake client authorization data for the middle layer
@@ -938,17 +927,14 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
   """
 
   inner_descriptor_layer = stem.util.str_tools._to_bytes('create2-formats 2\n' + '\n'.join(map(IntroductionPointV3.encode, intro_points)) + '\n')
-  inner_ciphertext = _encrypt_layer(inner_descriptor_layer, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
-  inner_ciphertext_b64 = b64_and_wrap_desc_layer(inner_ciphertext, b'encrypted')
+  inner_ciphertext_b64 = b'encrypted\n' + _encrypt_layer(inner_descriptor_layer, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
 
   middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
 
   padding_bytes_needed = stem.descriptor.hsv3_crypto._get_padding_needed(len(middle_descriptor_layer))
   middle_descriptor_layer = middle_descriptor_layer + b'\x00' * padding_bytes_needed
 
-  outter_ciphertext = _encrypt_layer(middle_descriptor_layer, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
-
-  return b64_and_wrap_desc_layer(outter_ciphertext)
+  return b'\n' + _encrypt_layer(middle_descriptor_layer, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
 
 
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
