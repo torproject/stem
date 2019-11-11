@@ -28,6 +28,12 @@ from test.unit.descriptor import (
 )
 
 try:
+  # added in python 2.7
+  from collections import OrderedDict
+except ImportError:
+  from stem.util.ordereddict import OrderedDict
+
+try:
   # added in python 3.3
   from unittest.mock import patch, Mock
 except ImportError:
@@ -283,6 +289,48 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     reparsed = IntroductionPointV3.parse(intro_point.encode())
     self.assertEqual(intro_point, reparsed)
+
+  def test_inner_layer_creation(self):
+    """
+    Internal layer creation.
+    """
+
+    # minimal layer
+
+    self.assertEqual('create2-formats 2', InnerLayer.content())
+    self.assertEqual([2], InnerLayer.create().formats)
+
+    # specify their only mandatory parameter (formats)
+
+    self.assertEqual('create2-formats 1 2 3', InnerLayer.content({'create2-formats': '1 2 3'}))
+    self.assertEqual([1, 2, 3], InnerLayer.create({'create2-formats': '1 2 3'}).formats)
+
+    # include optional parameters
+
+    desc = InnerLayer.create(OrderedDict((
+      ('intro-auth-required', 'ed25519'),
+      ('single-onion-service', ''),
+    )))
+
+    self.assertEqual([2], desc.formats)
+    self.assertEqual(['ed25519'], desc.intro_auth)
+    self.assertEqual(True, desc.is_single_service)
+    self.assertEqual([], desc.introduction_points)
+
+    # include introduction points
+
+    desc = InnerLayer.create(introduction_points = [
+      IntroductionPointV3.create('1.1.1.1', 9001),
+      IntroductionPointV3.create('2.2.2.2', 9001),
+      IntroductionPointV3.create('3.3.3.3', 9001),
+    ])
+
+    self.assertEqual(3, len(desc.introduction_points))
+    self.assertEqual('1.1.1.1', desc.introduction_points[0].link_specifiers[0].address)
+
+    self.assertTrue(InnerLayer.content(introduction_points = [
+      IntroductionPointV3.create('1.1.1.1', 9001),
+    ]).startswith('create2-formats 2\nintroduction-point AQAGAQEBASMp'))
 
   @test.require.ed25519_support
   def test_encode_decode_descriptor(self):

@@ -975,7 +975,7 @@ class Descriptor(object):
     :returns: **bytes** for the descriptor's contents
     """
 
-    return self._raw_contents
+    return stem.util.str_tools._to_bytes(self._raw_contents)
 
   def get_unrecognized_lines(self):
     """

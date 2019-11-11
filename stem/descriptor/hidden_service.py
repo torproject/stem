@@ -920,14 +920,14 @@ def _get_middle_descriptor_layer_body(encrypted):
     b'%s' % (fake_pub_key_bytes_b64, fake_clients, encrypted)
 
 
-def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_counter, blinded_key, subcredential):
+def _get_superencrypted_blob(intro_points, revision_counter, blinded_key, subcredential):
   """
   Get the superencrypted blob (which also includes the encrypted blob) that
   should be attached to the descriptor
   """
 
-  inner_descriptor_layer = stem.util.str_tools._to_bytes('create2-formats 2\n' + '\n'.join(map(IntroductionPointV3.encode, intro_points)) + '\n')
-  inner_ciphertext_b64 = b'encrypted\n' + _encrypt_layer(inner_descriptor_layer, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
+  inner_layer = InnerLayer.create(introduction_points = intro_points)
+  inner_ciphertext_b64 = b'encrypted\n' + inner_layer.encrypt(revision_counter, blinded_key, subcredential)
 
   middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
 
@@ -1042,7 +1042,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     # this descriptor object so that we don't have to carry them around
     # functions and instead we could use e.g. self.descriptor_signing_public_key
     # But because this is a @classmethod this is not possible :/
-    superencrypted_blob = _get_superencrypted_blob(intro_points, signing_key, revision_counter_int, blinded_pubkey_bytes, subcredential)
+    superencrypted_blob = _get_superencrypted_blob(intro_points, revision_counter_int, blinded_pubkey_bytes, subcredential)
 
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
@@ -1281,6 +1281,24 @@ class InnerLayer(Descriptor):
     plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
     return InnerLayer(plaintext, validate = True, outer_layer = outer_layer)
 
+  @classmethod
+  def content(cls, attr = None, exclude = (), sign = False, introduction_points = None):
+    if sign:
+      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+
+    if introduction_points:
+      suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
+    else:
+      suffix = ''
+
+    return _descriptor_content(attr, exclude, (
+      ('create2-formats', '2'),
+    )) + suffix
+
+  @classmethod
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, introduction_points = None):
+    return cls(cls.content(attr, exclude, sign, introduction_points), validate = validate)
+
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
     self.outer = outer_layer
@@ -1304,6 +1322,21 @@ class InnerLayer(Descriptor):
     else:
       self._entries = entries
 
+  def encrypt(self, revision_counter, blinded_key, subcredential):
+    """
+    Encrypts into the content contained within the OuterLayer.
+
+    :param int revision_counter: descriptor revision number
+    :param bytes blinded_key: descriptor signing key
+    :param bytes subcredential: public key hash
+
+    :returns: base64 encoded content of the outer layer's 'encrypted' field
+    """
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Hidden service descriptor encryption requires cryptography version 2.6')
+
+    return _encrypt_layer(self.get_bytes(), b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
 
 # TODO: drop this alias in stem 2.x
 
