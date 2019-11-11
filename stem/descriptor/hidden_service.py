@@ -931,8 +931,10 @@ def _get_superencrypted_blob(intro_points, descriptor_signing_privkey, revision_
 
   middle_descriptor_layer = _get_middle_descriptor_layer_body(inner_ciphertext_b64)
 
-  padding_bytes_needed = stem.descriptor.hsv3_crypto._get_padding_needed(len(middle_descriptor_layer))
-  middle_descriptor_layer = middle_descriptor_layer + b'\x00' * padding_bytes_needed
+  # Spec mandated padding: "Before encryption the plaintext is padded with NUL
+  # bytes to the nearest multiple of 10k bytes."
+
+  middle_descriptor_layer = middle_descriptor_layer + b'\x00' * (len(middle_descriptor_layer) % 10000)
 
   return b'\n' + _encrypt_layer(middle_descriptor_layer, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
 
