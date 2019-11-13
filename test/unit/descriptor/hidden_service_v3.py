@@ -17,6 +17,7 @@ import test.require
 from stem.descriptor.hidden_service import (
   IntroductionPointV3,
   HiddenServiceDescriptorV3,
+  AuthorizedClient,
   OuterLayer,
   InnerLayer,
 )
@@ -54,6 +55,17 @@ AQgABl5/AZLmgPpXVS59SEydKj7bRvvAduVOqQt3u4Tj5tVlfVKhAQAgBABUhpfe
 /Wd3p/M74DphsGcIMee/npQ9BTzkzCyTyVmDbykek2EciWaOTCVZJVyiKPErngfW
 BDwQZ8rhp05oCqhhY3oFHqG9KS7HGzv9g2v1/PrVJMbkfpwu1YK4b3zIZAk=
 -----END ED25519 CERT-----\
+"""
+
+EXPECTED_OUTER_LAYER = """\
+desc-auth-type foo
+desc-auth-ephemeral-key bar
+auth-client JNil86N07AA epkaL79NtajmgME/egi8oA qosYH4rXisxda3X7p9b6fw
+auth-client 1D8VBAh9hdM 6K/uO3sRqBp6URrKC7GB6Q ElwRj5+6SN9kb8bRhiiQvA
+encrypted
+-----BEGIN MESSAGE-----
+malformed block
+-----END MESSAGE-----\
 """
 
 with open(get_resource('hidden_service_v3')) as descriptor_file:
@@ -331,6 +343,64 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue(InnerLayer.content(introduction_points = [
       IntroductionPointV3.create('1.1.1.1', 9001),
     ]).startswith('create2-formats 2\nintroduction-point AQAGAQEBASMp'))
+
+  @test.require.ed25519_support
+  def test_outer_layer_creation(self):
+    """
+    Outer layer creation.
+    """
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    # minimal layer
+
+    self.assertTrue(OuterLayer.content().startswith('desc-auth-type x25519\ndesc-auth-ephemeral-key '))
+    self.assertEqual('x25519', OuterLayer.create().auth_type)
+
+    # specify the parameters
+
+    desc = OuterLayer.create({
+      'desc-auth-type': 'foo',
+      'desc-auth-ephemeral-key': 'bar',
+      'auth-client': [
+        'JNil86N07AA epkaL79NtajmgME/egi8oA qosYH4rXisxda3X7p9b6fw',
+        '1D8VBAh9hdM 6K/uO3sRqBp6URrKC7GB6Q ElwRj5+6SN9kb8bRhiiQvA',
+      ],
+      'encrypted': '\n-----BEGIN MESSAGE-----\nmalformed block\n-----END MESSAGE-----',
+    })
+
+    self.assertEqual('foo', desc.auth_type)
+    self.assertEqual('bar', desc.ephemeral_key)
+    self.assertEqual('-----BEGIN MESSAGE-----\nmalformed block\n-----END MESSAGE-----', desc.encrypted)
+
+    self.assertEqual({
+      '1D8VBAh9hdM': AuthorizedClient(id = '1D8VBAh9hdM', iv = '6K/uO3sRqBp6URrKC7GB6Q', cookie = 'ElwRj5+6SN9kb8bRhiiQvA'),
+      'JNil86N07AA': AuthorizedClient(id = 'JNil86N07AA', iv = 'epkaL79NtajmgME/egi8oA', cookie = 'qosYH4rXisxda3X7p9b6fw'),
+    }, desc.clients)
+
+    self.assertEqual(EXPECTED_OUTER_LAYER, str(desc))
+
+    # create an inner layer then decrypt it
+
+    revision_counter = 5
+    blinded_key = stem.util._pubkey_bytes(Ed25519PrivateKey.generate())
+    subcredential = HiddenServiceDescriptorV3._subcredential(Ed25519PrivateKey.generate(), blinded_key)
+
+    outer_layer = OuterLayer.create(
+      inner_layer = InnerLayer.create(
+        introduction_points = [
+          IntroductionPointV3.create('1.1.1.1', 9001),
+        ]
+      ),
+      revision_counter = revision_counter,
+      subcredential = subcredential,
+      blinded_key = blinded_key,
+    )
+
+    inner_layer = InnerLayer._decrypt(outer_layer, revision_counter, subcredential, blinded_key)
+
+    self.assertEqual(1, len(inner_layer.introduction_points))
+    self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
 
   @test.require.ed25519_support
   def test_encode_decode_descriptor(self):
