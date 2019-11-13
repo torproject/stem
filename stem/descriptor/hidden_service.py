@@ -863,26 +863,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     return introduction_points
 
 
-def _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_priv_key):
-  """
-  Get the string representation of the descriptor signing cert
-
-  'descriptor_signing_public_key' key that gets certified by certificate
-
-  'blinded_priv_key' key that signs the certificate
-  """
-
-  # 54 hours expiration date like tor does
-  expiration_date = datetime.datetime.utcnow() + datetime.timedelta(hours=54)
-
-  signing_key = stem.util._pubkey_bytes(descriptor_signing_public_key)
-  extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_priv_key.blinded_pubkey)]
-
-  desc_signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration_date, 1, signing_key, extensions, signing_key = blinded_priv_key)
-
-  return '\n' + desc_signing_cert.to_base64(pem = True)
-
-
 class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   """
   Version 3 hidden service descriptor.
@@ -988,10 +968,15 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       blinded_key = blinded_key,
     )
 
+    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
+    extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_privkey.blinded_pubkey)]
+
+    signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration, 1, stem.util._pubkey_bytes(descriptor_signing_public_key), extensions, signing_key = blinded_privkey)
+
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
       ('descriptor-lifetime', '180'),
-      ('descriptor-signing-key-cert', _get_descriptor_signing_cert(descriptor_signing_public_key, blinded_privkey)),
+      ('descriptor-signing-key-cert', '\n' + signing_cert.to_base64(pem = True)),
       ('revision-counter', str(revision_counter)),
       ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key)),
     ), ())
