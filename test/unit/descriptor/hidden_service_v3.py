@@ -162,6 +162,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key_cert)
 
+  @test.require.ed25519_support
   def test_required_fields(self):
     """
     Check that we require the mandatory fields.
@@ -180,6 +181,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
+  @test.require.ed25519_support
   def test_invalid_version(self):
     """
     Checks that our version field expects a numeric value.
@@ -194,6 +196,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'hs-descriptor': test_value}, 'version')
 
+  @test.require.ed25519_support
   def test_invalid_lifetime(self):
     """
     Checks that our lifetime field expects a numeric value.
@@ -208,6 +211,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'descriptor-lifetime': test_value}, 'lifetime')
 
+  @test.require.ed25519_support
   def test_invalid_revision_counter(self):
     """
     Checks that our revision counter field expects a numeric value.
@@ -302,6 +306,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     reparsed = IntroductionPointV3.parse(intro_point.encode())
     self.assertEqual(intro_point, reparsed)
 
+  @test.require.ed25519_support
   def test_inner_layer_creation(self):
     """
     Internal layer creation.
@@ -309,12 +314,12 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # minimal layer
 
-    self.assertEqual('create2-formats 2', InnerLayer.content())
+    self.assertEqual(b'create2-formats 2', InnerLayer.content())
     self.assertEqual([2], InnerLayer.create().formats)
 
     # specify their only mandatory parameter (formats)
 
-    self.assertEqual('create2-formats 1 2 3', InnerLayer.content({'create2-formats': '1 2 3'}))
+    self.assertEqual(b'create2-formats 1 2 3', InnerLayer.content({'create2-formats': '1 2 3'}))
     self.assertEqual([1, 2, 3], InnerLayer.create({'create2-formats': '1 2 3'}).formats)
 
     # include optional parameters

@@ -132,6 +132,9 @@ def _pubkey_bytes(key):
   Normalizes X25509 and ED25519 keys into their public key bytes.
   """
 
+  if _is_str(key):
+    return key
+
   if not stem.prereq.is_crypto_available():
     raise ImportError('Key normalization requires the cryptography module')
   elif not stem.prereq.is_crypto_available(ed25519 = True):
@@ -141,9 +144,7 @@ def _pubkey_bytes(key):
   from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
   from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 
-  if isinstance(key, str):
-    return key
-  elif isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
+  if isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
     return key.public_key().public_bytes(
       encoding = serialization.Encoding.Raw,
       format = serialization.PublicFormat.Raw,

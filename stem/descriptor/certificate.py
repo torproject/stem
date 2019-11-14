@@ -307,7 +307,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     self.type, self.type_int = ClientCertType.get(cert_type)
     self.expiration = expiration if expiration else datetime.datetime.utcnow() + datetime.timedelta(hours = DEFAULT_EXPIRATION_HOURS)
     self.key_type = key_type if key_type else 1
-    self.key = key if isinstance(key, str) else stem.util._pubkey_bytes(key)
+    self.key = stem.util._pubkey_bytes(key)
     self.extensions = extensions if extensions else []
     self.signature = signature
 
@@ -371,9 +371,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     if extension_data:
       raise ValueError('Ed25519 certificate had %i bytes of unused extension data' % len(extension_data))
 
-    instance = Ed25519CertificateV1(cert_type, datetime.datetime.utcfromtimestamp(expiration_hours * 3600), key_type, key, extensions, signature)
-
-    return instance
+    return Ed25519CertificateV1(cert_type, datetime.datetime.utcfromtimestamp(expiration_hours * 3600), key_type, key, extensions, signature)
 
   def is_expired(self):
     """
@@ -448,10 +446,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
       prefix = SIG_PREFIX_SERVER_DESC
-      regex = '(.+router-sig-ed25519 )'
+      regex = b'(.+router-sig-ed25519 )'
     elif isinstance(descriptor, stem.descriptor.hidden_service.HiddenServiceDescriptorV3):
       prefix = SIG_PREFIX_HS_V3
-      regex = '(.+)signature '
+      regex = b'(.+)signature '
     else:
       raise ValueError('BUG: %s type unexpected' % type(descriptor).__name__)
 

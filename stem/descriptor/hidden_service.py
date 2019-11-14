@@ -563,7 +563,7 @@ def _parse_v3_introduction_points(descriptor, entries):
     remaining = descriptor._unparsed_introduction_points
 
     while remaining:
-      div = remaining.find('\nintroduction-point ', 10)
+      div = remaining.find(b'\nintroduction-point ', 10)
       content, remaining = (remaining[:div], remaining[div + 1:]) if div != -1 else (remaining, '')
 
       introduction_points.append(IntroductionPointV3.parse(content))
@@ -1257,7 +1257,7 @@ class InnerLayer(Descriptor):
 
     return _descriptor_content(attr, exclude, (
       ('create2-formats', '2'),
-    )) + suffix
+    )) + stem.util.str_tools._to_bytes(suffix)
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False, introduction_points = None):
@@ -1270,7 +1270,8 @@ class InnerLayer(Descriptor):
     # inner layer begins with a few header fields, followed by any
     # number of introduction-points
 
-    div = content.find('\nintroduction-point ')
+    content = stem.util.str_tools._to_bytes(content)
+    div = content.find(b'\nintroduction-point ')
 
     if div != -1:
       self._unparsed_introduction_points = content[div + 1:]
