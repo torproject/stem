@@ -439,7 +439,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     blind_param = bytearray.fromhex('677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3')
 
     # Build the descriptor
-    desc_string = HiddenServiceDescriptorV3.content(ed25519_private_identity_key = private_identity_key, intro_points = intro_points, blinding_param = blind_param)
+    desc_string = HiddenServiceDescriptorV3.content(identity_key = private_identity_key, inner_layer = InnerLayer.create(introduction_points = intro_points), blinding_param = blind_param)
 
     # Parse the descriptor
     desc = HiddenServiceDescriptorV3.from_str(desc_string)

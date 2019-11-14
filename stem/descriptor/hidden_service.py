@@ -903,95 +903,95 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, ed25519_private_identity_key = None, intro_points = None, blinding_param = None):
+  def content(cls, attr = None, exclude = (), sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_param = None):
     """
-    'ed25519_private_identity_key' is the Ed25519PrivateKey  of the onion service
+    Hidden service v3 descriptors consist of three parts:
 
-    'intro_points' is a list of IntroductionPointV3 objects
+      * InnerLayer, which most notably contain introduction points where the
+        service can be reached.
 
-    'blinding_param' is a 32 byte blinding factor that should be used to derive
-    the blinded key from the identity key
+      * OuterLayer, which encrypts the InnerLayer among other paremters.
+
+      * HiddenServiceDescriptorV3, which contains the OuterLayer and plaintext
+        parameters.
+
+    Construction through this method can supply any or none of these, with
+    omitted parameters populated with randomized defaults.
+
+    :param dict attr: keyword/value mappings to be included in plaintext descriptor
+    :param list exclude: mandatory keywords to exclude from the descriptor, this
+      results in an invalid descriptor
+    :param bool sign: includes cryptographic signatures and digests if True
+    :param stem.descriptor.hidden_service.InnerLayer inner_layer: inner
+      encrypted layer
+    :param stem.descriptor.hidden_service.OuterLayer outer_layer: outer
+      encrypted layer
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
+      identity_key: service identity key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
+      signing_key: service signing key
+    :param stem.descriptor.Ed25519CertificateV1 signing_cert: certificate
+      signing this descriptor
+    :param int revision_counter: descriptor revision number
+    :param bytes blinding_param: 32 byte blinding factor to derive the blinding key
+
+    :returns: **str** with the content of a descriptor
+
+    :raises:
+      * **ValueError** if parameters are malformed
+      * **ImportError** if cryptography is unavailable
     """
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Hidden service descriptor creation requires cryptography version 2.6')
+    elif not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service descriptor creation requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
+    inner_layer = inner_layer if inner_layer else InnerLayer.create(exclude = exclude)
+    identity_key = identity_key if identity_key else Ed25519PrivateKey.generate()
+    signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
+    revision_counter = revision_counter if revision_counter else int(time.time())
+    blinding_param = blinding_param if blinding_param else os.urandom(32)
 
-    # TODO: When these additional arguments are not present simply constructing
-    # a descriptor that looks reasonable. This might not be the fallback we use
-    # later on.
+    blinded_key = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(identity_key, blinding_param = blinding_param)
+    subcredential = HiddenServiceDescriptorV3._subcredential(identity_key, blinded_key.blinded_pubkey)
 
-    if not ed25519_private_identity_key or not intro_points or not blinding_param:
-      return _descriptor_content(attr, exclude, (
-        ('hs-descriptor', '3'),
-        ('descriptor-lifetime', '180'),
-        ('descriptor-signing-key-cert', _random_crypto_blob('ED25519 CERT')),
-        ('revision-counter', '15'),
-        ('superencrypted', _random_crypto_blob('MESSAGE')),
-        ('signature', 'wdc7ffr+dPZJ/mIQ1l4WYqNABcmsm6SHW/NL3M3wG7bjjqOJWoPR5TimUXxH52n5Zk0Gc7hl/hz3YYmAx5MvAg'),
-      ), ())
+    if not outer_layer:
+      outer_layer = OuterLayer.create(
+        exclude = exclude,
+        inner_layer = inner_layer,
+        revision_counter = revision_counter,
+        subcredential = subcredential,
+        blinded_key = blinded_key.blinded_pubkey,
+      )
 
-    # We need an private identity key for the onion service to create its
-    # descriptor. We could make a new one on the spot, but we also need to
-    # return it to the caller, otherwise the caller will have no way to decode
-    # the descriptor without knowing the private key or the onion address, so
-    # for now we consider it a mandatory argument.
-
-    if not ed25519_private_identity_key:
-      raise ValueError('Need to provide a private ed25519 identity key to create a descriptor')
-
-    if not intro_points:
-      raise ValueError('Need to provide the introduction points for this descriptor')
-
-    if not blinding_param:
-      raise ValueError('Need to provide a blinding param for this descriptor')
-
-    # Blind the identity key to get ephemeral blinded key
-    blinded_privkey = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(ed25519_private_identity_key, blinding_param = blinding_param)
-    blinded_key = blinded_privkey.blinded_pubkey
-
-    # Generate descriptor signing key
-    signing_key = Ed25519PrivateKey.generate()
-    descriptor_signing_public_key = signing_key.public_key()
-
-    # Get the main encrypted descriptor body
-    revision_counter = int(time.time())
-    subcredential = HiddenServiceDescriptorV3._subcredential(ed25519_private_identity_key, blinded_key)
-
-    outer_layer = OuterLayer.create(
-      inner_layer = InnerLayer.create(
-        introduction_points = intro_points,
-      ),
-      revision_counter = revision_counter,
-      subcredential = subcredential,
-      blinded_key = blinded_key,
-    )
-
-    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
-    extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_privkey.blinded_pubkey)]
-
-    signing_cert = Ed25519CertificateV1(CertType.HS_V3_DESC_SIGNING, expiration, 1, stem.util._pubkey_bytes(descriptor_signing_public_key), extensions, signing_key = blinded_privkey)
+    if not signing_cert:
+      signing_cert = Ed25519CertificateV1(
+        cert_type = CertType.HS_V3_DESC_SIGNING,
+        key = signing_key,
+        extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_key.blinded_pubkey)],
+        signing_key = blinded_key,
+      )
 
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
       ('descriptor-lifetime', '180'),
       ('descriptor-signing-key-cert', '\n' + signing_cert.to_base64(pem = True)),
       ('revision-counter', str(revision_counter)),
-      ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key)),
-    ), ())
+      ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key.blinded_pubkey)),
+    ), ()) + b'\n'
 
-    # Add a final newline before the signature block
-    desc_content += b'\n'
+    if 'signature' not in exclude:
+      sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
+      desc_content += b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
 
-    sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
-    signature = b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
-
-    return desc_content + signature
+    return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_param = None):
+    return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_param), validate = validate, skip_crypto_validation = not sign)
 
   def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
@@ -1176,8 +1176,6 @@ class OuterLayer(Descriptor):
   def content(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, subcredential = None, blinded_key = None):
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Hidden service layer creation requires cryptography version 2.6')
-    elif sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -1252,9 +1250,6 @@ class InnerLayer(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, introduction_points = None):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
     if introduction_points:
       suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
     else:

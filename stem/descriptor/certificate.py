@@ -294,17 +294,21 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey: certificate signing key
   """
 
-  def __init__(self, cert_type, expiration, key_type, key, extensions, signature = None, signing_key = None):
+  def __init__(self, cert_type = None, expiration = None, key_type = None, key = None, extensions = None, signature = None, signing_key = None):
     super(Ed25519CertificateV1, self).__init__(1)
 
     if not signature and not signing_key:
       raise ValueError('Certificate signature or signing key is required')
+    elif cert_type is None:
+      raise ValueError('Certificate type is required')
+    elif key is None:
+      raise ValueError('Certificate key is required')
 
     self.type, self.type_int = ClientCertType.get(cert_type)
-    self.expiration = expiration
-    self.key_type = key_type
-    self.key = key
-    self.extensions = extensions
+    self.expiration = expiration if expiration else datetime.datetime.utcnow() + datetime.timedelta(hours = DEFAULT_EXPIRATION_HOURS)
+    self.key_type = key_type if key_type else 1
+    self.key = key if isinstance(key, str) else stem.util._pubkey_bytes(key)
+    self.extensions = extensions if extensions else []
     self.signature = signature
 
     if signing_key:
