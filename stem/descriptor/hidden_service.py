@@ -957,6 +957,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     blinded_key = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(identity_key, blinding_param = blinding_param)
     subcredential = HiddenServiceDescriptorV3._subcredential(identity_key, blinded_key.blinded_pubkey)
+    custom_sig = attr.pop('signature') if (attr and 'signature' in attr) else None
 
     if not outer_layer:
       outer_layer = OuterLayer.create(
@@ -983,7 +984,9 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key.blinded_pubkey)),
     ), ()) + b'\n'
 
-    if 'signature' not in exclude:
+    if custom_sig:
+      desc_content += b'signature %s' % custom_sig
+    elif 'signature' not in exclude:
       sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
       desc_content += b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
 
@@ -991,7 +994,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   @classmethod
   def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_param = None):
-    return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_param), validate = validate, skip_crypto_validation = not sign)
+    return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_param), validate = validate)
 
   def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
@@ -1045,7 +1048,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       if not blinded_key:
         raise ValueError('No signing key is present')
 
-      identity_public_key = HiddenServiceDescriptorV3.public_key_from_address(onion_address)
+      identity_public_key = HiddenServiceDescriptorV3.identity_key_from_address(onion_address)
       subcredential = HiddenServiceDescriptorV3._subcredential(identity_public_key, blinded_key)
 
       outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
@@ -1054,11 +1057,12 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     return self._inner_layer
 
   @staticmethod
-  def address_from_public_key(pubkey, suffix = True):
+  def address_from_identity_key(key, suffix = True):
     """
-    Converts a hidden service public key into its address.
+    Converts a hidden service identity key into its address. This accepts all
+    key formats (private, public, or public bytes).
 
-    :param bytes pubkey: hidden service public key
+    :param Ed25519PublicKey,Ed25519PrivateKey,bytes key: hidden service identity key
     :param bool suffix: includes the '.onion' suffix if true, excluded otherwise
 
     :returns: **unicode** hidden service address
@@ -1069,20 +1073,22 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     if not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service address conversion requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
+    key = stem.util._pubkey_bytes(key)  # normalize key into bytes
+
     version = stem.client.datatype.Size.CHAR.pack(3)
-    checksum = hashlib.sha3_256(CHECKSUM_CONSTANT + pubkey + version).digest()[:2]
-    onion_address = base64.b32encode(pubkey + checksum + version)
+    checksum = hashlib.sha3_256(CHECKSUM_CONSTANT + key + version).digest()[:2]
+    onion_address = base64.b32encode(key + checksum + version)
 
     return stem.util.str_tools._to_unicode(onion_address + b'.onion' if suffix else onion_address).lower()
 
   @staticmethod
-  def public_key_from_address(onion_address):
+  def identity_key_from_address(onion_address):
     """
-    Converts a hidden service address into its public key.
+    Converts a hidden service address into its public identity key.
 
     :param str onion_address: hidden service address
 
-    :returns: **bytes** for the hidden service's public key
+    :returns: **bytes** for the hidden service's public identity key
 
     :raises:
       * **ImportError** if sha3 unsupported

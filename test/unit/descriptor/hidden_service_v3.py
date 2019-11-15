@@ -3,7 +3,6 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 """
 
 import base64
-import datetime
 import functools
 import unittest
 
@@ -249,14 +248,14 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
 
   @require_sha3
-  def test_address_from_public_key(self):
-    self.assertEqual(HS_ADDRESS, HiddenServiceDescriptorV3.address_from_public_key(HS_PUBKEY))
+  def test_address_from_identity_key(self):
+    self.assertEqual(HS_ADDRESS, HiddenServiceDescriptorV3.address_from_identity_key(HS_PUBKEY))
 
   @require_sha3
-  def test_public_key_from_address(self):
-    self.assertEqual(HS_PUBKEY, HiddenServiceDescriptorV3.public_key_from_address(HS_ADDRESS))
-    self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3.public_key_from_address, 'boom')
-    self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3.public_key_from_address, '5' * 56)
+  def test_identity_key_from_address(self):
+    self.assertEqual(HS_PUBKEY, HiddenServiceDescriptorV3.identity_key_from_address(HS_ADDRESS))
+    self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3.identity_key_from_address, 'boom')
+    self.assertRaisesWith(ValueError, 'Bad checksum (expected def7 but was 842e)', HiddenServiceDescriptorV3.identity_key_from_address, '5' * 56)
 
   def test_intro_point_parse(self):
     """
@@ -430,60 +429,53 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
 
   @test.require.ed25519_support
-  def test_encode_decode_descriptor(self):
+  def test_descriptor_creation(self):
     """
-    Encode an HSv3 descriptor and then decode it and make sure you get the intended results.
-
-    This test is from the point of view of the onionbalance, so the object that
-    this test generates is the data that onionbalance also has available when
-    making onion service descriptors.
+    HiddenServiceDescriptorV3 creation.
     """
 
     if SKIP_SLOW_TESTS:
       return
 
+    # minimal descriptor
+
+    self.assertTrue(HiddenServiceDescriptorV3.content().startswith('hs-descriptor 3\ndescriptor-lifetime 180\n'))
+    self.assertEqual(180, HiddenServiceDescriptorV3.create().lifetime)
+
+    # specify the parameters
+
+    desc = HiddenServiceDescriptorV3.create({
+      'hs-descriptor': '4',
+      'descriptor-lifetime': '123',
+      'descriptor-signing-key-cert': '\n-----BEGIN ED25519 CERT-----\nmalformed block\n-----END ED25519 CERT-----',
+      'revision-counter': '5',
+      'superencrypted': '\n-----BEGIN MESSAGE-----\nmalformed block\n-----END MESSAGE-----',
+      'signature': 'abcde',
+    }, validate = False)
+
+    self.assertEqual(4, desc.version)
+    self.assertEqual(123, desc.lifetime)
+    self.assertEqual(None, desc.signing_cert)  # malformed cert dropped because validation is disabled
+    self.assertEqual(5, desc.revision_counter)
+    self.assertEqual('-----BEGIN MESSAGE-----\nmalformed block\n-----END MESSAGE-----', desc.superencrypted)
+    self.assertEqual('abcde', desc.signature)
+
+    # include introduction points
+
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
-    onion_key = X25519PrivateKey.generate()
-    enc_key = X25519PrivateKey.generate()
-    auth_key = Ed25519PrivateKey.generate()
-    signing_key = Ed25519PrivateKey.generate()
+    identity_key = Ed25519PrivateKey.generate()
+    onion_address = HiddenServiceDescriptorV3.address_from_identity_key(identity_key)
 
-    expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = 54)
+    desc = HiddenServiceDescriptorV3.create(
+      identity_key = identity_key,
+      inner_layer = InnerLayer.create(introduction_points = [
+        IntroductionPointV3.create('1.1.1.1', 9001),
+        IntroductionPointV3.create('2.2.2.2', 9001),
+        IntroductionPointV3.create('3.3.3.3', 9001),
+      ]),
+    )
 
-    # Build the service
-    private_identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32)
-    public_identity_key = private_identity_key.public_key()
-
-    onion_address = HiddenServiceDescriptorV3.address_from_public_key(stem.util._pubkey_bytes(public_identity_key))
-
-    intro_points = [
-      IntroductionPointV3.create('1.1.1.1', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
-      IntroductionPointV3.create('2.2.2.2', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
-      IntroductionPointV3.create('3.3.3.3', 9001, expiration, onion_key, enc_key, auth_key, signing_key),
-    ]
-
-    # TODO: replace with bytes.fromhex() when we drop python 2.x support
-
-    blind_param = bytearray.fromhex('677776AE42464CAAB0DF0BF1E68A5FB651A390A6A8243CF4B60EE73A6AC2E4E3')
-
-    # Build the descriptor
-    desc_string = HiddenServiceDescriptorV3.content(identity_key = private_identity_key, inner_layer = InnerLayer.create(introduction_points = intro_points), blinding_param = blind_param)
-
-    # Parse the descriptor
-    desc = HiddenServiceDescriptorV3.from_str(desc_string)
     inner_layer = desc.decrypt(onion_address)
-
     self.assertEqual(3, len(inner_layer.introduction_points))
-
-    for i, intro_point in enumerate(inner_layer.introduction_points):
-      original = intro_points[i]
-
-      self.assertEqual(original.enc_key_raw, intro_point.enc_key_raw)
-      self.assertEqual(original.onion_key_raw, intro_point.onion_key_raw)
-      self.assertEqual(original.auth_key_cert.key, intro_point.auth_key_cert.key)
-
-      self.assertEqual(intro_point.enc_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.enc_key())))
-      self.assertEqual(intro_point.onion_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.onion_key())))
-      self.assertEqual(intro_point.auth_key_cert.key, stem.util._pubkey_bytes(intro_point.auth_key()))
+    self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
