@@ -21,6 +21,8 @@ These are only available through the Controller's
   BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
     |- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
     +- HiddenServiceDescriptorV3 - Version 3 hidden service descriptor
+         |- address_from_identity_key - convert an identity key to address
+         |- identity_key_from_address - convert an address to identity key
          +- decrypt - decrypt and parse encrypted layers
 
   OuterLayer - First encrypted layer of a hidden service v3 descriptor
@@ -41,7 +43,6 @@ import time
 
 import stem.client.datatype
 import stem.descriptor.certificate
-import stem.descriptor.hsv3_crypto
 import stem.prereq
 import stem.util
 import stem.util.connection
@@ -50,6 +51,7 @@ import stem.util.tor_tools
 
 from stem.client.datatype import CertType
 from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519Certificate, Ed25519CertificateV1
+from stem.util import slow_ed25519
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -903,7 +905,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_param = None):
+  def content(cls, attr = None, exclude = (), sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_nonce = None):
     """
     Hidden service v3 descriptors consist of three parts:
 
@@ -933,7 +935,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     :param stem.descriptor.Ed25519CertificateV1 signing_cert: certificate
       signing this descriptor
     :param int revision_counter: descriptor revision number
-    :param bytes blinding_param: 32 byte blinding factor to derive the blinding key
+    :param bytes blinding_nonce: 32 byte blinding factor to derive the blinding key
 
     :returns: **str** with the content of a descriptor
 
@@ -953,10 +955,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     identity_key = identity_key if identity_key else Ed25519PrivateKey.generate()
     signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
     revision_counter = revision_counter if revision_counter else int(time.time())
-    blinding_param = blinding_param if blinding_param else os.urandom(32)
+    blinding_nonce = blinding_nonce if blinding_nonce else os.urandom(32)
 
-    blinded_key = stem.descriptor.hsv3_crypto.HSv3PrivateBlindedKey(identity_key, blinding_param = blinding_param)
-    subcredential = HiddenServiceDescriptorV3._subcredential(identity_key, blinded_key.blinded_pubkey)
+    blinded_key = _blinded_pubkey(identity_key, blinding_nonce)
+    subcredential = HiddenServiceDescriptorV3._subcredential(identity_key, blinded_key)
     custom_sig = attr.pop('signature') if (attr and 'signature' in attr) else None
 
     if not outer_layer:
@@ -965,23 +967,21 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
         inner_layer = inner_layer,
         revision_counter = revision_counter,
         subcredential = subcredential,
-        blinded_key = blinded_key.blinded_pubkey,
+        blinded_key = blinded_key,
       )
 
     if not signing_cert:
-      signing_cert = Ed25519CertificateV1(
-        cert_type = CertType.HS_V3_DESC_SIGNING,
-        key = signing_key,
-        extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_key.blinded_pubkey)],
-        signing_key = blinded_key,
-      )
+      extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_key)]
+
+      signing_cert = Ed25519CertificateV1(cert_type = CertType.HS_V3_DESC_SIGNING, key = signing_key, extensions = extensions)
+      signing_cert.signature = _blinded_sign(signing_cert.pack(), identity_key, blinded_key, blinding_nonce)
 
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
       ('descriptor-lifetime', '180'),
       ('descriptor-signing-key-cert', '\n' + signing_cert.to_base64(pem = True)),
       ('revision-counter', str(revision_counter)),
-      ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key.blinded_pubkey)),
+      ('superencrypted', b'\n' + outer_layer._encrypt(revision_counter, subcredential, blinded_key)),
     ), ()) + b'\n'
 
     if custom_sig:
@@ -993,8 +993,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_param = None):
-    return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_param), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_nonce = None):
+    return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_nonce), validate = validate)
 
   def __init__(self, raw_contents, validate = False):
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
@@ -1292,6 +1292,47 @@ class InnerLayer(Descriptor):
       _parse_v3_introduction_points(self, entries)
     else:
       self._entries = entries
+
+
+def _blinded_pubkey(identity_key, blinding_nonce):
+  mult = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(blinding_nonce, i) for i in range(3, slow_ed25519.b - 2))
+  P = slow_ed25519.decodepoint(stem.util._pubkey_bytes(identity_key))
+  return slow_ed25519.encodepoint(slow_ed25519.scalarmult(P, mult))
+
+
+def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
+  from cryptography.hazmat.primitives import serialization
+
+  identity_key_bytes = identity_key.private_bytes(
+    encoding = serialization.Encoding.Raw,
+    format = serialization.PrivateFormat.Raw,
+    encryption_algorithm = serialization.NoEncryption(),
+  )
+
+  # pad private identity key into an ESK (encrypted secret key)
+
+  h = slow_ed25519.H(identity_key_bytes)
+  a = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(h, i) for i in range(3, slow_ed25519.b - 2))
+  k = b''.join([h[i:i + 1] for i in range(slow_ed25519.b // 8, slow_ed25519.b // 4)])
+  esk = slow_ed25519.encodeint(a) + k
+
+  # blind the ESK with this nonce
+
+  mult = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(blinding_nonce, i) for i in range(3, slow_ed25519.b - 2))
+  s = slow_ed25519.decodeint(esk[:32])
+  s_prime = (s * mult) % slow_ed25519.l
+  k = esk[32:]
+  k_prime = slow_ed25519.H(b'Derive temporary signing key hash input' + k)[:32]
+  blinded_esk = slow_ed25519.encodeint(s_prime) + k_prime
+
+  # finally, sign the message
+
+  a = slow_ed25519.decodeint(blinded_esk[:32])
+  r = slow_ed25519.Hint(b''.join([blinded_esk[i:i + 1] for i in range(slow_ed25519.b // 8, slow_ed25519.b // 4)]) + msg)
+  R = slow_ed25519.scalarmult(slow_ed25519.B, r)
+  S = (r + slow_ed25519.Hint(slow_ed25519.encodepoint(R) + blinded_key + msg) * a) % slow_ed25519.l
+
+  return slow_ed25519.encodepoint(R) + slow_ed25519.encodeint(S)
 
 
 # TODO: drop this alias in stem 2.x

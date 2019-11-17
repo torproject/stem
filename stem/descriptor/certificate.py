@@ -291,15 +291,13 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var bytes signature: certificate signature
 
   :param bytes signature: pre-calculated certificate signature
-  :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey: certificate signing key
+  :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: certificate signing key
   """
 
   def __init__(self, cert_type = None, expiration = None, key_type = None, key = None, extensions = None, signature = None, signing_key = None):
     super(Ed25519CertificateV1, self).__init__(1)
 
-    if not signature and not signing_key:
-      raise ValueError('Certificate signature or signing key is required')
-    elif cert_type is None:
+    if cert_type is None:
       raise ValueError('Certificate type is required')
     elif key is None:
       raise ValueError('Certificate key is required')
