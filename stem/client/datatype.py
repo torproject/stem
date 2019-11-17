@@ -17,6 +17,12 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
   LinkProtocol - ORPort protocol version.
 
   Field - Packable and unpackable datatype.
+    |- LinkSpecifier - Communication method relays in a circuit.
+    |    |- LinkByIPv4 - TLS connection to an IPv4 address.
+    |    |- LinkByIPv6 - TLS connection to an IPv6 address.
+    |    |- LinkByFingerprint - SHA1 identity fingerprint.
+    |    +- LinkByEd25519 - Ed25519 identity fingerprint.
+    |
     |- Size - Field of a static size.
     |- Address - Relay address.
     |- Certificate - Relay certificate.
@@ -24,12 +30,6 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
     |- pack - encodes content
     |- unpack - decodes content
     +- pop - decodes content with remainder
-
-  LinkSpecifier - Communication method relays in a circuit.
-    |- LinkByIPv4 - TLS connection to an IPv4 address.
-    |- LinkByIPv6 - TLS connection to an IPv6 address.
-    |- LinkByFingerprint - SHA1 identity fingerprint.
-    +- LinkByEd25519 - Ed25519 identity fingerprint.
 
   KDF - KDF-TOR derivatived attributes
     +- from_value - parses key material
@@ -83,16 +83,33 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 
 .. data:: CertType (enum)
 
-  Relay certificate type.
+  Certificate purpose. For more information see...
 
-  ===================== ===========
-  CertType              Description
-  ===================== ===========
-  **LINK**              link key certificate certified by RSA1024 identity
-  **IDENTITY**          RSA1024 Identity certificate
-  **AUTHENTICATE**      RSA1024 AUTHENTICATE cell link certificate
-  **UNKNOWN**           unrecognized certificate type
-  ===================== ===========
+    * `tor-spec.txt <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_ section 4.2
+    * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
+    * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
+
+  .. versionchanged:: 1.8.0
+     Added the ED25519_SIGNING, LINK_CERT, ED25519_AUTHENTICATE,
+     ED25519_IDENTITY, HS_V3_DESC_SIGNING, HS_V3_INTRO_AUTH, NTOR_ONION_KEY,
+     and HS_V3_NTOR_ENC certificate types.
+
+  ========================= ===========
+  CertType                  Description
+  ========================= ===========
+  **LINK**                  link key certificate certified by RSA1024 identity
+  **IDENTITY**              RSA1024 Identity certificate
+  **AUTHENTICATE**          RSA1024 AUTHENTICATE cell link certificate
+  **ED25519_SIGNING**       Ed25519 signing key, signed with identity key
+  **LINK_CERT**             TLS link certificate, signed with ed25519 signing key
+  **ED25519_AUTHENTICATE**  Ed25519 AUTHENTICATE cell key, signed with ed25519 signing key
+  **ED25519_IDENTITY**      Ed25519 identity, signed with RSA identity
+  **HS_V3_DESC_SIGNING**    hidden service v3 short-term descriptor signing key
+  **HS_V3_INTRO_AUTH**      hidden service v3 introduction point authentication key
+  **NTOR_ONION_KEY**        ntor onion key cross-certifying ed25519 identity key
+  **HS_V3_NTOR_ENC**        hidden service v3 ntor-extra encryption key
+  **UNKNOWN**               unrecognized certificate type
+  ========================= ===========
 
 .. data:: CloseReason (enum)
 
@@ -201,9 +218,17 @@ RelayCommand = _IntegerEnum(
 )
 
 CertType = _IntegerEnum(
-  ('LINK', 1),
-  ('IDENTITY', 2),
-  ('AUTHENTICATE', 3),
+  ('LINK', 1),                  # (tor-spec.txt section 4.2)
+  ('IDENTITY', 2),              # (tor-spec.txt section 4.2)
+  ('AUTHENTICATE', 3),          # (tor-spec.txt section 4.2)
+  ('ED25519_SIGNING', 4),       # (prop220 section 4.2)
+  ('LINK_CERT', 5),             # (prop220 section 4.2)
+  ('ED25519_AUTHENTICATE', 6),  # (prop220 section 4.2)
+  ('ED25519_IDENTITY', 7),      # (prop220 section 4.2)
+  ('HS_V3_DESC_SIGNING', 8),    # (rend-spec-v3.txt, "DESC_OUTER" description)
+  ('HS_V3_INTRO_AUTH', 9),      # (rend-spec-v3.txt, "auth-key" description)
+  ('NTOR_ONION_KEY', 10),       # (dir-spec.txt, "ntor-onion-key-crosscert" description)
+  ('HS_V3_NTOR_ENC', 11),       # (rend-spec-v3.txt, "enc-key-cert" description)
 )
 
 CloseReason = _IntegerEnum(
@@ -534,12 +559,14 @@ class Certificate(Field):
     return stem.util._hash_attr(self, 'type_int', 'value')
 
 
-class LinkSpecifier(object):
+class LinkSpecifier(Field):
   """
   Method of communicating with a circuit's relay. Recognized link specification
   types are an instantiation of a subclass. For more information see the
   `EXTEND cell specification
   <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt#n975>`_.
+
+  .. versionadded:: 1.8.0
 
   :var int type: numeric identifier of our type
   :var bytes value: encoded link specification destination
@@ -550,74 +577,93 @@ class LinkSpecifier(object):
     self.value = value
 
   @staticmethod
-  def pop(content):
+  def pop(packed):
     # LSTYPE (Link specifier type)           [1 byte]
     # LSLEN  (Link specifier length)         [1 byte]
     # LSPEC  (Link specifier)                [LSLEN bytes]
 
-    link_type, content = Size.CHAR.pop(content)
-    value_size, content = Size.CHAR.pop(content)
+    link_type, packed = Size.CHAR.pop(packed)
+    value_size, packed = Size.CHAR.pop(packed)
 
-    if value_size > len(content):
-      raise ValueError('Link specifier should have %i bytes, but only had %i remaining' % (value_size, len(content)))
+    if value_size > len(packed):
+      raise ValueError('Link specifier should have %i bytes, but only had %i remaining' % (value_size, len(packed)))
 
-    value, content = split(content, value_size)
+    value, packed = split(packed, value_size)
 
     if link_type == 0:
-      return LinkByIPv4(value), content
+      return LinkByIPv4.unpack(value), packed
     elif link_type == 1:
-      return LinkByIPv6(value), content
+      return LinkByIPv6.unpack(value), packed
     elif link_type == 2:
-      return LinkByFingerprint(value), content
+      return LinkByFingerprint(value), packed
     elif link_type == 3:
-      return LinkByEd25519(value), content
+      return LinkByEd25519(value), packed
     else:
-      return LinkSpecifier(link_type, value), content  # unrecognized type
+      return LinkSpecifier(link_type, value), packed  # unrecognized type
+
+  def pack(self):
+    cell = bytearray()
+    cell += Size.CHAR.pack(self.type)
+    cell += Size.CHAR.pack(len(self.value))
+    cell += self.value
+    return bytes(cell)
 
 
 class LinkByIPv4(LinkSpecifier):
   """
   TLS connection to an IPv4 address.
 
+  .. versionadded:: 1.8.0
+
   :var str address: relay IPv4 address
   :var int port: relay ORPort
   """
 
-  def __init__(self, value):
-    super(LinkByIPv4, self).__init__(0, value)
+  def __init__(self, address, port):
+    super(LinkByIPv4, self).__init__(0, _pack_ipv4_address(address) + Size.SHORT.pack(port))
 
+    self.address = address
+    self.port = port
+
+  @staticmethod
+  def unpack(value):
     if len(value) != 6:
       raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    address_bin, value = split(value, 4)
-    self.address = _unpack_ipv4_address(address_bin)
-
-    self.port, _ = Size.SHORT.pop(value)
+    addr, port = split(value, 4)
+    return LinkByIPv4(_unpack_ipv4_address(addr), Size.SHORT.unpack(port))
 
 
 class LinkByIPv6(LinkSpecifier):
   """
   TLS connection to an IPv6 address.
 
+  .. versionadded:: 1.8.0
+
   :var str address: relay IPv6 address
   :var int port: relay ORPort
   """
 
-  def __init__(self, value):
-    super(LinkByIPv6, self).__init__(1, value)
+  def __init__(self, address, port):
+    super(LinkByIPv6, self).__init__(1, _pack_ipv6_address(address) + Size.SHORT.pack(port))
 
+    self.address = address
+    self.port = port
+
+  @staticmethod
+  def unpack(value):
     if len(value) != 18:
       raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
-    address_bin, value = split(value, 16)
-    self.address = _unpack_ipv6_address(address_bin)
-
-    self.port, _ = Size.SHORT.pop(value)
+    addr, port = split(value, 16)
+    return LinkByIPv6(_unpack_ipv6_address(addr), Size.SHORT.unpack(port))
 
 
 class LinkByFingerprint(LinkSpecifier):
   """
   Connection to a SHA1 identity fingerprint.
+
+  .. versionadded:: 1.8.0
 
   :var str fingerprint: relay sha1 fingerprint
   """
@@ -634,6 +680,8 @@ class LinkByFingerprint(LinkSpecifier):
 class LinkByEd25519(LinkSpecifier):
   """
   Connection to a Ed25519 identity fingerprint.
+
+  .. versionadded:: 1.8.0
 
   :var str fingerprint: relay ed25519 fingerprint
   """
@@ -681,15 +729,19 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
 
 
-def _unpack_ipv4_address(value):
-  # convert bytes to a standard IPv4 address
+def _pack_ipv4_address(address):
+  return b''.join([Size.CHAR.pack(int(v)) for v in address.split('.')])
 
+
+def _unpack_ipv4_address(value):
   return '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
 
 
-def _unpack_ipv6_address(value):
-  # convert bytes to a standard IPv6 address
+def _pack_ipv6_address(address):
+  return b''.join([Size.SHORT.pack(int(v, 16)) for v in address.split(':')])
 
+
+def _unpack_ipv6_address(value):
   return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 

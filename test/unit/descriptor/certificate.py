@@ -12,7 +12,8 @@ import stem.util.str_tools
 import stem.prereq
 import test.require
 
-from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, CertType, ExtensionType, ExtensionFlag, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
+from stem.client.datatype import Size, CertType
+from stem.descriptor.certificate import ED25519_SIGNATURE_LENGTH, ExtensionType, Ed25519Certificate, Ed25519CertificateV1, Ed25519Extension
 from test.unit.descriptor import get_resource
 
 ED25519_CERT = """
@@ -54,20 +55,20 @@ class TestEd25519Certificate(unittest.TestCase):
 
     signing_key = b'\x11' * 32
     cert_bytes = certificate(extension_data = [b'\x00\x20\x04\x07' + signing_key, b'\x00\x00\x05\x04'])
-    cert = Ed25519Certificate.parse(cert_bytes)
+    cert = Ed25519Certificate.from_base64(cert_bytes)
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(stem.util.str_tools._to_unicode(cert_bytes), cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.type)
+    self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(1970, 1, 1, 0, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(b'\x03' * 32, cert.key)
     self.assertEqual(b'\x01' * ED25519_SIGNATURE_LENGTH, cert.signature)
 
     self.assertEqual([
-      Ed25519Extension(type = ExtensionType.HAS_SIGNING_KEY, flags = [ExtensionFlag.AFFECTS_VALIDATION, ExtensionFlag.UNKNOWN], flag_int = 7, data = signing_key),
-      Ed25519Extension(type = 5, flags = [ExtensionFlag.UNKNOWN], flag_int = 4, data = b''),
+      Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, 7, signing_key),
+      Ed25519Extension(5, 4, b''),
     ], cert.extensions)
 
     self.assertEqual(ExtensionType.HAS_SIGNING_KEY, cert.extensions[0].type)
@@ -78,17 +79,39 @@ class TestEd25519Certificate(unittest.TestCase):
     Parse a certificate from a real server descriptor.
     """
 
-    cert = Ed25519Certificate.parse(ED25519_CERT)
+    cert = Ed25519Certificate.from_base64(ED25519_CERT)
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
     self.assertEqual(ED25519_CERT, cert.encoded)
-    self.assertEqual(CertType.SIGNING, cert.type)
+    self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
     self.assertEqual(EXPECTED_CERT_KEY, cert.key)
-    self.assertEqual([Ed25519Extension(type = 4, flags = [], flag_int = 0, data = EXPECTED_EXTENSION_DATA)], cert.extensions)
+    self.assertEqual([Ed25519Extension(4, 0, EXPECTED_EXTENSION_DATA)], cert.extensions)
     self.assertEqual(EXPECTED_SIGNATURE, cert.signature)
+
+  def test_extension_encoding(self):
+    """
+    Pack an extension back into what we read.
+    """
+
+    extension = Ed25519Certificate.from_base64(ED25519_CERT).extensions[0]
+    expected = Size.SHORT.pack(len(EXPECTED_EXTENSION_DATA)) + Size.CHAR.pack(4) + Size.CHAR.pack(0) + EXPECTED_EXTENSION_DATA
+
+    self.assertEqual(4, extension.type)
+    self.assertEqual(0, extension.flag_int)
+    self.assertEqual(EXPECTED_EXTENSION_DATA, extension.data)
+    self.assertEqual(expected, extension.pack())
+
+  def test_certificate_encoding(self):
+    """
+    Pack a certificate back into what we read.
+    """
+
+    cert = Ed25519Certificate.from_base64(ED25519_CERT)
+    self.assertEqual(ED25519_CERT, cert.encoded)  # read base64 encoding (getting removed in stem 2.x)
+    self.assertEqual(ED25519_CERT, cert.to_base64())  # computed base64 encoding
 
   def test_non_base64(self):
     """
@@ -96,7 +119,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = re.escape("Ed25519 certificate wasn't propoerly base64 encoded (Incorrect padding):")
-    self.assertRaisesRegexp(ValueError, exc_msg, Ed25519Certificate.parse, '\x02\x0323\x04')
+    self.assertRaisesRegexp(ValueError, exc_msg, Ed25519Certificate.from_base64, '\x02\x0323\x04')
 
   def test_too_short(self):
     """
@@ -104,10 +127,10 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = "Ed25519 certificate wasn't propoerly base64 encoded (empty):"
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, '')
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, '')
 
     exc_msg = 'Ed25519 certificate was 18 bytes, but should be at least 104'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, 'AQQABhtZAaW2GoBED1IjY3A6')
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, 'AQQABhtZAaW2GoBED1IjY3A6')
 
   def test_with_invalid_version(self):
     """
@@ -116,7 +139,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = 'Ed25519 certificate is version 2. Parser presently only supports version 1.'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(version = 2))
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(version = 2))
 
   def test_with_invalid_cert_type(self):
     """
@@ -124,22 +147,25 @@ class TestEd25519Certificate(unittest.TestCase):
     are reserved.
     """
 
-    exc_msg = 'Ed25519 certificate cannot have a type of 0. This is reserved to avoid conflicts with tor CERTS cells.'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 0))
+    exc_msg = 'Ed25519 certificate type 0 is unrecognized'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(cert_type = 0))
+
+    exc_msg = 'Ed25519 certificate cannot have a type of 1. This is reserved for CERTS cells.'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(cert_type = 1))
 
     exc_msg = 'Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(cert_type = 7))
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(cert_type = 7))
 
   def test_truncated_extension(self):
     """
     Include an extension without as much data as it specifies.
     """
 
-    exc_msg = 'Ed25519 extension is missing header field data'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'']))
+    exc_msg = 'Ed25519 extension is missing header fields'
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'']))
 
     exc_msg = "Ed25519 extension is truncated. It should have 20480 bytes of data but there's only 2."
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']))
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'\x50\x00\x00\x00\x15\x12']))
 
   def test_extra_extension_data(self):
     """
@@ -147,7 +173,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = 'Ed25519 certificate had 1 bytes of unused extension data'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']))
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'\x00\x01\x00\x00\x15\x12']))
 
   def test_truncated_signing_key(self):
     """
@@ -155,7 +181,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = 'Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.'
-    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.parse, certificate(extension_data = [b'\x00\x02\x04\x07\11\12']))
+    self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'\x00\x02\x04\x07\11\12']))
 
   @test.require.ed25519_support
   def test_validation_with_descriptor_key(self):
@@ -191,5 +217,5 @@ class TestEd25519Certificate(unittest.TestCase):
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
       desc = next(stem.descriptor.parse_file(descriptor_file, validate = False))
 
-    cert = Ed25519Certificate.parse(certificate())
-    self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (Signature was forged or corrupt)', cert.validate, desc)
+    cert = Ed25519Certificate.from_base64(certificate())
+    self.assertRaisesWith(ValueError, 'Ed25519KeyCertificate signing key is invalid (signature forged or corrupt)', cert.validate, desc)

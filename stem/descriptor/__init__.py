@@ -895,6 +895,8 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
+    # TODO: drop the 'sign' argument in stem 2.x (only a few subclasses use this)
+
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
@@ -975,7 +977,7 @@ class Descriptor(object):
     :returns: **bytes** for the descriptor's contents
     """
 
-    return self._raw_contents
+    return stem.util.str_tools._to_bytes(self._raw_contents)
 
   def get_unrecognized_lines(self):
     """

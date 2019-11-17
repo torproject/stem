@@ -13,7 +13,7 @@ class TestCertificate(unittest.TestCase):
       ((1, b'\x7f\x00\x00\x01'), (CertType.LINK, 1, b'\x7f\x00\x00\x01')),
       ((2, b'\x7f\x00\x00\x01'), (CertType.IDENTITY, 2, b'\x7f\x00\x00\x01')),
       ((3, b'\x7f\x00\x00\x01'), (CertType.AUTHENTICATE, 3, b'\x7f\x00\x00\x01')),
-      ((4, b'\x7f\x00\x00\x01'), (CertType.UNKNOWN, 4, b'\x7f\x00\x00\x01')),
+      ((4, b'\x7f\x00\x00\x01'), (CertType.ED25519_SIGNING, 4, b'\x7f\x00\x00\x01')),
       ((CertType.IDENTITY, b'\x7f\x00\x00\x01'), (CertType.IDENTITY, 2, b'\x7f\x00\x00\x01')),
     )
 

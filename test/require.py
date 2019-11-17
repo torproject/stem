@@ -12,6 +12,7 @@ run.
   |- needs - skips the test unless a requirement is met
   |
   |- cryptography - skips test unless the cryptography module is present
+  |- ed25519_support - skips test unless cryptography has ed25519 support
   |- command - requires a command to be on the path
   |- proc - requires the platform to have recognized /proc contents
   |
@@ -98,7 +99,7 @@ def version(req_version):
 
 
 cryptography = needs(stem.prereq.is_crypto_available, 'requires cryptography')
-ed25519_support = needs(stem.prereq._is_crypto_ed25519_supported, 'requires ed25519 support')
+ed25519_support = needs(lambda: stem.prereq.is_crypto_available(ed25519 = True), 'requires ed25519 support')
 proc = needs(stem.util.proc.is_available, 'proc unavailable')
 controller = needs(_can_access_controller, 'no connection')
 ptrace = needs(_can_ptrace, 'DisableDebuggerAttachment is set')

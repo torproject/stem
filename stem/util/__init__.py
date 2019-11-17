@@ -127,6 +127,37 @@ def datetime_to_unix(timestamp):
     return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
+def _pubkey_bytes(key):
+  """
+  Normalizes X25509 and ED25519 keys into their public key bytes.
+  """
+
+  if _is_str(key):
+    return key
+
+  if not stem.prereq.is_crypto_available():
+    raise ImportError('Key normalization requires the cryptography module')
+  elif not stem.prereq.is_crypto_available(ed25519 = True):
+    raise ImportError('Key normalization requires the cryptography ed25519 support')
+
+  from cryptography.hazmat.primitives import serialization
+  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+
+  if isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
+    return key.public_key().public_bytes(
+      encoding = serialization.Encoding.Raw,
+      format = serialization.PublicFormat.Raw,
+    )
+  elif isinstance(key, (X25519PublicKey, Ed25519PublicKey)):
+    return key.public_bytes(
+      encoding = serialization.Encoding.Raw,
+      format = serialization.PublicFormat.Raw,
+    )
+  else:
+    raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % type(key).__name__)
+
+
 def _hash_attr(obj, *attributes, **kwargs):
   """
   Provide a hash value for the given set of attributes.

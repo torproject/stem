@@ -21,6 +21,7 @@ Toolkit for various string activity.
   parse_short_time_label - seconds represented by a short time label
 """
 
+import base64
 import codecs
 import datetime
 import re
@@ -114,6 +115,17 @@ def _to_unicode(msg):
   """
 
   return _to_unicode_impl(msg)
+
+
+def _decode_b64(msg):
+  """
+  Base64 decode, without padding concerns.
+  """
+
+  missing_padding = len(msg) % 4
+  padding_chr = b'=' if isinstance(msg, bytes) else '='
+
+  return base64.b64decode(msg + padding_chr * missing_padding)
 
 
 def _to_int(msg):
