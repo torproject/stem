@@ -80,23 +80,6 @@ with open(get_resource('hidden_service_v3_intro_point')) as intro_point_file:
   INTRO_POINT_STR = intro_point_file.read()
 
 
-def disable_blinding(func):
-  """
-  Blinded key creation and signing are horribly slow. 1.5 seconds each,
-  making each call to HiddenServiceDescriptorV3.create() take over three
-  seconds.
-
-  As such disabling it in most tests.
-  """
-
-  def wrapped(*args, **kwargs):
-    with patch('stem.descriptor.hidden_service._blinded_pubkey', Mock(return_value = b'k' * 32)):
-      with patch('stem.descriptor.hidden_service._blinded_sign', Mock(return_value = b'a' * 64)):
-        return func(*args, **kwargs)
-
-  return wrapped
-
-
 class TestHiddenServiceDescriptorV3(unittest.TestCase):
   def test_real_descriptor(self):
     """
@@ -178,7 +161,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key_cert)
 
-  @disable_blinding
   @test.require.ed25519_support
   def test_required_fields(self):
     """
@@ -198,7 +180,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
-  @disable_blinding
   @test.require.ed25519_support
   def test_invalid_version(self):
     """
@@ -214,7 +195,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'hs-descriptor': test_value}, 'version')
 
-  @disable_blinding
   @test.require.ed25519_support
   def test_invalid_lifetime(self):
     """
@@ -230,7 +210,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'descriptor-lifetime': test_value}, 'lifetime')
 
-  @disable_blinding
   @test.require.ed25519_support
   def test_invalid_revision_counter(self):
     """
@@ -427,7 +406,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(1, len(inner_layer.introduction_points))
     self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
 
-  @disable_blinding
   @test.require.ed25519_support
   def test_descriptor_creation(self):
     """

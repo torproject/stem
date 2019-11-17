@@ -920,6 +920,14 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     Construction through this method can supply any or none of these, with
     omitted parameters populated with randomized defaults.
 
+    **Ed25519 key blinding takes several seconds**, and as such is disabled if a
+    **blinding_nonce** is not provided. To blind with a random nonce simply
+    call...
+
+    ::
+
+      HiddenServiceDescriptorV3(blinding_nonce = os.urandom(32))
+
     :param dict attr: keyword/value mappings to be included in plaintext descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
@@ -948,6 +956,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       raise ImportError('Hidden service descriptor creation requires cryptography version 2.6')
     elif not stem.prereq._is_sha3_available():
       raise ImportError('Hidden service descriptor creation requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+    elif blinding_nonce and len(blinding_nonce) != 32:
+      raise ValueError('Blinding nonce must be 32 bytes, but was %i' % len(blinding_nonce))
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -955,9 +965,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     identity_key = identity_key if identity_key else Ed25519PrivateKey.generate()
     signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
     revision_counter = revision_counter if revision_counter else int(time.time())
-    blinding_nonce = blinding_nonce if blinding_nonce else os.urandom(32)
 
-    blinded_key = _blinded_pubkey(identity_key, blinding_nonce)
+    blinded_key = _blinded_pubkey(identity_key, blinding_nonce) if blinding_nonce else b'a' * 32
     subcredential = HiddenServiceDescriptorV3._subcredential(identity_key, blinded_key)
     custom_sig = attr.pop('signature') if (attr and 'signature' in attr) else None
 
@@ -974,7 +983,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
       extensions = [Ed25519Extension(ExtensionType.HAS_SIGNING_KEY, None, blinded_key)]
 
       signing_cert = Ed25519CertificateV1(cert_type = CertType.HS_V3_DESC_SIGNING, key = signing_key, extensions = extensions)
-      signing_cert.signature = _blinded_sign(signing_cert.pack(), identity_key, blinded_key, blinding_nonce)
+      signing_cert.signature = _blinded_sign(signing_cert.pack(), identity_key, blinded_key, blinding_nonce) if blinding_nonce else b'b' * 64
 
     desc_content = _descriptor_content(attr, exclude, (
       ('hs-descriptor', '3'),
