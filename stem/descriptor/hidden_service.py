@@ -920,9 +920,10 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     Construction through this method can supply any or none of these, with
     omitted parameters populated with randomized defaults.
 
-    **Ed25519 key blinding takes several seconds**, and as such is disabled if a
-    **blinding_nonce** is not provided. To blind with a random nonce simply
-    call...
+    `Ed25519 key blinding takes several seconds
+    <https://github.com/pyca/cryptography/issues/5068>`_, and as such is
+    disabled if a **blinding_nonce** is not provided. To blind with a random
+    nonce simply call...
 
     ::
 

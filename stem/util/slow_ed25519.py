@@ -5,6 +5,10 @@
 # It isn't constant-time.  Don't use it except for testing.  Also, see
 # warnings about how very slow it is.  Only use this for generating
 # test vectors, I'd suggest.
+#
+# Cryptography replacement of this is pending...
+#
+#   https://github.com/pyca/cryptography/issues/5068
 
 import hashlib
 
