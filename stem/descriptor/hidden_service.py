@@ -78,7 +78,7 @@ else:
 
 try:
   from cryptography.hazmat.backends.openssl.backend import backend
-  X25519_AVAILABLE = backend.x25519_supported()
+  X25519_AVAILABLE = hasattr(backend, 'x25519_supported') and backend.x25519_supported()
 except ImportError:
   X25519_AVAILABLE = False
 
