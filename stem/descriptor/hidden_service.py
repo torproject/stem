@@ -161,9 +161,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   .. versionadded:: 1.8.0
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
-  :var str onion_key_raw: base64 ntor introduction point public key
+  :var unicode onion_key_raw: base64 ntor introduction point public key
   :var stem.descriptor.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
-  :var str enc_key_raw: base64 introduction request encryption key
+  :var unicode enc_key_raw: base64 introduction request encryption key
   :var stem.descriptor.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
   :var str legacy_key_raw: base64 legacy introduction point RSA public key
   :var str legacy_key_cert: base64 cross-certifier of the signing key by the legacy key
@@ -244,8 +244,8 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     if expiration is None:
       expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
 
-    onion_key = base64.b64encode(stem.util._pubkey_bytes(onion_key if onion_key else X25519PrivateKey.generate()))
-    enc_key = base64.b64encode(stem.util._pubkey_bytes(enc_key if enc_key else X25519PrivateKey.generate()))
+    onion_key = stem.util.str_tools._to_unicode(base64.b64encode(stem.util._pubkey_bytes(onion_key if onion_key else X25519PrivateKey.generate())))
+    enc_key = stem.util.str_tools._to_unicode(base64.b64encode(stem.util._pubkey_bytes(enc_key if enc_key else X25519PrivateKey.generate())))
     auth_key = stem.util._pubkey_bytes(auth_key if auth_key else Ed25519PrivateKey.generate())
     signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
 
