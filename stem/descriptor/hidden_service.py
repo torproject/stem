@@ -995,7 +995,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     ), ()) + b'\n'
 
     if custom_sig:
-      desc_content += b'signature %s' % custom_sig
+      desc_content += b'signature %s' % stem.util.str_tools._to_bytes(custom_sig)
     elif 'signature' not in exclude:
       sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
       desc_content += b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
@@ -1212,7 +1212,7 @@ class OuterLayer(Descriptor):
     return cls(cls.content(attr, exclude, validate, sign, inner_layer, revision_counter, subcredential, blinded_key), validate = validate)
 
   def __init__(self, content, validate = False):
-    content = content.rstrip('\x00')  # strip null byte padding
+    content = stem.util.str_tools._to_bytes(content).rstrip(b'\x00')  # strip null byte padding
 
     super(OuterLayer, self).__init__(content, lazy_load = not validate)
     entries = _descriptor_components(content, validate)
