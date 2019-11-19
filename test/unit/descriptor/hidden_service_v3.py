@@ -310,6 +310,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     reparsed = IntroductionPointV3.parse(intro_point.encode())
     self.assertEqual(intro_point, reparsed)
 
+  @test.require.ed25519_support
   def test_inner_layer_creation(self):
     """
     Internal layer creation.
