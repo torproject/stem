@@ -264,6 +264,11 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     Retrieve IntroductionPointV3 cryptographic materials.
     """
 
+    def base64_key(key):
+      pubkey = stem.util._pubkey_bytes(key)
+      pubkey_b64 = base64.b64encode(pubkey)
+      return stem.util.str_tools._to_unicode(pubkey_b64)
+
     from cryptography.hazmat.backends.openssl.x25519 import X25519PublicKey
 
     intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
@@ -274,8 +279,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue(isinstance(intro_point.onion_key(), X25519PublicKey))
     self.assertTrue(isinstance(intro_point.enc_key(), X25519PublicKey))
 
-    self.assertEqual(intro_point.onion_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.onion_key())))
-    self.assertEqual(intro_point.enc_key_raw, base64.b64encode(stem.util._pubkey_bytes(intro_point.enc_key())))
+    self.assertEqual(intro_point.onion_key_raw, base64_key(intro_point.onion_key()))
+    self.assertEqual(intro_point.enc_key_raw, base64_key(intro_point.enc_key()))
 
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key())
@@ -305,7 +310,6 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     reparsed = IntroductionPointV3.parse(intro_point.encode())
     self.assertEqual(intro_point, reparsed)
 
-  @test.require.ed25519_support
   def test_inner_layer_creation(self):
     """
     Internal layer creation.
@@ -346,7 +350,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     self.assertTrue(InnerLayer.content(introduction_points = [
       IntroductionPointV3.create('1.1.1.1', 9001),
-    ]).startswith('create2-formats 2\nintroduction-point AQAGAQEBASMp'))
+    ]).startswith(b'create2-formats 2\nintroduction-point AQAGAQEBASMp'))
 
   @test.require.ed25519_support
   def test_outer_layer_creation(self):
@@ -358,7 +362,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # minimal layer
 
-    self.assertTrue(OuterLayer.content().startswith('desc-auth-type x25519\ndesc-auth-ephemeral-key '))
+    self.assertTrue(OuterLayer.content().startswith(b'desc-auth-type x25519\ndesc-auth-ephemeral-key '))
     self.assertEqual('x25519', OuterLayer.create().auth_type)
 
     # specify the parameters
@@ -414,7 +418,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # minimal descriptor
 
-    self.assertTrue(HiddenServiceDescriptorV3.content().startswith('hs-descriptor 3\ndescriptor-lifetime 180\n'))
+    self.assertTrue(HiddenServiceDescriptorV3.content().startswith(b'hs-descriptor 3\ndescriptor-lifetime 180\n'))
     self.assertEqual(180, HiddenServiceDescriptorV3.create().lifetime)
 
     # specify the parameters

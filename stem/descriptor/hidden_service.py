@@ -161,9 +161,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   .. versionadded:: 1.8.0
 
   :var list link_specifiers: :class:`~stem.client.datatype.LinkSpecifier` where this service is reachable
-  :var str onion_key_raw: base64 ntor introduction point public key
+  :var unicode onion_key_raw: base64 ntor introduction point public key
   :var stem.descriptor.certificate.Ed25519Certificate auth_key_cert: cross-certifier of the signing key with the auth key
-  :var str enc_key_raw: base64 introduction request encryption key
+  :var unicode enc_key_raw: base64 introduction request encryption key
   :var stem.descriptor.certificate.Ed25519Certificate enc_key_cert: cross-certifier of the signing key by the encryption key
   :var str legacy_key_raw: base64 legacy introduction point RSA public key
   :var str legacy_key_cert: base64 cross-certifier of the signing key by the legacy key
@@ -244,8 +244,8 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     if expiration is None:
       expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
 
-    onion_key = base64.b64encode(stem.util._pubkey_bytes(onion_key if onion_key else X25519PrivateKey.generate()))
-    enc_key = base64.b64encode(stem.util._pubkey_bytes(enc_key if enc_key else X25519PrivateKey.generate()))
+    onion_key = stem.util.str_tools._to_unicode(base64.b64encode(stem.util._pubkey_bytes(onion_key if onion_key else X25519PrivateKey.generate())))
+    enc_key = stem.util.str_tools._to_unicode(base64.b64encode(stem.util._pubkey_bytes(enc_key if enc_key else X25519PrivateKey.generate())))
     auth_key = stem.util._pubkey_bytes(auth_key if auth_key else Ed25519PrivateKey.generate())
     signing_key = signing_key if signing_key else Ed25519PrivateKey.generate()
 
@@ -267,10 +267,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     link_count = stem.client.datatype.Size.CHAR.pack(len(self.link_specifiers))
     link_specifiers = link_count + b''.join([l.pack() for l in self.link_specifiers])
     lines.append('introduction-point %s' % stem.util.str_tools._to_unicode(base64.b64encode(link_specifiers)))
-
-    if self.onion_key_raw:
-      lines.append('onion-key ntor %s' % self.onion_key_raw)
-
+    lines.append('onion-key ntor %s' % self.onion_key_raw)
     lines.append('auth-key\n' + self.auth_key_cert.to_base64(pem = True))
 
     if self.enc_key_raw:
@@ -995,7 +992,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     ), ()) + b'\n'
 
     if custom_sig:
-      desc_content += b'signature %s' % custom_sig
+      desc_content += b'signature %s' % stem.util.str_tools._to_bytes(custom_sig)
     elif 'signature' not in exclude:
       sig_content = stem.descriptor.certificate.SIG_PREFIX_HS_V3 + desc_content
       desc_content += b'signature %s' % base64.b64encode(signing_key.sign(sig_content)).rstrip(b'=')
@@ -1212,7 +1209,7 @@ class OuterLayer(Descriptor):
     return cls(cls.content(attr, exclude, validate, sign, inner_layer, revision_counter, subcredential, blinded_key), validate = validate)
 
   def __init__(self, content, validate = False):
-    content = content.rstrip('\x00')  # strip null byte padding
+    content = stem.util.str_tools._to_bytes(content).rstrip(b'\x00')  # strip null byte padding
 
     super(OuterLayer, self).__init__(content, lazy_load = not validate)
     entries = _descriptor_components(content, validate)
