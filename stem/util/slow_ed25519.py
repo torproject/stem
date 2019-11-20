@@ -11,10 +11,19 @@
 #   https://github.com/pyca/cryptography/issues/5068
 
 import hashlib
+import stem.prereq
 
 b = 256
 q = 2 ** 255 - 19
 l = 2 ** 252 + 27742317777372353535851937790883648493
+
+
+def int_to_byte(val):
+  """
+  Convert an integer to its byte value in an interpreter agnostic way.
+  """
+
+  return bytes([val]) if stem.prereq.is_python_3() else chr(val)
 
 
 def H(m):
@@ -84,7 +93,7 @@ def scalarmult(P, e):
 
 def encodeint(y):
   bits = [(y >> i) & 1 for i in range(b)]
-  return b''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b // 8)])
+  return b''.join([int_to_byte(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b // 8)])
 
 
 def encodepoint(P):
@@ -92,7 +101,7 @@ def encodepoint(P):
   y = P[1]
   bits = [(y >> i) & 1 for i in range(b - 1)] + [x & 1]
 
-  return b''.join([chr(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b // 8)])
+  return b''.join([int_to_byte(sum([bits[i * 8 + j] << j for j in range(8)])) for i in range(b // 8)])
 
 
 def bit(h, i):

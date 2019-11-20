@@ -924,7 +924,7 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
     ::
 
-      HiddenServiceDescriptorV3(blinding_nonce = os.urandom(32))
+      HiddenServiceDescriptorV3.create(blinding_nonce = os.urandom(32))
 
     :param dict attr: keyword/value mappings to be included in plaintext descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this

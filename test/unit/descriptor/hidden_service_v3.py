@@ -459,3 +459,23 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     inner_layer = desc.decrypt(onion_address)
     self.assertEqual(3, len(inner_layer.introduction_points))
     self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
+
+  @test.require.ed25519_support
+  def test_blinding(self):
+    """
+    Create a descriptor with key blinding. `This takes a while
+    <https://github.com/pyca/cryptography/issues/5068>`_, so we should not do
+    this more than once.
+    """
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    expected_blinded_key = b'\xb5\xefEA\xfaI\x1a\xd8*p\xcd\x97\x01\x90O\xa8p\xd3\x10\x16\x8e-\x19\xab+\x92\xbc\xf6\xe7\x92\xc2k'
+
+    desc = HiddenServiceDescriptorV3.create(
+      identity_key = Ed25519PrivateKey.from_private_bytes(b'a' * 32),
+      blinding_nonce = b'a' * 32,
+    )
+
+    self.assertEqual(64, len(desc.signing_cert.signature))
+    self.assertEqual(expected_blinded_key, desc.signing_cert.signing_key())
