@@ -300,7 +300,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     Create an introduction point, encode it, then re-parse.
     """
 
-    intro_point = IntroductionPointV3.create('1.1.1.1', 9001)
+    intro_point = IntroductionPointV3.create_for_address('1.1.1.1', 9001)
 
     self.assertEqual(1, len(intro_point.link_specifiers))
     self.assertEqual(stem.client.datatype.LinkByIPv4, type(intro_point.link_specifiers[0]))
@@ -341,16 +341,16 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     # include introduction points
 
     desc = InnerLayer.create(introduction_points = [
-      IntroductionPointV3.create('1.1.1.1', 9001),
-      IntroductionPointV3.create('2.2.2.2', 9001),
-      IntroductionPointV3.create('3.3.3.3', 9001),
+      IntroductionPointV3.create_for_address('1.1.1.1', 9001),
+      IntroductionPointV3.create_for_address('2.2.2.2', 9001),
+      IntroductionPointV3.create_for_address('3.3.3.3', 9001),
     ])
 
     self.assertEqual(3, len(desc.introduction_points))
     self.assertEqual('1.1.1.1', desc.introduction_points[0].link_specifiers[0].address)
 
     self.assertTrue(InnerLayer.content(introduction_points = [
-      IntroductionPointV3.create('1.1.1.1', 9001),
+      IntroductionPointV3.create_for_address('1.1.1.1', 9001),
     ]).startswith(b'create2-formats 2\nintroduction-point AQAGAQEBASMp'))
 
   @test.require.ed25519_support
@@ -398,7 +398,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     outer_layer = OuterLayer.create(
       inner_layer = InnerLayer.create(
         introduction_points = [
-          IntroductionPointV3.create('1.1.1.1', 9001),
+          IntroductionPointV3.create_for_address('1.1.1.1', 9001),
         ]
       ),
       revision_counter = revision_counter,
@@ -450,9 +450,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     desc = HiddenServiceDescriptorV3.create(
       identity_key = identity_key,
       inner_layer = InnerLayer.create(introduction_points = [
-        IntroductionPointV3.create('1.1.1.1', 9001),
-        IntroductionPointV3.create('2.2.2.2', 9001),
-        IntroductionPointV3.create('3.3.3.3', 9001),
+        IntroductionPointV3.create_for_address('1.1.1.1', 9001),
+        IntroductionPointV3.create_for_address('2.2.2.2', 9001),
+        IntroductionPointV3.create_for_address('3.3.3.3', 9001),
       ]),
     )
 

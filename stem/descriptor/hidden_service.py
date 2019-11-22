@@ -207,10 +207,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
 
   @staticmethod
-  def create(address, port, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
+  def create_for_address(address, port, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
     """
-    Simplified constructor. For more sophisticated use cases you can use this
-    as a template for how introduction points are properly created.
+    Simplified constructor for a single address/port link specifier.
 
     :param str address: IPv4 or IPv6 address where the service is reachable
     :param int port: port where the service is reachable
@@ -236,6 +235,29 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       link_specifiers = [stem.client.datatype.LinkByIPv6(address, port)]
     else:
       raise ValueError("'%s' is not a valid IPv4 or IPv6 address" % address)
+
+    return IntroductionPointV3.create_for_link_specifiers(link_specifiers, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None)
+
+  @staticmethod
+  def create_for_link_specifiers(link_specifiers, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
+    """
+    Simplified constructor. For more sophisticated use cases you can use this
+    as a template for how introduction points are properly created.
+
+    :param list link_specifiers: series of stem.client.datatype.LinkSpecifier where the service is reachable
+    :param datetime.datetime expiration: when certificates should expire
+    :param str onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
+    :param str enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
+    :param str auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: service signing key
+
+    :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
+
+    :raises: **ValueError** if the address, port, or keys are malformed
+    """
+
+    if not stem.prereq.is_crypto_available(ed25519 = True):
+      raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
