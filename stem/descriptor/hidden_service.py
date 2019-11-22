@@ -1188,6 +1188,7 @@ class OuterLayer(Descriptor):
       raise ImportError('Hidden service layer creation requires cryptography version 2.6')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
     inner_layer = inner_layer if inner_layer else InnerLayer.create()
     revision_counter = revision_counter if revision_counter else 1
@@ -1196,7 +1197,7 @@ class OuterLayer(Descriptor):
 
     return _descriptor_content(attr, exclude, (
       ('desc-auth-type', 'x25519'),
-      ('desc-auth-ephemeral-key', base64.b64encode(os.urandom(32))),
+      ('desc-auth-ephemeral-key', base64.b64encode(stem.util._pubkey_bytes(X25519PrivateKey.generate()))),
     ), (
       ('encrypted', b'\n' + inner_layer._encrypt(revision_counter, subcredential, blinded_key)),
     ))
