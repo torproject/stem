@@ -463,9 +463,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
   @test.require.ed25519_support
   def test_blinding(self):
     """
-    Create a descriptor with key blinding. `This takes a while
-    <https://github.com/pyca/cryptography/issues/5068>`_, so we should not do
-    this more than once.
+    Create a descriptor with key blinding.
     """
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey

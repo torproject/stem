@@ -455,6 +455,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
   ignore_rules = []
   ignore_for_file = []
+  ignore_all_for_files = []
 
   for rule in CONFIG['pycodestyle.ignore'] + CONFIG['pep8.ignore']:
     if '=>' in rule:
@@ -463,12 +464,18 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
       if ':' in rule_entry:
         rule, code = rule_entry.split(':', 1)
         ignore_for_file.append((path.strip(), rule.strip(), code.strip()))
+      elif rule_entry.strip() == '*':
+        ignore_all_for_files.append(path.strip())
     else:
       ignore_rules.append(rule)
 
   def is_ignored(path, rule, code):
     for ignored_path, ignored_rule, ignored_code in ignore_for_file:
       if path.endswith(ignored_path) and ignored_rule == rule and code.strip().startswith(ignored_code):
+        return True
+
+    for ignored_path in ignore_all_for_files:
+      if path.endswith(ignored_path):
         return True
 
     return False
@@ -487,6 +494,10 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
           return
 
         is_block_comment = False
+
+        for ignored_path in ignore_all_for_files:
+          if filename.endswith(ignored_path):
+            return
 
         for index, line in enumerate(lines):
           content = line.split('#', 1)[0].strip()

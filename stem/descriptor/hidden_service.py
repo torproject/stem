@@ -51,7 +51,6 @@ import stem.util.tor_tools
 
 from stem.client.datatype import CertType
 from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519Certificate, Ed25519CertificateV1
-from stem.util import slow_ed25519
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -917,10 +916,8 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
     Construction through this method can supply any or none of these, with
     omitted parameters populated with randomized defaults.
 
-    `Ed25519 key blinding takes several seconds
-    <https://github.com/pyca/cryptography/issues/5068>`_, and as such is
-    disabled if a **blinding_nonce** is not provided. To blind with a random
-    nonce simply call...
+    Ed25519 key blinding adds an additional ~20 ms, and as such is disabled by
+    default. To blind with a random nonce simply call...
 
     ::
 
@@ -1302,13 +1299,16 @@ class InnerLayer(Descriptor):
 
 
 def _blinded_pubkey(identity_key, blinding_nonce):
-  mult = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(blinding_nonce, i) for i in range(3, slow_ed25519.b - 2))
-  P = slow_ed25519.decodepoint(stem.util._pubkey_bytes(identity_key))
-  return slow_ed25519.encodepoint(slow_ed25519.scalarmult(P, mult))
+  from stem.util import ed25519
+
+  mult = 2 ** (ed25519.b - 2) + sum(2 ** i * ed25519.bit(blinding_nonce, i) for i in range(3, ed25519.b - 2))
+  P = ed25519.decodepoint(stem.util._pubkey_bytes(identity_key))
+  return ed25519.encodepoint(ed25519.scalarmult(P, mult))
 
 
 def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
   from cryptography.hazmat.primitives import serialization
+  from stem.util import ed25519
 
   identity_key_bytes = identity_key.private_bytes(
     encoding = serialization.Encoding.Raw,
@@ -1318,28 +1318,28 @@ def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
 
   # pad private identity key into an ESK (encrypted secret key)
 
-  h = slow_ed25519.H(identity_key_bytes)
-  a = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(h, i) for i in range(3, slow_ed25519.b - 2))
-  k = b''.join([h[i:i + 1] for i in range(slow_ed25519.b // 8, slow_ed25519.b // 4)])
-  esk = slow_ed25519.encodeint(a) + k
+  h = ed25519.H(identity_key_bytes)
+  a = 2 ** (ed25519.b - 2) + sum(2 ** i * ed25519.bit(h, i) for i in range(3, ed25519.b - 2))
+  k = b''.join([h[i:i + 1] for i in range(ed25519.b // 8, ed25519.b // 4)])
+  esk = ed25519.encodeint(a) + k
 
   # blind the ESK with this nonce
 
-  mult = 2 ** (slow_ed25519.b - 2) + sum(2 ** i * slow_ed25519.bit(blinding_nonce, i) for i in range(3, slow_ed25519.b - 2))
-  s = slow_ed25519.decodeint(esk[:32])
-  s_prime = (s * mult) % slow_ed25519.l
+  mult = 2 ** (ed25519.b - 2) + sum(2 ** i * ed25519.bit(blinding_nonce, i) for i in range(3, ed25519.b - 2))
+  s = ed25519.decodeint(esk[:32])
+  s_prime = (s * mult) % ed25519.l
   k = esk[32:]
-  k_prime = slow_ed25519.H(b'Derive temporary signing key hash input' + k)[:32]
-  blinded_esk = slow_ed25519.encodeint(s_prime) + k_prime
+  k_prime = ed25519.H(b'Derive temporary signing key hash input' + k)[:32]
+  blinded_esk = ed25519.encodeint(s_prime) + k_prime
 
   # finally, sign the message
 
-  a = slow_ed25519.decodeint(blinded_esk[:32])
-  r = slow_ed25519.Hint(b''.join([blinded_esk[i:i + 1] for i in range(slow_ed25519.b // 8, slow_ed25519.b // 4)]) + msg)
-  R = slow_ed25519.scalarmult(slow_ed25519.B, r)
-  S = (r + slow_ed25519.Hint(slow_ed25519.encodepoint(R) + blinded_key + msg) * a) % slow_ed25519.l
+  a = ed25519.decodeint(blinded_esk[:32])
+  r = ed25519.Hint(b''.join([blinded_esk[i:i + 1] for i in range(ed25519.b // 8, ed25519.b // 4)]) + msg)
+  R = ed25519.scalarmult(ed25519.B, r)
+  S = (r + ed25519.Hint(ed25519.encodepoint(R) + blinded_key + msg) * a) % ed25519.l
 
-  return slow_ed25519.encodepoint(R) + slow_ed25519.encodeint(S)
+  return ed25519.encodepoint(R) + ed25519.encodeint(S)
 
 
 # TODO: drop this alias in stem 2.x
