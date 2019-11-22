@@ -1183,9 +1183,13 @@ class OuterLayer(Descriptor):
     return _encrypt_layer(content, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, subcredential = None, blinded_key = None):
+  def content(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, authorized_clients = None, subcredential = None, blinded_key = None):
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Hidden service layer creation requires cryptography version 2.6')
+    elif not stem.prereq._is_sha3_available():
+      raise ImportError('Hidden service layer creation requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
+    elif authorized_clients and 'auth-client' in attr:
+      raise ValueError('Authorized clients cannot be specified through both attr and authorized_clients')
 
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
@@ -1195,16 +1199,31 @@ class OuterLayer(Descriptor):
     blinded_key = blinded_key if blinded_key else stem.util._pubkey_bytes(Ed25519PrivateKey.generate())
     subcredential = subcredential if subcredential else HiddenServiceDescriptorV3._subcredential(Ed25519PrivateKey.generate(), blinded_key)
 
-    return _descriptor_content(attr, exclude, (
+    if not authorized_clients:
+      authorized_clients = []
+
+      if attr and 'auth-client' in attr:
+        pass  # caller is providing raw auth-client lines through the attr
+      else:
+        for i in range(16):
+          client_id = base64.b64encode(os.urandom(8)).rstrip(b'=')
+          iv = base64.b64encode(os.urandom(16)).rstrip(b'=')
+          cookie = base64.b64encode(os.urandom(16)).rstrip(b'=')
+
+          authorized_clients.append(AuthorizedClient(client_id, iv, cookie))
+
+    return _descriptor_content(attr, exclude, [
       ('desc-auth-type', 'x25519'),
       ('desc-auth-ephemeral-key', base64.b64encode(stem.util._pubkey_bytes(X25519PrivateKey.generate()))),
-    ), (
+    ] + [
+      ('auth-client', '%s %s %s' % (c.id, c.iv, c.cookie)) for c in authorized_clients
+    ], (
       ('encrypted', b'\n' + inner_layer._encrypt(revision_counter, subcredential, blinded_key)),
     ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, subcredential = None, blinded_key = None):
-    return cls(cls.content(attr, exclude, validate, sign, inner_layer, revision_counter, subcredential, blinded_key), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, authorized_clients = None, subcredential = None, blinded_key = None):
+    return cls(cls.content(attr, exclude, validate, sign, inner_layer, revision_counter, authorized_clients, subcredential, blinded_key), validate = validate)
 
   def __init__(self, content, validate = False):
     content = stem.util.str_tools._to_bytes(content).rstrip(b'\x00')  # strip null byte padding
