@@ -3,7 +3,6 @@
 
 import io
 import re
-import time
 
 import stem
 import stem.control
@@ -36,7 +35,6 @@ class Event(stem.response.ControlMessage):
   <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_.
 
   :var str type: event type
-  :var int arrived_at: unix timestamp for when the message arrived
   :var list positional_args: positional arguments of the event
   :var dict keyword_args: key/value arguments of the event
   """
@@ -48,23 +46,18 @@ class Event(stem.response.ControlMessage):
   _SKIP_PARSING = False    # skip parsing contents into our positional_args and keyword_args
   _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
 
-  def _parse_message(self, arrived_at = None):
-    if arrived_at is None:
-      arrived_at = int(time.time())
-
+  def _parse_message(self):
     if not str(self).strip():
       raise stem.ProtocolError('Received a blank tor event. Events must at the very least have a type.')
 
     self.type = str(self).split()[0]
-    self.arrived_at = arrived_at
+    self.positional_args = []
+    self.keyword_args = {}
 
     # if we're a recognized event type then translate ourselves into that subclass
 
     if self.type in EVENT_TYPE_TO_CLASS:
       self.__class__ = EVENT_TYPE_TO_CLASS[self.type]
-
-    self.positional_args = []
-    self.keyword_args = {}
 
     if not self._SKIP_PARSING:
       self._parse_standard_attr()

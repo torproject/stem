@@ -653,7 +653,7 @@ def _write_to_socket(socket_file, message):
     raise stem.SocketClosed('file has been closed')
 
 
-def recv_message(control_file):
+def recv_message(control_file, arrived_at = None):
   """
   Pulls from a control socket until we either have a complete message or
   encounter a problem.
@@ -720,7 +720,7 @@ def recv_message(control_file):
     if first_line:
       if divider == ' ':
         _log_trace(line)
-        return stem.response.ControlMessage([(status_code, divider, content)], line)
+        return stem.response.ControlMessage([(status_code, divider, content)], line, arrived_at = arrived_at)
       else:
         parsed_content, raw_content, first_line = [], bytearray(), False
 
@@ -733,7 +733,7 @@ def recv_message(control_file):
       # end of the message, return the message
       parsed_content.append((status_code, divider, content))
       _log_trace(bytes(raw_content))
-      return stem.response.ControlMessage(parsed_content, bytes(raw_content))
+      return stem.response.ControlMessage(parsed_content, bytes(raw_content), arrived_at = arrived_at)
     elif divider == '+':
       # data entry, all of the following lines belong to the content until we
       # get a line with just a period

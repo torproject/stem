@@ -52,6 +52,7 @@ The following are only available within Stem's `git repository
   * Controller events could fail to be delivered in a timely fashion (:trac:`27173`)
   * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:trac:`28508`)
   * ExitPolicies could raise TypeError when read concurrently (:trac:`29899`)
+  * Moved the *arrived_at* attribute from :class:`~stem.response.event.Event` to :class:`~stem.response.__init__.ControlMessage`
   * **STALE_DESC** :data:`~stem.Flag` (:spec:`d14164d`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
   * **QUERY_RATE_LIMITED** :data:`~stem.HSDescReason` (:spec:`bd80679`)

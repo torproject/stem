@@ -31,6 +31,7 @@ Parses replies from the control socket.
 import codecs
 import io
 import re
+import time
 import threading
 
 import stem.socket
@@ -129,8 +130,13 @@ class ControlMessage(object):
   individual message components stripped of protocol formatting. Messages are
   never empty.
 
+  :var int arrived_at: unix timestamp for when the message arrived
+
   .. versionchanged:: 1.7.0
      Implemented equality and hashing.
+
+  .. versionchanged:: 1.8.0
+     Moved **arrived_at** from the Event class up to this base ControlMessage.
   """
 
   @staticmethod
@@ -158,16 +164,18 @@ class ControlMessage(object):
 
       content = re.sub('([\r]?)\n', '\r\n', content)
 
-    msg = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes(content)))
+    msg = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes(content)), arrived_at = kwargs.pop('arrived_at', None))
 
     if msg_type is not None:
       convert(msg_type, msg, **kwargs)
 
     return msg
 
-  def __init__(self, parsed_content, raw_content):
+  def __init__(self, parsed_content, raw_content, arrived_at = None):
     if not parsed_content:
       raise ValueError("ControlMessages can't be empty")
+
+    self.arrived_at = arrived_at if arrived_at else int(time.time())
 
     self._parsed_content = parsed_content
     self._raw_content = raw_content

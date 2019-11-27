@@ -3543,7 +3543,7 @@ class Controller(BaseController):
 
     for circ in response.splitlines():
       circ_message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ)))
-      stem.response.convert('EVENT', circ_message, arrived_at = 0)
+      stem.response.convert('EVENT', circ_message)
       circuits.append(circ_message)
 
     return circuits
@@ -3738,7 +3738,7 @@ class Controller(BaseController):
 
     for stream in response.splitlines():
       message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream)))
-      stem.response.convert('EVENT', message, arrived_at = 0)
+      stem.response.convert('EVENT', message)
       streams.append(message)
 
     return streams
@@ -4009,7 +4009,7 @@ class Controller(BaseController):
 
   def _handle_event(self, event_message):
     try:
-      stem.response.convert('EVENT', event_message, arrived_at = time.time())
+      stem.response.convert('EVENT', event_message)
       event_type = event_message.type
     except stem.ProtocolError as exc:
       log.error('Tor sent a malformed event (%s): %s' % (exc, event_message))
