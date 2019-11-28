@@ -2113,13 +2113,13 @@ class Controller(BaseController):
       yield desc
 
   @with_default()
-  def get_hidden_service_descriptor(self, address, default = UNDEFINED, servers = None, await_result = True, timeout = None):
+  def get_hidden_service_descriptor(self, identifier, default = UNDEFINED, servers = None, await_result = True, timeout = None):
     """
-    get_hidden_service_descriptor(address, default = UNDEFINED, servers = None, await_result = True)
+    get_hidden_service_descriptor(identifier, default = UNDEFINED, servers = None, await_result = True)
 
-    Provides the descriptor for a hidden service. The **address** is the
+    Provides the descriptor for a hidden service. The **identifier** can be an
     '.onion' address of the hidden service (for instance 3g2upl4pq6kufc4m.onion
-    for DuckDuckGo).
+    for DuckDuckGo) or descriptor ID with it's version.
 
     If **await_result** is **True** then this blocks until we either receive
     the descriptor or the request fails. If **False** this returns right away.
@@ -2131,7 +2131,11 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout argument.
 
-    :param str address: address of the hidden service descriptor, the '.onion' suffix is optional
+    .. versionchanged:: 1.8.0
+       Added function to fetch descriptor with descriptor ID.
+       Changed address argument to identifier.
+
+    :param str identifier: address or descriptor ID of the hidden service. '.onion' suffix is optional.
     :param object default: response if the query fails
     :param list servers: requrest the descriptor from these specific servers
     :param float timeout: seconds to wait when **await_result** is **True**
@@ -2150,11 +2154,17 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    if address.endswith('.onion'):
+    # Descriptor ID is 35 char, while onion v2 addresses are 10 char, with '.onion' 16 char.
+    if len(identifier) == 16 and identifier.endswith('.onion'):
       address = address[:-6]
 
-    if not stem.util.tor_tools.is_valid_hidden_service_address(address):
-      raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
+    if len(identifier) == 35:
+      pass
+    elif len(identifier) == 10:
+      if not stem.util.tor_tools.is_valid_hidden_service_address(address):
+        raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
+    else:
+      raise ValueError("Please provide an address or descriptor ID of a hidden service.")
 
     if self.get_version() < stem.version.Requirement.HSFETCH:
       raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
