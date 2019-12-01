@@ -499,12 +499,16 @@ class Runner(object):
     provides **False**.
     """
 
+    if not self._tor_process:
+      println('Tor process failed to initialize', ERROR)
+      return False
+
     process_status = self._tor_process.poll()  # None if running
 
     if process_status is None:
       return True
     else:
-      process_output = (self._tor_process.stdout.read() + '\n\n' + self._tor_process.stderr.read()).strip()
+      process_output = stem.util.str_tools._to_unicode(self._tor_process.stdout.read() + b'\n\n' + self._tor_process.stderr.read()).strip()
       println('\n%s\nOur tor process ended prematurely with exit status %s\n%s\n\n%s' % ('=' * 60, process_status, '=' * 60, process_output), ERROR)
       return False
 
