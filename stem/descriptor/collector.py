@@ -48,7 +48,10 @@ With CollecTor you can either read descriptors directly...
 .. versionadded:: 1.8.0
 """
 
+import base64
+import binascii
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -72,40 +75,6 @@ SEC_DATE = re.compile('(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})')
 # distant future date so we can sort files without a timestamp at the end
 
 FUTURE = datetime.datetime(9999, 1, 1)
-
-# mapping of path prefixes to their descriptor type (sampled 7/11/19)
-
-COLLECTOR_DESC_TYPES = {
-  'archive/bridge-descriptors/server-descriptors/': 'bridge-server-descriptor 1.2',
-  'archive/bridge-descriptors/extra-infos/': 'bridge-extra-info 1.3',
-  'archive/bridge-descriptors/statuses/': 'bridge-network-status 1.1',
-  'archive/bridge-pool-assignments/': 'bridge-pool-assignment 1.0',
-  'archive/exit-lists/': 'tordnsel 1.0',
-  'archive/relay-descriptors/bandwidths/': 'bandwidth-file 1.0',
-  'archive/relay-descriptors/certs': 'dir-key-certificate-3 1.0',
-  'archive/relay-descriptors/consensuses/': 'network-status-consensus-3 1.0',
-  'archive/relay-descriptors/extra-infos/': 'extra-info 1.0',
-  'archive/relay-descriptors/microdescs/': ('network-status-microdesc-consensus-3 1.0', 'microdescriptor 1.0'),
-  'archive/relay-descriptors/server-descriptors/': 'server-descriptor 1.0',
-  'archive/relay-descriptors/statuses/': 'network-status-2 1.0',
-  'archive/relay-descriptors/tor/': 'directory 1.0',
-  'archive/relay-descriptors/votes/': 'network-status-vote-3 1.0',
-  'archive/torperf/': 'torperf 1.0',
-  'archive/webstats/': (),
-  'recent/bridge-descriptors/extra-infos/': 'bridge-extra-info 1.3',
-  'recent/bridge-descriptors/server-descriptors/': 'bridge-server-descriptor 1.2',
-  'recent/bridge-descriptors/statuses/': 'bridge-network-status 1.2',
-  'recent/exit-lists/': 'tordnsel 1.0',
-  'recent/relay-descriptors/bandwidths/': 'bandwidth-file 1.0',
-  'recent/relay-descriptors/consensuses/': 'network-status-consensus-3 1.0',
-  'recent/relay-descriptors/extra-infos/': 'extra-info 1.0',
-  'recent/relay-descriptors/microdescs/consensus-microdesc/': 'network-status-microdesc-consensus-3 1.0',
-  'recent/relay-descriptors/microdescs/micro/': 'microdescriptor 1.0',
-  'recent/relay-descriptors/server-descriptors/': 'server-descriptor 1.0',
-  'recent/relay-descriptors/votes/': 'network-status-vote-3 1.0',
-  'recent/torperf/': 'torperf 1.1',
-  'recent/webstats/': (),
-}
 
 
 def get_instance():
@@ -206,9 +175,11 @@ class File(object):
   File within CollecTor.
 
   :var str path: file path within collector
+  :var tuple types: descriptor types contained within this file
   :var stem.descriptor.Compression compression: file compression, **None** if
     this cannot be determined
   :var int size: size of the file
+  :var str sha256: file's sha256 checksum
 
   :var datetime start: beginning of the time range descriptors are for,
     **None** if this cannot be determined
@@ -217,16 +188,23 @@ class File(object):
   :var datetime last_modified: when the file was last modified
   """
 
-  def __init__(self, path, size, last_modified):
+  def __init__(self, path, types, size, sha256, first_published, last_published, last_modified):
     self.path = path
+    self.types = tuple(types) if types else ()
     self.compression = File._guess_compression(path)
     self.size = size
-
-    self.start, self.end = File._guess_time_range(path)
+    self.sha256 = sha256
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
-
-    self._guessed_type = File._guess_descriptor_types(path)
     self._downloaded_to = None  # location we last downloaded to
+
+    # Most descriptor types have publication time fields, but microdescriptors
+    # don't because these files lack timestamps to parse.
+
+    if first_published and last_published:
+      self.start = datetime.datetime.strptime(first_published, '%Y-%m-%d %H:%M')
+      self.end = datetime.datetime.strptime(last_published, '%Y-%m-%d %H:%M')
+    else:
+      self.start, self.end = File._guess_time_range(path)
 
   def read(self, directory = None, descriptor_type = None, document_handler = DocumentHandler.ENTRIES, timeout = None, retries = 3):
     """
@@ -267,12 +245,18 @@ class File(object):
     """
 
     if descriptor_type is None:
-      if not self._guessed_type:
-        raise ValueError("Unable to determine this file's descriptor type")
-      elif len(self._guessed_type) > 1:
-        raise ValueError("Unable to determine disambiguate file's descriptor type from %s" % ', '.join(self._guessed_type))
+      # If archive contains multiple descriptor types the caller must provide a
+      # 'descriptor_type' argument so we can disambiguate. However, if only the
+      # version number varies we can probably simply pick one.
 
-      descriptor_type = self._guessed_type[0]
+      base_types = set([t.split(' ')[0] for t in self.types])
+
+      if not self.types:
+        raise ValueError("Unable to determine this file's descriptor type")
+      elif len(base_types) > 1:
+        raise ValueError("Unable to disambiguate file's descriptor type from among %s" % ', '.join(self.types))
+      else:
+        descriptor_type = self.types[0]
 
     if directory is None:
       if self._downloaded_to and os.path.exists(self._downloaded_to):
@@ -299,7 +283,7 @@ class File(object):
       if descriptor_type is None or descriptor_type.startswith(desc.type_annotation().name):
         yield desc
 
-  def download(self, directory, decompress = True, timeout = None, retries = 3):
+  def download(self, directory, decompress = True, timeout = None, retries = 3, overwrite = False):
     """
     Downloads this file to the given location. If a file already exists this is
     a no-op.
@@ -309,16 +293,15 @@ class File(object):
     :param int timeout: timeout when connection becomes idle, no timeout
       applied if **None**
     :param int retries: maximum attempts to impose
+    :param bool overwrite: if this file exists but mismatches CollecTor's
+      checksum then overwrites if **True**, otherwise rases an exception
 
     :returns: **str** with the path we downloaded to
 
-    :raises: :class:`~stem.DownloadFailed` if the download fails
+    :raises:
+      * :class:`~stem.DownloadFailed` if the download fails
+      * **IOError** if a mismatching file exists and **overwrite** is **False**
     """
-
-    # TODO: If checksums get added to the index we should replace
-    # the path check below to verify that...
-    #
-    #   https://trac.torproject.org/projects/tor/ticket/31204
 
     filename = self.path.split('/')[-1]
 
@@ -331,8 +314,18 @@ class File(object):
 
     if not os.path.exists(directory):
       os.makedirs(directory)
-    elif os.path.exists(path):
-      return path  # file already exists
+
+    # check if this file already exists with the correct checksum
+
+    if os.path.exists(path):
+      with open(path) as prior_file:
+        expected_hash = binascii.hexlify(base64.b64decode(self.sha256))
+        actual_hash = hashlib.sha256(prior_file.read()).hexdigest()
+
+        if expected_hash == actual_hash:
+          return path  # nothing to do, we already have the file
+        elif not overwrite:
+          raise IOError("%s already exists but mismatches CollecTor's checksum (expected: %s, actual: %s)" % (path, expected_hash, actual_hash))
 
     response = stem.util.connection.download(COLLECTOR_URL + self.path, timeout, retries)
 
@@ -344,25 +337,6 @@ class File(object):
 
     self._downloaded_to = path
     return path
-
-  @staticmethod
-  def _guess_descriptor_types(path):
-    """
-    Descriptor @type this file is expected to have based on its path. If unable
-    to determine any this tuple is empty.
-
-    Hopefully this will be replaced with an explicit value in the future:
-
-      https://trac.torproject.org/projects/tor/ticket/31204
-
-    :returns: **tuple** with the descriptor types this file is expected to have
-    """
-
-    for path_prefix, types in COLLECTOR_DESC_TYPES.items():
-      if path.startswith(path_prefix):
-        return (types,) if isinstance(types, str) else types
-
-    return ()
 
   @staticmethod
   def _guess_compression(path):
@@ -636,8 +610,7 @@ class CollecTor(object):
     :param descriptor.Compression compression: compression type to
       download from, if undefiled we'll use the best decompression available
 
-    :returns: :class:`~stem.descriptor.collector.Index` with the archive
-      contents
+    :returns: **dict** with the archive contents
 
     :raises:
       If unable to retrieve the index this provide...
@@ -694,7 +667,7 @@ class CollecTor(object):
       elif end and (f.end is None or f.end > end):
         continue
 
-      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f._guessed_type]):
+      if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f.types]):
         matches.append(f)
 
     return matches
@@ -719,7 +692,7 @@ class CollecTor(object):
       if k == 'files':
         for attr in v:
           file_path = '/'.join(path + [attr.get('path')])
-          files.append(File(file_path, attr.get('size'), attr.get('last_modified')))
+          files.append(File(file_path, attr.get('types'), attr.get('size'), attr.get('sha256'), attr.get('first_published'), attr.get('last_published'), attr.get('last_modified')))
       elif k == 'directories':
         for attr in v:
           files.extend(CollecTor._files(attr, path + [attr.get('path')]))

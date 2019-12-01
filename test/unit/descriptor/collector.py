@@ -29,17 +29,6 @@ with open(get_resource('collector/index.json'), 'rb') as index_file:
 class TestCollector(unittest.TestCase):
   # tests for the File class
 
-  def test_file_guess_descriptor_types(self):
-    test_values = {
-      'archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar.xz': ('bridge-extra-info 1.3',),
-      'archive/relay-descriptors/microdescs/microdescs-2014-01.tar.xz': ('network-status-microdesc-consensus-3 1.0', 'microdescriptor 1.0'),
-      'archive/webstats/webstats-2015-03.tar': (),
-      'archive/no_such_file.tar': (),
-    }
-
-    for path, expected in test_values.items():
-      self.assertEqual(expected, File._guess_descriptor_types(path))
-
   def test_file_guess_compression(self):
     test_values = {
       'archive/relay-descriptors/microdescs/microdescs-2014-01.tar.xz': Compression.LZMA,
@@ -65,7 +54,7 @@ class TestCollector(unittest.TestCase):
     }
 
     for path, (expected_start, expected_end) in test_values.items():
-      f = File(path, 7515396, '2014-02-07 03:59')
+      f = File(path, [], 7515396, 'BVVDEkegsLzkAn30dYikr4yTT79+XScfc0VUVEb83tM=', None, None, '2019-07-29 18:45')
       self.assertEqual(expected_start, f.start)
       self.assertEqual(expected_end, f.end)
 
@@ -154,7 +143,7 @@ class TestCollector(unittest.TestCase):
   def test_files(self):
     collector = CollecTor()
     files = collector.files()
-    self.assertEqual(85, len(files))
+    self.assertEqual(96, len(files))
 
     extrainfo_file = list(filter(lambda x: x.path.endswith('extra-infos-2007-09.tar.xz'), files))[0]
     self.assertEqual('archive/relay-descriptors/extra-infos/extra-infos-2007-09.tar.xz', extrainfo_file.path)
@@ -170,9 +159,9 @@ class TestCollector(unittest.TestCase):
       'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar.xz',
       'archive/relay-descriptors/server-descriptors/server-descriptors-2006-02.tar.xz',
       'archive/relay-descriptors/server-descriptors/server-descriptors-2006-03.tar.xz',
-      'recent/relay-descriptors/server-descriptors/2019-07-03-02-05-00-server-descriptors',
-      'recent/relay-descriptors/server-descriptors/2019-07-03-03-05-00-server-descriptors',
-      'recent/relay-descriptors/server-descriptors/2019-07-03-04-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-28-01-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-28-00-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-27-23-05-00-server-descriptors',
     ], [f.path for f in collector.files(descriptor_type = 'server-descriptor')])
 
   @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
@@ -180,9 +169,9 @@ class TestCollector(unittest.TestCase):
     collector = CollecTor()
 
     self.assertEqual([
-      'recent/relay-descriptors/server-descriptors/2019-07-03-02-05-00-server-descriptors',
-      'recent/relay-descriptors/server-descriptors/2019-07-03-03-05-00-server-descriptors',
-      'recent/relay-descriptors/server-descriptors/2019-07-03-04-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-28-01-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-28-00-05-00-server-descriptors',
+      'recent/relay-descriptors/server-descriptors/2019-11-27-23-05-00-server-descriptors',
     ], [f.path for f in collector.files(descriptor_type = 'server-descriptor', start = datetime.datetime(2007, 1, 1))])
 
     self.assertEqual([
@@ -201,7 +190,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/server-descriptors-2005-12-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar',
+      ['server-descriptor 1.0'],
+      1348620,
+      'v3ANi2FD4xAhmyzigQq9gvlLwpXH8I6fGoiYlWLjOy8=',
+      '2005-12-15 01:42',
+      '2005-12-17 11:06',
+      '2016-06-24 08:12',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_server_descriptors())
     self.assertEqual(5, len(descriptors))
@@ -216,7 +213,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/bridge-server-descriptors-2019-02-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/server-descriptors/bridge-server-descriptors-2019-02.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/bridge-descriptors/server-descriptors/bridge-server-descriptors-2008-05.tar',
+      ['bridge-server-descriptor 1.2'],
+      205348,
+      'NRb2dzS2OhFKYjfr5WoleOFokqC4C+qf0Nu4iegnFLo=',
+      '2008-05-14 18:22',
+      '2008-05-31 23:09',
+      '2016-09-09 14:13',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_server_descriptors(bridge = True))
     self.assertEqual(4, len(descriptors))
@@ -231,7 +236,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/extra-infos-2019-04-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/extra-infos/extra-infos-2019-04.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/extra-infos/extra-infos-2007-08.tar',
+      ['extra-info 1.0'],
+      3016916,
+      'UcAIrzYjFU52mRHXNle/fbI21lvfsVkeC0NpBZ/Pt/w=',
+      '2007-08-14 17:35',
+      '2007-08-31 23:53',
+      '2016-06-23 09:53',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors())
     self.assertEqual(7, len(descriptors))
@@ -246,7 +259,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/bridge-extra-infos-2019-03-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/extra-infos/bridge-extra-infos-2019-03.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/bridge-descriptors/extra-infos/bridge-extra-infos-2008-05.tar',
+      ['bridge-extra-info 1.3'],
+      377644,
+      'aDD2q7uNGOM+WuH67+nTd7rvFN4P580xPAmXYtqxr2I=',
+      '2008-05-13 15:21',
+      '2008-05-31 23:09',
+      '2016-09-04 09:21',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(bridge = True))
     self.assertEqual(6, len(descriptors))
@@ -261,7 +282,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/microdescs-2019-05-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/microdescs/microdescs-2019-05.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/microdescs/microdescs-2014-01.tar',
+      ['microdescriptor 1.0', 'network-status-microdesc-consensus-3 1.0'],
+      7515396,
+      'DFugbV1phhpiEB0QeyyueKp0V/bicmAAkdBk/95RjKk=',
+      '2014-01-22 09:00',
+      '2014-01-31 23:00',
+      '2014-02-07 03:59',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_microdescriptors())
     self.assertEqual(3, len(descriptors))
@@ -276,7 +305,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/consensuses-2018-06-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/consensuses/consensuses-2018-06.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/consensuses/2019-11-27-23-00-00-consensus.tar',
+      ['network-status-consensus-3 1.0'],
+      2208505,
+      'cGWT19Y0UVE/EUi3ZayacGvJU5t9T6MKaTOrNarAqlI=',
+      '2019-11-27 23:00',
+      '2019-11-27 23:00',
+      '2019-11-27 23:05',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_consensus())
     self.assertEqual(243, len(descriptors))
@@ -303,7 +340,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/microdescs-2019-05-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/microdescs/microdescs-2019-05.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/microdescs/microdescs-2014-01.tar',
+      ['microdescriptor 1.0', 'network-status-microdesc-consensus-3 1.0'],
+      7515396,
+      'DFugbV1phhpiEB0QeyyueKp0V/bicmAAkdBk/95RjKk=',
+      '2014-01-22 09:00',
+      '2014-01-31 23:00',
+      '2014-02-07 03:59',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_consensus(microdescriptor = True))
     self.assertEqual(556, len(descriptors))
@@ -318,7 +363,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/bridge-statuses-2019-05-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/bridge-descriptors/microdescs/bridge-statuses-2019-05.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/bridge-descriptors/microdescs/bridge-statuses-2008-05.tar',
+      ['bridge-network-status 1.1'],
+      74792,
+      'scynC2b8xKD+NbkejGK7mKCegUwGPwgzXu7MouxBSj0=',
+      '2008-05-16 19:46',
+      '2008-05-31 23:37',
+      '2016-09-14 21:11',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_consensus(bridge = True))
     self.assertEqual(2593, len(descriptors))
@@ -333,7 +386,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/certs-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/certs.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/certs.tar',
+      ['dir-key-certificate-3 1.0'],
+      151748,
+      'ZfcE9RJwHvXhXaZ2xDzpoOJFqJeQR5ovOePOyNkKDi8=',
+      '2007-09-19 03:14',
+      '2019-10-08 04:06',
+      '2019-11-29 03:33',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_key_certificates())
     self.assertEqual(5, len(descriptors))
@@ -348,7 +409,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/bandwidths-2019-05-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/relay-descriptors/bandwidths/bandwidths-2019-05.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/relay-descriptors/bandwidths/bandwidths-2017-08.tar',
+      ['bandwidth-file 1.0'],
+      13330020,
+      'BVVDEkegsLzkAn30dYikr4yTT79+XScfc0VUVEb83tM=',
+      '2017-08-09 09:35',
+      '2017-08-31 23:35',
+      '2019-07-29 18:45',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_bandwidth_files())
     self.assertEqual(2, len(descriptors))
@@ -363,7 +432,15 @@ class TestCollector(unittest.TestCase):
     with open(get_resource('collector/exit-list-2018-11-cropped.tar'), 'rb') as archive:
       download_mock.return_value = archive.read()
 
-    files_mock.return_value = [stem.descriptor.collector.File('archive/exit-lists/exit-list-2018-11.tar', 12345, '2016-09-04 09:21')]
+    files_mock.return_value = [stem.descriptor.collector.File(
+      'archive/exit-lists/exit-list-2010-02.tar',
+      ['tordnsel 1.0'],
+      272008,
+      'Q6ZAAy7RVbO+8rHH48AEZUU9PqcY5jD9zMASqjMzyns=',
+      '2010-02-22 15:32',
+      '2010-02-28 23:18',
+      '2012-05-31 18:57',
+    )]
 
     descriptors = list(stem.descriptor.collector.get_exit_lists())
     self.assertEqual(3713, len(descriptors))
