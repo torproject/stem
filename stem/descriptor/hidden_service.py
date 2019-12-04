@@ -428,9 +428,6 @@ class AuthorizedClient(object):
     self.iv = stem.util.str_tools._to_unicode(iv if iv else base64.b64encode(os.urandom(16)).rstrip(b'='))
     self.cookie = stem.util.str_tools._to_unicode(cookie if cookie else base64.b64encode(os.urandom(16)).rstrip(b'='))
 
-  def __str__(self):
-    return '%s %s %s' % (self.id, self.iv, self.cookie)
-
   def __hash__(self):
     return stem.util._hash_attr(self, 'id', 'iv', 'cookie', cache = True)
 
