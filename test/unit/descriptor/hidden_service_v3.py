@@ -383,8 +383,8 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual('-----BEGIN MESSAGE-----\nmalformed block\n-----END MESSAGE-----', desc.encrypted)
 
     self.assertEqual({
-      '1D8VBAh9hdM': AuthorizedClient(id = '1D8VBAh9hdM', iv = '6K/uO3sRqBp6URrKC7GB6Q', cookie = 'ElwRj5+6SN9kb8bRhiiQvA'),
-      'JNil86N07AA': AuthorizedClient(id = 'JNil86N07AA', iv = 'epkaL79NtajmgME/egi8oA', cookie = 'qosYH4rXisxda3X7p9b6fw'),
+      '1D8VBAh9hdM': AuthorizedClient(id = b'1D8VBAh9hdM', iv = b'6K/uO3sRqBp6URrKC7GB6Q', cookie = b'ElwRj5+6SN9kb8bRhiiQvA'),
+      'JNil86N07AA': AuthorizedClient(id = b'JNil86N07AA', iv = b'epkaL79NtajmgME/egi8oA', cookie = b'qosYH4rXisxda3X7p9b6fw'),
     }, desc.clients)
 
     self.assertEqual(EXPECTED_OUTER_LAYER, str(desc))

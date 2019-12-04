@@ -412,7 +412,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return not self == other
 
 
-class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', 'cookie'])):
+class AuthorizedClient(object):
   """
   Client authorized to use a v3 hidden service.
 
@@ -422,6 +422,23 @@ class AuthorizedClient(collections.namedtuple('AuthorizedClient', ['id', 'iv', '
   :var str iv: base64 encoded randomized initialization vector
   :var str cookie: base64 encoded authentication cookie
   """
+
+  def __init__(self, id = None, iv = None, cookie = None):
+    self.id = stem.util.str_tools._to_unicode(id if id else base64.b64encode(os.urandom(8)).rstrip(b'='))
+    self.iv = stem.util.str_tools._to_unicode(iv if iv else base64.b64encode(os.urandom(16)).rstrip(b'='))
+    self.cookie = stem.util.str_tools._to_unicode(cookie if cookie else base64.b64encode(os.urandom(16)).rstrip(b'='))
+
+  def __str__(self):
+    return '%s %s %s' % (self.id, self.iv, self.cookie)
+
+  def __hash__(self):
+    return stem.util._hash_attr(self, 'id', 'iv', 'cookie', cache = True)
+
+  def __eq__(self, other):
+    return hash(self) == hash(other) if isinstance(other, AuthorizedClient) else False
+
+  def __ne__(self, other):
+    return not self == other
 
 
 def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
@@ -1228,11 +1245,7 @@ class OuterLayer(Descriptor):
         pass  # caller is providing raw auth-client lines through the attr
       else:
         for i in range(16):
-          client_id = base64.b64encode(os.urandom(8)).rstrip(b'=')
-          iv = base64.b64encode(os.urandom(16)).rstrip(b'=')
-          cookie = base64.b64encode(os.urandom(16)).rstrip(b'=')
-
-          authorized_clients.append(AuthorizedClient(client_id, iv, cookie))
+          authorized_clients.append(AuthorizedClient())
 
     return _descriptor_content(attr, exclude, [
       ('desc-auth-type', 'x25519'),
