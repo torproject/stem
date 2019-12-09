@@ -263,31 +263,31 @@ class TestController(unittest.TestCase):
       runner = test.runner.get_runner()
 
       with runner.get_tor_controller() as controller:
-          controller.set_conf("Address", "1.2.3.4")
+          controller.set_conf("Address", '1.2.3.4')
           relay_descs = controller.get_info('status/fresh-relay-descs')
 
           # check that both the server descriptor and extra info parts exist in
           # the response by looking for the 'extra-info' entry
-          relay_descs = relay_descs.split("extra-info ")
+          relay_descs = relay_descs.split('extra-info ')
           self.assertTrue(len(relay_descs) == 2)
 
           # check integrity and compliance of descriptors by parsing with
           # validate flags on
           server_desc = \
-          stem.descriptor.server_descriptor.ServerDescriptor(relay_descs[0],
-                                                             validate = True)
+            stem.descriptor.server_descriptor.ServerDescriptor(relay_descs[0],
+                                                               validate = True)
           extra_info = \
-          stem.descriptor.extrainfo_descriptor.\
-                  ExtraInfoDescriptor("extra-info " + relay_descs[1],
-                                      validate = True)
+            stem.descriptor.extrainfo_descriptor.\
+                    ExtraInfoDescriptor('extra-info ' + relay_descs[1],
+                                        validate = True)
 
           # check the contents of a few fields: as retrieved from controller;
           # as compared between descriptors; as set by SETCONF; and as set by
           # torrc
           self.assertTrue(extra_info.nickname == server_desc.nickname ==
-                          controller.get_conf("Nickname"))
+                          controller.get_conf('Nickname'))
           self.assertEqual(server_desc.fingerprint, extra_info.fingerprint)
-          self.assertEqual(server_desc.address, "1.2.3.4")
+          self.assertEqual(server_desc.address, '1.2.3.4')
           self.assertEqual(1113, server_desc.or_port)
 
   @test.require.controller
