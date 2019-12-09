@@ -809,6 +809,7 @@ class TestController(unittest.TestCase):
         self.assertEqual('17234 127.0.0.1:17235', controller.get_conf('HiddenServicePort'))
       finally:
         # reverts configuration changes
+
         controller.set_options((
           ('ExitPolicy', 'reject *:*'),
           ('ConnLimit', None),
@@ -818,6 +819,29 @@ class TestController(unittest.TestCase):
         ), reset = True)
 
         shutil.rmtree(tmpdir)
+
+  @test.require.controller
+  def test_set_conf_for_usebridges(self):
+    """
+    Ensure we can set UseBridges=1 and also set a Bridge. This is a tor
+    regression check (:trac:`31945`).
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      orport = controller.get_conf('ORPort')
+
+      try:
+        controller.set_conf('ORPort', '0')  # ensure we're not a relay so UseBridges is usabe
+        controller.set_options([('UseBridges', '1'), ('Bridge', '127.0.0.1:9999')])
+        self.assertEqual('127.0.0.1:9999', controller.get_conf('Bridge'))
+      finally:
+        # reverts configuration changes
+
+        controller.set_options((
+          ('ORPort', orport),
+          ('UseBridges', None),
+          ('Bridge', None),
+        ), reset = True)
 
   @test.require.controller
   def test_set_conf_when_immutable(self):
