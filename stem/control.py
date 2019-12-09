@@ -299,6 +299,8 @@ MALFORMED_EVENTS = 'MALFORMED_EVENTS'
 
 State = stem.util.enum.Enum('INIT', 'RESET', 'CLOSED')
 
+# TODO: consider merging this with stem.response.event in stem 2.x? (#32689)
+
 EventType = stem.util.enum.UppercaseEnum(
   'ADDRMAP',
   'AUTHDIR_NEWDESCS',
