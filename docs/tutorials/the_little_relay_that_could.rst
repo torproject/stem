@@ -2,7 +2,7 @@ The Little Relay that Could
 ===========================
 
 Let's say you just set up your very first `Tor relay
-<https://www.torproject.org/docs/tor-doc-relay.html.en>`_ (thank you!), and now
+<https://community.torproject.org/relay/>`_ (thank you!), and now
 you want to write a script that tells you how much it is being used.
 
 First, for any script to talk with your relay it will need to have a control
