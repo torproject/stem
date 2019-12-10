@@ -80,7 +80,7 @@ easy as...
 
 **Please remember that Tor is a shared resource!** If you're going to
 contribute much load please consider `running a relay
-<https://www.torproject.org/docs/tor-doc-relay.html.en>`_ to offset your use.
+<https://community.torproject.org/relay/>`_ to offset your use.
 
 **ORPorts** communicate through the `tor protocol
 <https://gitweb.torproject.org/torspec.git/tree/tor-spec.txt>`_, and can be
@@ -144,7 +144,7 @@ against Tor you may want to set some of the following in your `torrc
 <https://www.torproject.org/docs/faq.html.en#torrc>`_. Keep in mind that these
 add a small burden to the network, so don't set them in a widely distributed
 application. And, of course, please consider `running Tor as a relay
-<https://www.torproject.org/docs/tor-doc-relay.html.en>`_ so you give back to
+<https://community.torproject.org/relay/>`_ so you give back to
 the network!
 
 .. code-block:: lighttpd

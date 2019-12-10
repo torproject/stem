@@ -73,8 +73,7 @@ function provides an easy method for accessing this information, with a few
 caveats...
 
 * Connection resolvers are platform specific. We `support several
-  <../api/util/connection.html#stem.util.connection.Resolver>`_ but not not
-  all, most notably Windows (:trac:`9850`).
+  <../api/util/connection.html#stem.util.connection.Resolver>`_ platforms but not all.
 
 * By default Tor runs with a feature called **DisableDebuggerAttachment**. This
   prevents debugging applications like gdb from analyzing Tor unless it is run
