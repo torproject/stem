@@ -255,14 +255,34 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_info([], {}))
 
   @test.require.controller
+  def test_getinfo_freshrelaydescs(self):
+    """
+    Exercises the GETINFO option status/fresh-relay-descs
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      response = controller.get_info('status/fresh-relay-descs')
+      div = response.find('\nextra-info ')
+      nickname = controller.get_conf('Nickname')
+
+      if div == -1:
+        self.fail('GETINFO response should have both a server and extrainfo descriptor:\n%s' % response)
+
+      server_desc = stem.descriptor.server_descriptor.ServerDescriptor(response[:div], validate = True)
+      extrainfo_desc = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor(response[div:], validate = True)
+
+      self.assertEqual(nickname, server_desc.nickname)
+      self.assertEqual(nickname, extrainfo_desc.nickname)
+      self.assertEqual(controller.get_info('address'), server_desc.address)
+      self.assertEqual(test.runner.ORPORT, server_desc.or_port)
+
+  @test.require.controller
   def test_get_version(self):
     """
     Test that the convenient method get_version() works.
     """
 
-    runner = test.runner.get_runner()
-
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
       self.assertEqual(version, test.tor_version())
