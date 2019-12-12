@@ -260,29 +260,21 @@ class TestController(unittest.TestCase):
     Exercises the GETINFO option status/fresh-relay-descs
     """
 
-    runner = test.runner.get_runner()
+    with test.runner.get_runner().get_tor_controller() as controller:
+      response = controller.get_info('status/fresh-relay-descs')
+      div = response.find('\nextra-info ')
+      nickname = controller.get_conf('Nickname')
 
-    with runner.get_tor_controller() as controller:
-      controller.set_conf("Address", "1.2.3.4")
-      relay_descs = controller.get_info('status/fresh-relay-descs')
+      if div == -1:
+        self.fail('GETINFO response should have both a server and extrainfo descriptor:\n%s' % response)
 
-      # check that both the server descriptor and extra info parts exist in
-      # the response by looking for the 'extra-info' entry
-      relay_descs = relay_descs.split("extra-info ")
-      self.assertTrue(len(relay_descs) == 2)
+      server_desc = stem.descriptor.server_descriptor.ServerDescriptor(response[:div], validate = True)
+      extrainfo_desc = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor(response[div:], validate = True)
 
-      # check integrity and compliance of descriptors by parsing with
-      # validate flags on
-      server_desc = stem.descriptor.server_descriptor.ServerDescriptor(relay_descs[0], validate = True)
-      extra_info = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor("extra-info " + relay_descs[1], validate = True)
-
-      # check the contents of a few fields: as retrieved from controller;
-      # as compared between descriptors; as set by SETCONF; and as set by
-      # torrc
-      self.assertTrue(extra_info.nickname == server_desc.nickname == controller.get_conf("Nickname"))
-      self.assertEqual(server_desc.fingerprint, extra_info.fingerprint)
-      self.assertEqual(server_desc.address, "1.2.3.4")
-      self.assertEqual(1113, server_desc.or_port)
+      self.assertEqual(nickname, server_desc.nickname)
+      self.assertEqual(nickname, extrainfo_desc.nickname)
+      self.assertEqual(controller.get_info('address'), server_desc.address)
+      self.assertEqual(test.runner.ORPORT, server_desc.or_port)
 
   @test.require.controller
   def test_get_version(self):
@@ -290,9 +282,7 @@ class TestController(unittest.TestCase):
     Test that the convenient method get_version() works.
     """
 
-    runner = test.runner.get_runner()
-
-    with runner.get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
       self.assertEqual(version, test.tor_version())
