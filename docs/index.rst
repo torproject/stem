@@ -54,7 +54,7 @@ Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. Wi
    File: Crystal/64x64/apps/bug.png
 
 .. image:: /_static/buttons/bug_tracker.png
-   :target: https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
+   :target: https://github.com/torproject/stem/issues/
 
 .. Source: ColorCons (http://mouserunner.com/Spheres_ColoCons1_Free_Icons.html)
    Author: Ken Saunders (http://mouserunner.com/MRDS_Cell.html)

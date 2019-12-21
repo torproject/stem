@@ -532,7 +532,7 @@ How do I get started?
 ---------------------
 
 The best way of getting involved with any project is to jump right in! Our `bug
-tracker <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ lists
+tracker <https://github.com/torproject/stem/issues/>`_ lists
 several development tasks. In particular look for the 'easy' keyword when
 getting started. If you have any questions then I'm always more than happy to
 help! I'm **atagar** on `oftc <http://www.oftc.net/>`_ and also available
@@ -543,7 +543,7 @@ know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
 #. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes**.
-#. Find a `bug or feature <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ that sounds interesting.
+#. Find a `bug or feature <https://github.com/torproject/stem/issues/>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
  * If you don't already have a publicly accessible Stem repository then set one up. `GitHub <https://github.com/>`_ in particular is great for this.
