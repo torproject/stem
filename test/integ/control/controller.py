@@ -14,6 +14,7 @@ import stem.connection
 import stem.control
 import stem.descriptor.reader
 import stem.descriptor.router_status_entry
+import stem.directory
 import stem.response.protocolinfo
 import stem.socket
 import stem.util.str_tools
@@ -257,7 +258,7 @@ class TestController(unittest.TestCase):
   @test.require.controller
   def test_getinfo_freshrelaydescs(self):
     """
-    Exercises the GETINFO option status/fresh-relay-descs
+    Exercises 'GETINFO status/fresh-relay-descs'.
     """
 
     with test.runner.get_runner().get_tor_controller() as controller:
@@ -275,6 +276,21 @@ class TestController(unittest.TestCase):
       self.assertEqual(nickname, extrainfo_desc.nickname)
       self.assertEqual(controller.get_info('address'), server_desc.address)
       self.assertEqual(test.runner.ORPORT, server_desc.or_port)
+
+  @test.require.controller
+  @test.require.online
+  def test_getinfo_dir_status(self):
+    """
+    Exercise 'GETINFO dir/status-vote/*'.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      consensus = controller.get_info('dir/status-vote/current/consensus')
+      self.assertTrue('moria1' in consensus, 'moria1 not found in the consensus')
+
+      if test.tor_version() >= stem.version.Version('0.4.3.1-alpha'):
+        microdescs = controller.get_info('dir/status-vote/current/consensus-microdesc')
+        self.assertTrue('moria1' in microdescs, 'moria1 not found in the microdescriptor consensus')
 
   @test.require.controller
   def test_get_version(self):
