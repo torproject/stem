@@ -234,7 +234,7 @@ class TestManual(unittest.TestCase):
 
     self.assertEqual('tor - The second-generation onion router', manual.name)
     self.assertEqual('tor [OPTION value]...', manual.synopsis)
-    self.assertTrue(manual.description.startswith(EXPECTED_DESCRIPTION))
+    self.assertTrue(manual.description.startswith('Tor is a connection-oriented anonymizing communication service.'))
     self.assertTrue(len(manual.commandline_options) > 10)
     self.assertTrue(len(manual.signals) > 5)
     self.assertTrue(len(manual.files) > 20)

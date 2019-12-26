@@ -730,7 +730,9 @@ def _get_indented_descriptions(lines):
   options, last_arg = OrderedDict(), None
 
   for line in lines:
-    if line and not line.startswith(' '):
+    if line == '    Note':
+      last_arg = None  # manual has several indented 'Note' blocks
+    elif line and not line.startswith(' '):
       options[line], last_arg = [], line
     elif last_arg and line.startswith('    '):
       options[last_arg].append(line[4:])
@@ -756,43 +758,48 @@ def _add_config_options(config_options, category, lines):
         since that platform lacks getrlimit(). (Default: 1000)
   """
 
-  last_option, usage, description = None, None, []
+  def add_option(title, description):
+    if 'PER INSTANCE OPTIONS' in title:
+      return  # skip, unfortunately amid the options
 
-  # Drop the section description. Each ends with a paragraph saying 'The
-  # following options...'.
+    if ', ' in title:
+      # Line actually had multiple options with the same description. For
+      # example...
+      #
+      #   AlternateBridgeAuthority [nickname], AlternateDirAuthority [nickname]
 
-  desc_paragraph_index = None
+      for subtitle in title.split(', '):
+        add_option(subtitle, description)
+    else:
+      name, usage = title.split(' ', 1) if ' ' in title else (title, '')
+      summary = _config().get('manual.summary.%s' % name.lower(), '')
+      config_options[name] = ConfigOption(name, category, usage, summary, _join_lines(description).strip())
 
-  for i, line in enumerate(lines):
-    if 'The following options' in line:
-      desc_paragraph_index = i
-      break
+  # Remove the section's description by finding the sentence the section
+  # ends with.
 
-  if desc_paragraph_index is not None:
-    lines = lines[desc_paragraph_index:]  # trim to the description paragrah
+  end_indices = [i for (i, line) in enumerate(lines) if ('The following options' in line or 'PER SERVICE OPTIONS' in line)]
+
+  if end_indices:
+    lines = lines[max(end_indices):]  # trim to the description paragrah
     lines = lines[lines.index(''):]  # drop the paragraph
+
+  last_title, description = None, []
 
   for line in lines:
     if line and not line.startswith(' '):
-      if last_option:
-        summary = _config().get('manual.summary.%s' % last_option.lower(), '')
-        config_options[last_option] = ConfigOption(last_option, category, usage, summary, _join_lines(description).strip())
+      if last_title:
+        add_option(last_title, description)
 
-      if ' ' in line:
-        last_option, usage = line.split(' ', 1)
-      else:
-        last_option, usage = line, ''
-
-      description = []
+      last_title, description = line, []
     else:
       if line.startswith('    '):
         line = line[4:]
 
       description.append(line)
 
-  if last_option:
-    summary = _config().get('manual.summary.%s' % last_option.lower(), '')
-    config_options[last_option] = ConfigOption(last_option, category, usage, summary, _join_lines(description).strip())
+  if last_title:
+    add_option(last_title, description)
 
 
 def _join_lines(lines):

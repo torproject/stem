@@ -38,20 +38,21 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, --help'])
+EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--dump-config short|full|non-builtin', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, --help'])
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """
-Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network, in which each node knows its predecessor and successor, but no others. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
+Tor is a connection-oriented anonymizing communication service. Users choose a source-routed path through a set of nodes, and negotiate a "virtual circuit" through the network. Each node in a virtual circuit knows its predecessor and successor nodes, but no other nodes. Traffic flowing down the circuit is unwrapped by a symmetric key at each node, which reveals the downstream node.
 
-Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams -- web traffic, ftp, ssh, etc. -- around the network, and recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
+Basically, Tor provides a distributed network of servers or relays ("onion routers"). Users bounce their TCP streams, including web traffic, ftp, ssh, etc., around the network, so that recipients, observers, and even the relays themselves have difficulty tracking the source of the stream.
 
-By default, tor will act as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option -- see below. Please also consult the documentation on the Tor Project's website.
+    Note
+    By default, tor acts as a client only. To help the network by providing bandwidth as a relay, change the ORPort configuration option as mentioned below. Please also consult the documentation on the Tor Project's website.
 """.strip()
 
-EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options OR pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)'
+EXPECTED_FILE_DESCRIPTION = 'Specify a new configuration file to contain further Tor configuration options, or pass - to make Tor read its configuration from standard input. (Default: @CONFDIR@/torrc, or $HOME/.torrc if that file is not found)'
 
-EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nNote that this option, and other bandwidth-limiting options, apply to TCP data only: They do not count TCP headers or DNS traffic.\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
+EXPECTED_BANDWIDTH_RATE_DESCRIPTION = 'A token bucket limits the average incoming bandwidth usage on this node to the specified number of bytes per second, and the average outgoing bandwidth usage to that same value. If you want to run a relay in the public network, this needs to be at the very least 75 KBytes for a relay (that is, 600 kbits) or 50 KBytes for a bridge (400 kbits) -- but of course, more is better; we recommend at least 250 KBytes (2 mbits) if possible. (Default: 1 GByte)\n\nNote that this option, and other bandwidth-limiting options, apply to TCP data only: They do not count TCP headers or DNS traffic.\n\nTor uses powers of two, not powers of ten, so 1 GByte is 1024*1024*1024 bytes as opposed to 1 billion bytes.\n\nWith this option, and in other options that take arguments in bytes, KBytes, and so on, other formats are also supported. Notably, "KBytes" can also be written as "kilobytes" or "kb"; "MBytes" can be written as "megabytes" or "MB"; "kbits" can be written as "kilobits"; and so forth. Case doesn\'t matter. Tor also accepts "byte" and "bit" in the singular. The prefixes "tera" and "T" are also recognized. If no units are given, we default to bytes. To avoid confusion, we recommend writing "bytes" or "bits" explicitly, since it\'s easy to forget that "B" means bytes, not bits.'
 
 EXPECTED_EXIT_POLICY_DESCRIPTION_START = 'Set an exit policy for this server. Each policy'
 EXPECTED_EXIT_POLICY_DESCRIPTION_END = 'it applies to both IPv4 and IPv6 addresses.'
@@ -162,7 +163,11 @@ class TestManual(unittest.TestCase):
 
     def assert_equal(category, expected, actual):
       if expected != actual:
-        self.fail("Changed tor's man page? The %s changed as follows...\n\nexpected: %s\n\nactual: %s" % (category, sorted(expected), sorted(actual)))
+        if isinstance(expected, (set, tuple, list)):
+          expected = sorted(expected)
+          actual = sorted(actual)
+
+        self.fail("Changed tor's man page? The %s changed as follows...\n\nexpected: %s\n\nactual: %s" % (category, expected, actual))
 
     manual = stem.manual.Manual.from_man(self.man_path)
 
@@ -236,14 +241,6 @@ class TestManual(unittest.TestCase):
       for name in list(config_options_in_tor):
         if name.startswith('_'):
           config_options_in_tor.remove(name)
-
-      # TODO: Looks like options we should remove from tor...
-      #
-      # https://trac.torproject.org/projects/tor/ticket/17665
-
-      for option in ('SchedulerMaxFlushCells__', 'SchedulerLowWaterMark__', 'SchedulerHighWaterMark__'):
-        if option in config_options_in_tor:
-          config_options_in_tor.remove(option)
 
     manual = stem.manual.Manual.from_man(self.man_path)
     config_options_in_manual = set(manual.config_options.keys())
