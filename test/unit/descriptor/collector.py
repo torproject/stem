@@ -181,6 +181,7 @@ class TestCollector(unittest.TestCase):
     ], [f.path for f in collector.files(descriptor_type = 'server-descriptor', end = datetime.datetime(2007, 1, 1))])
 
     self.assertEqual([
+      'archive/relay-descriptors/server-descriptors/server-descriptors-2006-02.tar.xz',
       'archive/relay-descriptors/server-descriptors/server-descriptors-2006-03.tar.xz',
     ], [f.path for f in collector.files(descriptor_type = 'server-descriptor', start = datetime.datetime(2006, 2, 10), end = datetime.datetime(2007, 1, 1))])
 

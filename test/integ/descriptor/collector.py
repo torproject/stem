@@ -12,7 +12,11 @@ import stem.descriptor.collector
 
 from stem.descriptor import Compression
 
-RECENT = datetime.datetime.utcnow() - datetime.timedelta(minutes = 60)
+# The latest hour may or may not be published, so testing against a time range
+# a little back.
+
+START = datetime.datetime.utcnow() - datetime.timedelta(minutes = 180)
+END = datetime.datetime.utcnow() - datetime.timedelta(minutes = 120)
 
 
 class TestCollector(unittest.TestCase):
@@ -39,23 +43,23 @@ class TestCollector(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_server_descriptors(self):
-    recent_descriptors = list(stem.descriptor.collector.get_server_descriptors(start = RECENT))
+    recent_descriptors = list(stem.descriptor.collector.get_server_descriptors(start = START, end = END))
 
-    if not (300 < len(recent_descriptors) < 800):
-      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 584 on 8/5/19
+    if not (400 < len(recent_descriptors) < 1200):
+      self.fail('Downloaded %i descriptors, expected 400-1200' % len(recent_descriptors))  # 803 on 12/27/19
 
   @test.require.only_run_once
   @test.require.online
   def test_downloading_extrainfo_descriptors(self):
-    recent_descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(start = RECENT))
+    recent_descriptors = list(stem.descriptor.collector.get_extrainfo_descriptors(start = START, end = END))
 
-    if not (300 < len(recent_descriptors) < 800):
-      self.fail('Downloaded %i descriptors, expected 300-800' % len(recent_descriptors))  # 583 on 8/7/19
+    if not (400 < len(recent_descriptors) < 1200):
+      self.fail('Downloaded %i descriptors, expected 400-1200' % len(recent_descriptors))  # 803 on 12/27/19
 
   @test.require.only_run_once
   @test.require.online
   def test_downloading_microdescriptors(self):
-    recent_descriptors = list(stem.descriptor.collector.get_microdescriptors(start = RECENT))
+    recent_descriptors = list(stem.descriptor.collector.get_microdescriptors(start = START, end = END))
 
     if not (10 < len(recent_descriptors) < 100):
       self.fail('Downloaded %i descriptors, expected 10-100' % len(recent_descriptors))  # 23 on 8/7/19
@@ -63,18 +67,18 @@ class TestCollector(unittest.TestCase):
   @test.require.only_run_once
   @test.require.online
   def test_downloading_consensus_v3(self):
-    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = RECENT))
+    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = START, end = END))
 
-    if not (3000 < len(recent_descriptors) < 10000):
-      self.fail('Downloaded %i descriptors, expected 3000-10000' % len(recent_descriptors))  # 6554 on 8/10/19
+    if not (100 < len(recent_descriptors) < 500):
+      self.fail('Downloaded %i descriptors, expected 100-500' % len(recent_descriptors))  # 316 on 12/27/19
 
   @test.require.only_run_once
   @test.require.online
   def test_downloading_consensus_micro(self):
-    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = RECENT, microdescriptor = True))
+    recent_descriptors = list(stem.descriptor.collector.get_consensus(start = START, end = END, microdescriptor = True))
 
-    if not (3000 < len(recent_descriptors) < 10000):
-      self.fail('Downloaded %i descriptors, expected 3000-10000' % len(recent_descriptors))
+    if not (100 < len(recent_descriptors) < 500):
+      self.fail('Downloaded %i descriptors, expected 100-500' % len(recent_descriptors))  # 316 on 12/27/19
 
   def test_downloading_consensus_invalid_type(self):
     test_values = (

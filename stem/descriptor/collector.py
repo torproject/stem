@@ -181,10 +181,10 @@ class File(object):
   :var int size: size of the file
   :var str sha256: file's sha256 checksum
 
-  :var datetime start: beginning of the time range descriptors are for,
-    **None** if this cannot be determined
-  :var datetime end: ending of the time range descriptors are for,
-    **None** if this cannot be determined
+  :var datetime start: first publication within the file, **None** if this
+    cannot be determined
+  :var datetime end: last publication within the file, **None** if this cannot
+    be determined
   :var datetime last_modified: when the file was last modified
   """
 
@@ -206,7 +206,7 @@ class File(object):
     else:
       self.start, self.end = File._guess_time_range(path)
 
-  def read(self, directory = None, descriptor_type = None, document_handler = DocumentHandler.ENTRIES, timeout = None, retries = 3):
+  def read(self, directory = None, descriptor_type = None, start = None, end = None, document_handler = DocumentHandler.ENTRIES, timeout = None, retries = 3):
     """
     Provides descriptors from this archive. Descriptors are downloaded or read
     from disk as follows...
@@ -229,6 +229,8 @@ class File(object):
     :param str descriptor_type: `descriptor type
       <https://metrics.torproject.org/collector.html#data-formats>`_, this is
       guessed if not provided
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param stem.descriptor.__init__.DocumentHandler document_handler: method in
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
     :param int timeout: timeout when connection becomes idle, no timeout
@@ -267,7 +269,7 @@ class File(object):
 
         tmp_directory = tempfile.mkdtemp()
 
-        for desc in self.read(tmp_directory, descriptor_type, document_handler, timeout, retries):
+        for desc in self.read(tmp_directory, descriptor_type, start, end, document_handler, timeout, retries):
           yield desc
 
         shutil.rmtree(tmp_directory)
@@ -281,6 +283,17 @@ class File(object):
 
     for desc in stem.descriptor.parse_file(path, document_handler = document_handler):
       if descriptor_type is None or descriptor_type.startswith(desc.type_annotation().name):
+        # TODO: This can filter server and extrainfo times, but other
+        # descriptor types may use other attribute names.
+
+        published = getattr(desc, 'published', None)
+
+        if published:
+          if start and published < start:
+            continue
+          elif end and published > end:
+            continue
+
         yield desc
 
   def download(self, directory, decompress = True, timeout = None, retries = 3, overwrite = False):
@@ -405,8 +418,8 @@ class CollecTor(object):
     Provides server descriptors published during the given time range, sorted
     oldest to newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param bool bridge: standard descriptors if **False**, bridge if **True**
@@ -424,7 +437,7 @@ class CollecTor(object):
     desc_type = 'server-descriptor' if not bridge else 'bridge-server-descriptor'
 
     for f in self.files(desc_type, start, end):
-      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, desc_type, start, end, timeout = timeout, retries = retries):
         yield desc
 
   def get_extrainfo_descriptors(self, start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
@@ -432,8 +445,8 @@ class CollecTor(object):
     Provides extrainfo descriptors published during the given time range,
     sorted oldest to newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param bool bridge: standard descriptors if **False**, bridge if **True**
@@ -451,13 +464,13 @@ class CollecTor(object):
     desc_type = 'extra-info' if not bridge else 'bridge-extra-info'
 
     for f in self.files(desc_type, start, end):
-      for desc in f.read(cache_to, desc_type, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, desc_type, start, end, timeout = timeout, retries = retries):
         yield desc
 
   def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
     """
-    Provides microdescriptors published during the given time range,
-    sorted oldest to newest. Unlike server/extrainfo descriptors,
+    Provides microdescriptors estimated to be published during the given time
+    range, sorted oldest to newest. Unlike server/extrainfo descriptors,
     microdescriptors change very infrequently...
 
     ::
@@ -466,10 +479,11 @@ class CollecTor(object):
       about once per week." -dir-spec section 3.3
 
     CollecTor archives only contain microdescriptors that *change*, so hourly
-    tarballs often contain very few.
+    tarballs often contain very few. Microdescriptors also do not contain
+    their publication timestamp, so this is estimated.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param int timeout: timeout for downloading each individual archive when
@@ -484,7 +498,7 @@ class CollecTor(object):
     """
 
     for f in self.files('microdescriptor', start, end):
-      for desc in f.read(cache_to, 'microdescriptor', timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'microdescriptor', start, end, timeout = timeout, retries = retries):
         yield desc
 
   def get_consensus(self, start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, bridge = False, timeout = None, retries = 3):
@@ -492,8 +506,8 @@ class CollecTor(object):
     Provides consensus router status entries published during the given time
     range, sorted oldest to newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param stem.descriptor.__init__.DocumentHandler document_handler: method in
@@ -528,7 +542,7 @@ class CollecTor(object):
         raise ValueError('Only v2 and v3 router status entries are available (not version %s)' % version)
 
     for f in self.files(desc_type, start, end):
-      for desc in f.read(cache_to, desc_type, document_handler, timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, desc_type, start, end, document_handler, timeout = timeout, retries = retries):
         yield desc
 
   def get_key_certificates(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -536,8 +550,8 @@ class CollecTor(object):
     Directory authority key certificates for the given time range,
     sorted oldest to newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param int timeout: timeout for downloading each individual archive when
@@ -552,7 +566,7 @@ class CollecTor(object):
     """
 
     for f in self.files('dir-key-certificate-3', start, end):
-      for desc in f.read(cache_to, 'dir-key-certificate-3', timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'dir-key-certificate-3', start, end, timeout = timeout, retries = retries):
         yield desc
 
   def get_bandwidth_files(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -560,8 +574,8 @@ class CollecTor(object):
     Bandwidth authority heuristics for the given time range, sorted oldest to
     newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param int timeout: timeout for downloading each individual archive when
@@ -576,7 +590,7 @@ class CollecTor(object):
     """
 
     for f in self.files('bandwidth-file', start, end):
-      for desc in f.read(cache_to, 'bandwidth-file', timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'bandwidth-file', start, end, timeout = timeout, retries = retries):
         yield desc
 
   def get_exit_lists(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
@@ -584,8 +598,8 @@ class CollecTor(object):
     `TorDNSEL exit lists <https://www.torproject.org/projects/tordnsel.html.en>`_
     for the given time range, sorted oldest to newest.
 
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
     :param str cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
     :param int timeout: timeout for downloading each individual archive when
@@ -600,7 +614,7 @@ class CollecTor(object):
     """
 
     for f in self.files('tordnsel', start, end):
-      for desc in f.read(cache_to, 'tordnsel', timeout = timeout, retries = retries):
+      for desc in f.read(cache_to, 'tordnsel', start, end, timeout = timeout, retries = retries):
         yield desc
 
   def index(self, compression = 'best'):
@@ -643,8 +657,8 @@ class CollecTor(object):
     Provides files CollecTor presently has, sorted oldest to newest.
 
     :param str descriptor_type: descriptor type or prefix to retrieve
-    :param datetime.datetime start: time range to begin with
-    :param datetime.datetime end: time range to end with
+    :param datetime.datetime start: publication time to begin with
+    :param datetime.datetime end: publication time to end with
 
     :returns: **list** of :class:`~stem.descriptor.collector.File`
 
@@ -662,10 +676,10 @@ class CollecTor(object):
     matches = []
 
     for f in self._cached_files:
-      if start and (f.start is None or f.start < start):
-        continue
-      elif end and (f.end is None or f.end > end):
-        continue
+      if start and (f.end is None or f.end < start):
+        continue  # only contains descriptors before time range
+      elif end and (f.start is None or f.start > end):
+        continue  # only contains descriptors after time range
 
       if descriptor_type is None or any([desc_type.startswith(descriptor_type) for desc_type in f.types]):
         matches.append(f)
