@@ -95,4 +95,4 @@ class TestCollector(unittest.TestCase):
     index = collector.index(compression = compression)
 
     self.assertEqual('https://collector.torproject.org', index['path'])
-    self.assertEqual(['archive', 'contrib', 'recent'], [entry['path'] for entry in index['directories']])
+    self.assertEqual(['archive', 'recent'], [entry['path'] for entry in index['directories']])
