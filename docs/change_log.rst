@@ -95,7 +95,9 @@ The following are only available within Stem's `git repository
 
  * **Website**
 
+  * `Migrated to GitHub's issue tracker <https://github.com/torproject/stem/>`_
   * Added NetBSD to our `download page <download.html>`_
+  * Describe `advanced listener usage <tutorials/tortoise_and_the_hare.html#advanced-listeners>`_
   * Exemplify `manual SAFECOOKIE authentication <faq.html#i-m-using-safe-cookie-authentication>`_
   * `Update PyPI links <https://packaging.python.org/guides/migrating-to-pypi-org/>`_ (:trac:`30137`)
 
