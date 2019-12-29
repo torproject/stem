@@ -7,6 +7,7 @@ unreleased. For a monthly report on work being done see my `development log
 
 * :ref:`versioning`
 * :ref:`unreleased`
+* :ref:`version_1.8`
 * :ref:`version_1.7`
 * :ref:`version_1.6`
 * :ref:`version_1.5`
@@ -44,6 +45,13 @@ Unreleased
 
 The following are only available within Stem's `git repository
 <download.html>`_.
+
+.. _version_1.8:
+
+Version 1.8 (December 29th, 2019)
+---------------------------------
+
+`Stem 1.8 <http://blog.atagar.com/stem-release-1-8/>`_ is the final release in Stem’s 1.x series and with it `Python 2.x support <https://www.python.org/doc/sunset-python-2/>`_. Over a year in the making, this introduces `CollecTor <api/descriptor/collector.html>`_, `bandwidth metric <api/descriptor/bandwidth_file.html>`_, and `HSv3 descriptor support <api/descriptor/hidden_service.html#stem.descriptor.hidden_service.HiddenServiceDescriptorV3>`_.
 
  * **Controller**
 
