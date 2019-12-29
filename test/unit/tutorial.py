@@ -173,7 +173,7 @@ class TestTutorial(unittest.TestCase):
     }, exit_policy = ExitPolicy('accept *:*'), validate = False)])
 
     exec_documentation_example('collector_reading.py')
-    self.assertEqual('  caerSidi (2C3C46625698B6D67DF32BC1918AD3EE1F9906B1)\n', stdout_mock.getvalue())
+    self.assertEqual('1 relays published an exiting policy today...\n\n  caerSidi (2C3C46625698B6D67DF32BC1918AD3EE1F9906B1)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
