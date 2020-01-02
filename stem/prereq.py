@@ -46,8 +46,8 @@ def check_requirements():
 
   major_version, minor_version = sys.version_info[0:2]
 
-  if major_version < 2 or (major_version == 2 and minor_version < 6):
-    raise ImportError('stem requires python version 2.6 or greater')
+  if major_version < 3 or (major_version == 3 and minor_version < 6):
+    raise ImportError('stem requires python version 3.6 or greater')
 
 
 def _is_python_26():
