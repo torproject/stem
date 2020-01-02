@@ -1,4 +1,4 @@
-# Copyright 2015-2019, Damian Johnson and The Tor Project
+# Copyright 2015-2020, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
 
 import stem.response
