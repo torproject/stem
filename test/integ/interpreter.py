@@ -3,6 +3,7 @@ Tests invocation of our interpreter.
 """
 
 import os
+import sys
 import tempfile
 import unittest
 
@@ -16,9 +17,9 @@ PROMPT_CMD = os.path.join(test.STEM_BASE, 'tor-prompt')
 
 def _run_prompt(*args):
   if test.runner.Torrc.SOCKET not in test.runner.get_runner().get_options():
-    return stem.util.system.call([PROMPT_CMD, '--interface', test.runner.CONTROL_PORT] + list(args))
+    return stem.util.system.call([sys.executable, PROMPT_CMD, '--interface', test.runner.CONTROL_PORT] + list(args))
   else:
-    return stem.util.system.call([PROMPT_CMD, '--socket', test.runner.CONTROL_SOCKET_PATH] + list(args))
+    return stem.util.system.call([sys.executable, PROMPT_CMD, '--socket', test.runner.CONTROL_SOCKET_PATH] + list(args))
 
 
 class TestInterpreter(unittest.TestCase):
