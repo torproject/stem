@@ -5,11 +5,7 @@ Unit tests for the stem.exit_policy.ExitPolicy class.
 import pickle
 import unittest
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 from stem.exit_policy import (
   DEFAULT_POLICY_RULES,

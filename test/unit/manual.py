@@ -14,17 +14,13 @@ import stem.manual
 import stem.util.system
 import test.require
 
+from unittest.mock import Mock, patch
+
 try:
   # account for urllib's change between python 2.x and 3.x
   import urllib.request as urllib
 except ImportError:
   import urllib2 as urllib
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
 UNKNOWN_OPTIONS_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_with_unknown')

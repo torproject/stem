@@ -8,16 +8,12 @@ import unittest
 
 import stem.prereq
 
+from unittest.mock import Mock, patch
+
 from stem.descriptor import Compression, DocumentHandler
 from stem.descriptor.collector import CollecTor, File
 from test.unit.descriptor import get_resource
 from test.unit.descriptor.data.collector.index import EXAMPLE_INDEX
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 with open(get_resource('collector/index.json'), 'rb') as index_file:
   EXAMPLE_INDEX_JSON = index_file.read()

@@ -16,7 +16,6 @@ stem will still read descriptors - just without signature checks.
   is_crypto_available - checks if the cryptography module is available
   is_zstd_available - checks if the zstd module is available
   is_lzma_available - checks if the lzma module is available
-  is_mock_available - checks if the mock module is available
 """
 
 import functools
@@ -159,48 +158,6 @@ def is_lzma_available():
   except ImportError:
     from stem.util import log
     log.log_once('stem.prereq.is_lzma_available', log.INFO, LZMA_UNAVAILABLE)
-    return False
-
-
-def is_mock_available():
-  """
-  Checks if the mock module is available. In python 3.3 and up it is a builtin
-  unittest module, but before this it needed to be `installed separately
-  <https://pypi.org/project/mock/>`_. Imports should be as follows....
-
-  ::
-
-    try:
-      # added in python 3.3
-      from unittest.mock import Mock
-    except ImportError:
-      from mock import Mock
-
-  :returns: **True** if the mock module is available and **False** otherwise
-  """
-
-  try:
-    # checks for python 3.3 version
-    import unittest.mock
-    return True
-  except ImportError:
-    pass
-
-  try:
-    import mock
-
-    # check for mock's patch.dict() which was introduced in version 0.7.0
-
-    if not hasattr(mock.patch, 'dict'):
-      raise ImportError()
-
-    # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
-
-    if 'new_callable' not in inspect.getargspec(mock.patch).args:
-      raise ImportError()
-
-    return True
-  except ImportError:
     return False
 
 

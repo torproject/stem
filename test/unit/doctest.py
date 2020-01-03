@@ -15,13 +15,9 @@ import stem.util.system
 import stem.version
 import test
 
-from stem.response import ControlMessage
+from unittest.mock import Mock, patch
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from stem.response import ControlMessage
 
 EXPECTED_CIRCUIT_STATUS = """\
 20 EXTENDED $718BCEA286B531757ACAFF93AE04910EA73DE617=KsmoinOK,$649F2D0ACF418F7CFC6539AB2257EB2D5297BAFA=Eskimo BUILD_FLAGS=NEED_CAPACITY PURPOSE=GENERAL TIME_CREATED=2012-12-06T13:51:11.433755

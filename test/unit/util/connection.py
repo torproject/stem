@@ -9,6 +9,8 @@ import unittest
 import stem
 import stem.util.connection
 
+from unittest.mock import Mock, patch
+
 from stem.util.connection import Resolver, Connection
 
 try:
@@ -16,12 +18,6 @@ try:
   import urllib.request as urllib
 except ImportError:
   import urllib2 as urllib
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 URL = 'https://example.unit.test.url'
 

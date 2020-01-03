@@ -7,13 +7,10 @@ import unittest
 
 import test
 
+from unittest.mock import Mock, patch
+
 from stem.util import proc
 from stem.util.connection import Connection
-
-try:
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 TITLE_LINE = b'sl  local_address rem_address   st tx_queue rx_queue tr tm->when retrnsmt  uid  timeout'
 

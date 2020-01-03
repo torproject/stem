@@ -8,16 +8,12 @@ import stem.connection
 import test.require
 import test.runner
 
+from unittest.mock import patch
+
 try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
-
-try:
-  # added in python 3.3
-  from unittest.mock import patch
-except ImportError:
-  from mock import patch
 
 
 class TestConnect(unittest.TestCase):

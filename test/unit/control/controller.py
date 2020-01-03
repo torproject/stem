@@ -14,16 +14,12 @@ import stem.socket
 import stem.util.system
 import stem.version
 
+from unittest.mock import Mock, patch
+
 from stem import ControllerError, DescriptorUnavailable, InvalidArguments, InvalidRequest, ProtocolError, UnsatisfiableRequest
 from stem.control import MALFORMED_EVENTS, _parse_circ_path, Listener, Controller, EventType
 from stem.response import ControlMessage
 from stem.exit_policy import ExitPolicy
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 NS_DESC = 'r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75'
 TEST_TIMESTAMP = 12345

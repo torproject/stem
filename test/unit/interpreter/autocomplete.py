@@ -1,14 +1,9 @@
 import unittest
 
+from unittest.mock import Mock
+
 from stem.interpreter.autocomplete import _get_commands, Autocompleter
-
 from test.unit.interpreter import CONTROLLER
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock
-except ImportError:
-  from mock import Mock
 
 
 class TestAutocompletion(unittest.TestCase):

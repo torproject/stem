@@ -8,14 +8,10 @@ import unittest
 
 import stem.descriptor
 
+from unittest.mock import Mock, patch
+
 from stem.descriptor.bandwidth_file import BandwidthFile
 from test.unit.descriptor import get_resource
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 EXPECTED_MEASUREMENT_1 = {
   'scanner': '/scanner.1/scan-data/bws-0.0:0.8-done-2019-01-13-22:55:22',

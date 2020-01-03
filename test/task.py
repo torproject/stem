@@ -14,7 +14,6 @@
   |- PYTHON_VERSION - checks our python version
   |- PLATFORM_VERSION - checks our operating system version
   |- CRYPTO_VERSION - checks our version of cryptography
-  |- MOCK_VERSION - checks our version of mock
   |- PYFLAKES_VERSION - checks our version of pyflakes
   |- PYCODESTYLE_VERSION - checks our version of pycodestyle
   |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
@@ -333,7 +332,6 @@ TOR_VERSION = Task('tor version', _check_tor_version)
 PYTHON_VERSION = Task('python version', _check_python_version)
 PLATFORM_VERSION = Task('operating system', _check_platform_version)
 CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
-MOCK_VERSION = ModuleVersion('mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
 PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)

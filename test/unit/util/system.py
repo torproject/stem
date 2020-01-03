@@ -14,13 +14,9 @@ import unittest
 
 import stem.prereq
 
-from stem.util import system
+from unittest.mock import Mock, patch
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from stem.util import system
 
 # Base responses for the pid_by_name tests. The 'success' and
 # 'multiple_results' entries are filled in by tests.

@@ -15,6 +15,8 @@ import stem.response
 import stem.descriptor.remote
 import stem.prereq
 
+from unittest.mock import Mock, patch
+
 from stem.control import Controller
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
@@ -23,12 +25,6 @@ from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 
 from test.unit import exec_documentation_example
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 OPEN_FUNCTION = open  # make a reference so mocking open() won't mess with us
 

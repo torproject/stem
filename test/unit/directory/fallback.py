@@ -12,11 +12,7 @@ import stem
 import stem.directory
 import stem.util.conf
 
-try:
-  # added in python 3.3
-  from unittest.mock import patch, Mock
-except ImportError:
-  from mock import patch, Mock
+from unittest.mock import patch, Mock
 
 FALLBACK_GITWEB_CONTENT = b"""\
 /* type=fallback */

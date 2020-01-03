@@ -19,11 +19,7 @@ import stem.util.system
 
 import test.unit.descriptor
 
-try:
-  # added in python 3.3
-  from unittest.mock import patch
-except ImportError:
-  from mock import patch
+from unittest.mock import patch
 
 BASIC_LISTING = """
 /tmp 123

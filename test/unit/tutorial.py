@@ -7,6 +7,8 @@ import unittest
 
 import stem.descriptor.remote
 
+from unittest.mock import Mock, patch
+
 from stem.control import Controller
 from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
@@ -18,12 +20,6 @@ try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 
 OVER_THE_RIVER_OUTPUT = """\

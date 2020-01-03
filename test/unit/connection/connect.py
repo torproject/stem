@@ -4,19 +4,16 @@ Unit tests for the stem.connection.connect function.
 
 import unittest
 
+import stem
+import stem.connection
+import stem.socket
+
+from unittest.mock import Mock, patch
+
 try:
   from StringIO import StringIO
 except ImportError:
   from io import StringIO
-
-try:
-  from mock import Mock, patch
-except ImportError:
-  from unittest.mock import Mock, patch
-
-import stem
-import stem.connection
-import stem.socket
 
 
 class TestConnect(unittest.TestCase):

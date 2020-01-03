@@ -14,13 +14,9 @@ import stem.util.system
 import test.require
 import test.runner
 
-from stem.util.system import State, DaemonTask
+from unittest.mock import Mock, patch
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from stem.util.system import State, DaemonTask
 
 
 def filter_system_call(prefixes):
