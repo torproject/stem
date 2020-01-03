@@ -44,7 +44,11 @@ def msg(message, config, **attr):
 
 
 def main():
-  import readline
+  try:
+    import readline
+  except ImportError:
+    print('tor-prompt requires the readline module')
+    sys.exit(1)
 
   import stem.interpreter.arguments
   import stem.interpreter.autocomplete
