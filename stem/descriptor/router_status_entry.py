@@ -374,9 +374,7 @@ def _base64_to_hex(identity, check_if_fingerprint = True):
     raise ValueError("Unable to decode identity string '%s'" % identity)
 
   fingerprint = binascii.hexlify(identity_decoded).upper()
-
-  if stem.prereq.is_python_3():
-    fingerprint = stem.util.str_tools._to_unicode(fingerprint)
+  fingerprint = stem.util.str_tools._to_unicode(fingerprint)
 
   if check_if_fingerprint:
     if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):

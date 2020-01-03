@@ -27,12 +27,6 @@ try:
 except ImportError:
   from mock import patch, Mock, MagicMock
 
-# The urlopen() method is in a different location depending on if we're using
-# python 2.x or 3.x. The 2to3 converter accounts for this in imports, but not
-# mock annotations.
-
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
-
 TEST_RESOURCE = '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
 
 # Output from requesting moria1's descriptor from itself...
@@ -104,16 +98,13 @@ def _dirport_mock(data, encoding = 'identity'):
   dirport_mock = Mock()
   dirport_mock().read.return_value = data
 
-  if stem.prereq.is_python_3():
-    headers = HTTPMessage()
+  headers = HTTPMessage()
 
-    for line in HEADER.splitlines():
-      key, value = line.split(': ', 1)
-      headers.add_header(key, encoding if key == 'Content-Encoding' else value)
+  for line in HEADER.splitlines():
+    key, value = line.split(': ', 1)
+    headers.add_header(key, encoding if key == 'Content-Encoding' else value)
 
-    dirport_mock().headers = headers
-  else:
-    dirport_mock().headers = HTTPMessage(io.BytesIO(HEADER % encoding))
+  dirport_mock().headers = headers
 
   return dirport_mock
 
@@ -165,7 +156,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
       self.assertRaisesRegexp(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
-  @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
+  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
   def test_using_dirport(self):
     """
     Download a descriptor through the DirPort.
@@ -203,7 +194,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
       self.assertEqual([stem.descriptor.Compression.PLAINTEXT], query.compression)
 
-  @patch(URL_OPEN, _dirport_mock(read_resource('compressed_identity'), encoding = 'identity'))
+  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_identity'), encoding = 'identity'))
   def test_compression_plaintext(self):
     """
     Download a plaintext descriptor.
@@ -218,7 +209,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch(URL_OPEN, _dirport_mock(read_resource('compressed_gzip'), encoding = 'gzip'))
+  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_gzip'), encoding = 'gzip'))
   def test_compression_gzip(self):
     """
     Download a gip compressed descriptor.
@@ -233,7 +224,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch(URL_OPEN, _dirport_mock(read_resource('compressed_zstd'), encoding = 'x-zstd'))
+  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_zstd'), encoding = 'x-zstd'))
   def test_compression_zstd(self):
     """
     Download a zstd compressed descriptor.
@@ -251,7 +242,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch(URL_OPEN, _dirport_mock(read_resource('compressed_lzma'), encoding = 'x-tor-lzma'))
+  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_lzma'), encoding = 'x-tor-lzma'))
   def test_compression_lzma(self):
     """
     Download a lzma compressed descriptor.
@@ -269,7 +260,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_each_getter(self, dirport_mock):
     """
     Surface level exercising of each getter method for downloading descriptors.
@@ -286,7 +277,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     downloader.get_bandwidth_file()
     downloader.get_detached_signatures()
 
-  @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
+  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
   def test_reply_headers(self):
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
     self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
@@ -309,7 +300,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
+  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
   def test_query_download(self):
     """
     Check Query functionality when we successfully download a descriptor.
@@ -334,7 +325,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
 
-  @patch(URL_OPEN, _dirport_mock(b'some malformed stuff'))
+  @patch('urllib.request.urlopen', _dirport_mock(b'some malformed stuff'))
   def test_query_with_malformed_content(self):
     """
     Query with malformed descriptor content.
@@ -361,7 +352,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(ValueError, query.run)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_query_with_timeout(self, dirport_mock):
     def urlopen_call(*args, **kwargs):
       time.sleep(0.06)
@@ -396,7 +387,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       expected_error = 'Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. ' + error_suffix
       self.assertRaisesWith(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
 
-  @patch(URL_OPEN, _dirport_mock(TEST_DESCRIPTOR))
+  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
   def test_can_iterate_multiple_times(self):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,

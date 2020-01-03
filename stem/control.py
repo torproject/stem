@@ -1160,7 +1160,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if stem.util._is_str(params):
+    if isinstance(params, (bytes, str)):
       is_multiple = False
       params = set([params])
     else:
@@ -1205,7 +1205,7 @@ class Controller(BaseController):
 
       # usually we want unicode values under python 3.x
 
-      if stem.prereq.is_python_3() and not get_bytes:
+      if not get_bytes:
         response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in response.entries.items())
 
       reply.update(response.entries)
@@ -2308,7 +2308,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if stem.util._is_str(params):
+    if isinstance(params, (bytes, str)):
       params = [params]
 
     # remove strings which contain only whitespace
@@ -3476,7 +3476,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if stem.util._is_str(features):
+    if isinstance(features, (bytes, str)):
       features = [features]
 
     response = self.msg('USEFEATURE %s' % ' '.join(features))
@@ -3631,7 +3631,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if stem.util._is_str(path):
+      if isinstance(path, (bytes, str)):
         path = [path]
 
       if path:

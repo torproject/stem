@@ -458,7 +458,7 @@ def is_valid_ipv4_address(address):
 
   if isinstance(address, bytes):
     address = str_tools._to_unicode(address)
-  elif not stem.util._is_str(address):
+  elif not isinstance(address, (bytes, str)):
     return False
 
   # checks if theres four period separated values
@@ -488,7 +488,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
 
   if isinstance(address, bytes):
     address = str_tools._to_unicode(address)
-  elif not stem.util._is_str(address):
+  elif not isinstance(address, (bytes, str)):
     return False
 
   if allow_brackets:

@@ -354,10 +354,10 @@ class RelayCell(CircuitCell):
 
       digest_packed = digest.digest()[:RELAY_DIGEST_SIZE.size]
       digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
-    elif stem.util._is_str(digest):
+    elif isinstance(digest, (bytes, str)):
       digest_packed = digest[:RELAY_DIGEST_SIZE.size]
       digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
-    elif stem.util._is_int(digest):
+    elif isinstance(digest, int):
       pass
     else:
       raise ValueError('RELAY cell digest must be a hash, string, or int but was a %s' % type(digest).__name__)

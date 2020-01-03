@@ -678,8 +678,7 @@ def _get_categories(content):
     #   \u2014 - extra long dash
     #   \xb7 - centered dot
 
-    char_for = chr if stem.prereq.is_python_3() else unichr
-    line = line.replace(char_for(0x2019), "'").replace(char_for(0x2014), '-').replace(char_for(0xb7), '*')
+    line = line.replace(chr(0x2019), "'").replace(chr(0x2014), '-').replace(chr(0xb7), '*')
 
     if line and not line.startswith(' '):
       if category:

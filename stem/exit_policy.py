@@ -124,7 +124,7 @@ def get_config_policy(rules, ip_address = None):
   elif ip_address and stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True) and not (ip_address[0] == '[' and ip_address[-1] == ']'):
     ip_address = '[%s]' % ip_address  # ExitPolicy validation expects IPv6 addresses to be bracketed
 
-  if stem.util._is_str(rules):
+  if isinstance(rules, (bytes, str)):
     rules = rules.split(',')
 
   result = []
@@ -238,7 +238,7 @@ class ExitPolicy(object):
     # sanity check the types
 
     for rule in rules:
-      if not stem.util._is_str(rule) and not isinstance(rule, ExitPolicyRule):
+      if not isinstance(rule, (bytes, str)) and not isinstance(rule, ExitPolicyRule):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
@@ -249,7 +249,7 @@ class ExitPolicy(object):
     is_all_str = True
 
     for rule in rules:
-      if not stem.util._is_str(rule):
+      if not isinstance(rule, (bytes, str)):
         is_all_str = False
 
     if rules and is_all_str:
@@ -466,7 +466,7 @@ class ExitPolicy(object):
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
-        if stem.util._is_str(rule):
+        if isinstance(rule, (bytes, str)):
           if not rule.strip():
             continue
 

@@ -26,7 +26,6 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
 UNKNOWN_OPTIONS_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_with_unknown')
 
@@ -252,7 +251,7 @@ class TestManual(unittest.TestCase):
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
+  @patch('urllib.request.urlopen', Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
@@ -262,7 +261,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.call', Mock(side_effect = stem.util.system.CallError('call failed', 'a2x -f manpage /no/such/path/tor.1.txt', 1, None, None, 'call failed')))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
     exc_msg = "Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
@@ -273,7 +272,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch('os.path.exists', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_successful(self, call_mock, open_mock):
     open_mock.side_effect = lambda path, *args: {
       '/no/such/path/tor.1.txt': io.BytesIO(),

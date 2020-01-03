@@ -171,14 +171,14 @@ def main():
       while True:
         try:
           prompt = '... ' if interpreter.is_multiline_context else PROMPT
-          user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+          user_input = input(prompt)
           interpreter.run_command(user_input, print_response = True)
         except stem.SocketClosed:
           if showed_close_confirmation:
             print(format('Unable to run tor commands. The control connection has been closed.', *ERROR_OUTPUT))
           else:
             prompt = format("Tor's control port has closed. Do you want to continue this interpreter? (y/n) ", *HEADER_BOLD_OUTPUT)
-            user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+            user_input = input(prompt)
             print('')  # blank line
 
             if user_input.lower() in ('y', 'yes'):

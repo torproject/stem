@@ -183,7 +183,7 @@ class _IntegerEnum(stem.util.enum.Enum):
     Provides the (enum, int_value) tuple for a given value.
     """
 
-    if stem.util._is_int(val):
+    if isinstance(val, int):
       return self._int_to_enum.get(val, self.UNKNOWN), val
     elif val in self:
       return val, self._enum_to_int.get(val, val)
@@ -402,7 +402,7 @@ class Size(Field):
     try:
       packed = struct.pack(self.format, content)
     except struct.error:
-      if not stem.util._is_int(content):
+      if not isinstance(content, int):
         raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
       elif content < 0:
         raise ValueError('Packed values must be positive (attempted to pack %i as a %s)' % (content, self.name))

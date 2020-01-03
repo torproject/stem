@@ -710,9 +710,8 @@ def recv_message(control_file, arrived_at = None):
 
     status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
 
-    if stem.prereq.is_python_3():
-      status_code = stem.util.str_tools._to_unicode(status_code)
-      divider = stem.util.str_tools._to_unicode(divider)
+    status_code = stem.util.str_tools._to_unicode(status_code)
+    divider = stem.util.str_tools._to_unicode(divider)
 
     # Most controller responses are single lines, in which case we don't need
     # so much overhead.

@@ -357,7 +357,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   handler = None
 
-  if stem.util._is_str(descriptor_file):
+  if isinstance(descriptor_file, (bytes, str)):
     if stem.util.system.is_tarfile(descriptor_file):
       handler = _parse_file_for_tar_path
     else:
@@ -1157,10 +1157,7 @@ class Descriptor(object):
     return super(Descriptor, self).__getattribute__(name)
 
   def __str__(self):
-    if stem.prereq.is_python_3():
-      return stem.util.str_tools._to_unicode(self._raw_contents)
-    else:
-      return self._raw_contents
+    return stem.util.str_tools._to_unicode(self._raw_contents)
 
   def _compare(self, other, method):
     if type(self) != type(other):
@@ -1234,7 +1231,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
 
-  if stem.util._is_str(keywords):
+  if isinstance(keywords, (bytes, str)):
     keywords = (keywords,)
 
   if ignore_first:

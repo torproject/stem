@@ -23,7 +23,6 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 URL = 'https://example.unit.test.url'
 
 NETSTAT_OUTPUT = """\
@@ -177,14 +176,14 @@ _tor     tor        15843   20* internet stream tcp 0x0 192.168.1.100:36174 --> 
 
 
 class TestConnection(unittest.TestCase):
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_download(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(b'hello')
 
     self.assertEqual(b'hello', stem.util.connection.download(URL))
     urlopen_mock.assert_called_with(URL, timeout = None)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_download_failure(self, urlopen_mock):
     urlopen_mock.side_effect = urllib.URLError('boom')
 
@@ -198,7 +197,7 @@ class TestConnection(unittest.TestCase):
       self.assertEqual(urllib.URLError, type(exc.error))
       self.assertTrue('return urllib.urlopen(url, timeout = timeout).read()' in exc.stacktrace_str)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_download_retries(self, urlopen_mock):
     urlopen_mock.side_effect = urllib.URLError('boom')
 

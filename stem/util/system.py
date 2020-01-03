@@ -454,7 +454,7 @@ def is_running(command):
     if command_listing:
       command_listing = [c.strip() for c in command_listing]
 
-      if stem.util._is_str(command):
+      if isinstance(command, (bytes, str)):
         command = [command]
 
       for cmd in command:

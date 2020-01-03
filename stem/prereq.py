@@ -12,7 +12,6 @@ stem will still read descriptors - just without signature checks.
 ::
 
   check_requirements - checks for minimum requirements for running stem
-  is_python_3 - checks if python 3.0 or later is available
   is_sqlite_available - checks if the sqlite3 module is available
   is_crypto_available - checks if the cryptography module is available
   is_zstd_available - checks if the zstd module is available
@@ -48,34 +47,6 @@ def check_requirements():
 
   if major_version < 3 or (major_version == 3 and minor_version < 6):
     raise ImportError('stem requires python version 3.6 or greater')
-
-
-def is_python_27():
-  """
-  Checks if we're running python 2.7 or above (including the 3.x series).
-
-  .. deprecated:: 1.5.0
-     Stem 2.x will remove this method along with Python 2.x support.
-
-  :returns: **True** if we meet this requirement and **False** otherwise
-  """
-
-  major_version, minor_version = sys.version_info[0:2]
-
-  return major_version > 2 or (major_version == 2 and minor_version >= 7)
-
-
-def is_python_3():
-  """
-  Checks if we're in the 3.0 - 3.x range.
-
-  .. deprecated:: 1.8.0
-     Stem 2.x will remove this method along with Python 2.x support.
-
-  :returns: **True** if we meet this requirement and **False** otherwise
-  """
-
-  return sys.version_info[0] == 3
 
 
 def is_pypy():

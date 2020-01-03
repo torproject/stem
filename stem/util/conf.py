@@ -635,14 +635,12 @@ class Config(object):
     """
 
     with self._contents_lock:
-      unicode_type = str if stem.prereq.is_python_3() else unicode
-
       if value is None:
         if overwrite and key in self._contents:
           del self._contents[key]
         else:
           pass  # no value so this is a no-op
-      elif isinstance(value, (bytes, unicode_type)):
+      elif isinstance(value, (bytes, str)):
         if not overwrite and key in self._contents:
           self._contents[key].append(value)
         else:

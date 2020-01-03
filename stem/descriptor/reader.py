@@ -270,7 +270,7 @@ class DescriptorReader(object):
   """
 
   def __init__(self, target, validate = False, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
-    self._targets = [target] if stem.util._is_str(target) else target
+    self._targets = [target] if isinstance(target, (bytes, str)) else target
 
     # expand any relative paths we got
 

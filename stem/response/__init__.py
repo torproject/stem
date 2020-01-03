@@ -229,7 +229,7 @@ class ControlMessage(object):
     :returns: **list** of (str, str, str) tuples for the components of this message
     """
 
-    if stem.prereq.is_python_3() and not get_bytes:
+    if not get_bytes:
       return [(code, div, stem.util.str_tools._to_unicode(content)) for (code, div, content) in self._parsed_content]
     else:
       return list(self._parsed_content)
@@ -246,7 +246,7 @@ class ControlMessage(object):
     :returns: **str** of the socket data used to generate this message
     """
 
-    if stem.prereq.is_python_3() and not get_bytes:
+    if not get_bytes:
       return stem.util.str_tools._to_unicode(self._raw_content)
     else:
       return self._raw_content
@@ -286,8 +286,7 @@ class ControlMessage(object):
     """
 
     for _, _, content in self._parsed_content:
-      if stem.prereq.is_python_3():
-        content = stem.util.str_tools._to_unicode(content)
+      content = stem.util.str_tools._to_unicode(content)
 
       yield ControlLine(content)
 
@@ -304,9 +303,7 @@ class ControlMessage(object):
     """
 
     content = self._parsed_content[index][2]
-
-    if stem.prereq.is_python_3():
-      content = stem.util.str_tools._to_unicode(content)
+    content = stem.util.str_tools._to_unicode(content)
 
     return ControlLine(content)
 
@@ -534,7 +531,7 @@ def _parse_entry(line, quoted, escaped, get_bytes):
 
     next_entry = codecs.escape_decode(next_entry)[0]
 
-    if stem.prereq.is_python_3() and not get_bytes:
+    if not get_bytes:
       next_entry = stem.util.str_tools._to_unicode(next_entry)  # normalize back to str
 
   if get_bytes:

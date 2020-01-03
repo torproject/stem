@@ -56,7 +56,7 @@ def _hash_value(val):
     #
     # This hack will go away when we drop Python 2.x support.
 
-    if _is_str(val):
+    if isinstance(val, (bytes, str)):
       my_hash = hash('str')
     else:
       # Hashing common builtins (ints, bools, etc) provide consistant values but many others vary their value on interpreter invokation.
@@ -73,40 +73,6 @@ def _hash_value(val):
     my_hash += hash(val)
 
   return my_hash
-
-
-def _is_str(val):
-  """
-  Check if a value is a string. This will be removed when we no longer provide
-  backward compatibility for the Python 2.x series.
-
-  :param object val: value to be checked
-
-  :returns: **True** if the value is some form of string (unicode or bytes),
-    and **False** otherwise
-  """
-
-  if stem.prereq.is_python_3():
-    return isinstance(val, (bytes, str))
-  else:
-    return isinstance(val, (bytes, unicode))
-
-
-def _is_int(val):
-  """
-  Check if a value is an integer. This will be removed when we no longer
-  provide backward compatibility for the Python 2.x series.
-
-  :param object val: value to be checked
-
-  :returns: **True** if the value is some form of integer (int or long),
-    and **False** otherwise
-  """
-
-  if stem.prereq.is_python_3():
-    return isinstance(val, int)
-  else:
-    return isinstance(val, (int, long))
 
 
 def datetime_to_unix(timestamp):
@@ -128,7 +94,7 @@ def _pubkey_bytes(key):
   Normalizes X25509 and ED25519 keys into their public key bytes.
   """
 
-  if _is_str(key):
+  if isinstance(key, (bytes, str)):
     return key
 
   if not stem.prereq.is_crypto_available():

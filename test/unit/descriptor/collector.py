@@ -19,9 +19,6 @@ try:
 except ImportError:
   from mock import Mock, patch
 
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
-
-
 with open(get_resource('collector/index.json'), 'rb') as index_file:
   EXAMPLE_INDEX_JSON = index_file.read()
 
@@ -60,7 +57,7 @@ class TestCollector(unittest.TestCase):
 
   # tests for the CollecTor class
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_index_plaintext(self, urlopen_mock):
     urlopen_mock.return_value = io.BytesIO(EXAMPLE_INDEX_JSON)
 
@@ -68,7 +65,7 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(EXAMPLE_INDEX, collector.index(Compression.PLAINTEXT))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json', timeout = None)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_index_gzip(self, urlopen_mock):
     if not Compression.GZIP.available:
       self.skipTest('(gzip compression unavailable)')
@@ -80,7 +77,7 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(EXAMPLE_INDEX, collector.index(Compression.GZIP))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.gz', timeout = None)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_index_bz2(self, urlopen_mock):
     if not Compression.BZ2.available:
       self.skipTest('(bz2 compression unavailable)')
@@ -92,7 +89,7 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(EXAMPLE_INDEX, collector.index(Compression.BZ2))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.bz2', timeout = None)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_index_lzma(self, urlopen_mock):
     if not Compression.LZMA.available:
       self.skipTest('(lzma compression unavailable)')
@@ -104,7 +101,7 @@ class TestCollector(unittest.TestCase):
     self.assertEqual(EXAMPLE_INDEX, collector.index(Compression.LZMA))
     urlopen_mock.assert_called_with('https://collector.torproject.org/index/index.json.xz', timeout = None)
 
-  @patch(URL_OPEN)
+  @patch('urllib.request.urlopen')
   def test_index_retries(self, urlopen_mock):
     urlopen_mock.side_effect = IOError('boom')
 
@@ -118,21 +115,17 @@ class TestCollector(unittest.TestCase):
     self.assertRaisesRegexp(IOError, 'boom', collector.index)
     self.assertEqual(5, urlopen_mock.call_count)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not json')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not json')))
   def test_index_malformed_json(self):
     collector = CollecTor()
-
-    if stem.prereq.is_python_3():
-      self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index, Compression.PLAINTEXT)
-    else:
-      self.assertRaisesRegexp(ValueError, 'No JSON object could be decoded', collector.index, Compression.PLAINTEXT)
+    self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index, Compression.PLAINTEXT)
 
   def test_index_malformed_compression(self):
     for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
       if not compression.available:
         continue
 
-      with patch(URL_OPEN, Mock(return_value = io.BytesIO(b'not compressed'))):
+      with patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not compressed'))):
         collector = CollecTor()
         self.assertRaisesRegexp(IOError, 'Failed to decompress as %s' % compression, collector.index, compression)
 

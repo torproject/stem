@@ -153,8 +153,7 @@ def escape(message):
   :returns: str that is escaped
   """
 
-  if stem.prereq.is_python_3():
-    message = stem.util.str_tools._to_unicode(message)
+  message = stem.util.str_tools._to_unicode(message)
 
   for pattern, replacement in (('\n', '\\n'), ('\r', '\\r'), ('\t', '\\t')):
     message = message.replace(pattern, replacement)

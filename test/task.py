@@ -273,7 +273,7 @@ class Task(object):
       self.is_successful = True
       output_msg = 'running' if self._is_background_task else 'done'
 
-      if self.result and self.print_result and stem.util._is_str(self.result):
+      if self.result and self.print_result and isinstance(self.result, (bytes, str)):
         output_msg = self.result
       elif self.print_runtime:
         output_msg += ' (%0.1fs)' % (time.time() - start_time)

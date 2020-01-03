@@ -106,7 +106,7 @@ def run_tor(tor_cmd, *args, **kwargs):
     elif not exit_status and expect_failure:
       raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
 
-    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+    return stem.util.str_tools._to_unicode(stdout)
 
 
 class TestProcess(unittest.TestCase):
@@ -177,12 +177,8 @@ class TestProcess(unittest.TestCase):
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
 
-    if stem.prereq.is_python_3():
-      output_hex = binascii.a2b_hex(stem.util.str_tools._to_bytes(output).strip()[3:])
-      salt, how, hashed = output_hex[:8], output_hex[8], output_hex[9:]
-    else:
-      output_hex = binascii.a2b_hex(output.strip()[3:])
-      salt, how, hashed = output_hex[:8], ord(output_hex[8]), output_hex[9:]
+    output_hex = binascii.a2b_hex(stem.util.str_tools._to_bytes(output).strip()[3:])
+    salt, how, hashed = output_hex[:8], output_hex[8], output_hex[9:]
 
     count = (16 + (how & 15)) << ((how >> 4) + 6)
     stuff = salt + b'my_password'
