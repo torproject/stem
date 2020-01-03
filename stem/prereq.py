@@ -249,21 +249,6 @@ def is_mock_available():
     return False
 
 
-def _is_lru_cache_available():
-  """
-  Functools added lru_cache to the standard library in Python 3.2. Prior to
-  this using a bundled implementation. We're also using this with Python 3.5
-  due to a buggy implementation. (:trac:`26412`)
-  """
-
-  major_version, minor_version = sys.version_info[0:2]
-
-  if major_version == 3 and minor_version == 5:
-    return False
-  else:
-    return hasattr(functools, 'lru_cache')
-
-
 def _is_sha3_available():
   """
   Check if hashlib has sha3 support. This requires Python 3.6+ *or* the `pysha3

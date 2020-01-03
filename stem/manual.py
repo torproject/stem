@@ -49,6 +49,7 @@ us what our torrc options do...
 """
 
 import collections
+import functools
 import os
 import shutil
 import sys
@@ -61,11 +62,6 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.log
 import stem.util.system
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -194,7 +190,7 @@ class ConfigOption(object):
     return not self == other
 
 
-@lru_cache()
+@functools.lru_cache()
 def _config(lowercase = True):
   """
   Provides a dictionary for our settings.cfg. This has a couple categories...

@@ -100,11 +100,6 @@ from stem.descriptor import (
   _random_crypto_blob,
 )
 
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
-
 # known statuses for dirreq-v2-resp and dirreq-v3-resp...
 DirResponse = stem.util.enum.Enum(
   ('OK', 'ok'),
@@ -950,7 +945,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None):
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate)
 
-  @lru_cache()
+  @functools.lru_cache()
   def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     if hash_type == DigestHash.SHA1:
       # our digest is calculated from everything except our signature

@@ -64,6 +64,7 @@ Doing the same is trivial with server descriptors...
   Microdescriptor - Tor microdescriptor.
 """
 
+import functools
 import hashlib
 
 import stem.exit_policy
@@ -87,11 +88,6 @@ from stem.descriptor.router_status_entry import (
   _parse_a_line,
   _parse_p_line,
 )
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 REQUIRED_FIELDS = (
   'onion-key',
@@ -305,7 +301,7 @@ class Microdescriptor(Descriptor):
     else:
       raise NotImplementedError('Microdescriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
-  @lru_cache()
+  @functools.lru_cache()
   def get_annotations(self):
     """
     Provides content that appeared prior to the descriptor. If this comes from
