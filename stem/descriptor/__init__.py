@@ -106,12 +106,6 @@ import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
 
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
 __all__ = [
   'bandwidth_file',
   'certificate',
@@ -589,7 +583,7 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
   """
 
   header_content, footer_content = [], []
-  attr = {} if attr is None else OrderedDict(attr)  # shallow copy since we're destructive
+  attr = {} if attr is None else collections.OrderedDict(attr)  # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
                             (footer_content, footer_template)):
@@ -707,7 +701,7 @@ def _parse_protocol_line(keyword, attribute):
     # parses 'protocol' entries like: Cons=1-2 Desc=1-2 DirCache=1 HSDir=1
 
     value = _value(keyword, entries)
-    protocols = OrderedDict()
+    protocols = collections.OrderedDict()
 
     for k, v in _mappings_for(keyword, value):
       versions = []
@@ -1468,7 +1462,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
   if isinstance(raw_contents, bytes):
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
-  entries = OrderedDict()
+  entries = collections.OrderedDict()
   extra_entries = []  # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split('\n')
 

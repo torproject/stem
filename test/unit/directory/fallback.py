@@ -2,6 +2,7 @@
 Unit tests for stem.directory.Fallback.
 """
 
+import collections
 import io
 import re
 import tempfile
@@ -10,12 +11,6 @@ import unittest
 import stem
 import stem.directory
 import stem.util.conf
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 try:
   # added in python 3.3
@@ -58,7 +53,7 @@ URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=rela
 /* ===== */
 """
 
-HEADER = OrderedDict((
+HEADER = collections.OrderedDict((
   ('type', 'fallback'),
   ('version', '2.0.0'),
   ('timestamp', '20170526090242'),
@@ -75,7 +70,7 @@ class TestFallback(unittest.TestCase):
       'nickname': 'rueckgrat',
       'has_extrainfo': True,
       'orport_v6': ('2a01:4f8:162:51e2::2', 9001),
-      'header': OrderedDict((
+      'header': collections.OrderedDict((
         ('type', 'fallback'),
         ('version', '2.0.0'),
         ('timestamp', '20170526090242'),

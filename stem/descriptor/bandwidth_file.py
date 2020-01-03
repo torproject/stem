@@ -14,6 +14,7 @@ Parsing for Bandwidth Authority metrics as described in Tor's
 .. versionadded:: 1.8.0
 """
 
+import collections
 import datetime
 import io
 import time
@@ -24,12 +25,6 @@ from stem.descriptor import (
   _mappings_for,
   Descriptor,
 )
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 # Four character dividers are allowed for backward compatability, but five is
 # preferred.
@@ -175,7 +170,7 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
 
 
 def _parse_header(descriptor, entries):
-  header = OrderedDict()
+  header = collections.OrderedDict()
   content = io.BytesIO(descriptor.get_bytes())
 
   content.readline()  # skip the first line, which should be the timestamp
@@ -332,7 +327,7 @@ class BandwidthFile(Descriptor):
     if sign:
       raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
-    header = OrderedDict(attr) if attr is not None else OrderedDict()
+    header = collections.OrderedDict(attr) if attr is not None else collections.OrderedDict()
     timestamp = header.pop('timestamp', str(int(time.time())))
     content = header.pop('content', [])
     version = header.get('version', HEADER_DEFAULT.get('version'))

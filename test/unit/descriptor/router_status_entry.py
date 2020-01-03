@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.router_status_entry.
 """
 
+import collections
 import datetime
 import functools
 import unittest
@@ -26,12 +27,6 @@ from stem.descriptor.router_status_entry import (
   RouterStatusEntryMicroV3,
   _base64_to_hex,
 )
-
-try:
-  # Added in 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 ENTRY_WITHOUT_ED25519 = """\
 r seele AAoQ1DAR6kkoo19hBAX5K0QztNw m0ynPuwzSextzsiXYJYA0Hce+Cs 2015-08-23 00:26:35 73.15.150.172 9001 0
@@ -258,7 +253,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     Parse a router status entry with an IPv6 address.
     """
 
-    expected_protocols = OrderedDict((
+    expected_protocols = collections.OrderedDict((
       ('Cons', [1]),
       ('Desc', [1]),
       ('DirCache', [1]),

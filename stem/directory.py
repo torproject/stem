@@ -38,6 +38,7 @@ as follows...
 .. versionadded:: 1.7.0
 """
 
+import collections
 import os
 import re
 import sys
@@ -47,12 +48,6 @@ import stem.util
 import stem.util.conf
 
 from stem.util import connection, str_tools, tor_tools
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 try:
   # account for urllib's change between python 2.x and 3.x
@@ -369,13 +364,13 @@ class Fallback(Directory):
   def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
     super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     self.has_extrainfo = has_extrainfo
-    self.header = OrderedDict(header) if header else OrderedDict()
+    self.header = collections.OrderedDict(header) if header else collections.OrderedDict()
 
   @staticmethod
   def from_cache(path = FALLBACK_CACHE_PATH):
     conf = stem.util.conf.Config()
     conf.load(path)
-    headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
+    headers = collections.OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
 
     results = {}
 

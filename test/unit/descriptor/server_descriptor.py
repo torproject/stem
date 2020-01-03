@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.server_descriptor.
 """
 
+import collections
 import datetime
 import functools
 import hashlib
@@ -30,12 +31,6 @@ from test.unit.descriptor import (
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
 )
-
-try:
-  # Added in 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 try:
   # added in python 3.3
@@ -288,7 +283,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     exc_msg = 'Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.'
     self.assertRaisesWith(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
 
-    desc = RelayDescriptor.create(OrderedDict((
+    desc = RelayDescriptor.create(collections.OrderedDict((
       ('router', 'caerSidi 71.35.133.197 9001 0 0'),
       ('published', '2012-02-29 04:03:19'),
       ('fingerprint', '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44'),

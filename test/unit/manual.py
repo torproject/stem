@@ -2,6 +2,7 @@
 Unit testing for the stem.manual module.
 """
 
+import collections
 import io
 import os
 import sqlite3
@@ -24,12 +25,6 @@ try:
   from unittest.mock import Mock, patch
 except ImportError:
   from mock import Mock, patch
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
@@ -59,7 +54,7 @@ EXPECTED_FILES = {
   '$HOME/.torrc': 'Fallback location for torrc, if @CONFDIR@/torrc is not found.',
 }
 
-EXPECTED_CONFIG_OPTIONS = OrderedDict()
+EXPECTED_CONFIG_OPTIONS = collections.OrderedDict()
 
 EXPECTED_CONFIG_OPTIONS['BandwidthRate'] = stem.manual.ConfigOption(
   name = 'BandwidthRate',
@@ -315,4 +310,4 @@ class TestManual(unittest.TestCase):
     self.assertEqual({}, manual.commandline_options)
     self.assertEqual({}, manual.signals)
     self.assertEqual({}, manual.files)
-    self.assertEqual(OrderedDict(), manual.config_options)
+    self.assertEqual(collections.OrderedDict(), manual.config_options)

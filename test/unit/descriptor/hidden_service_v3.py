@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 """
 
 import base64
+import collections
 import functools
 import unittest
 
@@ -26,12 +27,6 @@ from test.unit.descriptor import (
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
 )
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 try:
   # added in python 3.3
@@ -328,7 +323,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # include optional parameters
 
-    desc = InnerLayer.create(OrderedDict((
+    desc = InnerLayer.create(collections.OrderedDict((
       ('intro-auth-required', 'ed25519'),
       ('single-onion-service', ''),
     )))

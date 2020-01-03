@@ -257,12 +257,6 @@ import threading
 import time
 
 try:
-  # Added in 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
   # Added in 3.x
   import queue
 except ImportError:
@@ -2623,7 +2617,7 @@ class Controller(BaseController):
       log.debug('GETCONF HiddenServiceOptions (failed: %s)' % exc)
       raise
 
-    service_dir_map = OrderedDict()
+    service_dir_map = collections.OrderedDict()
     directory = None
 
     for status_code, divider, content in response.content():
@@ -2779,7 +2773,7 @@ class Controller(BaseController):
     if path in conf and (port, target_address, target_port) in conf[path]['HiddenServicePort']:
       return None
 
-    conf.setdefault(path, OrderedDict()).setdefault('HiddenServicePort', []).append((port, target_address, target_port))
+    conf.setdefault(path, collections.OrderedDict()).setdefault('HiddenServicePort', []).append((port, target_address, target_port))
 
     if auth_type and client_names:
       hsac = "%s %s" % (auth_type, ','.join(client_names))
