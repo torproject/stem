@@ -256,6 +256,28 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_info([], {}))
 
   @test.require.controller
+  def test_getinfo_freshrelaydescs(self):
+    """
+    Exercises 'GETINFO status/fresh-relay-descs'.
+    """
+
+    with test.runner.get_runner().get_tor_controller() as controller:
+      response = controller.get_info('status/fresh-relay-descs')
+      div = response.find('\nextra-info ')
+      nickname = controller.get_conf('Nickname')
+
+      if div == -1:
+        self.fail('GETINFO response should have both a server and extrainfo descriptor:\n%s' % response)
+
+      server_desc = stem.descriptor.server_descriptor.ServerDescriptor(response[:div], validate = True)
+      extrainfo_desc = stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor(response[div:], validate = True)
+
+      self.assertEqual(nickname, server_desc.nickname)
+      self.assertEqual(nickname, extrainfo_desc.nickname)
+      self.assertEqual(controller.get_info('address'), server_desc.address)
+      self.assertEqual(test.runner.ORPORT, server_desc.or_port)
+
+  @test.require.controller
   @test.require.online
   def test_getinfo_dir_status(self):
     """
