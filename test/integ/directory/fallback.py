@@ -33,7 +33,6 @@ class TestFallback(unittest.TestCase):
     # added so many fallbacks now that this takes a looong time. :(
 
     self.skipTest('(skipped by default)')
-    return
 
     unsuccessful = {}
     downloader = stem.descriptor.remote.DescriptorDownloader()

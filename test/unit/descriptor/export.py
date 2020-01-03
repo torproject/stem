@@ -21,10 +21,6 @@ class TestExport(unittest.TestCase):
     Exports a single minimal tor server descriptor.
     """
 
-    if stem.prereq._is_python_26():
-      self.skipTest('(header added in python 2.7)')
-      return
-
     desc = RelayDescriptor.create({
       'router': 'caerSidi 71.35.133.197 9001 0 0',
       'published': '2012-03-01 17:15:27',
@@ -72,10 +68,6 @@ class TestExport(unittest.TestCase):
     """
     Checks that the default attributes for our csv output doesn't include private fields.
     """
-
-    if stem.prereq._is_python_26():
-      self.skipTest('(header added in python 2.7)')
-      return
 
     desc = RelayDescriptor.create()
     desc_csv = export_csv(desc)

@@ -38,10 +38,8 @@ class TestInterpreter(unittest.TestCase):
 
     if test.runner.Torrc.PASSWORD in test.runner.get_runner().get_options():
       self.skipTest('password auth unsupported')
-      return
     elif not READLINE_AVAILABLE:
       self.skipTest('readline unavailable')
-      return
 
     expected = ['250-config-file=%s' % test.runner.get_runner().get_torrc_path(), '250 OK']
     self.assertEqual(expected, _run_prompt('--run', 'GETINFO config-file'))
@@ -50,10 +48,8 @@ class TestInterpreter(unittest.TestCase):
   def test_running_file(self):
     if test.runner.Torrc.PASSWORD in test.runner.get_runner().get_options():
       self.skipTest('password auth unsupported')
-      return
     elif not READLINE_AVAILABLE:
       self.skipTest('readline unavailable')
-      return
 
     expected = [
       '250-config-file=%s' % test.runner.get_runner().get_torrc_path(),

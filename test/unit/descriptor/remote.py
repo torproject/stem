@@ -241,7 +241,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if not stem.prereq.is_zstd_available():
       self.skipTest('(requires zstd module)')
-      return
 
     descriptors = list(stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
@@ -260,7 +259,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     if not stem.prereq.is_lzma_available():
       self.skipTest('(requires lzma module)')
-      return
 
     descriptors = list(stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',

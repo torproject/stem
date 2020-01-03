@@ -27,10 +27,8 @@ class TestConnection(unittest.TestCase):
 
     if test.runner.Torrc.PORT not in runner.get_options():
       self.skipTest('(no control port)')
-      return
     elif resolver not in stem.util.connection.system_resolvers():
       self.skipTest('(resolver unavailable on this platform)')
-      return
 
     with runner.get_tor_socket():
       connections = stem.util.connection.get_connections(resolver, process_pid = runner.get_pid())

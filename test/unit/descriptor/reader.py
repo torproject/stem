@@ -192,7 +192,6 @@ class TestDescriptorReader(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
 
     # Skip the test on windows, since you can only set the file's
     # read-only flag with os.chmod(). For more information see...
@@ -558,10 +557,8 @@ class TestDescriptorReader(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
     elif stem.util.system.is_windows():
       self.skipTest('(chmod not functional)')
-      return
 
     test_path = os.path.join(self.temp_directory, 'secret_file')
 

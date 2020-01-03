@@ -149,7 +149,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -170,7 +169,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX and BSD and Slackware, #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
 
@@ -198,7 +196,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD and Slackware, #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -215,7 +212,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 

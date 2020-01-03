@@ -235,13 +235,6 @@ class TestTutorialExamples(unittest.TestCase):
   @patch('stem.descriptor.remote.Query')
   @patch('stem.directory.Authority.from_cache')
   def test_compare_flags(self, authorities_mock, query_mock, stdout_mock):
-    if stem.prereq._is_python_26():
-      # example imports OrderedDict from collections which doesn't work under
-      # python 2.6
-
-      self.skipTest("(example doesn't support python 2.6)")
-      return
-
     authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
     fingerprint = [

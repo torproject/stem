@@ -110,9 +110,9 @@ class TestInstallation(unittest.TestCase):
     git_dir = os.path.join(test.STEM_BASE, '.git')
 
     if not stem.util.system.is_available('git'):
-      raise stem.util.test_tools.SkipTest('(git unavailable)')
+      raise unittest.case.SkipTest('(git unavailable)')
     elif not os.path.exists(git_dir):
-      raise stem.util.test_tools.SkipTest('(not a git checkout)')
+      raise unittest.case.SkipTest('(not a git checkout)')
 
     if os.path.exists(DIST_PATH):
       raise AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)

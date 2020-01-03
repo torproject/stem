@@ -103,7 +103,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
 
   writer = csv.DictWriter(output_file, included_fields, dialect = _ExportDialect(), extrasaction='ignore')
 
-  if header and not stem.prereq._is_python_26():
+  if header:
     writer.writeheader()
 
   for desc in descriptors:

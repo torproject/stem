@@ -72,7 +72,6 @@ class TestCollector(unittest.TestCase):
   def test_index_gzip(self, urlopen_mock):
     if not Compression.GZIP.available:
       self.skipTest('(gzip compression unavailable)')
-      return
 
     import zlib
     urlopen_mock.return_value = io.BytesIO(zlib.compress(EXAMPLE_INDEX_JSON))
@@ -85,7 +84,6 @@ class TestCollector(unittest.TestCase):
   def test_index_bz2(self, urlopen_mock):
     if not Compression.BZ2.available:
       self.skipTest('(bz2 compression unavailable)')
-      return
 
     import bz2
     urlopen_mock.return_value = io.BytesIO(bz2.compress(EXAMPLE_INDEX_JSON))
@@ -98,7 +96,6 @@ class TestCollector(unittest.TestCase):
   def test_index_lzma(self, urlopen_mock):
     if not Compression.LZMA.available:
       self.skipTest('(lzma compression unavailable)')
-      return
 
     import lzma
     urlopen_mock.return_value = io.BytesIO(lzma.compress(EXAMPLE_INDEX_JSON))

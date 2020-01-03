@@ -1296,7 +1296,6 @@ class TestController(unittest.TestCase):
 
     if not os.path.exists(runner.get_test_dir('cached-microdescs')):
       self.skipTest('(no cached microdescriptors)')
-      return
 
     with runner.get_tor_controller() as controller:
       count = 0
@@ -1318,7 +1317,6 @@ class TestController(unittest.TestCase):
 
     if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       self.skipTest('(requires server descriptors)')
-      return
 
     with runner.get_tor_controller() as controller:
       # we should balk at invalid content
@@ -1349,7 +1347,6 @@ class TestController(unittest.TestCase):
 
     if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
       self.skipTest('(requires server descriptors)')
-      return
 
     with runner.get_tor_controller() as controller:
       count = 0
@@ -1534,6 +1531,5 @@ class TestController(unittest.TestCase):
       if TEST_ROUTER_STATUS_ENTRY is None:
         # this is only likely to occure if we can't get descriptors
         self.skipTest('(no named relays)')
-        return
 
     return TEST_ROUTER_STATUS_ENTRY

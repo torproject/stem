@@ -287,15 +287,12 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_windows():
       self.skipTest('(unavailable on windows)')
-      return
     elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
       self.skipTest('(resolvers unavailable)')
-      return
     elif not stem.util.system.is_available('netstat') or \
              stem.util.system.is_available('sockstat') or \
               stem.util.system.is_available('lsof'):
       self.skipTest('(connection resolvers unavailable)')
-      return
 
     runner = test.runner.get_runner()
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
@@ -313,7 +310,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_gentoo():
       self.skipTest('(unavailable on gentoo)')
-      return
 
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
 
@@ -353,7 +349,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_mac() or stem.util.system.is_gentoo():
       self.skipTest('(resolvers unavailable)')
-      return
 
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
 
@@ -397,7 +392,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_windows():
       self.skipTest('(unavailable on windows)')
-      return
 
     runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
@@ -537,7 +531,6 @@ class TestSystem(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
 
     self.assertEqual(os.getcwd(), stem.util.system.expand_path('.'))
     self.assertEqual(os.getcwd(), stem.util.system.expand_path('./'))
@@ -568,7 +561,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.prereq.is_pypy():
       self.skipTest('(unimplemented for pypy)')
-      return
 
     initial_name = stem.util.system.get_process_name()
     self.assertTrue('run_tests.py' in initial_name)
