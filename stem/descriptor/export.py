@@ -17,12 +17,8 @@ Toolkit for exporting descriptors to other formats.
    use this modle please `let me know <https://www.atagar.com/contact/>`_.
 """
 
+import io
 import csv
-
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.descriptor
 import stem.prereq
@@ -50,7 +46,7 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   :raises: **ValueError** if descriptors contain more than one descriptor type
   """
 
-  output_buffer = StringIO()
+  output_buffer = io.StringIO()
   export_csv_file(output_buffer, descriptors, included_fields, excluded_fields, header)
   return output_buffer.getvalue()
 

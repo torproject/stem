@@ -2,6 +2,7 @@
 Integration tests for the connect_* convenience functions.
 """
 
+import io
 import unittest
 
 import stem.connection
@@ -10,15 +11,10 @@ import test.runner
 
 from unittest.mock import patch
 
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
-
 
 class TestConnect(unittest.TestCase):
   @test.require.controller
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   def test_connect(self, stdout_mock):
     """
     Basic sanity checks for the connect function.
@@ -37,7 +33,7 @@ class TestConnect(unittest.TestCase):
     self.assertEqual('', stdout_mock.getvalue())
 
   @test.require.controller
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   def test_connect_port(self, stdout_mock):
     """
     Basic sanity checks for the connect_port function.
@@ -59,7 +55,7 @@ class TestConnect(unittest.TestCase):
       self.assertEqual(control_socket, None)
 
   @test.require.controller
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   def test_connect_socket_file(self, stdout_mock):
     """
     Basic sanity checks for the connect_socket_file function.
@@ -81,7 +77,7 @@ class TestConnect(unittest.TestCase):
       self.assertEqual(control_socket, None)
 
   @test.require.controller
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   def test_connect_to_socks_port(self, stdout_mock):
     """
     Common user gotcha is connecting to the SocksPort or ORPort rather than the

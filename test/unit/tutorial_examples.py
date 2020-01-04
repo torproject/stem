@@ -2,14 +2,10 @@
 Tests for the examples given in stem's tutorial.
 """
 
+import io
 import itertools
 import os
 import unittest
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.response
 import stem.descriptor.remote
@@ -125,7 +121,7 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_list_circuits(self, from_port_mock, stdout_mock):
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
@@ -156,7 +152,7 @@ class TestTutorialExamples(unittest.TestCase):
     exec_documentation_example('list_circuits.py')
     self.assertCountEqual(LIST_CIRCUITS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_exit_used(self, from_port_mock, stdout_mock):
     def tutorial_example(mock_event):
@@ -207,7 +203,7 @@ class TestTutorialExamples(unittest.TestCase):
     tutorial_example(event)
     self.assertCountEqual(EXIT_USED_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_outdated_relays(self, downloader_mock, stdout_mock):
     downloader_mock().get_server_descriptors.return_value = [
@@ -221,7 +217,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     self.assertCountEqual(OUTDATED_RELAYS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.Query')
   @patch('stem.directory.Authority.from_cache')
   def test_compare_flags(self, authorities_mock, query_mock, stdout_mock):
@@ -262,7 +258,7 @@ class TestTutorialExamples(unittest.TestCase):
 
     self.assertCountEqual(COMPARE_FLAGS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.directory.Authority.from_cache')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
   def test_votes_by_bandwidth_authorities(self, query_mock, authorities_mock, stdout_mock):
@@ -295,7 +291,7 @@ class TestTutorialExamples(unittest.TestCase):
     exec_documentation_example('votes_by_bandwidth_authorities.py')
     self.assertCountEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.parse_file')
   @patch('stem.descriptor.remote.Query')
   def test_persisting_a_consensus(self, query_mock, parse_file_mock, stdout_mock):

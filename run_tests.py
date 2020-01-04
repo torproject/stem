@@ -7,6 +7,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 """
 
 import errno
+import io
 import importlib
 import logging
 import multiprocessing
@@ -17,11 +18,6 @@ import threading
 import time
 import traceback
 import unittest
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.prereq
 import stem.util.conf
@@ -427,7 +423,7 @@ def _run_test(args, test_class, output_filters):
     traceback.print_exc(exc)
     return None
 
-  test_results = StringIO()
+  test_results = io.StringIO()
   run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity = 2).run(suite)
 
   if args.verbose:
