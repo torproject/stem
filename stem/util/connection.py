@@ -62,6 +62,7 @@ import re
 import socket
 import sys
 import time
+import urllib.request
 
 import stem
 import stem.util
@@ -69,12 +70,6 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log, str_tools
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -197,7 +192,7 @@ def download(url, timeout = None, retries = None):
   start_time = time.time()
 
   try:
-    return urllib.urlopen(url, timeout = timeout).read()
+    return urllib.request.urlopen(url, timeout = timeout).read()
   except socket.timeout as exc:
     raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
   except:

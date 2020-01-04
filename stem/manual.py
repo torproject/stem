@@ -54,6 +54,7 @@ import os
 import shutil
 import sys
 import tempfile
+import urllib.request
 
 import stem
 import stem.prereq
@@ -62,12 +63,6 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.log
 import stem.util.system
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
@@ -300,7 +295,7 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
   try:
     try:
       with open(asciidoc_path, 'wb') as asciidoc_file:
-        request = urllib.urlopen(url, timeout = timeout)
+        request = urllib.request.urlopen(url, timeout = timeout)
         shutil.copyfileobj(request, asciidoc_file)
     except:
       exc, stacktrace = sys.exc_info()[1:3]

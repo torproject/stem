@@ -42,18 +42,13 @@ import collections
 import os
 import re
 import sys
+import urllib.request
 
 import stem
 import stem.util
 import stem.util.conf
 
 from stem.util import connection, str_tools, tor_tools
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
 GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
@@ -260,7 +255,7 @@ class Authority(Directory):
   @staticmethod
   def from_remote(timeout = 60):
     try:
-      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise IOError('no content')
@@ -408,7 +403,7 @@ class Fallback(Directory):
   @staticmethod
   def from_remote(timeout = 60):
     try:
-      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise IOError('no content')

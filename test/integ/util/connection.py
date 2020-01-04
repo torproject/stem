@@ -4,6 +4,7 @@ that we're running.
 """
 
 import unittest
+import urllib.request
 
 import stem
 import stem.util.connection
@@ -12,12 +13,6 @@ import test.require
 import test.runner
 
 from stem.util.connection import Resolver
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 
 class TestConnection(unittest.TestCase):
@@ -58,7 +53,7 @@ class TestConnection(unittest.TestCase):
       self.assertEqual('Failed to download from https://no.such.testing.url (URLError): Name or service not known', str(exc))
       self.assertEqual('https://no.such.testing.url', exc.url)
       self.assertEqual('Name or service not known', exc.error.reason.strerror)
-      self.assertEqual(urllib.URLError, type(exc.error))
+      self.assertEqual(urllib.request.URLError, type(exc.error))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)

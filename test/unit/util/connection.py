@@ -5,6 +5,7 @@ Unit tests for the stem.util.connection functions.
 import io
 import platform
 import unittest
+import urllib.request
 
 import stem
 import stem.util.connection
@@ -12,12 +13,6 @@ import stem.util.connection
 from unittest.mock import Mock, patch
 
 from stem.util.connection import Resolver, Connection
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 URL = 'https://example.unit.test.url'
 
@@ -181,7 +176,7 @@ class TestConnection(unittest.TestCase):
 
   @patch('urllib.request.urlopen')
   def test_download_failure(self, urlopen_mock):
-    urlopen_mock.side_effect = urllib.URLError('boom')
+    urlopen_mock.side_effect = urllib.request.URLError('boom')
 
     try:
       stem.util.connection.download(URL)
@@ -190,12 +185,12 @@ class TestConnection(unittest.TestCase):
       self.assertEqual('Failed to download from https://example.unit.test.url (URLError): boom', str(exc))
       self.assertEqual(URL, exc.url)
       self.assertEqual('boom', exc.error.reason)
-      self.assertEqual(urllib.URLError, type(exc.error))
-      self.assertTrue('return urllib.urlopen(url, timeout = timeout).read()' in exc.stacktrace_str)
+      self.assertEqual(urllib.request.URLError, type(exc.error))
+      self.assertTrue('return urllib.request.urlopen(url, timeout = timeout).read()' in exc.stacktrace_str)
 
   @patch('urllib.request.urlopen')
   def test_download_retries(self, urlopen_mock):
-    urlopen_mock.side_effect = urllib.URLError('boom')
+    urlopen_mock.side_effect = urllib.request.URLError('boom')
 
     self.assertRaisesRegexp(IOError, 'boom', stem.util.connection.download, URL)
     self.assertEqual(1, urlopen_mock.call_count)

@@ -104,6 +104,7 @@ import socket
 import sys
 import threading
 import time
+import urllib.request
 
 import stem
 import stem.client
@@ -115,12 +116,6 @@ import stem.util.enum
 import stem.util.tor_tools
 
 from stem.util import log, str_tools
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 # TODO: remove in stem 2.x, replaced with stem.descriptor.Compression
 
@@ -1070,8 +1065,8 @@ def _download_from_dirport(url, compression, timeout):
   """
 
   try:
-    response = urllib.urlopen(
-      urllib.Request(
+    response = urllib.request.urlopen(
+      urllib.request.Request(
         url,
         headers = {
           'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),

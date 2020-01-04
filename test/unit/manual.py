@@ -8,6 +8,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+import urllib.request
 
 import stem.prereq
 import stem.manual
@@ -15,12 +16,6 @@ import stem.util.system
 import test.require
 
 from unittest.mock import Mock, patch
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
 UNKNOWN_OPTIONS_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_with_unknown')
@@ -247,7 +242,7 @@ class TestManual(unittest.TestCase):
   @patch('shutil.rmtree', Mock())
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  @patch('urllib.request.urlopen', Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
+  @patch('urllib.request.urlopen', Mock(side_effect = urllib.request.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
