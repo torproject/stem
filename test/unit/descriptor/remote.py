@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.remote.
 """
 
+import http.client
 import io
 import socket
 import time
@@ -17,11 +18,6 @@ from unittest.mock import patch, Mock, MagicMock
 
 from stem.descriptor.remote import Compression
 from test.unit.descriptor import read_resource
-
-try:
-  from http.client import HTTPMessage  # python3
-except ImportError:
-  from httplib import HTTPMessage  # python2
 
 TEST_RESOURCE = '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
 
@@ -94,7 +90,7 @@ def _dirport_mock(data, encoding = 'identity'):
   dirport_mock = Mock()
   dirport_mock().read.return_value = data
 
-  headers = HTTPMessage()
+  headers = http.client.HTTPMessage()
 
   for line in HEADER.splitlines():
     key, value = line.split(': ', 1)
