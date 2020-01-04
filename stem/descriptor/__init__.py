@@ -447,16 +447,10 @@ def _parse_file_for_path(descriptor_file, *args, **kwargs):
 
 
 def _parse_file_for_tar_path(descriptor_file, *args, **kwargs):
-  # TODO: use 'with' for tarfile after dropping python 2.6 support
-  tar_file = tarfile.open(descriptor_file)
-
-  try:
+  with tarfile.open(descriptor_file) as tar_file:
     for desc in parse_file(tar_file, *args, **kwargs):
       desc._set_path(os.path.abspath(descriptor_file))
       yield desc
-  finally:
-    if tar_file:
-      tar_file.close()
 
 
 def _parse_file_for_tarfile(descriptor_file, *args, **kwargs):

@@ -127,8 +127,8 @@ class TestInstallation(unittest.TestCase):
 
       # tarball has a prefix 'stem-[verion]' directory so stipping that out
 
-      dist_tar = tarfile.open(os.path.join(DIST_PATH, 'stem-dry-run-%s.tar.gz' % stem.__version__))
-      tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
+      with tarfile.open(os.path.join(DIST_PATH, 'stem-dry-run-%s.tar.gz' % stem.__version__)) as dist_tar:
+        tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
 
       issues = []
 

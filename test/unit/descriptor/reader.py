@@ -40,23 +40,13 @@ def _get_raw_tar_descriptors():
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar')
     raw_descriptors = []
 
-    # TODO: revert to using the 'with' keyword for this when dropping python
-    # 2.6 support
-
-    tar_file = None
-
-    try:
-      tar_file = tarfile.open(test_path)
-
+    with tarfile.open(test_path) as tar_file:
       for tar_entry in tar_file:
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
           entry.readline()  # strip header
           raw_descriptors.append(entry.read().decode('utf-8', 'replace'))
           entry.close()
-    finally:
-      if tar_file:
-        tar_file.close()
 
     TAR_DESCRIPTORS = raw_descriptors
 
