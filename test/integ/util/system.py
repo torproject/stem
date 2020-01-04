@@ -361,13 +361,14 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.pid_by_open_file function.
     """
 
-    # check a directory that exists, but isn't claimed by any application
-    tmpdir = tempfile.mkdtemp()
-    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
-
     # check a directory that doesn't exist
-    os.rmdir(tmpdir)
-    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
+
+    self.assertEqual(None, stem.util.system.pid_by_open_file('/no/such/path'))
+
+    # check a directory that exists, but isn't claimed by any application
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
   @require_path
   def test_pids_by_user(self):

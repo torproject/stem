@@ -288,11 +288,10 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
   elif not stem.util.system.is_available('a2x'):
     raise IOError('We require a2x from asciidoc to provide a man page')
 
-  dirpath = tempfile.mkdtemp()
-  asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
-  manual_path = os.path.join(dirpath, 'tor.1')
+  with tempfile.TemporaryDirectory() as dirpath:
+    asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
+    manual_path = os.path.join(dirpath, 'tor.1')
 
-  try:
     try:
       with open(asciidoc_path, 'wb') as asciidoc_file:
         request = urllib.request.urlopen(url, timeout = timeout)
@@ -325,8 +324,6 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
       with open(manual_path, 'rb') as manual_file:
         shutil.copyfileobj(manual_file, file_handle)
         file_handle.flush()
-  finally:
-    shutil.rmtree(dirpath)
 
 
 class Manual(object):

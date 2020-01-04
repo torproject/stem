@@ -754,71 +754,70 @@ class TestController(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-    tmpdir = tempfile.mkdtemp()
 
-    with runner.get_tor_controller() as controller:
-      try:
-        # successfully set a single option
-        connlimit = int(controller.get_conf('ConnLimit'))
-        controller.set_conf('connlimit', str(connlimit - 1))
-        self.assertEqual(connlimit - 1, int(controller.get_conf('ConnLimit')))
+    with tempfile.TemporaryDirectory() as tmpdir:
 
-        # successfully set a single list option
-        exit_policy = ['accept *:7777', 'reject *:*']
-        controller.set_conf('ExitPolicy', exit_policy)
-        self.assertEqual(exit_policy, controller.get_conf('ExitPolicy', multiple = True))
-
-        # fail to set a single option
+      with runner.get_tor_controller() as controller:
         try:
-          controller.set_conf('invalidkeyboo', 'abcde')
-          self.fail()
-        except stem.InvalidArguments as exc:
-          self.assertEqual(['invalidkeyboo'], exc.arguments)
+          # successfully set a single option
+          connlimit = int(controller.get_conf('ConnLimit'))
+          controller.set_conf('connlimit', str(connlimit - 1))
+          self.assertEqual(connlimit - 1, int(controller.get_conf('ConnLimit')))
 
-        # resets configuration parameters
-        controller.reset_conf('ConnLimit', 'ExitPolicy')
-        self.assertEqual(connlimit, int(controller.get_conf('ConnLimit')))
-        self.assertEqual(None, controller.get_conf('ExitPolicy'))
+          # successfully set a single list option
+          exit_policy = ['accept *:7777', 'reject *:*']
+          controller.set_conf('ExitPolicy', exit_policy)
+          self.assertEqual(exit_policy, controller.get_conf('ExitPolicy', multiple = True))
 
-        # successfully sets multiple config options
-        controller.set_options({
-          'connlimit': str(connlimit - 2),
-          'contactinfo': 'stem@testing',
-        })
+          # fail to set a single option
+          try:
+            controller.set_conf('invalidkeyboo', 'abcde')
+            self.fail()
+          except stem.InvalidArguments as exc:
+            self.assertEqual(['invalidkeyboo'], exc.arguments)
 
-        self.assertEqual(connlimit - 2, int(controller.get_conf('ConnLimit')))
-        self.assertEqual('stem@testing', controller.get_conf('contactinfo'))
+          # resets configuration parameters
+          controller.reset_conf('ConnLimit', 'ExitPolicy')
+          self.assertEqual(connlimit, int(controller.get_conf('ConnLimit')))
+          self.assertEqual(None, controller.get_conf('ExitPolicy'))
 
-        # fail to set multiple config options
-        try:
+          # successfully sets multiple config options
           controller.set_options({
+            'connlimit': str(connlimit - 2),
             'contactinfo': 'stem@testing',
-            'bombay': 'vadapav',
           })
-          self.fail()
-        except stem.InvalidArguments as exc:
-          self.assertEqual(['bombay'], exc.arguments)
 
-        # context-sensitive keys (the only retched things for which order matters)
-        controller.set_options((
-          ('HiddenServiceDir', tmpdir),
-          ('HiddenServicePort', '17234 127.0.0.1:17235'),
-        ))
+          self.assertEqual(connlimit - 2, int(controller.get_conf('ConnLimit')))
+          self.assertEqual('stem@testing', controller.get_conf('contactinfo'))
 
-        self.assertEqual(tmpdir, controller.get_conf('HiddenServiceDir'))
-        self.assertEqual('17234 127.0.0.1:17235', controller.get_conf('HiddenServicePort'))
-      finally:
-        # reverts configuration changes
+          # fail to set multiple config options
+          try:
+            controller.set_options({
+              'contactinfo': 'stem@testing',
+              'bombay': 'vadapav',
+            })
+            self.fail()
+          except stem.InvalidArguments as exc:
+            self.assertEqual(['bombay'], exc.arguments)
 
-        controller.set_options((
-          ('ExitPolicy', 'reject *:*'),
-          ('ConnLimit', None),
-          ('ContactInfo', None),
-          ('HiddenServiceDir', None),
-          ('HiddenServicePort', None),
-        ), reset = True)
+          # context-sensitive keys (the only retched things for which order matters)
+          controller.set_options((
+            ('HiddenServiceDir', tmpdir),
+            ('HiddenServicePort', '17234 127.0.0.1:17235'),
+          ))
 
-        shutil.rmtree(tmpdir)
+          self.assertEqual(tmpdir, controller.get_conf('HiddenServiceDir'))
+          self.assertEqual('17234 127.0.0.1:17235', controller.get_conf('HiddenServicePort'))
+        finally:
+          # reverts configuration changes
+
+          controller.set_options((
+            ('ExitPolicy', 'reject *:*'),
+            ('ConnLimit', None),
+            ('ContactInfo', None),
+            ('HiddenServiceDir', None),
+            ('HiddenServicePort', None),
+          ), reset = True)
 
   @test.require.controller
   def test_set_conf_for_usebridges(self):

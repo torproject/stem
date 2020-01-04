@@ -9,7 +9,6 @@ import hashlib
 import os
 import random
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -53,18 +52,8 @@ def random_port():
 
 
 @contextmanager
-def tmp_directory():
-  tmp_dir = tempfile.mkdtemp()
-
-  try:
-    yield tmp_dir
-  finally:
-    shutil.rmtree(tmp_dir)
-
-
-@contextmanager
 def torrc():
-  with tmp_directory() as data_directory:
+  with tempfile.TemporaryDirectory() as data_directory:
     torrc_path = os.path.join(data_directory, 'torrc')
 
     with open(torrc_path, 'w') as torrc_file:
@@ -228,7 +217,7 @@ class TestProcess(unittest.TestCase):
     output = run_tor(tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
     assert_in("Clients don't have long-term identity keys. Exiting.", output, 'Should fail to start due to lacking an ORPort')
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       torrc_path = os.path.join(data_directory, 'torrc')
 
       with open(torrc_path, 'w') as torrc_file:
@@ -324,7 +313,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       torrc = BASIC_RELAY_TORRC % data_directory
       output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
       assert_equal(sorted(torrc.splitlines()), sorted(output.splitlines()))
@@ -382,7 +371,7 @@ class TestProcess(unittest.TestCase):
     it isn't.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       # Tries running tor in another thread with the given timeout argument. This
       # issues an invalid torrc so we terminate right away if we get to the point
       # of actually invoking tor.
@@ -435,7 +424,7 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config when we write a torrc to disk.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
       control_socket, tor_process = None, None
 
@@ -479,7 +468,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
       control_socket, tor_process = None, None
 
@@ -521,7 +510,7 @@ class TestProcess(unittest.TestCase):
     #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
     #   [err] Reading config failed--see warnings above.
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       both_ports = random_port()
 
       try:
@@ -543,7 +532,7 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       start_time = time.time()
 
       try:
@@ -575,7 +564,7 @@ class TestProcess(unittest.TestCase):
     elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
 
       tor_process = stem.process.launch_tor_with_config(
@@ -619,7 +608,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
 
       tor_process = stem.process.launch_tor_with_config(
