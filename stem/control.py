@@ -253,14 +253,9 @@ import functools
 import inspect
 import io
 import os
+import queue
 import threading
 import time
-
-try:
-  # Added in 3.x
-  import queue
-except ImportError:
-  import Queue as queue
 
 import stem.descriptor.microdescriptor
 import stem.descriptor.reader

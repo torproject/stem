@@ -84,13 +84,9 @@ and picks up where it left off if run again...
 
 import mimetypes
 import os
+import queue
 import tarfile
 import threading
-
-try:
-  import queue
-except ImportError:
-  import Queue as queue
 
 import stem.descriptor
 import stem.prereq
