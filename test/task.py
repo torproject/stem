@@ -24,6 +24,7 @@
   +- PYCODESTYLE_TASK - style checks
 """
 
+import importlib
 import os
 import platform
 import re
@@ -44,14 +45,6 @@ import test.output
 from test.output import STATUS, ERROR, NO_NL, println
 
 TASK_DESCRIPTION_WIDTH = 40
-
-try:
-  # TODO: remove check when dropping python 2.6 support
-
-  import importlib
-  HAS_IMPORTLIB = True
-except ImportError:
-  HAS_IMPORTLIB = False
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
@@ -161,9 +154,6 @@ def _import_tests():
   Ensure all tests have been imported. This is important so tests can
   register if they're asynchronous.
   """
-
-  if not HAS_IMPORTLIB:
-    return
 
   for module in (CONFIG['test.unit_tests'].splitlines() + CONFIG['test.integ_tests'].splitlines()):
     try:
@@ -304,7 +294,7 @@ class ModuleVersion(Task):
     def version_check():
       if prereq_check is None or prereq_check():
         for module in modules:
-          if HAS_IMPORTLIB and stem.util.test_tools._module_exists(module):
+          if stem.util.test_tools._module_exists(module):
             return importlib.import_module(module).__version__
 
       return 'missing'
