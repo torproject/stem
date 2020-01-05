@@ -471,21 +471,6 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
           if '"""' in content:
             is_block_comment = not is_block_comment
 
-          if check_exception_keyword and content.startswith('except') and content.endswith(', exc:'):
-            # Python 2.6 - 2.7 supports two forms for exceptions...
-            #
-            #   except ValueError, exc:
-            #   except ValueError as exc:
-            #
-            # The former is the old method and no longer supported in python 3
-            # going forward.
-
-            # TODO: This check only works if the exception variable is called
-            # 'exc'. We should generalize this via a regex so other names work
-            # too.
-
-            issues.setdefault(filename, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
-
           if prefer_single_quotes and not is_block_comment:
             if '"' in content and "'" not in content and '"""' not in content and not content.endswith('\\'):
               # Checking if the line already has any single quotes since that
