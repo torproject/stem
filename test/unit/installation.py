@@ -7,9 +7,6 @@ import test
 
 
 class TestInstallation(unittest.TestCase):
-  # TODO: remove when dropping support for python 2.6
-  skip_reason = 'setUpClass() unsupported in python 2.6'
-
   @classmethod
   def setUpClass(self):
     setup_path = os.path.join(test.STEM_BASE, 'setup.py')
