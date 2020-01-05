@@ -8,22 +8,17 @@ Caches tor's latest manual content. Run this to pick new man page changes.
 
 import re
 import sys
+import urllib.request
 
 import stem.manual
 import stem.util.system
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/doc/tor.1.txt'
 MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
-    man_log_page = urllib.urlopen(GITWEB_MAN_LOG).read()
+    man_log_page = urllib.request.urlopen(GITWEB_MAN_LOG).read()
     man_commit = re.search(MAN_LOG_LINK, man_log_page).group(1)
   except:
     print("Unable to determine the latest commit to edit tor's man page: %s" % sys.exc_info()[1])

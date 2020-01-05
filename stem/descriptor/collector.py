@@ -55,7 +55,6 @@ import hashlib
 import json
 import os
 import re
-import shutil
 import tempfile
 import time
 
@@ -264,15 +263,9 @@ class File(object):
       if self._downloaded_to and os.path.exists(self._downloaded_to):
         directory = os.path.dirname(self._downloaded_to)
       else:
-        # TODO: The following can be replaced with simpler usage of
-        # tempfile.TemporaryDirectory when we drop python 2.x support.
-
-        tmp_directory = tempfile.mkdtemp()
-
-        for desc in self.read(tmp_directory, descriptor_type, start, end, document_handler, timeout, retries):
-          yield desc
-
-        shutil.rmtree(tmp_directory)
+        with tempfile.TemporaryDirectory() as tmp_directory:
+          for desc in self.read(tmp_directory, descriptor_type, start, end, document_handler, timeout, retries):
+            yield desc
 
         return
 

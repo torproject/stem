@@ -2,12 +2,8 @@
 Unit tests for stem.descriptor.export.
 """
 
+import io
 import unittest
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.prereq
 
@@ -20,10 +16,6 @@ class TestExport(unittest.TestCase):
     """
     Exports a single minimal tor server descriptor.
     """
-
-    if stem.prereq._is_python_26():
-      self.skipTest('(header added in python 2.7)')
-      return
 
     desc = RelayDescriptor.create({
       'router': 'caerSidi 71.35.133.197 9001 0 0',
@@ -63,7 +55,7 @@ class TestExport(unittest.TestCase):
     desc = RelayDescriptor.create()
     desc_csv = export_csv(desc)
 
-    csv_buffer = StringIO()
+    csv_buffer = io.StringIO()
     export_csv_file(csv_buffer, desc)
 
     self.assertEqual(desc_csv, csv_buffer.getvalue())
@@ -72,10 +64,6 @@ class TestExport(unittest.TestCase):
     """
     Checks that the default attributes for our csv output doesn't include private fields.
     """
-
-    if stem.prereq._is_python_26():
-      self.skipTest('(header added in python 2.7)')
-      return
 
     desc = RelayDescriptor.create()
     desc_csv = export_csv(desc)

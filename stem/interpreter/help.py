@@ -5,6 +5,8 @@
 Provides our /help responses.
 """
 
+import functools
+
 import stem.prereq
 
 from stem.interpreter import (
@@ -16,11 +18,6 @@ from stem.interpreter import (
 )
 
 from stem.util.term import format
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 
 def response(controller, arg):
@@ -55,7 +52,7 @@ def _normalize(arg):
   return arg
 
 
-@lru_cache()
+@functools.lru_cache()
 @uses_settings
 def _response(controller, arg, config):
   if not arg:

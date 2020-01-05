@@ -76,7 +76,6 @@ class TestProc(unittest.TestCase):
       return
     elif not os.access('/proc/net/tcp', os.R_OK) or not os.access('/proc/net/udp', os.R_OK):
       self.skipTest('(proc lacks read permissions)')
-      return
 
     # making a controller connection so that we have something to query for
     with runner.get_tor_socket():

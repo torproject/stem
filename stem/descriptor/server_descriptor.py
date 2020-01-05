@@ -92,11 +92,6 @@ from stem.descriptor import (
   _random_crypto_blob,
 )
 
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
-
 # relay descriptors must have exactly one of the following
 REQUIRED_FIELDS = (
   'router',
@@ -668,7 +663,7 @@ class ServerDescriptor(Descriptor):
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
 
-  @lru_cache()
+  @functools.lru_cache()
   def get_annotations(self):
     """
     Provides content that appeared prior to the descriptor. If this comes from
@@ -910,7 +905,7 @@ class RelayDescriptor(ServerDescriptor):
   def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None, exit_policy = None):
     return cls(cls.content(attr, exclude, sign, signing_key, exit_policy), validate = validate, skip_crypto_validation = not sign)
 
-  @lru_cache()
+  @functools.lru_cache()
   def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
     """
     Provides the digest of our descriptor's content.
@@ -967,7 +962,7 @@ class RelayDescriptor(ServerDescriptor):
 
     return RouterStatusEntryV3.create(attr)
 
-  @lru_cache()
+  @functools.lru_cache()
   def _onion_key_crosscert_digest(self):
     """
     Provides the digest of the onion-key-crosscert data. This consists of the
@@ -1051,7 +1046,7 @@ class BridgeDescriptor(ServerDescriptor):
 
     return self.get_scrubbing_issues() == []
 
-  @lru_cache()
+  @functools.lru_cache()
   def get_scrubbing_issues(self):
     """
     Provides issues with our scrubbing.

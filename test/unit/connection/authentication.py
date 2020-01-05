@@ -14,14 +14,10 @@ import unittest
 import stem.connection
 import test
 
+from unittest.mock import Mock, patch
+
 from stem.response import ControlMessage
 from stem.util import log
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 
 class TestAuthenticate(unittest.TestCase):

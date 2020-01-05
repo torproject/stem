@@ -4,6 +4,7 @@ that we're running.
 """
 
 import unittest
+import urllib.request
 
 import stem
 import stem.util.connection
@@ -13,12 +14,6 @@ import test.runner
 
 from stem.util.connection import Resolver
 
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
-
 
 class TestConnection(unittest.TestCase):
   @test.require.ptrace
@@ -27,10 +22,8 @@ class TestConnection(unittest.TestCase):
 
     if test.runner.Torrc.PORT not in runner.get_options():
       self.skipTest('(no control port)')
-      return
     elif resolver not in stem.util.connection.system_resolvers():
       self.skipTest('(resolver unavailable on this platform)')
-      return
 
     with runner.get_tor_socket():
       connections = stem.util.connection.get_connections(resolver, process_pid = runner.get_pid())
@@ -60,7 +53,7 @@ class TestConnection(unittest.TestCase):
       self.assertEqual('Failed to download from https://no.such.testing.url (URLError): Name or service not known', str(exc))
       self.assertEqual('https://no.such.testing.url', exc.url)
       self.assertEqual('Name or service not known', exc.error.reason.strerror)
-      self.assertEqual(urllib.URLError, type(exc.error))
+      self.assertEqual(urllib.request.URLError, type(exc.error))
 
   def test_connections_by_proc(self):
     self.check_resolver(Resolver.PROC)

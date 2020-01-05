@@ -48,6 +48,7 @@ future, use them at your own risk.**
 """
 
 import base64
+import functools
 import os
 import platform
 import socket
@@ -68,11 +69,6 @@ try:
 except ImportError:
   IS_PWD_AVAILABLE = False
 
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
-
 # os.sysconf is only defined on unix
 try:
   CLOCK_TICKS = os.sysconf(os.sysconf_names['SC_CLK_TCK'])
@@ -88,7 +84,7 @@ Stat = stem.util.enum.Enum(
 )
 
 
-@lru_cache()
+@functools.lru_cache()
 def is_available():
   """
   Checks if proc information is available on this platform.
@@ -109,7 +105,7 @@ def is_available():
     return True
 
 
-@lru_cache()
+@functools.lru_cache()
 def system_start_time():
   """
   Provides the unix time (seconds since epoch) when the system started.
@@ -132,7 +128,7 @@ def system_start_time():
     raise exc
 
 
-@lru_cache()
+@functools.lru_cache()
 def physical_memory():
   """
   Provides the total physical memory on the system in bytes.

@@ -14,11 +14,7 @@ import test.integ.util.system
 import test.require
 import test.runner
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from unittest.mock import Mock, patch
 
 
 class TestProtocolInfo(unittest.TestCase):

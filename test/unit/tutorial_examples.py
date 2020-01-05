@@ -2,18 +2,16 @@
 Tests for the examples given in stem's tutorial.
 """
 
+import io
 import itertools
 import os
 import unittest
 
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
-
 import stem.response
 import stem.descriptor.remote
 import stem.prereq
+
+from unittest.mock import Mock, patch
 
 from stem.control import Controller
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
@@ -23,12 +21,6 @@ from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 
 from test.unit import exec_documentation_example
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 OPEN_FUNCTION = open  # make a reference so mocking open() won't mess with us
 
@@ -129,13 +121,7 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  def assert_equal_unordered(self, expected, actual):
-    if stem.prereq.is_python_3():
-      self.assertCountEqual(expected.splitlines(), actual.splitlines())
-    else:
-      self.assertItemsEqual(expected.splitlines(), actual.splitlines())
-
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_list_circuits(self, from_port_mock, stdout_mock):
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
@@ -164,9 +150,9 @@ class TestTutorialExamples(unittest.TestCase):
     }[fingerprint]
 
     exec_documentation_example('list_circuits.py')
-    self.assert_equal_unordered(LIST_CIRCUITS_OUTPUT, stdout_mock.getvalue())
+    self.assertCountEqual(LIST_CIRCUITS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_exit_used(self, from_port_mock, stdout_mock):
     def tutorial_example(mock_event):
@@ -215,9 +201,9 @@ class TestTutorialExamples(unittest.TestCase):
     controller.get_info.return_value = 'unknown'
 
     tutorial_example(event)
-    self.assert_equal_unordered(EXIT_USED_OUTPUT, stdout_mock.getvalue())
+    self.assertCountEqual(EXIT_USED_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_outdated_relays(self, downloader_mock, stdout_mock):
     downloader_mock().get_server_descriptors.return_value = [
@@ -229,19 +215,12 @@ class TestTutorialExamples(unittest.TestCase):
 
     exec_documentation_example('outdated_relays.py')
 
-    self.assert_equal_unordered(OUTDATED_RELAYS_OUTPUT, stdout_mock.getvalue())
+    self.assertCountEqual(OUTDATED_RELAYS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.Query')
   @patch('stem.directory.Authority.from_cache')
   def test_compare_flags(self, authorities_mock, query_mock, stdout_mock):
-    if stem.prereq._is_python_26():
-      # example imports OrderedDict from collections which doesn't work under
-      # python 2.6
-
-      self.skipTest("(example doesn't support python 2.6)")
-      return
-
     authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
 
     fingerprint = [
@@ -277,9 +256,9 @@ class TestTutorialExamples(unittest.TestCase):
 
     exec_documentation_example('compare_flags.py')
 
-    self.assert_equal_unordered(COMPARE_FLAGS_OUTPUT, stdout_mock.getvalue())
+    self.assertCountEqual(COMPARE_FLAGS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.directory.Authority.from_cache')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
   def test_votes_by_bandwidth_authorities(self, query_mock, authorities_mock, stdout_mock):
@@ -310,9 +289,9 @@ class TestTutorialExamples(unittest.TestCase):
     query_mock.side_effect = [query1, query2, query3]
 
     exec_documentation_example('votes_by_bandwidth_authorities.py')
-    self.assert_equal_unordered(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT, stdout_mock.getvalue())
+    self.assertCountEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.parse_file')
   @patch('stem.descriptor.remote.Query')
   def test_persisting_a_consensus(self, query_mock, parse_file_mock, stdout_mock):

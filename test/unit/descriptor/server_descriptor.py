@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.server_descriptor.
 """
 
+import collections
 import datetime
 import functools
 import hashlib
@@ -20,6 +21,8 @@ import stem.version
 import stem.util.str_tools
 import test.require
 
+from unittest.mock import Mock, patch
+
 from stem.client.datatype import CertType
 from stem.descriptor import DigestHash, DigestEncoding
 from stem.descriptor.certificate import ExtensionType
@@ -30,18 +33,6 @@ from test.unit.descriptor import (
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
 )
-
-try:
-  # Added in 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 TARFILE_FINGERPRINTS = set([
   'B6D83EC2D9E18B0A7A33428F8CFA9C536769E209',
@@ -74,16 +65,12 @@ class TestServerDescriptor(unittest.TestCase):
     Fetch server descriptors via parse_file() for a tarfile object.
     """
 
-    # TODO: When dropping python 2.6 support we can go back to using the 'with'
-    # keyword here.
+    with tarfile.open(get_resource('descriptor_archive.tar')) as tar_file:
+      descriptors = list(stem.descriptor.parse_file(tar_file))
+      self.assertEqual(3, len(descriptors))
 
-    tar_file = tarfile.open(get_resource('descriptor_archive.tar'))
-    descriptors = list(stem.descriptor.parse_file(tar_file))
-    self.assertEqual(3, len(descriptors))
-
-    fingerprints = set([desc.fingerprint for desc in descriptors])
-    self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
-    tar_file.close()
+      fingerprints = set([desc.fingerprint for desc in descriptors])
+      self.assertEqual(TARFILE_FINGERPRINTS, fingerprints)
 
   def test_metrics_descriptor(self):
     """
@@ -288,7 +275,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     exc_msg = 'Server descriptor lacks a fingerprint. This is an optional field, but required to make a router status entry.'
     self.assertRaisesWith(ValueError, exc_msg, desc_without_fingerprint.make_router_status_entry)
 
-    desc = RelayDescriptor.create(OrderedDict((
+    desc = RelayDescriptor.create(collections.OrderedDict((
       ('router', 'caerSidi 71.35.133.197 9001 0 0'),
       ('published', '2012-02-29 04:03:19'),
       ('fingerprint', '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44'),

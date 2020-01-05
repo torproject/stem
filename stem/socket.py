@@ -204,21 +204,10 @@ class BaseSocket(object):
         except socket.error:
           pass
 
-        # Suppressing unexpected exceptions from close. For instance, if the
-        # socket's file has already been closed then with python 2.7 that raises
-        # with...
-        # error: [Errno 32] Broken pipe
-
-        try:
-          self._socket.close()
-        except:
-          pass
+        self._socket.close()
 
       if self._socket_file:
-        try:
-          self._socket_file.close()
-        except:
-          pass
+        self._socket_file.close()
 
       self._socket = None
       self._socket_file = None
@@ -680,14 +669,12 @@ def recv_message(control_file, arrived_at = None):
 
       log.info(ERROR_MSG % ('SocketClosed', 'socket file has been closed'))
       raise stem.SocketClosed('socket file has been closed')
-    except (socket.error, ValueError) as exc:
-      # When disconnected we get...
+    except (OSError, ValueError) as exc:
+      # when disconnected this errors with...
       #
-      # Python 2:
-      #   socket.error: [Errno 107] Transport endpoint is not connected
-      #
-      # Python 3:
-      #   ValueError: I/O operation on closed file.
+      #   * ValueError: I/O operation on closed file
+      #   * OSError: [Errno 107] Transport endpoint is not connected
+      #   * OSError: [Errno 9] Bad file descriptor
 
       log.info(ERROR_MSG % ('SocketClosed', 'received exception "%s"' % exc))
       raise stem.SocketClosed(exc)
@@ -710,9 +697,8 @@ def recv_message(control_file, arrived_at = None):
 
     status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
 
-    if stem.prereq.is_python_3():
-      status_code = stem.util.str_tools._to_unicode(status_code)
-      divider = stem.util.str_tools._to_unicode(divider)
+    status_code = stem.util.str_tools._to_unicode(status_code)
+    divider = stem.util.str_tools._to_unicode(divider)
 
     # Most controller responses are single lines, in which case we don't need
     # so much overhead.

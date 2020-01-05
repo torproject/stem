@@ -28,7 +28,7 @@ class TestExtraInfoDescriptor(unittest.TestCase):
     descriptor_path = os.path.join(test_dir, 'cached-extrainfo')
 
     if not os.path.exists(descriptor_path):
-      raise stem.util.test_tools.SkipTest('(no cached descriptors)')
+      raise unittest.case.SkipTest('(no cached descriptors)')
 
     with open(descriptor_path, 'rb') as descriptor_file:
       for desc in stem.descriptor.parse_file(descriptor_file, 'extra-info 1.0', validate = True):

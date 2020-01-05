@@ -5,15 +5,11 @@ import stem
 import stem.response
 import stem.version
 
+from unittest.mock import Mock, patch
+
 from stem.interpreter.commands import ControlInterpreter, _get_fingerprint
 from stem.response import ControlMessage
 from test.unit.interpreter import CONTROLLER
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 EXPECTED_EVENTS_RESPONSE = """\
 \x1b[34mBW 15 25\x1b[0m

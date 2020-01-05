@@ -56,15 +56,6 @@ ASYNC_TESTS = {}
 AsyncStatus = stem.util.enum.UppercaseEnum('PENDING', 'RUNNING', 'FINISHED')
 AsyncResult = collections.namedtuple('AsyncResult', 'type msg')
 
-# TODO: Providing a copy of SkipTest that works with python 2.6. This will be
-# dropped when we remove python 2.6 support.
-
-if stem.prereq._is_python_26():
-  class SkipTest(Exception):
-    'Notes that the test was skipped.'
-else:
-  SkipTest = unittest.case.SkipTest
-
 
 def assert_equal(expected, actual, msg = None):
   """
@@ -111,7 +102,7 @@ def skip(msg):
   :raises: **unittest.case.SkipTest** for this reason
   """
 
-  raise SkipTest(msg)
+  raise unittest.case.SkipTest(msg)
 
 
 def asynchronous(func):
@@ -159,9 +150,6 @@ class AsyncTest(object):
     self._status = AsyncStatus.PENDING
 
   def run(self, *runner_args, **kwargs):
-    if stem.prereq._is_python_26():
-      return  # not supported under python 2.6
-
     def _wrapper(conn, runner, args):
       os.nice(12)
 
@@ -170,7 +158,7 @@ class AsyncTest(object):
         conn.send(AsyncResult('success', None))
       except AssertionError as exc:
         conn.send(AsyncResult('failure', str(exc)))
-      except SkipTest as exc:
+      except unittest.case.SkipTest as exc:
         conn.send(AsyncResult('skipped', str(exc)))
       except:
         conn.send(AsyncResult('error', traceback.format_exc()))
@@ -209,9 +197,6 @@ class AsyncTest(object):
     self.result(None)
 
   def result(self, test):
-    if stem.prereq._is_python_26():
-      return  # not supported under python 2.6
-
     with self._process_lock:
       if self._status == AsyncStatus.PENDING:
         self.run()
@@ -259,21 +244,6 @@ class TimedTestRunner(unittest.TextTestRunner):
           TEST_RUNTIMES[self.id()] = time.time() - start_time
           return result
 
-        # TODO: remove and drop unnecessary 'returns' when dropping python 2.6
-        # support
-
-        def skipTest(self, message):
-          if not stem.prereq._is_python_26():
-            return super(original_type, self).skipTest(message)
-
-        # TODO: remove when dropping python 2.6 support
-
-        def assertItemsEqual(self, expected, actual):
-          if stem.prereq._is_python_26():
-            self.assertEqual(set(expected), set(actual))
-          else:
-            return super(original_type, self).assertItemsEqual(expected, actual)
-
         def assertRaisesWith(self, exc_type, exc_msg, func, *args, **kwargs):
           """
           Asserts the given invokation raises the expected excepiton. This is
@@ -286,16 +256,6 @@ class TimedTestRunner(unittest.TextTestRunner):
           """
 
           return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), func, *args, **kwargs)
-
-        def assertRaisesRegexp(self, exc_type, exc_msg, func, *args, **kwargs):
-          if stem.prereq._is_python_26():
-            try:
-              func(*args, **kwargs)
-              self.fail('Expected a %s to be raised but nothing was' % exc_type)
-            except exc_type as exc:
-              self.assertTrue(re.search(exc_msg, str(exc), re.MULTILINE))
-          else:
-            return super(original_type, self).assertRaisesRegexp(exc_type, exc_msg, func, *args, **kwargs)
 
         def id(self):
           return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
@@ -510,21 +470,6 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
           if '"""' in content:
             is_block_comment = not is_block_comment
-
-          if check_exception_keyword and content.startswith('except') and content.endswith(', exc:'):
-            # Python 2.6 - 2.7 supports two forms for exceptions...
-            #
-            #   except ValueError, exc:
-            #   except ValueError as exc:
-            #
-            # The former is the old method and no longer supported in python 3
-            # going forward.
-
-            # TODO: This check only works if the exception variable is called
-            # 'exc'. We should generalize this via a regex so other names work
-            # too.
-
-            issues.setdefault(filename, []).append(Issue(index + 1, "except clause should use 'as', not comma", line))
 
           if prefer_single_quotes and not is_block_comment:
             if '"' in content and "'" not in content and '"""' not in content and not content.endswith('\\'):

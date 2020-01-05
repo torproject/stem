@@ -108,9 +108,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
 
         if line.is_next_mapping('COOKIEFILE', True, True):
           self.cookie_path = line.pop_mapping(True, True, get_bytes = True)[1].decode(sys.getfilesystemencoding())
-
-          if stem.prereq.is_python_3():
-            self.cookie_path = stem.util.str_tools._to_unicode(self.cookie_path)  # normalize back to str
+          self.cookie_path = stem.util.str_tools._to_unicode(self.cookie_path)  # normalize back to str
       elif line_type == 'VERSION':
         # Line format:
         #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF

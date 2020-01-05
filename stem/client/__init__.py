@@ -64,14 +64,6 @@ class Relay(object):
   """
 
   def __init__(self, orport, link_protocol):
-    # TODO: Python 3.x adds a getbuffer() method which
-    # lets us get the size...
-    #
-    #   https://stackoverflow.com/questions/26827055/python-how-to-get-iobytes-allocated-memory-length
-    #
-    # When we drop python 2.x support we should replace
-    # self._orport_buffer with an io.BytesIO.
-
     self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
     self._orport_buffer = b''  # unread bytes

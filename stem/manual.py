@@ -48,10 +48,13 @@ us what our torrc options do...
 .. versionadded:: 1.5.0
 """
 
+import collections
+import functools
 import os
 import shutil
 import sys
 import tempfile
+import urllib.request
 
 import stem
 import stem.prereq
@@ -60,23 +63,6 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.log
 import stem.util.system
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
-
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
@@ -96,7 +82,7 @@ SCHEMA = (
   'CREATE TABLE torrc(key TEXT PRIMARY KEY, name TEXT, category TEXT, usage TEXT, summary TEXT, description TEXT, position INTEGER)',
 )
 
-CATEGORY_SECTIONS = OrderedDict((
+CATEGORY_SECTIONS = collections.OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
   ('CLIENT OPTIONS', Category.CLIENT),
   ('SERVER OPTIONS', Category.RELAY),
@@ -199,7 +185,7 @@ class ConfigOption(object):
     return not self == other
 
 
-@lru_cache()
+@functools.lru_cache()
 def _config(lowercase = True):
   """
   Provides a dictionary for our settings.cfg. This has a couple categories...
@@ -302,14 +288,13 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
   elif not stem.util.system.is_available('a2x'):
     raise IOError('We require a2x from asciidoc to provide a man page')
 
-  dirpath = tempfile.mkdtemp()
-  asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
-  manual_path = os.path.join(dirpath, 'tor.1')
+  with tempfile.TemporaryDirectory() as dirpath:
+    asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
+    manual_path = os.path.join(dirpath, 'tor.1')
 
-  try:
     try:
       with open(asciidoc_path, 'wb') as asciidoc_file:
-        request = urllib.urlopen(url, timeout = timeout)
+        request = urllib.request.urlopen(url, timeout = timeout)
         shutil.copyfileobj(request, asciidoc_file)
     except:
       exc, stacktrace = sys.exc_info()[1:3]
@@ -339,8 +324,6 @@ def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, 
       with open(manual_path, 'rb') as manual_file:
         shutil.copyfileobj(manual_file, file_handle)
         file_handle.flush()
-  finally:
-    shutil.rmtree(dirpath)
 
 
 class Manual(object):
@@ -374,10 +357,10 @@ class Manual(object):
     self.name = name
     self.synopsis = synopsis
     self.description = description
-    self.commandline_options = OrderedDict(commandline_options)
-    self.signals = OrderedDict(signals)
-    self.files = OrderedDict(files)
-    self.config_options = OrderedDict(config_options)
+    self.commandline_options = collections.OrderedDict(commandline_options)
+    self.signals = collections.OrderedDict(signals)
+    self.files = collections.OrderedDict(files)
+    self.config_options = collections.OrderedDict(config_options)
     self.man_commit = None
     self.stem_commit = None
     self.schema = None
@@ -442,7 +425,7 @@ class Manual(object):
       signals = dict(conn.execute('SELECT name, description FROM signals').fetchall())
       files = dict(conn.execute('SELECT name, description FROM files').fetchall())
 
-      config_options = OrderedDict()
+      config_options = collections.OrderedDict()
 
       for entry in conn.execute('SELECT name, category, usage, summary, description FROM torrc ORDER BY position').fetchall():
         option, category, usage, summary, option_description = entry
@@ -460,7 +443,7 @@ class Manual(object):
     conf = stem.util.conf.Config()
     conf.load(path, commenting = False)
 
-    config_options = OrderedDict()
+    config_options = collections.OrderedDict()
 
     for key in conf.keys():
       if key.startswith('config_options.'):
@@ -479,9 +462,9 @@ class Manual(object):
       conf.get('name', ''),
       conf.get('synopsis', ''),
       conf.get('description', ''),
-      conf.get('commandline_options', OrderedDict()),
-      conf.get('signals', OrderedDict()),
-      conf.get('files', OrderedDict()),
+      conf.get('commandline_options', collections.OrderedDict()),
+      conf.get('signals', collections.OrderedDict()),
+      conf.get('files', collections.OrderedDict()),
       config_options,
     )
 
@@ -514,7 +497,7 @@ class Manual(object):
     except OSError as exc:
       raise IOError("Unable to run '%s': %s" % (man_cmd, exc))
 
-    categories, config_options = _get_categories(man_output), OrderedDict()
+    categories, config_options = _get_categories(man_output), collections.OrderedDict()
 
     for category_header, category_enum in CATEGORY_SECTIONS.items():
       _add_config_options(config_options, category_enum, categories.get(category_header, []))
@@ -677,7 +660,7 @@ def _get_categories(content):
   if content and content[-1].startswith('Tor'):
     content = content[:-1]
 
-  categories = OrderedDict()
+  categories = collections.OrderedDict()
   category, lines = None, []
 
   for line in content:
@@ -687,8 +670,7 @@ def _get_categories(content):
     #   \u2014 - extra long dash
     #   \xb7 - centered dot
 
-    char_for = chr if stem.prereq.is_python_3() else unichr
-    line = line.replace(char_for(0x2019), "'").replace(char_for(0x2014), '-').replace(char_for(0xb7), '*')
+    line = line.replace(chr(0x2019), "'").replace(chr(0x2014), '-').replace(chr(0xb7), '*')
 
     if line and not line.startswith(' '):
       if category:
@@ -727,7 +709,7 @@ def _get_indented_descriptions(lines):
   ignoring those.
   """
 
-  options, last_arg = OrderedDict(), None
+  options, last_arg = collections.OrderedDict(), None
 
   for line in lines:
     if line == '    Note':

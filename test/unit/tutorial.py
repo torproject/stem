@@ -7,23 +7,14 @@ import unittest
 
 import stem.descriptor.remote
 
+from unittest.mock import Mock, patch
+
 from stem.control import Controller
 from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.exit_policy import ExitPolicy
 from test.unit import exec_documentation_example
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 
 OVER_THE_RIVER_OUTPUT = """\
@@ -47,7 +38,7 @@ class TestTutorial(unittest.TestCase):
 
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
     controller = from_port_mock().__enter__()
@@ -59,7 +50,7 @@ class TestTutorial(unittest.TestCase):
     exec_documentation_example('hello_world.py')
     self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('shutil.rmtree')
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_over_the_river(self, from_port_mock, rmtree_mock, stdout_mock):
@@ -125,7 +116,7 @@ class TestTutorial(unittest.TestCase):
 
     self.assertEqual(OVER_THE_RIVER_OUTPUT, stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
     downloader_mock().get_consensus.return_value = [RouterStatusEntryV2.create({
@@ -135,7 +126,7 @@ class TestTutorial(unittest.TestCase):
     exec_documentation_example('current_descriptors.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
     controller = from_port_mock().__enter__()
@@ -146,7 +137,7 @@ class TestTutorial(unittest.TestCase):
     exec_documentation_example('descriptor_from_tor_control_socket.py')
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('%s.open' % __name__, create = True)
   def test_mirror_mirror_on_the_wall_3(self, open_mock, stdout_mock):
     def tutorial_example():
@@ -164,7 +155,7 @@ class TestTutorial(unittest.TestCase):
     tutorial_example()
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.collector.get_server_descriptors')
   def test_mirror_mirror_on_the_wall_4(self, get_desc_mock, stdout_mock):
     get_desc_mock.return_value = iter([RelayDescriptor.create({
@@ -175,7 +166,7 @@ class TestTutorial(unittest.TestCase):
     exec_documentation_example('collector_reading.py')
     self.assertEqual('1 relays published an exiting policy today...\n\n  caerSidi (2C3C46625698B6D67DF32BC1918AD3EE1F9906B1)\n', stdout_mock.getvalue())
 
-  @patch('sys.stdout', new_callable = StringIO)
+  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_mirror_mirror_on_the_wall_5(self, downloader_mock, stdout_mock):

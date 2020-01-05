@@ -2,6 +2,7 @@
 Unit tests for stem.directory.Fallback.
 """
 
+import collections
 import io
 import re
 import tempfile
@@ -11,19 +12,7 @@ import stem
 import stem.directory
 import stem.util.conf
 
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
-  # added in python 3.3
-  from unittest.mock import patch, Mock
-except ImportError:
-  from mock import patch, Mock
-
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
+from unittest.mock import patch, Mock
 
 FALLBACK_GITWEB_CONTENT = b"""\
 /* type=fallback */
@@ -58,7 +47,7 @@ URL: https:onionoo.torproject.orguptime?first_seen_days=30-&flag=V2Dir&type=rela
 /* ===== */
 """
 
-HEADER = OrderedDict((
+HEADER = collections.OrderedDict((
   ('type', 'fallback'),
   ('version', '2.0.0'),
   ('timestamp', '20170526090242'),
@@ -75,7 +64,7 @@ class TestFallback(unittest.TestCase):
       'nickname': 'rueckgrat',
       'has_extrainfo': True,
       'orport_v6': ('2a01:4f8:162:51e2::2', 9001),
-      'header': OrderedDict((
+      'header': collections.OrderedDict((
         ('type', 'fallback'),
         ('version', '2.0.0'),
         ('timestamp', '20170526090242'),
@@ -95,7 +84,7 @@ class TestFallback(unittest.TestCase):
     self.assertTrue(len(fallbacks) > 10)
     self.assertEqual('185.13.39.197', fallbacks['001524DD403D729F08F7E5D77813EF12756CFA8D'].address)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT)))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT)))
   def test_from_remote(self):
     expected = {
       '0756B7CD4DFC8182BE23143FAC0642F515182CEB': stem.directory.Fallback(
@@ -122,15 +111,15 @@ class TestFallback(unittest.TestCase):
 
     self.assertEqual(expected, stem.directory.Fallback.from_remote())
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
     self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Fallback.from_remote)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_GITWEB_CONTENT.splitlines()[1:]))))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_GITWEB_CONTENT.splitlines()[1:]))))
   def test_from_remote_no_header(self):
     self.assertRaisesRegexp(IOError, 'does not have a type field indicating it is fallback directory metadata', stem.directory.Fallback.from_remote)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT.replace(b'version=2.0.0', b'version'))))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT.replace(b'version=2.0.0', b'version'))))
   def test_from_remote_malformed_header(self):
     self.assertRaisesRegexp(IOError, 'Malformed fallback directory header line: /\\* version \\*/', stem.directory.Fallback.from_remote)
 
@@ -145,7 +134,7 @@ class TestFallback(unittest.TestCase):
     }
 
     for entry, expected in test_values.items():
-      with patch(URL_OPEN, Mock(return_value = io.BytesIO(entry))):
+      with patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(entry))):
         self.assertRaisesRegexp(IOError, re.escape(expected), stem.directory.Fallback.from_remote)
 
   def test_persistence(self):

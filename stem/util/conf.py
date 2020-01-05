@@ -157,6 +157,7 @@ Here's an expanation of what happened...
     +- get_value - provides the value for a given key as a string
 """
 
+import collections
 import inspect
 import os
 import threading
@@ -164,12 +165,6 @@ import threading
 import stem.prereq
 
 from stem.util import log
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
@@ -453,9 +448,9 @@ class Config(object):
   """
 
   def __init__(self):
-    self._path = None        # location we last loaded from or saved to
-    self._contents = OrderedDict()  # configuration key/value pairs
-    self._listeners = []     # functors to be notified of config changes
+    self._path = None  # location we last loaded from or saved to
+    self._contents = collections.OrderedDict()  # configuration key/value pairs
+    self._listeners = []  # functors to be notified of config changes
 
     # used for accessing _contents
     self._contents_lock = threading.RLock()
@@ -640,14 +635,12 @@ class Config(object):
     """
 
     with self._contents_lock:
-      unicode_type = str if stem.prereq.is_python_3() else unicode
-
       if value is None:
         if overwrite and key in self._contents:
           del self._contents[key]
         else:
           pass  # no value so this is a no-op
-      elif isinstance(value, (bytes, unicode_type)):
+      elif isinstance(value, (bytes, str)):
         if not overwrite and key in self._contents:
           self._contents[key].append(value)
         else:
@@ -735,7 +728,7 @@ class Config(object):
     elif isinstance(default, tuple):
       val = tuple(val)
     elif isinstance(default, dict):
-      val_map = OrderedDict()
+      val_map = collections.OrderedDict()
       for entry in val:
         if '=>' in entry:
           entry_key, entry_val = entry.split('=>', 1)

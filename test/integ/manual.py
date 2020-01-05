@@ -59,9 +59,6 @@ EXPECTED_EXIT_POLICY_DESCRIPTION_END = 'it applies to both IPv4 and IPv6 address
 
 
 class TestManual(unittest.TestCase):
-  # TODO: remove when dropping support for python 2.6
-  skip_reason = 'setUpClass() unsupported in python 2.6'
-
   @classmethod
   def setUpClass(self):
     self.man_path = None
@@ -91,14 +88,13 @@ class TestManual(unittest.TestCase):
     if self.man_path and os.path.exists(self.man_path):
       os.remove(self.man_path)
 
+  # TODO: replace with a 'require' annotation
+
   def requires_downloaded_manual(self):
     if self.skip_reason:
       self.skipTest(self.skip_reason)
-      return True
     elif self.download_error:
       self.fail(self.download_error)
-
-    return False
 
   def test_escapes_non_ascii(self):
     """
@@ -108,8 +104,7 @@ class TestManual(unittest.TestCase):
     stem/manual.py's _get_categories().
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     def check(content):
       try:
@@ -131,8 +126,7 @@ class TestManual(unittest.TestCase):
     it has indented lines within it. Ensure we parse this correctly.
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     manual = stem.manual.Manual.from_man(self.man_path)
     self.assertTrue(manual.config_options['ExitPolicy'].description.startswith(EXPECTED_EXIT_POLICY_DESCRIPTION_START))
@@ -143,8 +137,7 @@ class TestManual(unittest.TestCase):
     Check if the cached manual information bundled with Stem is up to date or not.
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     cached_manual = stem.manual.Manual.from_cache()
     latest_manual = stem.manual.Manual.from_man(self.man_path)
@@ -158,8 +151,7 @@ class TestManual(unittest.TestCase):
     then go ahead and simply update these assertions.
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     def assert_equal(category, expected, actual):
       if expected != actual:
@@ -208,8 +200,7 @@ class TestManual(unittest.TestCase):
     class to match.
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     categories = stem.manual._get_categories(self.man_content)
 
@@ -230,8 +221,7 @@ class TestManual(unittest.TestCase):
     Check that all the configuration options tor supports are in the man page.
     """
 
-    if self.requires_downloaded_manual():
-      return
+    self.requires_downloaded_manual()
 
     with test.runner.get_runner().get_tor_controller() as controller:
       config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines() if line.split()[1] != 'Virtual'])

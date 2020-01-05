@@ -61,30 +61,17 @@ TIME_UNITS = (
 
 _timestamp_re = re.compile(r'(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})')
 
-if stem.prereq.is_python_3():
-  def _to_bytes_impl(msg):
-    if isinstance(msg, str):
-      return codecs.latin_1_encode(msg, 'replace')[0]
-    else:
-      return msg
+def _to_bytes_impl(msg):
+  if isinstance(msg, str):
+    return codecs.latin_1_encode(msg, 'replace')[0]
+  else:
+    return msg
 
-  def _to_unicode_impl(msg):
-    if msg is not None and not isinstance(msg, str):
-      return msg.decode('utf-8', 'replace')
-    else:
-      return msg
-else:
-  def _to_bytes_impl(msg):
-    if msg is not None and isinstance(msg, unicode):
-      return codecs.latin_1_encode(msg, 'replace')[0]
-    else:
-      return msg
-
-  def _to_unicode_impl(msg):
-    if msg is not None and not isinstance(msg, unicode):
-      return msg.decode('utf-8', 'replace')
-    else:
-      return msg
+def _to_unicode_impl(msg):
+  if msg is not None and not isinstance(msg, str):
+    return msg.decode('utf-8', 'replace')
+  else:
+    return msg
 
 
 def _to_bytes(msg):
@@ -137,7 +124,7 @@ def _to_int(msg):
   :returns: **int** representation of the string
   """
 
-  if stem.prereq.is_python_3() and isinstance(msg, bytes):
+  if isinstance(msg, bytes):
     # iterating over bytes in python3 provides ints rather than characters
     return sum([pow(256, (len(msg) - i - 1)) * c for (i, c) in enumerate(msg)])
   else:
@@ -508,7 +495,7 @@ def _parse_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not stem.util._is_str(entry):
+  if not isinstance(entry, (bytes, str)):
     raise ValueError('parse_timestamp() input must be a str, got a %s' % type(entry))
 
   try:
@@ -534,7 +521,7 @@ def _parse_iso_timestamp(entry):
   :raises: **ValueError** if the timestamp is malformed
   """
 
-  if not stem.util._is_str(entry):
+  if not isinstance(entry, (bytes, str)):
     raise ValueError('parse_iso_timestamp() input must be a str, got a %s' % type(entry))
 
   # based after suggestions from...

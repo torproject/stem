@@ -67,6 +67,7 @@ exiting to a destination is permissible or not. For instance...
 
 from __future__ import absolute_import
 
+import functools
 import re
 import socket
 import zlib
@@ -76,11 +77,6 @@ import stem.util
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 AddressType = stem.util.enum.Enum(('WILDCARD', 'Wildcard'), ('IPv4', 'IPv4'), ('IPv6', 'IPv6'))
 
@@ -128,7 +124,7 @@ def get_config_policy(rules, ip_address = None):
   elif ip_address and stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True) and not (ip_address[0] == '[' and ip_address[-1] == ']'):
     ip_address = '[%s]' % ip_address  # ExitPolicy validation expects IPv6 addresses to be bracketed
 
-  if stem.util._is_str(rules):
+  if isinstance(rules, (bytes, str)):
     rules = rules.split(',')
 
   result = []
@@ -242,7 +238,7 @@ class ExitPolicy(object):
     # sanity check the types
 
     for rule in rules:
-      if not stem.util._is_str(rule) and not isinstance(rule, ExitPolicyRule):
+      if not isinstance(rule, (bytes, str)) and not isinstance(rule, ExitPolicyRule):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
 
     # Unparsed representation of the rules we were constructed with. Our
@@ -253,7 +249,7 @@ class ExitPolicy(object):
     is_all_str = True
 
     for rule in rules:
-      if not stem.util._is_str(rule):
+      if not isinstance(rule, (bytes, str)):
         is_all_str = False
 
     if rules and is_all_str:
@@ -271,7 +267,7 @@ class ExitPolicy(object):
 
     self._is_allowed_default = True
 
-  @lru_cache()
+  @functools.lru_cache()
   def can_exit_to(self, address = None, port = None, strict = False):
     """
     Checks if this policy allows exiting to a given destination or not. If the
@@ -295,7 +291,7 @@ class ExitPolicy(object):
 
     return self._is_allowed_default
 
-  @lru_cache()
+  @functools.lru_cache()
   def is_exiting_allowed(self):
     """
     Provides **True** if the policy allows exiting whatsoever, **False**
@@ -317,7 +313,7 @@ class ExitPolicy(object):
 
     return self._is_allowed_default
 
-  @lru_cache()
+  @functools.lru_cache()
   def summary(self):
     """
     Provides a short description of our policy chain, similar to a
@@ -470,7 +466,7 @@ class ExitPolicy(object):
         if isinstance(rule, bytes):
           rule = stem.util.str_tools._to_unicode(rule)
 
-        if stem.util._is_str(rule):
+        if isinstance(rule, (bytes, str)):
           if not rule.strip():
             continue
 
@@ -520,7 +516,7 @@ class ExitPolicy(object):
     for rule in self._get_rules():
       yield rule
 
-  @lru_cache()
+  @functools.lru_cache()
   def __str__(self):
     return ', '.join([str(rule) for rule in self._get_rules()])
 
@@ -873,7 +869,7 @@ class ExitPolicyRule(object):
 
     return self._is_default_suffix
 
-  @lru_cache()
+  @functools.lru_cache()
   def __str__(self):
     """
     Provides the string representation of our policy. This does not
@@ -917,13 +913,13 @@ class ExitPolicyRule(object):
 
     return label
 
-  @lru_cache()
+  @functools.lru_cache()
   def _get_mask_bin(self):
     # provides an integer representation of our mask
 
     return int(stem.util.connection._address_to_binary(self.get_mask(False)), 2)
 
-  @lru_cache()
+  @functools.lru_cache()
   def _get_address_bin(self):
     # provides an integer representation of our address
 

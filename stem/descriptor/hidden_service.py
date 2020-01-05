@@ -35,6 +35,7 @@ import base64
 import binascii
 import collections
 import datetime
+import functools
 import hashlib
 import io
 import os
@@ -69,11 +70,6 @@ from stem.descriptor import (
   _random_date,
   _random_crypto_blob,
 )
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 try:
   from cryptography.hazmat.backends.openssl.backend import backend
@@ -745,7 +741,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     else:
       self._entries = entries
 
-  @lru_cache()
+  @functools.lru_cache()
   def introduction_points(self, authentication_cookie = None):
     """
     Provided this service's introduction points.

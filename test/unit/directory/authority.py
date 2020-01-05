@@ -9,13 +9,7 @@ import stem
 import stem.directory
 import stem.prereq
 
-try:
-  # added in python 3.3
-  from unittest.mock import patch, Mock
-except ImportError:
-  from mock import patch, Mock
-
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
+from unittest.mock import patch, Mock
 
 AUTHORITY_GITWEB_CONTENT = b"""\
 "moria1 orport=9101 "
@@ -53,7 +47,7 @@ class TestAuthority(unittest.TestCase):
     self.assertTrue(len(authorities) > 4)
     self.assertEqual('128.31.0.39', authorities['moria1'].address)
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(AUTHORITY_GITWEB_CONTENT)))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(AUTHORITY_GITWEB_CONTENT)))
   def test_from_remote(self):
     expected = {
       'moria1': stem.directory.Authority(
@@ -77,6 +71,6 @@ class TestAuthority(unittest.TestCase):
 
     self.assertEqual(expected, stem.directory.Authority.from_remote())
 
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
     self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Authority.from_remote)

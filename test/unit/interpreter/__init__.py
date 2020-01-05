@@ -9,11 +9,7 @@ __all__ = [
   'help',
 ]
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock
-except ImportError:
-  from mock import Mock
+from unittest.mock import Mock
 
 GETINFO_NAMES = """
 info/names -- List of GETINFO options, types, and documentation.

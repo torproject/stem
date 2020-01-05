@@ -14,7 +14,6 @@
   |- PYTHON_VERSION - checks our python version
   |- PLATFORM_VERSION - checks our operating system version
   |- CRYPTO_VERSION - checks our version of cryptography
-  |- MOCK_VERSION - checks our version of mock
   |- PYFLAKES_VERSION - checks our version of pyflakes
   |- PYCODESTYLE_VERSION - checks our version of pycodestyle
   |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
@@ -25,6 +24,7 @@
   +- PYCODESTYLE_TASK - style checks
 """
 
+import importlib
 import os
 import platform
 import re
@@ -45,14 +45,6 @@ import test.output
 from test.output import STATUS, ERROR, NO_NL, println
 
 TASK_DESCRIPTION_WIDTH = 40
-
-try:
-  # TODO: remove check when dropping python 2.6 support
-
-  import importlib
-  HAS_IMPORTLIB = True
-except ImportError:
-  HAS_IMPORTLIB = False
 
 CONFIG = stem.util.conf.config_dict('test', {
   'integ.test_directory': './test/data',
@@ -163,9 +155,6 @@ def _import_tests():
   register if they're asynchronous.
   """
 
-  if not HAS_IMPORTLIB:
-    return
-
   for module in (CONFIG['test.unit_tests'].splitlines() + CONFIG['test.integ_tests'].splitlines()):
     try:
       importlib.import_module(module.rsplit('.', 1)[0])
@@ -273,7 +262,7 @@ class Task(object):
       self.is_successful = True
       output_msg = 'running' if self._is_background_task else 'done'
 
-      if self.result and self.print_result and stem.util._is_str(self.result):
+      if self.result and self.print_result and isinstance(self.result, (bytes, str)):
         output_msg = self.result
       elif self.print_runtime:
         output_msg += ' (%0.1fs)' % (time.time() - start_time)
@@ -305,7 +294,7 @@ class ModuleVersion(Task):
     def version_check():
       if prereq_check is None or prereq_check():
         for module in modules:
-          if HAS_IMPORTLIB and stem.util.test_tools._module_exists(module):
+          if stem.util.test_tools._module_exists(module):
             return importlib.import_module(module).__version__
 
       return 'missing'
@@ -333,7 +322,6 @@ TOR_VERSION = Task('tor version', _check_tor_version)
 PYTHON_VERSION = Task('python version', _check_python_version)
 PLATFORM_VERSION = Task('operating system', _check_platform_version)
 CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
-MOCK_VERSION = ModuleVersion('mock version', ['unittest.mock', 'mock'], stem.prereq.is_mock_available)
 PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)

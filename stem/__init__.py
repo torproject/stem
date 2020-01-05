@@ -722,7 +722,7 @@ class SocketClosed(SocketError):
 class DownloadFailed(IOError):
   """
   Inability to download a resource. Python's urllib module raises
-  a wide variety of undocumented exceptions (urllib2.URLError,
+  a wide variety of undocumented exceptions (urllib.request.URLError,
   socket.timeout, and others).
 
   This wraps lower level failures in a common exception type that

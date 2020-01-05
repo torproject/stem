@@ -9,7 +9,6 @@ import hashlib
 import os
 import random
 import re
-import shutil
 import subprocess
 import tempfile
 import threading
@@ -28,13 +27,9 @@ import test
 import test.require
 
 from contextlib import contextmanager
-from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
+from unittest.mock import patch, Mock
 
-try:
-  # added in python 3.3
-  from unittest.mock import patch, Mock
-except ImportError:
-  from mock import patch, Mock
+from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
 
 BASIC_RELAY_TORRC = """\
 SocksPort 9089
@@ -57,18 +52,8 @@ def random_port():
 
 
 @contextmanager
-def tmp_directory():
-  tmp_dir = tempfile.mkdtemp()
-
-  try:
-    yield tmp_dir
-  finally:
-    shutil.rmtree(tmp_dir)
-
-
-@contextmanager
 def torrc():
-  with tmp_directory() as data_directory:
+  with tempfile.TemporaryDirectory() as data_directory:
     torrc_path = os.path.join(data_directory, 'torrc')
 
     with open(torrc_path, 'w') as torrc_file:
@@ -106,7 +91,7 @@ def run_tor(tor_cmd, *args, **kwargs):
     elif not exit_status and expect_failure:
       raise AssertionError("Didn't expect tor to be able to start when we run: %s\n%s" % (' '.join(args), stdout))
 
-    return stem.util.str_tools._to_unicode(stdout) if stem.prereq.is_python_3() else stdout
+    return stem.util.str_tools._to_unicode(stdout)
 
 
 class TestProcess(unittest.TestCase):
@@ -177,12 +162,8 @@ class TestProcess(unittest.TestCase):
     # I'm not gonna even pretend to understand the following. Ported directly
     # from tor's test_cmdline_args.py.
 
-    if stem.prereq.is_python_3():
-      output_hex = binascii.a2b_hex(stem.util.str_tools._to_bytes(output).strip()[3:])
-      salt, how, hashed = output_hex[:8], output_hex[8], output_hex[9:]
-    else:
-      output_hex = binascii.a2b_hex(output.strip()[3:])
-      salt, how, hashed = output_hex[:8], ord(output_hex[8]), output_hex[9:]
+    output_hex = binascii.a2b_hex(stem.util.str_tools._to_bytes(output).strip()[3:])
+    salt, how, hashed = output_hex[:8], output_hex[8], output_hex[9:]
 
     count = (16 + (how & 15)) << ((how >> 4) + 6)
     stuff = salt + b'my_password'
@@ -236,7 +217,7 @@ class TestProcess(unittest.TestCase):
     output = run_tor(tor_cmd, '--list-fingerprint', with_torrc = True, expect_failure = True)
     assert_in("Clients don't have long-term identity keys. Exiting.", output, 'Should fail to start due to lacking an ORPort')
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       torrc_path = os.path.join(data_directory, 'torrc')
 
       with open(torrc_path, 'w') as torrc_file:
@@ -332,7 +313,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       torrc = BASIC_RELAY_TORRC % data_directory
       output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
       assert_equal(sorted(torrc.splitlines()), sorted(output.splitlines()))
@@ -390,7 +371,7 @@ class TestProcess(unittest.TestCase):
     it isn't.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       # Tries running tor in another thread with the given timeout argument. This
       # issues an invalid torrc so we terminate right away if we get to the point
       # of actually invoking tor.
@@ -443,7 +424,7 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config when we write a torrc to disk.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
       control_socket, tor_process = None, None
 
@@ -487,7 +468,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
       skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
       control_socket, tor_process = None, None
 
@@ -529,7 +510,7 @@ class TestProcess(unittest.TestCase):
     #   [warn] Failed to parse/validate config: Failed to bind one of the listener ports.
     #   [err] Reading config failed--see warnings above.
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       both_ports = random_port()
 
       try:
@@ -551,7 +532,7 @@ class TestProcess(unittest.TestCase):
     Runs launch_tor where it times out before completing.
     """
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       start_time = time.time()
 
       try:
@@ -583,7 +564,7 @@ class TestProcess(unittest.TestCase):
     elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
 
       tor_process = stem.process.launch_tor_with_config(
@@ -627,7 +608,7 @@ class TestProcess(unittest.TestCase):
     if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
       skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
-    with tmp_directory() as data_directory:
+    with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
 
       tor_process = stem.process.launch_tor_with_config(

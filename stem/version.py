@@ -84,6 +84,7 @@ easily parsed and compared, for instance...
   ===================================== ===========
 """
 
+import functools
 import os
 import re
 
@@ -91,11 +92,6 @@ import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.system
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 # cache for the get_system_tor_version function
 VERSION_CACHE = {}
@@ -150,7 +146,7 @@ def get_system_tor_version(tor_cmd = 'tor'):
   return VERSION_CACHE[tor_cmd]
 
 
-@lru_cache()
+@functools.lru_cache()
 def _get_version(version_str):
   return Version(version_str)
 

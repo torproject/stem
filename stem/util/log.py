@@ -153,8 +153,7 @@ def escape(message):
   :returns: str that is escaped
   """
 
-  if stem.prereq.is_python_3():
-    message = stem.util.str_tools._to_unicode(message)
+  message = stem.util.str_tools._to_unicode(message)
 
   for pattern, replacement in (('\n', '\\n'), ('\r', '\\r'), ('\t', '\\t')):
     message = message.replace(pattern, replacement)
@@ -232,13 +231,7 @@ class LogBuffer(logging.Handler):
   """
 
   def __init__(self, runlevel, yield_records = False):
-    # TODO: At least in python 2.6 logging.Handler has a bug in that it doesn't
-    # extend object, causing our super() call to fail. When we drop python 2.6
-    # support we should switch back to using super() instead.
-    #
-    # super(LogBuffer, self).__init__(level = logging_level(runlevel))
-
-    logging.Handler.__init__(self, level = logging_level(runlevel))
+    super(LogBuffer, self).__init__(level = logging_level(runlevel))
 
     self.formatter = FORMATTER
     self._buffer = []

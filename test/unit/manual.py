@@ -2,36 +2,21 @@
 Unit testing for the stem.manual module.
 """
 
+import collections
 import io
 import os
 import sqlite3
 import tempfile
 import unittest
+import urllib.request
 
 import stem.prereq
 import stem.manual
 import stem.util.system
 import test.require
 
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
+from unittest.mock import Mock, patch
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-URL_OPEN = 'urllib.request.urlopen' if stem.prereq.is_python_3() else 'urllib2.urlopen'
 EXAMPLE_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_example')
 UNKNOWN_OPTIONS_MAN_PATH = os.path.join(os.path.dirname(__file__), 'tor_man_with_unknown')
 
@@ -59,7 +44,7 @@ EXPECTED_FILES = {
   '$HOME/.torrc': 'Fallback location for torrc, if @CONFDIR@/torrc is not found.',
 }
 
-EXPECTED_CONFIG_OPTIONS = OrderedDict()
+EXPECTED_CONFIG_OPTIONS = collections.OrderedDict()
 
 EXPECTED_CONFIG_OPTIONS['BandwidthRate'] = stem.manual.ConfigOption(
   name = 'BandwidthRate',
@@ -90,6 +75,10 @@ EXPECTED_CONFIG_OPTIONS['Bridge'] = stem.manual.ConfigOption(
   description = 'When set along with UseBridges, instructs Tor to use the relay at "IP:ORPort" as a "bridge" relaying into the Tor network. If "fingerprint" is provided (using the same format as for DirAuthority), we will verify that the relay running at that location has the right fingerprint. We also use fingerprint to look up the bridge descriptor at the bridge authority, if it\'s provided and if UpdateBridgesFromAuthority is set too.\n\nIf "transport" is provided, and matches to a ClientTransportPlugin line, we use that pluggable transports proxy to transfer data to the bridge.')
 
 CACHED_MANUAL = None
+
+TEMP_DIR_MOCK = Mock()
+TEMP_DIR_MOCK.__enter__ = Mock(return_value = '/no/such/path')
+TEMP_DIR_MOCK.__exit__ = Mock(return_value = False)
 
 
 def _cached_manual():
@@ -154,7 +143,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -175,7 +163,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX and BSD and Slackware, #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(UNKNOWN_OPTIONS_MAN_PATH)
 
@@ -203,7 +190,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD and Slackware, #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -220,7 +206,6 @@ class TestManual(unittest.TestCase):
 
     if not stem.manual.HAS_ENCODING_ARG:
       self.skipTest('(man lacks --encoding arg on OSX, BSD, and Slackware #18660)')
-      return
 
     manual = stem.manual.Manual.from_man(EXAMPLE_MAN_PATH)
 
@@ -249,40 +234,36 @@ class TestManual(unittest.TestCase):
     exc_msg = 'We require a2x from asciidoc to provide a man page'
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
-  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
-  @patch('shutil.rmtree', Mock())
+  @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
     exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
-  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
-  @patch('shutil.rmtree', Mock())
+  @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(side_effect = urllib.URLError('<urlopen error [Errno -2] Name or service not known>')))
+  @patch('urllib.request.urlopen', Mock(side_effect = urllib.request.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
-  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
-  @patch('shutil.rmtree', Mock())
+  @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
   @patch('stem.util.system.call', Mock(side_effect = stem.util.system.CallError('call failed', 'a2x -f manpage /no/such/path/tor.1.txt', 1, None, None, 'call failed')))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
     exc_msg = "Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
-  @patch('tempfile.mkdtemp', Mock(return_value = '/no/such/path'))
-  @patch('shutil.rmtree', Mock())
+  @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', create = True)
   @patch('stem.util.system.call')
   @patch('stem.util.system.is_available', Mock(return_value = True))
   @patch('os.path.exists', Mock(return_value = True))
-  @patch(URL_OPEN, Mock(return_value = io.BytesIO(b'test content')))
+  @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_successful(self, call_mock, open_mock):
     open_mock.side_effect = lambda path, *args: {
       '/no/such/path/tor.1.txt': io.BytesIO(),
@@ -315,4 +296,4 @@ class TestManual(unittest.TestCase):
     self.assertEqual({}, manual.commandline_options)
     self.assertEqual({}, manual.signals)
     self.assertEqual({}, manual.files)
-    self.assertEqual(OrderedDict(), manual.config_options)
+    self.assertEqual(collections.OrderedDict(), manual.config_options)

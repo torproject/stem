@@ -84,13 +84,9 @@ and picks up where it left off if run again...
 
 import mimetypes
 import os
+import queue
 import tarfile
 import threading
-
-try:
-  import queue
-except ImportError:
-  import Queue as queue
 
 import stem.descriptor
 import stem.prereq
@@ -259,7 +255,7 @@ class DescriptorReader(object):
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param bool follow_links: determines if we'll follow symlinks when traversing
-    directories (requires python 2.6)
+    directories
   :param int buffer_size: descriptors we'll buffer before waiting for some to
     be read, this is unbounded if zero
   :param str persistence_path: if set we will load and save processed file
@@ -270,7 +266,7 @@ class DescriptorReader(object):
   """
 
   def __init__(self, target, validate = False, follow_links = False, buffer_size = 100, persistence_path = None, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
-    self._targets = [target] if stem.util._is_str(target) else target
+    self._targets = [target] if isinstance(target, (bytes, str)) else target
 
     # expand any relative paths we got
 
@@ -525,41 +521,31 @@ class DescriptorReader(object):
       self._notify_skip_listeners(target, ReadFailed(exc))
 
   def _handle_archive(self, target):
-    # TODO: When dropping python 2.6 support go back to using 'with' for
-    # tarfiles...
-    #
-    #   http://bugs.python.org/issue7232
-
-    tar_file = None
-
     try:
-      self._notify_read_listeners(target)
-      tar_file = tarfile.open(target)
+      with tarfile.open(target) as tar_file:
+        self._notify_read_listeners(target)
 
-      for tar_entry in tar_file:
-        if tar_entry.isfile():
-          entry = tar_file.extractfile(tar_entry)
+        for tar_entry in tar_file:
+          if tar_entry.isfile():
+            entry = tar_file.extractfile(tar_entry)
 
-          try:
-            for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler, **self._kwargs):
-              if self._is_stopped.is_set():
-                return
+            try:
+              for desc in stem.descriptor.parse_file(entry, validate = self._validate, document_handler = self._document_handler, **self._kwargs):
+                if self._is_stopped.is_set():
+                  return
 
-              desc._set_path(os.path.abspath(target))
-              desc._set_archive_path(tar_entry.name)
-              self._unreturned_descriptors.put(desc)
-              self._iter_notice.set()
-          except TypeError as exc:
-            self._notify_skip_listeners(target, ParsingFailure(exc))
-          except ValueError as exc:
-            self._notify_skip_listeners(target, ParsingFailure(exc))
-          finally:
-            entry.close()
+                desc._set_path(os.path.abspath(target))
+                desc._set_archive_path(tar_entry.name)
+                self._unreturned_descriptors.put(desc)
+                self._iter_notice.set()
+            except TypeError as exc:
+              self._notify_skip_listeners(target, ParsingFailure(exc))
+            except ValueError as exc:
+              self._notify_skip_listeners(target, ParsingFailure(exc))
+            finally:
+              entry.close()
     except IOError as exc:
       self._notify_skip_listeners(target, ReadFailed(exc))
-    finally:
-      if tar_file:
-        tar_file.close()
 
   def _notify_read_listeners(self, path):
     for listener in self._read_listeners:

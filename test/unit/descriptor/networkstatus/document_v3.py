@@ -2,6 +2,7 @@
 Unit tests for the NetworkStatusDocumentV3 of stem.descriptor.networkstatus.
 """
 
+import collections
 import datetime
 import io
 import unittest
@@ -30,12 +31,6 @@ from stem.descriptor.router_status_entry import (
 )
 
 from test.unit.descriptor import get_resource
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
 
 BANDWIDTH_WEIGHT_ENTRIES = (
   'Wbd', 'Wbe', 'Wbg', 'Wbm',
@@ -869,7 +864,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     Parses the parameters attributes.
     """
 
-    document = NetworkStatusDocumentV3.create(OrderedDict([
+    document = NetworkStatusDocumentV3.create(collections.OrderedDict([
       ('vote-status', 'vote'),
       ('recommended-client-protocols', 'HSDir=1 HSIntro=3'),
       ('recommended-relay-protocols', 'Cons=1 Desc=1'),
@@ -1231,7 +1226,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     COMMITMENT_1 = '1 sha3-256 4CAEC248004A0DC6CE86EBD5F608C9B05500C70C AAAAAFd4/kAaklgYr4ijHZjXXy/B354jQfL31BFhhE46nuOHSPITyw== AAAAAFd4/kCpZeis3yJyr//rz8hXCeeAhHa4k3lAcAiMJd1vEMTPuw=='
     COMMITMENT_2 = '1 sha3-256 598536A9DD4E6C0F18B4AD4B88C7875A0A29BA31 AAAAAFd4/kC7S920awC5/HF5RfX4fKZtYqjm6qMh9G91AcjZm13DQQ=='
 
-    authority = DirectoryAuthority.create(OrderedDict([
+    authority = DirectoryAuthority.create(collections.OrderedDict([
       ('shared-rand-participate', ''),
       ('shared-rand-commit', '%s\nshared-rand-commit %s' % (COMMITMENT_1, COMMITMENT_2)),
       ('shared-rand-previous-value', '8 hAQLxyt0U3gu7QR2owixRCbIltcyPrz3B0YBfUshOkE='),

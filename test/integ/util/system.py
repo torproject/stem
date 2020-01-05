@@ -14,13 +14,9 @@ import stem.util.system
 import test.require
 import test.runner
 
-from stem.util.system import State, DaemonTask
+from unittest.mock import Mock, patch
 
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
+from stem.util.system import State, DaemonTask
 
 
 def filter_system_call(prefixes):
@@ -287,15 +283,12 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_windows():
       self.skipTest('(unavailable on windows)')
-      return
     elif stem.util.system.is_mac() or stem.util.system.is_gentoo():
       self.skipTest('(resolvers unavailable)')
-      return
     elif not stem.util.system.is_available('netstat') or \
              stem.util.system.is_available('sockstat') or \
               stem.util.system.is_available('lsof'):
       self.skipTest('(connection resolvers unavailable)')
-      return
 
     runner = test.runner.get_runner()
     tor_pid, tor_port = runner.get_pid(), test.runner.CONTROL_PORT
@@ -313,7 +306,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_gentoo():
       self.skipTest('(unavailable on gentoo)')
-      return
 
     netstat_prefix = stem.util.system.GET_PID_BY_PORT_NETSTAT
 
@@ -353,7 +345,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_mac() or stem.util.system.is_gentoo():
       self.skipTest('(resolvers unavailable)')
-      return
 
     lsof_prefix = stem.util.system.GET_PID_BY_PORT_LSOF
 
@@ -370,13 +361,14 @@ class TestSystem(unittest.TestCase):
     Checks the stem.util.system.pid_by_open_file function.
     """
 
-    # check a directory that exists, but isn't claimed by any application
-    tmpdir = tempfile.mkdtemp()
-    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
-
     # check a directory that doesn't exist
-    os.rmdir(tmpdir)
-    self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
+
+    self.assertEqual(None, stem.util.system.pid_by_open_file('/no/such/path'))
+
+    # check a directory that exists, but isn't claimed by any application
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+      self.assertEqual(None, stem.util.system.pid_by_open_file(tmpdir))
 
   @require_path
   def test_pids_by_user(self):
@@ -397,7 +389,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.util.system.is_windows():
       self.skipTest('(unavailable on windows)')
-      return
 
     runner = test.runner.get_runner()
     runner_pid, tor_cwd = runner.get_pid(), runner.get_tor_cwd()
@@ -537,7 +528,6 @@ class TestSystem(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
 
     self.assertEqual(os.getcwd(), stem.util.system.expand_path('.'))
     self.assertEqual(os.getcwd(), stem.util.system.expand_path('./'))
@@ -568,7 +558,6 @@ class TestSystem(unittest.TestCase):
 
     if stem.prereq.is_pypy():
       self.skipTest('(unimplemented for pypy)')
-      return
 
     initial_name = stem.util.system.get_process_name()
     self.assertTrue('run_tests.py' in initial_name)

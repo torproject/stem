@@ -47,7 +47,6 @@ class TestBaseController(unittest.TestCase):
 
     if stem.util.system.is_mac():
       self.skipTest('(ticket #6235)')
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)
@@ -97,7 +96,6 @@ class TestBaseController(unittest.TestCase):
 
     if stem.util.system.is_mac():
       self.skipTest('(ticket #6235)')
-      return
 
     with test.runner.get_runner().get_tor_socket() as control_socket:
       controller = stem.control.BaseController(control_socket)

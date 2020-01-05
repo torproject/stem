@@ -5,14 +5,11 @@
 Tab completion for our interpreter prompt.
 """
 
+import functools
+
 import stem.prereq
 
 from stem.interpreter import uses_settings
-
-if stem.prereq._is_lru_cache_available():
-  from functools import lru_cache
-else:
-  from stem.util.lru_cache import lru_cache
 
 
 @uses_settings
@@ -84,7 +81,7 @@ class Autocompleter(object):
   def __init__(self, controller):
     self._commands = _get_commands(controller)
 
-  @lru_cache()
+  @functools.lru_cache()
   def matches(self, text):
     """
     Provides autocompletion matches for the given text.

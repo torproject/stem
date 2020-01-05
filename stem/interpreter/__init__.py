@@ -127,14 +127,7 @@ def main():
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
-        # TODO: we can use a lambda here when dropping python 2.x support, but
-        # until then print's status as a keyword prevents it from being used in
-        # lambdas
-
-        def handle_event(event_message):
-          print(format(str(event_message), *STANDARD_OUTPUT))
-
-        controller._handle_event = handle_event
+        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]
@@ -171,14 +164,14 @@ def main():
       while True:
         try:
           prompt = '... ' if interpreter.is_multiline_context else PROMPT
-          user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+          user_input = input(prompt)
           interpreter.run_command(user_input, print_response = True)
         except stem.SocketClosed:
           if showed_close_confirmation:
             print(format('Unable to run tor commands. The control connection has been closed.', *ERROR_OUTPUT))
           else:
             prompt = format("Tor's control port has closed. Do you want to continue this interpreter? (y/n) ", *HEADER_BOLD_OUTPUT)
-            user_input = input(prompt) if stem.prereq.is_python_3() else raw_input(prompt)
+            user_input = input(prompt)
             print('')  # blank line
 
             if user_input.lower() in ('y', 'yes'):

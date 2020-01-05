@@ -49,19 +49,10 @@ def _hash_value(val):
   if not HASH_TYPES:
     my_hash = 0
   else:
-    # TODO: I hate doing this but until Python 2.x support is dropped we
-    # can't readily be strict about bytes vs unicode for attributes. This
-    # is because test assertions often use strings, and normalizing this
-    # would require wrapping most with to_unicode() calls.
-    #
-    # This hack will go away when we drop Python 2.x support.
+    # Hashing common builtins (ints, bools, etc) provide consistant values but
+    # many others vary their value on interpreter invokation.
 
-    if _is_str(val):
-      my_hash = hash('str')
-    else:
-      # Hashing common builtins (ints, bools, etc) provide consistant values but many others vary their value on interpreter invokation.
-
-      my_hash = hash(str(type(val)))
+    my_hash = hash(str(type(val)))
 
   if isinstance(val, (tuple, list)):
     for v in val:
@@ -75,40 +66,6 @@ def _hash_value(val):
   return my_hash
 
 
-def _is_str(val):
-  """
-  Check if a value is a string. This will be removed when we no longer provide
-  backward compatibility for the Python 2.x series.
-
-  :param object val: value to be checked
-
-  :returns: **True** if the value is some form of string (unicode or bytes),
-    and **False** otherwise
-  """
-
-  if stem.prereq.is_python_3():
-    return isinstance(val, (bytes, str))
-  else:
-    return isinstance(val, (bytes, unicode))
-
-
-def _is_int(val):
-  """
-  Check if a value is an integer. This will be removed when we no longer
-  provide backward compatibility for the Python 2.x series.
-
-  :param object val: value to be checked
-
-  :returns: **True** if the value is some form of integer (int or long),
-    and **False** otherwise
-  """
-
-  if stem.prereq.is_python_3():
-    return isinstance(val, int)
-  else:
-    return isinstance(val, (int, long))
-
-
 def datetime_to_unix(timestamp):
   """
   Converts a utc datetime object to a unix timestamp.
@@ -120,11 +77,7 @@ def datetime_to_unix(timestamp):
   :returns: **float** for the unix timestamp of the given datetime object
   """
 
-  if stem.prereq._is_python_26():
-    delta = (timestamp - datetime.datetime(1970, 1, 1))
-    return delta.days * 86400 + delta.seconds
-  else:
-    return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
+  return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
 def _pubkey_bytes(key):
@@ -132,7 +85,7 @@ def _pubkey_bytes(key):
   Normalizes X25509 and ED25519 keys into their public key bytes.
   """
 
-  if _is_str(key):
+  if isinstance(key, (bytes, str)):
     return key
 
   if not stem.prereq.is_crypto_available():

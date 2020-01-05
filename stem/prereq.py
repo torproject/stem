@@ -12,12 +12,10 @@ stem will still read descriptors - just without signature checks.
 ::
 
   check_requirements - checks for minimum requirements for running stem
-  is_python_3 - checks if python 3.0 or later is available
   is_sqlite_available - checks if the sqlite3 module is available
   is_crypto_available - checks if the cryptography module is available
   is_zstd_available - checks if the zstd module is available
   is_lzma_available - checks if the lzma module is available
-  is_mock_available - checks if the mock module is available
 """
 
 import functools
@@ -46,52 +44,8 @@ def check_requirements():
 
   major_version, minor_version = sys.version_info[0:2]
 
-  if major_version < 2 or (major_version == 2 and minor_version < 6):
-    raise ImportError('stem requires python version 2.6 or greater')
-
-
-def _is_python_26():
-  """
-  Checks if we're running python 2.6. This isn't for users as it'll be removed
-  in stem 2.0 (when python 2.6 support goes away).
-
-  .. deprecated:: 1.8.0
-     Stem 2.x will remove this method along with Python 2.x support.
-
-  :returns: **True** if we're running python 2.6, **False** otherwise
-  """
-
-  major_version, minor_version = sys.version_info[0:2]
-
-  return major_version == 2 and minor_version == 6
-
-
-def is_python_27():
-  """
-  Checks if we're running python 2.7 or above (including the 3.x series).
-
-  .. deprecated:: 1.5.0
-     Stem 2.x will remove this method along with Python 2.x support.
-
-  :returns: **True** if we meet this requirement and **False** otherwise
-  """
-
-  major_version, minor_version = sys.version_info[0:2]
-
-  return major_version > 2 or (major_version == 2 and minor_version >= 7)
-
-
-def is_python_3():
-  """
-  Checks if we're in the 3.0 - 3.x range.
-
-  .. deprecated:: 1.8.0
-     Stem 2.x will remove this method along with Python 2.x support.
-
-  :returns: **True** if we meet this requirement and **False** otherwise
-  """
-
-  return sys.version_info[0] == 3
+  if major_version < 3 or (major_version == 3 and minor_version < 6):
+    raise ImportError('stem requires python version 3.6 or greater')
 
 
 def is_pypy():
@@ -205,63 +159,6 @@ def is_lzma_available():
     from stem.util import log
     log.log_once('stem.prereq.is_lzma_available', log.INFO, LZMA_UNAVAILABLE)
     return False
-
-
-def is_mock_available():
-  """
-  Checks if the mock module is available. In python 3.3 and up it is a builtin
-  unittest module, but before this it needed to be `installed separately
-  <https://pypi.org/project/mock/>`_. Imports should be as follows....
-
-  ::
-
-    try:
-      # added in python 3.3
-      from unittest.mock import Mock
-    except ImportError:
-      from mock import Mock
-
-  :returns: **True** if the mock module is available and **False** otherwise
-  """
-
-  try:
-    # checks for python 3.3 version
-    import unittest.mock
-    return True
-  except ImportError:
-    pass
-
-  try:
-    import mock
-
-    # check for mock's patch.dict() which was introduced in version 0.7.0
-
-    if not hasattr(mock.patch, 'dict'):
-      raise ImportError()
-
-    # check for mock's new_callable argument for patch() which was introduced in version 0.8.0
-
-    if 'new_callable' not in inspect.getargspec(mock.patch).args:
-      raise ImportError()
-
-    return True
-  except ImportError:
-    return False
-
-
-def _is_lru_cache_available():
-  """
-  Functools added lru_cache to the standard library in Python 3.2. Prior to
-  this using a bundled implementation. We're also using this with Python 3.5
-  due to a buggy implementation. (:trac:`26412`)
-  """
-
-  major_version, minor_version = sys.version_info[0:2]
-
-  if major_version == 3 and minor_version == 5:
-    return False
-  else:
-    return hasattr(functools, 'lru_cache')
 
 
 def _is_sha3_available():

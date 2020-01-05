@@ -106,12 +106,6 @@ import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
 
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
 __all__ = [
   'bandwidth_file',
   'certificate',
@@ -363,7 +357,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   handler = None
 
-  if stem.util._is_str(descriptor_file):
+  if isinstance(descriptor_file, (bytes, str)):
     if stem.util.system.is_tarfile(descriptor_file):
       handler = _parse_file_for_tar_path
     else:
@@ -377,14 +371,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
     return
 
-  # Not all files are seekable. If unseekable then advising the user.
-  #
-  # Python 3.x adds an io.seekable() method, but not an option with python 2.x
-  # so using an experimental call to tell() to determine this.
-
-  try:
-    descriptor_file.tell()
-  except IOError:
+  if not descriptor_file.seekable():
     raise IOError(UNSEEKABLE_MSG)
 
   # The tor descriptor specifications do not provide a reliable method for
@@ -453,16 +440,10 @@ def _parse_file_for_path(descriptor_file, *args, **kwargs):
 
 
 def _parse_file_for_tar_path(descriptor_file, *args, **kwargs):
-  # TODO: use 'with' for tarfile after dropping python 2.6 support
-  tar_file = tarfile.open(descriptor_file)
-
-  try:
+  with tarfile.open(descriptor_file) as tar_file:
     for desc in parse_file(tar_file, *args, **kwargs):
       desc._set_path(os.path.abspath(descriptor_file))
       yield desc
-  finally:
-    if tar_file:
-      tar_file.close()
 
 
 def _parse_file_for_tarfile(descriptor_file, *args, **kwargs):
@@ -589,7 +570,7 @@ def _descriptor_content(attr = None, exclude = (), header_template = (), footer_
   """
 
   header_content, footer_content = [], []
-  attr = {} if attr is None else OrderedDict(attr)  # shallow copy since we're destructive
+  attr = {} if attr is None else collections.OrderedDict(attr)  # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
                             (footer_content, footer_template)):
@@ -707,7 +688,7 @@ def _parse_protocol_line(keyword, attribute):
     # parses 'protocol' entries like: Cons=1-2 Desc=1-2 DirCache=1 HSDir=1
 
     value = _value(keyword, entries)
-    protocols = OrderedDict()
+    protocols = collections.OrderedDict()
 
     for k, v in _mappings_for(keyword, value):
       versions = []
@@ -1163,10 +1144,7 @@ class Descriptor(object):
     return super(Descriptor, self).__getattribute__(name)
 
   def __str__(self):
-    if stem.prereq.is_python_3():
-      return stem.util.str_tools._to_unicode(self._raw_contents)
-    else:
-      return self._raw_contents
+    return stem.util.str_tools._to_unicode(self._raw_contents)
 
   def _compare(self, other, method):
     if type(self) != type(other):
@@ -1240,7 +1218,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   content = None if skip else []
   ending_keyword = None
 
-  if stem.util._is_str(keywords):
+  if isinstance(keywords, (bytes, str)):
     keywords = (keywords,)
 
   if ignore_first:
@@ -1468,7 +1446,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
   if isinstance(raw_contents, bytes):
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
 
-  entries = OrderedDict()
+  entries = collections.OrderedDict()
   extra_entries = []  # entries with a keyword in extra_keywords
   remaining_lines = raw_contents.split('\n')
 

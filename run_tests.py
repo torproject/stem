@@ -7,6 +7,7 @@ Runs unit and integration tests. For usage information run this with '--help'.
 """
 
 import errno
+import io
 import importlib
 import logging
 import multiprocessing
@@ -17,11 +18,6 @@ import threading
 import time
 import traceback
 import unittest
-
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.prereq
 import stem.util.conf
@@ -194,20 +190,6 @@ def main():
     println('Nothing to run (for usage provide --help)\n')
     sys.exit()
 
-  if not stem.prereq.is_mock_available():
-    try:
-      import mock
-      println(MOCK_OUT_OF_DATE_MSG % mock.__version__)
-    except ImportError:
-      println(MOCK_UNAVAILABLE_MSG)
-
-    if stem.util.system.is_available('pip'):
-      println("You can get it by running 'sudo pip install mock'.")
-    elif stem.util.system.is_available('apt-get'):
-      println("You can get it by running 'sudo apt-get install python-mock'.")
-
-    sys.exit(1)
-
   test.task.run(
     'INITIALISING',
     test.task.STEM_VERSION,
@@ -215,7 +197,6 @@ def main():
     test.task.PYTHON_VERSION,
     test.task.PLATFORM_VERSION,
     test.task.CRYPTO_VERSION,
-    test.task.MOCK_VERSION,
     test.task.PYFLAKES_VERSION,
     test.task.PYCODESTYLE_VERSION,
     test.task.CLEAN_PYC,
@@ -442,7 +423,7 @@ def _run_test(args, test_class, output_filters):
     traceback.print_exc(exc)
     return None
 
-  test_results = StringIO()
+  test_results = io.StringIO()
   run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity = 2).run(suite)
 
   if args.verbose:

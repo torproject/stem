@@ -17,12 +17,8 @@ Toolkit for exporting descriptors to other formats.
    use this modle please `let me know <https://www.atagar.com/contact/>`_.
 """
 
+import io
 import csv
-
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 import stem.descriptor
 import stem.prereq
@@ -44,13 +40,13 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names (**only supported in python 2.7 and higher**)
+    list of the attribute names
 
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type
   """
 
-  output_buffer = StringIO()
+  output_buffer = io.StringIO()
   export_csv_file(output_buffer, descriptors, included_fields, excluded_fields, header)
   return output_buffer.getvalue()
 
@@ -66,7 +62,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names (**only supported in python 2.7 and higher**)
+    list of the attribute names
 
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type
@@ -103,7 +99,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
 
   writer = csv.DictWriter(output_file, included_fields, dialect = _ExportDialect(), extrasaction='ignore')
 
-  if header and not stem.prereq._is_python_26():
+  if header:
     writer.writeheader()
 
   for desc in descriptors:

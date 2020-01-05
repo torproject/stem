@@ -19,11 +19,7 @@ import stem.util.system
 
 import test.unit.descriptor
 
-try:
-  # added in python 3.3
-  from unittest.mock import patch
-except ImportError:
-  from mock import patch
+from unittest.mock import patch
 
 BASIC_LISTING = """
 /tmp 123
@@ -44,23 +40,13 @@ def _get_raw_tar_descriptors():
     test_path = os.path.join(DESCRIPTOR_TEST_DATA, 'descriptor_archive.tar')
     raw_descriptors = []
 
-    # TODO: revert to using the 'with' keyword for this when dropping python
-    # 2.6 support
-
-    tar_file = None
-
-    try:
-      tar_file = tarfile.open(test_path)
-
+    with tarfile.open(test_path) as tar_file:
       for tar_entry in tar_file:
         if tar_entry.isfile():
           entry = tar_file.extractfile(tar_entry)
           entry.readline()  # strip header
           raw_descriptors.append(entry.read().decode('utf-8', 'replace'))
           entry.close()
-    finally:
-      if tar_file:
-        tar_file.close()
 
     TAR_DESCRIPTORS = raw_descriptors
 
@@ -192,7 +178,6 @@ class TestDescriptorReader(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
 
     # Skip the test on windows, since you can only set the file's
     # read-only flag with os.chmod(). For more information see...
@@ -558,10 +543,8 @@ class TestDescriptorReader(unittest.TestCase):
 
     if getpass.getuser() == 'root':
       self.skipTest('(running as root)')
-      return
     elif stem.util.system.is_windows():
       self.skipTest('(chmod not functional)')
-      return
 
     test_path = os.path.join(self.temp_directory, 'secret_file')
 

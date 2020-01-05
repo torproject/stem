@@ -2,25 +2,16 @@
 Unit tests for stem.descriptor.bandwidth_file.
 """
 
+import collections
 import datetime
 import unittest
 
 import stem.descriptor
 
+from unittest.mock import Mock, patch
+
 from stem.descriptor.bandwidth_file import BandwidthFile
 from test.unit.descriptor import get_resource
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
-  # added in python 3.3
-  from unittest.mock import Mock, patch
-except ImportError:
-  from mock import Mock, patch
 
 EXPECTED_MEASUREMENT_1 = {
   'scanner': '/scanner.1/scan-data/bws-0.0:0.8-done-2019-01-13-22:55:22',
@@ -272,7 +263,7 @@ class TestBandwidthFile(unittest.TestCase):
     Exercise the example in our content method's pydoc.
     """
 
-    content = BandwidthFile.content(OrderedDict([
+    content = BandwidthFile.content(collections.OrderedDict([
       ('timestamp', '12345'),
       ('version', '1.2.0'),
       ('content', []),
@@ -286,7 +277,7 @@ class TestBandwidthFile(unittest.TestCase):
     Include an unrecognized header field.
     """
 
-    desc = BandwidthFile.create(OrderedDict([('version', '1.1.0'), ('new_header', 'neat stuff')]))
+    desc = BandwidthFile.create(collections.OrderedDict([('version', '1.1.0'), ('new_header', 'neat stuff')]))
     self.assertEqual(EXPECTED_NEW_HEADER_CONTENT, str(desc))
     self.assertEqual('1.1.0', desc.version)
     self.assertEqual({'version': '1.1.0', 'new_header': 'neat stuff'}, desc.header)
@@ -309,7 +300,7 @@ class TestBandwidthFile(unittest.TestCase):
 
     self.assertRaisesWith(ValueError, "The 'version' header must be in the second position", BandwidthFile.from_str, WRONG_VERSION_POSITION, validate = True)
 
-    content = BandwidthFile.content(OrderedDict([
+    content = BandwidthFile.content(collections.OrderedDict([
       ('timestamp', '1410723598'),
       ('file_created', '2019-01-14T05:35:06'),
       ('version', '1.1.0'),

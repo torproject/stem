@@ -3,6 +3,7 @@ Unit tests for stem.descriptor.hidden_service for version 3.
 """
 
 import base64
+import collections
 import functools
 import unittest
 
@@ -12,6 +13,8 @@ import stem.descriptor.hidden_service
 import stem.prereq
 
 import test.require
+
+from unittest.mock import patch, Mock
 
 from stem.descriptor.hidden_service import (
   IntroductionPointV3,
@@ -26,18 +29,6 @@ from test.unit.descriptor import (
   base_expect_invalid_attr,
   base_expect_invalid_attr_for_text,
 )
-
-try:
-  # added in python 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
-  # added in python 3.3
-  from unittest.mock import patch, Mock
-except ImportError:
-  from mock import patch, Mock
 
 require_sha3 = test.require.needs(stem.prereq._is_sha3_available, 'requires sha3')
 require_x25519 = test.require.needs(lambda: stem.descriptor.hidden_service.X25519_AVAILABLE, 'requires openssl x5509')
@@ -328,7 +319,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # include optional parameters
 
-    desc = InnerLayer.create(OrderedDict((
+    desc = InnerLayer.create(collections.OrderedDict((
       ('intro-auth-required', 'ed25519'),
       ('single-onion-service', ''),
     )))

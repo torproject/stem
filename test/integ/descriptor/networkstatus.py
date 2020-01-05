@@ -43,12 +43,12 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = os.path.join(test_dir, 'cached-consensus')
 
     if not os.path.exists(consensus_path):
-      raise stem.util.test_tools.SkipTest('(no cached-consensus)')
+      raise unittest.case.SkipTest('(no cached-consensus)')
     elif stem.util.system.is_windows():
       # Unable to check memory usage on windows, so can't prevent hanging the
       # system if things go bad.
 
-      raise stem.util.test_tools.SkipTest('(unavailable on windows)')
+      raise unittest.case.SkipTest('(unavailable on windows)')
 
     count, reported_flags = 0, []
 
@@ -79,9 +79,9 @@ class TestNetworkStatus(unittest.TestCase):
     consensus_path = os.path.join(test_dir, 'cached-microdesc-consensus')
 
     if not os.path.exists(consensus_path):
-      raise stem.util.test_tools.SkipTest('(no cached-microdesc-consensus)')
+      raise unittest.case.SkipTest('(no cached-microdesc-consensus)')
     elif stem.util.system.is_windows():
-      raise stem.util.test_tools.SkipTest('(unavailable on windows)')
+      raise unittest.case.SkipTest('(unavailable on windows)')
 
     count, reported_flags = 0, []
 

@@ -280,7 +280,6 @@ class TestAuthenticate(unittest.TestCase):
 
     if test.runner.Torrc.PASSWORD not in runner.get_options() or test.runner.Torrc.COOKIE in runner.get_options():
       self.skipTest('(requires only password auth)')
-      return
 
     for i in range(10):
       with runner.get_tor_controller(False) as controller:

@@ -23,10 +23,6 @@ QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
 CELL_TYPE = re.compile('^[a-z0-9_]+$')
 PARSE_NEWCONSENSUS_EVENTS = True
 
-# TODO: We can remove the following when we drop python2.6 support.
-
-INT_TYPE = int if stem.prereq.is_python_3() else long
-
 
 class Event(stem.response.ControlMessage):
   """
@@ -163,7 +159,7 @@ class Event(stem.response.ControlMessage):
     attr_values = getattr(self, attr)
 
     if attr_values:
-      if stem.util._is_str(attr_values):
+      if isinstance(attr_values, (bytes, str)):
         attr_values = [attr_values]
 
       for value in attr_values:
@@ -284,8 +280,8 @@ class BandwidthEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = INT_TYPE(self.read)
-    self.written = INT_TYPE(self.written)
+    self.read = int(self.read)
+    self.written = int(self.written)
 
 
 class BuildTimeoutSetEvent(Event):
@@ -1095,8 +1091,8 @@ class StreamBwEvent(Event):
     elif not self.read.isdigit() or not self.written.isdigit():
       raise stem.ProtocolError("A STREAM_BW event's bytes sent and received should be a positive numeric value, received: %s" % self)
 
-    self.read = INT_TYPE(self.read)
-    self.written = INT_TYPE(self.written)
+    self.read = int(self.read)
+    self.written = int(self.written)
     self.time = self._iso_timestamp(self.time)
 
 
@@ -1174,8 +1170,8 @@ class ConnectionBandwidthEvent(Event):
     elif not tor_tools.is_valid_connection_id(self.id):
       raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
 
-    self.read = INT_TYPE(self.read)
-    self.written = INT_TYPE(self.written)
+    self.read = int(self.read)
+    self.written = int(self.written)
 
     self._log_if_unrecognized('conn_type', stem.ConnectionType)
 
@@ -1247,7 +1243,7 @@ class CircuitBandwidthEvent(Event):
       value = getattr(self, attr)
 
       if value:
-        setattr(self, attr, INT_TYPE(value))
+        setattr(self, attr, int(value))
 
 
 class CellStatsEvent(Event):

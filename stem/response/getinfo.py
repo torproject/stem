@@ -53,8 +53,7 @@ class GetInfoResponse(stem.response.ControlMessage):
       except ValueError:
         raise stem.ProtocolError('GETINFO replies should only contain parameter=value mappings:\n%s' % self)
 
-      if stem.prereq.is_python_3():
-        key = stem.util.str_tools._to_unicode(key)
+      key = stem.util.str_tools._to_unicode(key)
 
       # if the value is a multiline value then it *must* be of the form
       # '<key>=\n<value>'

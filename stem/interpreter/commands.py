@@ -7,6 +7,7 @@ Handles making requests and formatting the responses.
 
 import code
 import contextlib
+import io
 import socket
 import sys
 
@@ -20,11 +21,6 @@ import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
-
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from io import StringIO
 
 MAX_EVENTS = 100
 
@@ -359,7 +355,7 @@ class ControlInterpreter(code.InteractiveConsole):
         is_tor_command = cmd in config.get('help.usage', {}) and cmd.lower() != 'events'
 
         if self._run_python_commands and not is_tor_command:
-          console_output = StringIO()
+          console_output = io.StringIO()
 
           with redirect(console_output, console_output):
             self.is_multiline_context = code.InteractiveConsole.push(self, command)

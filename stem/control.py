@@ -253,20 +253,9 @@ import functools
 import inspect
 import io
 import os
+import queue
 import threading
 import time
-
-try:
-  # Added in 2.7
-  from collections import OrderedDict
-except ImportError:
-  from stem.util.ordereddict import OrderedDict
-
-try:
-  # Added in 3.x
-  import queue
-except ImportError:
-  import Queue as queue
 
 import stem.descriptor.microdescriptor
 import stem.descriptor.reader
@@ -1166,7 +1155,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if stem.util._is_str(params):
+    if isinstance(params, (bytes, str)):
       is_multiple = False
       params = set([params])
     else:
@@ -1211,7 +1200,7 @@ class Controller(BaseController):
 
       # usually we want unicode values under python 3.x
 
-      if stem.prereq.is_python_3() and not get_bytes:
+      if not get_bytes:
         response.entries = dict((k, stem.util.str_tools._to_unicode(v)) for (k, v) in response.entries.items())
 
       reply.update(response.entries)
@@ -2314,7 +2303,7 @@ class Controller(BaseController):
     start_time = time.time()
     reply = {}
 
-    if stem.util._is_str(params):
+    if isinstance(params, (bytes, str)):
       params = [params]
 
     # remove strings which contain only whitespace
@@ -2623,7 +2612,7 @@ class Controller(BaseController):
       log.debug('GETCONF HiddenServiceOptions (failed: %s)' % exc)
       raise
 
-    service_dir_map = OrderedDict()
+    service_dir_map = collections.OrderedDict()
     directory = None
 
     for status_code, divider, content in response.content():
@@ -2779,7 +2768,7 @@ class Controller(BaseController):
     if path in conf and (port, target_address, target_port) in conf[path]['HiddenServicePort']:
       return None
 
-    conf.setdefault(path, OrderedDict()).setdefault('HiddenServicePort', []).append((port, target_address, target_port))
+    conf.setdefault(path, collections.OrderedDict()).setdefault('HiddenServicePort', []).append((port, target_address, target_port))
 
     if auth_type and client_names:
       hsac = "%s %s" % (auth_type, ','.join(client_names))
@@ -3482,7 +3471,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if features passed were invalid
     """
 
-    if stem.util._is_str(features):
+    if isinstance(features, (bytes, str)):
       features = [features]
 
     response = self.msg('USEFEATURE %s' % ' '.join(features))
@@ -3637,7 +3626,7 @@ class Controller(BaseController):
 
       args = [circuit_id]
 
-      if stem.util._is_str(path):
+      if isinstance(path, (bytes, str)):
         path = [path]
 
       if path:
