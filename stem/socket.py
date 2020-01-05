@@ -669,8 +669,12 @@ def recv_message(control_file, arrived_at = None):
 
       log.info(ERROR_MSG % ('SocketClosed', 'socket file has been closed'))
       raise stem.SocketClosed('socket file has been closed')
-    except ValueError as exc:
-      # when disconnected this errors with 'I/O operation on closed file'
+    except (OSError, ValueError) as exc:
+      # when disconnected this errors with...
+      #
+      #   * ValueError: I/O operation on closed file
+      #   * OSError: [Errno 107] Transport endpoint is not connected
+      #   * OSError: [Errno 9] Bad file descriptor
 
       log.info(ERROR_MSG % ('SocketClosed', 'received exception "%s"' % exc))
       raise stem.SocketClosed(exc)
