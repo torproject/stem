@@ -127,9 +127,7 @@ class Socks(_socket_socket):
 
     :param int expected_size: number of bytes to return
 
-    :returns:
-      * **str** in Python 2 (bytes is str)
-      * **bytes** in Python 3
+    :returns: **bytes** for the requested content
 
     :raises:
       * :class:`socket.error` for socket errors
@@ -152,32 +150,21 @@ class Socks(_socket_socket):
 
     :param list integers: list of ints to convert
 
-    :returns:
-      * **str** in Python 2 (bytes is str)
-      * **bytes** in Python 3
+    :returns: **bytes** for the requested content
     """
 
-    if bytes is str:
-      bytes_ = ''.join([chr(x) for x in integers])  # Python 2
-    else:
-      bytes_ = bytes(integers)                      # Python 3
-    return bytes_
+    return bytes(integers)
 
   def _bytes_to_ints(self, bytes_):
     """
-    Returns a tuple of integers converted from a string (Python 2) or
-    bytes (Python 3).
+    Returns a tuple of integers converted from bytes.
 
-    :param str,bytes bytes_: byte string to convert
+    :param bytes bytes_: byte string to convert
 
     :returns: **list** of ints
     """
 
-    try:
-      integers = [ord(x) for x in bytes_]  # Python 2
-    except TypeError:
-      integers = [x for x in bytes_]       # Python 3
-    return tuple(integers)
+    return tuple([x for x in bytes_])
 
   def _pack_string(self, string_):
     """
@@ -185,16 +172,10 @@ class Socks(_socket_socket):
 
     :param str string_: string to convert
 
-    :returns:
-      * **str** in Python 2 (bytes is str)
-      * **bytes** in Python 3
+    :returns: **bytes** for the requested content
     """
 
-    try:
-      return struct.pack('>%ss' % len(string_), string_)
-    except struct.error:
-      # Python 3: encode str to bytes
-      return struct.pack('>%ss' % len(string_), string_.encode())
+    return struct.pack('>%ss' % len(string_), string_.encode())
 
   def connect(self, address):
     """
