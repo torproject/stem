@@ -40,7 +40,7 @@ def export_csv(descriptors, included_fields = (), excluded_fields = (), header =
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names (**only supported in python 2.7 and higher**)
+    list of the attribute names
 
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type
@@ -62,7 +62,7 @@ def export_csv_file(output_file, descriptors, included_fields = (), excluded_fie
   :param list included_fields: attributes to include in the csv
   :param list excluded_fields: attributes to exclude from the csv
   :param bool header: if **True** then the first line will be a comma separated
-    list of the attribute names (**only supported in python 2.7 and higher**)
+    list of the attribute names
 
   :returns: **str** of the CSV for the descriptors, one per line
   :raises: **ValueError** if descriptors contain more than one descriptor type

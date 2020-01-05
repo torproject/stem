@@ -371,14 +371,7 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
     return
 
-  # Not all files are seekable. If unseekable then advising the user.
-  #
-  # Python 3.x adds an io.seekable() method, but not an option with python 2.x
-  # so using an experimental call to tell() to determine this.
-
-  try:
-    descriptor_file.tell()
-  except IOError:
+  if not descriptor_file.seekable():
     raise IOError(UNSEEKABLE_MSG)
 
   # The tor descriptor specifications do not provide a reliable method for
