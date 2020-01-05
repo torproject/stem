@@ -7,7 +7,7 @@
 #
 # * Recache latest information (cache_manual.py and cache_fallback_directories.py)
 #
-# * Test with python2.6, python2.7, python3, and pypy.
+# * Test with python3 and pypy.
 #   |- If using tox run...
 #   |
 #   |    % tox -- --all --target RUN_ALL,ONLINE
@@ -92,11 +92,7 @@ To install you can either use...
 
   pip install stem
 
-... or install from the source tarball. Stem supports both the python 2.x and 3.x series. To use its python3 counterpart you simply need to install using that version of python.
-
-::
-
-  python3 setup.py install
+... or install from the source tarball. Stem supports Python 3.6 and above.
 
 After that, give some `tutorials <https://stem.torproject.org/tutorials.html>`_ a try! For questions or to discuss project ideas we're available on `irc <https://www.torproject.org/about/contact.html.en#irc>`_ and the `tor-dev@ email list <https://lists.torproject.org/cgi-bin/mailman/listinfo/tor-dev>`_.
 """.strip()
