@@ -127,14 +127,7 @@ def main():
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
-        # TODO: we can use a lambda here when dropping python 2.x support, but
-        # until then print's status as a keyword prevents it from being used in
-        # lambdas
-
-        def handle_event(event_message):
-          print(format(str(event_message), *STANDARD_OUTPUT))
-
-        controller._handle_event = handle_event
+        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]
