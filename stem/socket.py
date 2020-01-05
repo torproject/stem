@@ -204,21 +204,10 @@ class BaseSocket(object):
         except socket.error:
           pass
 
-        # Suppressing unexpected exceptions from close. For instance, if the
-        # socket's file has already been closed then with python 2.7 that raises
-        # with...
-        # error: [Errno 32] Broken pipe
-
-        try:
-          self._socket.close()
-        except:
-          pass
+        self._socket.close()
 
       if self._socket_file:
-        try:
-          self._socket_file.close()
-        except:
-          pass
+        self._socket_file.close()
 
       self._socket = None
       self._socket_file = None
