@@ -86,7 +86,10 @@ Ubuntu you can install these with...
 What Python versions is Stem compatible with?
 ---------------------------------------------
 
-Stem works with **Python 2.6 and greater**, including the Python 3.x series.
+Stem works with **Python 3.6 and greater**.
+
+If you require a deprecated Python version then please use Stem 1.8, which was
+compatible with **Python 2.6 and above**.
 
 .. _can_i_interact_with_tors_controller_interface_directly:
 
