@@ -138,7 +138,6 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 import binascii
 import collections
 import hashlib
-import struct
 
 import stem.client.cell
 import stem.prereq
@@ -367,7 +366,7 @@ class Field(object):
 class Size(Field):
   """
   Unsigned `struct.pack format
-  <https://docs.python.org/2/library/struct.html#format-characters>` for
+  <https://docs.python.org/3/library/struct.html#format-characters>` for
   network-order fields.
 
   ====================  ===========
@@ -380,45 +379,30 @@ class Size(Field):
   ====================  ===========
   """
 
-  def __init__(self, name, size, pack_format):
+  def __init__(self, name, size):
     self.name = name
     self.size = size
-    self.format = pack_format
 
   @staticmethod
   def pop(packed):
     raise NotImplementedError("Use our constant's unpack() and pop() instead")
 
   def pack(self, content):
-    # TODO: When we drop python 2.x support this can be simplified via
-    # integer's to_bytes() method. For example...
-    #
-    #   struct.pack('>Q', my_number)
-    #
-    # ... is the same as...
-    #
-    #   my_number.to_bytes(8, 'big')
-
     try:
-      packed = struct.pack(self.format, content)
-    except struct.error:
+      return content.to_bytes(self.size, 'big')
+    except:
       if not isinstance(content, int):
         raise ValueError('Size.pack encodes an integer, but was a %s' % type(content).__name__)
       elif content < 0:
         raise ValueError('Packed values must be positive (attempted to pack %i as a %s)' % (content, self.name))
       else:
-        raise  # some other struct exception
-
-    if self.size != len(packed):
-      raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
-
-    return packed
+        raise
 
   def unpack(self, packed):
     if self.size != len(packed):
       raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
 
-    return struct.unpack(self.format, packed)[0]
+    return int.from_bytes(packed, 'big')
 
   def pop(self, packed):
     to_unpack, remainder = split(packed, self.size)
@@ -426,7 +410,7 @@ class Size(Field):
     return self.unpack(to_unpack), remainder
 
   def __hash__(self):
-    return stem.util._hash_attr(self, 'name', 'size', 'format', cache = True)
+    return stem.util._hash_attr(self, 'name', 'size', cache = True)
 
 
 class Address(Field):
@@ -722,7 +706,7 @@ def _unpack_ipv6_address(value):
   return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 
-setattr(Size, 'CHAR', Size('CHAR', 1, '!B'))
-setattr(Size, 'SHORT', Size('SHORT', 2, '!H'))
-setattr(Size, 'LONG', Size('LONG', 4, '!L'))
-setattr(Size, 'LONG_LONG', Size('LONG_LONG', 8, '!Q'))
+setattr(Size, 'CHAR', Size('CHAR', 1))
+setattr(Size, 'SHORT', Size('SHORT', 2))
+setattr(Size, 'LONG', Size('LONG', 4))
+setattr(Size, 'LONG_LONG', Size('LONG_LONG', 8))
