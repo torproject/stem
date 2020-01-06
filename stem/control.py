@@ -258,7 +258,6 @@ import threading
 import time
 
 import stem.descriptor.microdescriptor
-import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy

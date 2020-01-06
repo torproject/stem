@@ -46,6 +46,7 @@ Contents
    api/descriptor/certificate
    api/descriptor/collector
    api/descriptor/descriptor
+   api/descriptor/remote
    api/descriptor/server_descriptor
    api/descriptor/extrainfo_descriptor
    api/descriptor/microdescriptor
@@ -53,10 +54,6 @@ Contents
    api/descriptor/router_status_entry
    api/descriptor/hidden_service
    api/descriptor/tordnsel
-
-   api/descriptor/export
-   api/descriptor/reader
-   api/descriptor/remote
 
    api/util/init
    api/util/conf

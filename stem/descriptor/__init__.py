@@ -110,12 +110,10 @@ __all__ = [
   'bandwidth_file',
   'certificate',
   'collector',
-  'export',
   'extrainfo_descriptor',
   'hidden_service',
   'microdescriptor',
   'networkstatus',
-  'reader',
   'remote',
   'router_status_entry',
   'server_descriptor',
@@ -296,10 +294,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   * The filename if it matches something from tor's data directory. For
     instance, tor's 'cached-descriptors' contains server descriptors.
-
-  This is a handy function for simple usage, but if you're reading multiple
-  descriptor files you might want to consider the
-  :class:`~stem.descriptor.reader.DescriptorReader`.
 
   Descriptor types include the following, including further minor versions (ie.
   if we support 1.1 then we also support everything from 1.0 and most things
@@ -940,9 +934,9 @@ class Descriptor(object):
   def get_archive_path(self):
     """
     If this descriptor came from an archive then provides its path within the
-    archive. This is only set if the descriptor came from a
-    :class:`~stem.descriptor.reader.DescriptorReader`, and is **None** if this
-    descriptor didn't come from an archive.
+    archive. This is only set if the descriptor was read by
+    :class:`~stem.descriptor.__init__.parse_file` from an archive, and **None**
+    otherwise.
 
     :returns: **str** with the descriptor's path within the archive
     """

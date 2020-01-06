@@ -12,7 +12,6 @@ import unittest
 
 import stem.connection
 import stem.control
-import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.directory
 import stem.response.protocolinfo
