@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 
 from stem.exit_policy import (
   DEFAULT_POLICY_RULES,
-  get_config_policy,
   ExitPolicy,
   MicroExitPolicy,
   ExitPolicyRule,
@@ -110,15 +109,8 @@ class TestExitPolicy(unittest.TestCase):
     policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
     self.assertEqual('accept 1-79', policy.summary())
 
-  def test_without_port(self):
-    policy = get_config_policy('accept 216.58.193.78, reject *')
-    self.assertEqual([ExitPolicyRule('accept 216.58.193.78:*'), ExitPolicyRule('reject *:*')], list(policy))
-
-    policy = get_config_policy('reject6 [2a00:1450:4001:081e:0000:0000:0000:200e]')
-    self.assertEqual([ExitPolicyRule('reject [2a00:1450:4001:081e:0000:0000:0000:200e]:*')], list(policy))
-
   def test_non_private_non_default_policy(self):
-    policy = get_config_policy('reject *:80-65535, accept *:1-65533, reject *:*')
+    policy = ExitPolicy('reject *:80-65535', 'accept *:1-65533', 'reject *:*')
 
     for rule in policy:
       self.assertFalse(rule.is_private())
@@ -130,26 +122,6 @@ class TestExitPolicy(unittest.TestCase):
     self.assertEqual(policy, policy.strip_private())
     self.assertEqual(policy, policy.strip_default())
 
-  def test_all_private_policy(self):
-    for port in ('*', '80', '1-1024'):
-      private_policy = get_config_policy('reject private:%s' % port, '12.34.56.78')
-
-      for rule in private_policy:
-        self.assertTrue(rule.is_private())
-
-      self.assertEqual(ExitPolicy(), private_policy.strip_private())
-
-    # though not commonly done, technically private policies can be accept rules too
-
-    private_policy = get_config_policy('accept private:*')
-    self.assertEqual(ExitPolicy(), private_policy.strip_private())
-
-  @patch('socket.gethostname', Mock(side_effect = IOError('no address')))
-  def test_all_private_policy_without_network(self):
-    for rule in get_config_policy('reject private:80, accept *:80'):
-      # all rules except the ending accept are part of the private policy
-      self.assertEqual(str(rule) != 'accept *:80', rule.is_private())
-
   def test_all_default_policy(self):
     policy = ExitPolicy(*DEFAULT_POLICY_RULES)
 
@@ -159,14 +131,6 @@ class TestExitPolicy(unittest.TestCase):
     self.assertTrue(policy.has_default())
     self.assertEqual(ExitPolicy(), policy.strip_default())
 
-  def test_mixed_private_policy(self):
-    policy = get_config_policy('accept *:80, reject private:1-65533, accept *:*')
-
-    for rule in policy:
-      self.assertTrue(rule.is_accept != rule.is_private())  # only reject rules are the private ones
-
-    self.assertEqual(get_config_policy('accept *:80, accept *:*'), policy.strip_private())
-
   def test_mixed_default_policy(self):
     policy = ExitPolicy('accept *:80', 'accept 127.0.0.1:1-65533', *DEFAULT_POLICY_RULES)
 
@@ -174,12 +138,7 @@ class TestExitPolicy(unittest.TestCase):
       # only accept-all and reject rules are the default ones
       self.assertTrue(rule.is_accept != rule.is_default() or (rule.is_accept and rule.is_address_wildcard() and rule.is_port_wildcard()))
 
-    self.assertEqual(get_config_policy('accept *:80, accept 127.0.0.1:1-65533'), policy.strip_default())
-
-  def test_get_config_policy_with_ipv6(self):
-    # ensure our constructor accepts addresses both with and without brackets
-    self.assertTrue(get_config_policy('reject private:80', 'fe80:0000:0000:0000:0202:b3ff:fe1e:8329').is_exiting_allowed())
-    self.assertTrue(get_config_policy('reject private:80', '[fe80:0000:0000:0000:0202:b3ff:fe1e:8329]').is_exiting_allowed())
+    self.assertEqual(ExitPolicy('accept *:80', 'accept 127.0.0.1:1-65533'), policy.strip_default())
 
   def test_str(self):
     # sanity test for our __str__ method
@@ -267,44 +226,6 @@ class TestExitPolicy(unittest.TestCase):
 
     self.assertFalse(policy.can_exit_to('127.0.0.1', 79))
     self.assertTrue(policy.can_exit_to('127.0.0.1', 80))
-
-  def test_get_config_policy(self):
-    test_inputs = {
-      '': ExitPolicy(),
-      'reject *': ExitPolicy('reject *:*'),
-      'reject *:*': ExitPolicy('reject *:*'),
-      'reject private': ExitPolicy(
-        'reject 0.0.0.0/8:*',
-        'reject 169.254.0.0/16:*',
-        'reject 127.0.0.0/8:*',
-        'reject 192.168.0.0/16:*',
-        'reject 10.0.0.0/8:*',
-        'reject 172.16.0.0/12:*',
-        'reject 12.34.56.78:*',
-      ),
-      'accept *:80, reject *': ExitPolicy(
-        'accept *:80',
-        'reject *:*',
-      ),
-      '  accept *:80,     reject *   ': ExitPolicy(
-        'accept *:80',
-        'reject *:*',
-      ),
-    }
-
-    for test_input, expected in test_inputs.items():
-      self.assertEqual(expected, get_config_policy(test_input, '12.34.56.78'))
-
-    test_inputs = (
-      'blarg',
-      'accept *:*:*',
-      'acceptt *:80',
-      'accept 257.0.0.1:80',
-      'accept *:999999',
-    )
-
-    for test_input in test_inputs:
-      self.assertRaises(ValueError, get_config_policy, test_input)
 
   def test_pickleability(self):
     """

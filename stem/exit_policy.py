@@ -50,8 +50,6 @@ exiting to a destination is permissible or not. For instance...
     |- is_private - flag indicating if this was expanded from a 'private' keyword
     +- __str__ - string representation for this rule
 
-  get_config_policy - provides the ExitPolicy based on torrc rules
-
 .. data:: AddressType (enum)
 
   Enumerations for IP address types that can be in an exit policy.
@@ -96,69 +94,6 @@ PRIVATE_ADDRESSES = (
 )
 
 
-def get_config_policy(rules, ip_address = None):
-  """
-  Converts an ExitPolicy found in a torrc to a proper exit pattern. This
-  accounts for...
-
-  * ports being optional
-  * the 'private' keyword
-
-  .. deprecated:: 1.7.0
-
-     Tor's torrc parameters lack a formal spec, making it difficult for this
-     method to be reliable. Callers are encouraged to move to
-     :func:`~stem.control.Controller.get_exit_policy` instead.
-
-  :param str,list rules: comma separated rules or list to be converted
-  :param str ip_address: this relay's IP address for the 'private' policy if
-    it's present, this defaults to the local address
-
-  :returns: :class:`~stem.exit_policy.ExitPolicy` reflected by the rules
-
-  :raises: **ValueError** if input isn't a valid tor exit policy
-  """
-
-  if ip_address and not (stem.util.connection.is_valid_ipv4_address(ip_address) or stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True)):
-    raise ValueError("%s isn't a valid IP address" % ip_address)
-  elif ip_address and stem.util.connection.is_valid_ipv6_address(ip_address, allow_brackets = True) and not (ip_address[0] == '[' and ip_address[-1] == ']'):
-    ip_address = '[%s]' % ip_address  # ExitPolicy validation expects IPv6 addresses to be bracketed
-
-  if isinstance(rules, (bytes, str)):
-    rules = rules.split(',')
-
-  result = []
-
-  for rule in rules:
-    rule = rule.strip()
-
-    if not rule:
-      continue
-
-    if not re.search(':[\\d\\-\\*]+$', rule):
-      rule = '%s:*' % rule
-
-    if 'private' in rule:
-      acceptance = rule.split(' ', 1)[0]
-      port = rule.rsplit(':', 1)[1]
-      addresses = list(PRIVATE_ADDRESSES)
-
-      if ip_address:
-        addresses.append(ip_address)
-      else:
-        try:
-          addresses.append(socket.gethostbyname(socket.gethostname()))
-        except:
-          pass  # we might not have a network connection
-
-      for private_addr in addresses:
-        result.append(ExitPolicyRule('%s %s:%s' % (acceptance, private_addr, port)))
-    else:
-      result.append(ExitPolicyRule(rule))
-
-  return ExitPolicy(*result)
-
-
 def _flag_private_rules(rules):
   """
   Determine if part of our policy was expanded from the 'private' keyword. This
@@ -184,9 +119,7 @@ def _flag_private_rules(rules):
     #   * all rules have the same port range
     #   * all rules have the same acceptance (all accept or reject entries)
     #
-    # The last rule is dynamically based on the relay's public address. It may
-    # not be present if get_config_policy() created this policy and we couldn't
-    # resolve our address.
+    # The last rule is dynamically based on the relay's public address.
 
     last_index = start_index + len(PRIVATE_ADDRESSES)
     rule_set = rules[start_index:last_index]

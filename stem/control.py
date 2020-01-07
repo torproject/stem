@@ -1295,41 +1295,8 @@ class Controller(BaseController):
     policy = self._get_cache('exit_policy')
 
     if not policy:
-      try:
-        policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
-        self._set_cache({'exit_policy': policy})
-      except stem.OperationFailed:
-        # There's a few situations where 'GETINFO exit-policy/full' will fail,
-        # most commonly...
-        #
-        #   * Error 551: Descriptor still rebuilding - not ready yet
-        #
-        #     Tor hasn't yet finished making our server descriptor. This often
-        #     arises when tor has first started.
-        #
-        #   * Error 552: Not running in server mode
-        #
-        #     We're not configured to be a relay (no ORPort), or haven't yet
-        #     been able to determine our externally facing IP address.
-        #
-        # When these arise best we can do is infer our policy from the torrc.
-        # Skipping caching so we'll retry GETINFO policy resolution next time
-        # we're called.
-
-        rules = []
-
-        if self.get_conf('ExitRelay') == '0':
-          rules.append('reject *:*')
-
-        if self.get_conf('ExitPolicyRejectPrivate') == '1':
-          rules.append('reject private:*')
-
-        for policy_line in self.get_conf('ExitPolicy', multiple = True):
-          rules += policy_line.split(',')
-
-        rules += self.get_info('exit-policy/default').split(',')
-
-        policy = stem.exit_policy.get_config_policy(rules, self.get_info('address', None))
+      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      self._set_cache({'exit_policy': policy})
 
     return policy
 
