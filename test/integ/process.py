@@ -631,7 +631,7 @@ class TestProcess(unittest.TestCase):
       # give tor a few seconds to quit
       start_time = time.time()
 
-      while time.time() - start_time < 5:
+      while time.time() - start_time < 20:
         if tor_process.poll() == 0:
           return  # tor exited
 
