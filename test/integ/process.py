@@ -591,8 +591,14 @@ class TestProcess(unittest.TestCase):
       start_time = time.time()
 
       while time.time() - start_time < 30:
-        if tor_process.poll() == 0:
-          return  # tor exited
+        if tor_process.poll() != None:
+          exitcode = tor_process.returncode
+          if exitcode < 0:
+            raise AssertionError("Tor exited with signal %d"%-exitcode)
+          elif exitcode > 0:
+            raise AssertionError("Tor exited with exit code %d"%exitcode)
+          else:
+            return  # tor exited without error.
 
         time.sleep(0.01)
 
@@ -632,8 +638,14 @@ class TestProcess(unittest.TestCase):
       start_time = time.time()
 
       while time.time() - start_time < 20:
-        if tor_process.poll() == 0:
-          return  # tor exited
+        if tor_process.poll() != None:
+          exitcode = tor_process.returncode
+          if exitcode < 0:
+            raise AssertionError("Tor exited with signal %d"%-exitcode)
+          elif exitcode > 0:
+            raise AssertionError("Tor exited with exit code %d"%exitcode)
+          else:
+            return  # tor exited without error.
 
         time.sleep(0.01)
 
