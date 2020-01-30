@@ -46,6 +46,10 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **Controller**
+
+  * Socket based control connections often raised BrokenPipeError when closed
+
 .. _version_1.8:
 
 Version 1.8 (December 29th, 2019)

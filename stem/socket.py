@@ -207,7 +207,10 @@ class BaseSocket(object):
         self._socket.close()
 
       if self._socket_file:
-        self._socket_file.close()
+        try:
+          self._socket_file.close()
+        except BrokenPipeError:
+          pass
 
       self._socket = None
       self._socket_file = None
