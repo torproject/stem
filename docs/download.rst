@@ -81,9 +81,9 @@ Download
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
        easily install from its `tarball
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
+       <https://files.pythonhosted.org/packages/71/bd/ab05ffcbfe74dca704e860312e00c53ef690b1ddcb23be7a4d9ea4f40260/stem-1.8.0.tar.gz>`_
        (`sig
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_),
+       <https://files.pythonhosted.org/packages/71/bd/ab05ffcbfe74dca704e860312e00c53ef690b1ddcb23be7a4d9ea4f40260/stem-1.8.0.tar.gz.asc>`_),
        or with **pip**...
 
        ::
