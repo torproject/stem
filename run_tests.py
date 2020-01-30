@@ -111,40 +111,57 @@ def log_traceback(sig, frame):
     os._exit(-1)
 
 
-def get_unit_tests(module_prefixes = None):
+def get_unit_tests(module_prefixes, exclude):
   """
   Provides the classes for our unit tests.
 
   :param list module_prefixes: only provide the test if the module starts with
     any of these substrings
+  :param list exclude: test modules explicitly excluded
 
   :returns: an **iterator** for our unit tests
   """
 
-  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefixes)
+  return _get_tests(CONFIG['test.unit_tests'].splitlines(), module_prefixes, exclude)
 
 
-def get_integ_tests(module_prefixes = None):
+def get_integ_tests(module_prefixes, exclude):
   """
   Provides the classes for our integration tests.
 
   :param list module_prefixes: only provide the test if the module starts with
     any of these substrings
+  :param list exclude: test modules explicitly excluded
 
   :returns: an **iterator** for our integration tests
   """
 
-  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefixes)
+  return _get_tests(CONFIG['test.integ_tests'].splitlines(), module_prefixes, exclude)
 
 
-def _get_tests(modules, module_prefixes):
+def _get_tests(modules, module_prefixes, exclude):
   for import_name in modules:
+    cropped_name = test.arguments.crop_module_name(import_name)
+    cropped_name = cropped_name.rsplit('.', 1)[0]  # exclude the class name
+
+    if exclude:
+      # Check if '--exclude-test' says we should skip this whole module. The
+      # argument can also skip individual tests, but that must be handled
+      # elsewhere.
+
+      skip = False
+
+      for exclude_prefix in exclude:
+        if cropped_name.startswith(exclude_prefix):
+          skip = True
+          break
+
+      if skip:
+        continue
+
     if not module_prefixes:
       yield import_name
     else:
-      cropped_name = test.arguments.crop_module_name(import_name)
-      cropped_name = cropped_name.rsplit('.', 1)[0]  # exclude the class name
-
       for prefix in module_prefixes:
         if cropped_name.startswith(prefix):
           yield import_name
@@ -258,8 +275,8 @@ def main():
     test.output.print_divider('UNIT TESTS', True)
     error_tracker.set_category('UNIT TEST')
 
-    for test_class in get_unit_tests(args.specific_test):
-      run_result = _run_test(args, test_class, output_filters)
+    for test_class in get_unit_tests(args.specific_test, args.exclude_test):
+      run_result = _run_test(args, test_class, args.exclude_test, output_filters)
       test.output.print_logging(logging_buffer)
       skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -277,8 +294,8 @@ def main():
 
         println('Running tests...\n', STATUS)
 
-        for test_class in get_integ_tests(args.specific_test):
-          run_result = _run_test(args, test_class, output_filters)
+        for test_class in get_integ_tests(args.specific_test, args.exclude_test):
+          run_result = _run_test(args, test_class, args.exclude_test, output_filters)
           test.output.print_logging(logging_buffer)
           skipped_tests += len(getattr(run_result, 'skipped', []))
 
@@ -382,7 +399,7 @@ def _print_static_issues(static_check_issues):
       println()
 
 
-def _run_test(args, test_class, output_filters):
+def _run_test(args, test_class, exclude, output_filters):
   # When logging to a file we don't have stdout's test delimiters to correlate
   # logs with the test that generated them.
 
@@ -422,6 +439,18 @@ def _run_test(args, test_class, output_filters):
     println(' failed', ERROR)
     traceback.print_exc(exc)
     return None
+
+  # check if we should skip any individual tests within this module
+
+  if exclude:
+    cropped_name = test.arguments.crop_module_name(test_class)
+    cropped_name = cropped_name.rsplit('.', 1)[0]  # exclude the class name
+
+    for prefix in exclude:
+      if prefix.startswith(cropped_name):
+        test_name = prefix.split('.')[-1]
+
+        suite._tests = list(filter(lambda test: test.id().split('.')[-1] != test_name, suite._tests))
 
   test_results = io.StringIO()
   run_result = stem.util.test_tools.TimedTestRunner(test_results, verbosity = 2).run(suite)

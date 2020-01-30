@@ -27,6 +27,7 @@ DEFAULT_ARGS = {
   'run_unit': False,
   'run_integ': False,
   'specific_test': [],
+  'exclude_test': [],
   'logging_runlevel': None,
   'logging_path': None,
   'tor_path': 'tor',
@@ -38,7 +39,7 @@ DEFAULT_ARGS = {
 }
 
 OPT = 'auit:l:qvh'
-OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'log=', 'log-file=', 'tor=', 'quiet', 'verbose', 'help']
+OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'exclude-test=', 'log=', 'log-file=', 'tor=', 'quiet', 'verbose', 'help']
 
 
 def parse(argv):
@@ -105,6 +106,8 @@ def parse(argv):
       args['attribute_targets'] = attribute_targets
     elif opt == '--test':
       args['specific_test'].append(crop_module_name(arg))
+    elif opt == '--exclude-test':
+      args['exclude_test'].append(crop_module_name(arg))
     elif opt in ('-l', '--log'):
       arg = arg.upper()
 
