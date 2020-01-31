@@ -30,27 +30,6 @@ used to for a variety of purposes...
 
   Ed25519Extension - extension included within an Ed25519Certificate
 
-.. data:: CertType (enum)
-
-  Purpose of Ed25519 certificate. For more information see...
-
-    * `cert-spec.txt <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_ section A.1
-    * `rend-spec-v3.txt <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ appendix E
-
-  .. deprecated:: 1.8.0
-     Replaced with :data:`stem.client.datatype.CertType`
-
-  ========================  ===========
-  CertType                  Description
-  ========================  ===========
-  **SIGNING**               signing key with an identity key
-  **LINK_CERT**             TLS link certificate signed with ed25519 signing key
-  **AUTH**                  authentication key signed with ed25519 signing key
-  **HS_V3_DESC_SIGNING**    hidden service v3 short-term descriptor signing key
-  **HS_V3_INTRO_AUTH**      hidden service v3 introductory point authentication key
-  **HS_V3_INTRO_ENCRYPT**   hidden service v3 introductory point encryption key
-  ========================  ===========
-
 .. data:: ExtensionType (enum)
 
   Recognized exception types.
@@ -86,12 +65,7 @@ import stem.util
 import stem.util.enum
 import stem.util.str_tools
 
-from stem.client.datatype import Field, Size, split
-
-# TODO: Importing under an alternate name until we can deprecate our redundant
-# CertType enum in Stem 2.x.
-
-from stem.client.datatype import CertType as ClientCertType
+from stem.client.datatype import CertType, Field, Size, split
 
 ED25519_KEY_LENGTH = 32
 ED25519_HEADER_LENGTH = 40
@@ -101,15 +75,6 @@ SIG_PREFIX_SERVER_DESC = b'Tor router descriptor signature v1'
 SIG_PREFIX_HS_V3 = b'Tor onion service descriptor sig v3'
 
 DEFAULT_EXPIRATION_HOURS = 54  # HSv3 certificate expiration of tor
-
-CertType = stem.util.enum.UppercaseEnum(
-  'SIGNING',
-  'LINK_CERT',
-  'AUTH',
-  'HS_V3_DESC_SIGNING',
-  'HS_V3_INTRO_AUTH',
-  'HS_V3_INTRO_ENCRYPT',
-)
 
 ExtensionType = stem.util.enum.Enum(('HAS_SIGNING_KEY', 4),)
 ExtensionFlag = stem.util.enum.UppercaseEnum('AFFECTS_VALIDATION', 'UNKNOWN')
@@ -302,7 +267,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     elif key is None:
       raise ValueError('Certificate key is required')
 
-    self.type, self.type_int = ClientCertType.get(cert_type)
+    self.type, self.type_int = CertType.get(cert_type)
     self.expiration = expiration if expiration else datetime.datetime.utcnow() + datetime.timedelta(hours = DEFAULT_EXPIRATION_HOURS)
     self.key_type = key_type if key_type else 1
     self.key = stem.util._pubkey_bytes(key)
@@ -319,11 +284,11 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
       self.signature = calculated_sig
 
-    if self.type in (ClientCertType.LINK, ClientCertType.IDENTITY, ClientCertType.AUTHENTICATE):
+    if self.type in (CertType.LINK, CertType.IDENTITY, CertType.AUTHENTICATE):
       raise ValueError('Ed25519 certificate cannot have a type of %i. This is reserved for CERTS cells.' % self.type_int)
-    elif self.type == ClientCertType.ED25519_IDENTITY:
+    elif self.type == CertType.ED25519_IDENTITY:
       raise ValueError('Ed25519 certificate cannot have a type of 7. This is reserved for RSA identity cross-certification.')
-    elif self.type == ClientCertType.UNKNOWN:
+    elif self.type == CertType.UNKNOWN:
       raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
 
   def pack(self):
