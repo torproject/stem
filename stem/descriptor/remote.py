@@ -1156,10 +1156,3 @@ def get_authorities():
   """
 
   return DirectoryAuthority.from_cache()
-
-
-# TODO: drop aliases in stem 2.0
-
-Directory = stem.directory.Directory
-DirectoryAuthority = stem.directory.Authority
-FallbackDirectory = stem.directory.Fallback

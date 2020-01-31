@@ -4,10 +4,6 @@
 """
 Toolkit for various string activity.
 
-.. versionchanged:: 1.3.0
-   Dropped the get_* prefix from several function names. The old names still
-   work, but are deprecated aliases.
-
 **Module Overview:**
 
 ::
@@ -589,13 +585,3 @@ def _get_label(units, count, decimal, is_long, round = False):
         return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label
-
-
-# TODO: drop with stem 2.x
-# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
-
-get_size_label = size_label
-get_time_label = time_label
-get_time_labels = time_labels
-get_short_time_label = short_time_label

@@ -6,10 +6,6 @@ Helper functions for working with the underlying system. These are mostly os
 dependent, only working on linux, osx, and bsd. In almost all cases they're
 best-effort, providing **None** if the lookup fails.
 
-.. versionchanged:: 1.3.0
-   Dropped the get_* prefix from several function names. The old names still
-   work, but are deprecated aliases.
-
 .. versionchanged:: 1.5.0
    Added the **SYSTEM_CALL_TIME** global, which tracks total time spent making
    system commands.
@@ -1500,18 +1496,3 @@ def _set_proc_title(process_name):
     # AttributeError: dlsym(0x7fff6a41d1e0, setproctitle): symbol not found
 
     pass
-
-
-# TODO: drop with stem 2.x
-# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
-
-get_name_by_pid = name_by_pid
-get_pid_by_name = pid_by_name
-get_pid_by_port = pid_by_port
-get_pid_by_open_file = pid_by_open_file
-get_cwd = cwd
-get_user = user
-get_start_time = start_time
-get_bsd_jail_id = bsd_jail_id
-get_bsd_jail_path = bsd_jail_path

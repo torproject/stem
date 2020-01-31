@@ -783,10 +783,3 @@ def _address_to_binary(address):
     return ''.join([_get_binary(int(grouping, 16), 16) for grouping in address.split(':')])
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
-
-
-# TODO: drop with stem 2.x
-# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
-
-get_system_resolvers = system_resolvers

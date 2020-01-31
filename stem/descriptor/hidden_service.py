@@ -1388,8 +1388,3 @@ def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
   S = (r + ed25519.Hint(ed25519.encodepoint(R) + blinded_key + msg) * a) % ed25519.l
 
   return ed25519.encodepoint(R) + ed25519.encodeint(S)
-
-
-# TODO: drop this alias in stem 2.x
-
-HiddenServiceDescriptor = HiddenServiceDescriptorV2
