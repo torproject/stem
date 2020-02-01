@@ -218,37 +218,6 @@ def error(message):
   log(Runlevel.ERROR, message)
 
 
-class LogBuffer(logging.Handler):
-  """
-  Basic log handler that listens for stem events and stores them so they can be
-  read later. Log entries are cleared as they are read.
-
-  .. versionchanged:: 1.4.0
-     Added the yield_records argument.
-
-  .. deprecated:: 1.8.0
-     This will be dropped in Stem 2.x. Use python's logging.BufferingHandler instead.
-  """
-
-  def __init__(self, runlevel, yield_records = False):
-    super(LogBuffer, self).__init__(level = logging_level(runlevel))
-
-    self.formatter = FORMATTER
-    self._buffer = []
-    self._yield_records = yield_records
-
-  def is_empty(self):
-    return not bool(self._buffer)
-
-  def __iter__(self):
-    while self._buffer:
-      record = self._buffer.pop(0)
-      yield record if self._yield_records else self.formatter.format(record)
-
-  def emit(self, record):
-    self._buffer.append(record)
-
-
 class _StdoutLogger(logging.Handler):
   def __init__(self, runlevel):
     logging.Handler.__init__(self, level = logging_level(runlevel))

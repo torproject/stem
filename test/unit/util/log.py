@@ -2,6 +2,7 @@
 Unit tests for the stem.util.log functions.
 """
 
+import logging
 import unittest
 
 from stem.util import log
@@ -15,9 +16,17 @@ class TestLog(unittest.TestCase):
 
     try:
       self.assertFalse(log.is_tracing())
-      logger.addHandler(log.LogBuffer(log.DEBUG))
+
+      handler = logging.NullHandler()
+      handler.setLevel(log.DEBUG)
+      logger.addHandler(handler)
+
       self.assertFalse(log.is_tracing())
-      logger.addHandler(log.LogBuffer(log.TRACE))
+
+      handler = logging.NullHandler()
+      handler.setLevel(log.TRACE)
+      logger.addHandler(handler)
+
       self.assertTrue(log.is_tracing())
     finally:
       logger.handlers = original_handlers

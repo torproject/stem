@@ -3,6 +3,8 @@ Unit tests for the stem.response.events classes.
 """
 
 import datetime
+import logging.handlers
+import queue
 import threading
 import unittest
 
@@ -1642,21 +1644,22 @@ class TestEvents(unittest.TestCase):
     """
 
     stem_logger = stem.util.log.get_logger()
-    logging_buffer = stem.util.log.LogBuffer(stem.util.log.INFO)
-    stem_logger.addHandler(logging_buffer)
+
+    messages = queue.Queue()
+    handler = logging.handlers.QueueHandler(messages)
+    handler.setLevel(stem.util.log.INFO)
+    stem_logger.addHandler(handler)
 
     # Try parsing a valid event. We shouldn't log anything.
 
     _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
-    self.assertTrue(logging_buffer.is_empty())
-    self.assertEqual([], list(logging_buffer))
+    self.assertTrue(messages.empty())
 
     # Parse an invalid runlevel.
 
     _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED.replace('NOTICE', 'OMEGA_CRITICAL!!!'))
-    logged_events = list(logging_buffer)
 
-    self.assertEqual(1, len(logged_events))
-    self.assertTrue('STATUS_GENERAL event had an unrecognized runlevel' in logged_events[0])
+    self.assertEqual(1, messages.qsize())
+    self.assertTrue('STATUS_GENERAL event had an unrecognized runlevel' in str(messages.get_nowait()))
 
-    stem_logger.removeHandler(logging_buffer)
+    stem_logger.removeHandler(handler)
