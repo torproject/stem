@@ -223,42 +223,6 @@ class AddrMapEvent(Event):
         raise stem.ProtocolError("An ADDRMAP event's CACHED mapping can only be 'YES' or 'NO': %s" % self)
 
 
-class AuthDirNewDescEvent(Event):
-  """
-  Event specific to directory authorities, indicating that we just received new
-  descriptors. The descriptor type contained within this event is unspecified
-  so the descriptor contents are left unparsed.
-
-  The AUTHDIR_NEWDESCS event was introduced in tor version 0.1.1.10-alpha and
-  removed in 0.3.2.1-alpha. (:spec:`6e887ba`)
-
-  .. deprecated:: 1.6.0
-     Tor dropped this event as of version 0.3.2.1. (:spec:`6e887ba`)
-
-  :var stem.AuthDescriptorAction action: what is being done with the descriptor
-  :var str message: explanation of why we chose this action
-  :var str descriptor: content of the descriptor
-  """
-
-  _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Requirement.EVENT_AUTHDIR_NEWDESCS
-
-  def _parse(self):
-    lines = str(self).split('\n')
-
-    if len(lines) < 5:
-      raise stem.ProtocolError("AUTHDIR_NEWDESCS events must contain lines for at least the type, action, message, descriptor, and terminating 'OK'")
-    elif lines[-1] != 'OK':
-      raise stem.ProtocolError("AUTHDIR_NEWDESCS doesn't end with an 'OK'")
-
-    # TODO: For stem 2.0.0 we should consider changing 'descriptor' to a
-    # ServerDescriptor instance.
-
-    self.action = lines[1]
-    self.message = lines[2]
-    self.descriptor = '\n'.join(lines[3:-1])
-
-
 class BandwidthEvent(Event):
   """
   Event emitted every second with the bytes sent and received by tor.
@@ -1386,7 +1350,6 @@ def _parse_cell_type_mapping(mapping):
 
 EVENT_TYPE_TO_CLASS = {
   'ADDRMAP': AddrMapEvent,
-  'AUTHDIR_NEWDESCS': AuthDirNewDescEvent,
   'BUILDTIMEOUT_SET': BuildTimeoutSetEvent,
   'BW': BandwidthEvent,
   'CELL_STATS': CellStatsEvent,

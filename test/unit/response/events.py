@@ -640,21 +640,6 @@ class TestEvents(unittest.TestCase):
     # the CACHED argument should only allow YES or NO
     self.assertRaises(ProtocolError, _get_event, ADDRMAP_CACHED_MALFORMED)
 
-  def test_authdir_newdesc_event(self):
-    minimal_event = _get_event('650+AUTHDIR_NEWDESCS\nAction\nMessage\nDescriptor\n.\n650 OK\n')
-
-    self.assertTrue(isinstance(minimal_event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual('Action', minimal_event.action)
-    self.assertEqual('Message', minimal_event.message)
-    self.assertEqual('Descriptor', minimal_event.descriptor)
-
-    event = _get_event(AUTHDIR_NEWDESC)
-
-    self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual('DROPPED', event.action)
-    self.assertEqual('Not replacing router descriptor; no information has changed since the last one with this identity.', event.message)
-    self.assertTrue('Descripto', event.descriptor.startswith('@uploaded-at 2017-05-25 04:46:21'))
-
   def test_build_timeout_set_event(self):
     event = _get_event(BUILD_TIMEOUT_EVENT)
 
