@@ -952,15 +952,6 @@ class TestController(unittest.TestCase):
         self.assertEqual([], controller.get_listeners(Listener.CONTROL))
 
   @test.require.controller
-  def test_get_socks_listeners(self):
-    """
-    Test Controller.get_socks_listeners against a running tor instance.
-    """
-
-    with test.runner.get_runner().get_tor_controller() as controller:
-      self.assertEqual([('127.0.0.1', 1112)], controller.get_socks_listeners())
-
-  @test.require.controller
   @test.require.online
   @test.require.version(stem.version.Version('0.1.2.2-alpha'))
   def test_enable_feature(self):

@@ -140,7 +140,6 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- is_newnym_available - true if tor would currently accept a NEWNYM signal
     |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
     |- get_effective_rate - provides our effective relaying rate limit
-    |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     +- drop_guards - drops our set of guard relays and picks a new set
 
@@ -374,6 +373,7 @@ CACHEABLE_GETINFO_PARAMS = (
   'config/names',
   'config/defaults',
   'info/names',
+  'ip-to-country/ipv4-available',
   'events/names',
   'features/names',
   'process/descriptor-limit',
@@ -1042,7 +1042,6 @@ class Controller(BaseController):
     self._event_listeners = {}
     self._event_listeners_lock = threading.RLock()
     self._enabled_features = []
-    self._is_geoip_unavailable = None
 
     self._last_address_exc = None
     self._last_fingerprint_exc = None
@@ -1158,7 +1157,7 @@ class Controller(BaseController):
       params = set(params)
 
     for param in params:
-      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
+      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.get_info('ip-to-country/ipv4-available', '0') != '1':
         raise stem.ProtocolError('Tor geoip database is unavailable')
       elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
@@ -1479,25 +1478,6 @@ class Controller(BaseController):
       write_bytes_left = left_written,
       write_limit = used_written + left_written,
     )
-
-  def get_socks_listeners(self, default = UNDEFINED):
-    """
-    Provides the SOCKS **(address, port)** tuples that tor has open.
-
-    .. deprecated:: 1.2.0
-       Use :func:`~stem.control.Controller.get_listeners` with
-       **Listener.SOCKS** instead.
-
-    :param object default: response if the query fails
-
-    :returns: list of **(address, port)** tuples for the available SOCKS
-      listeners
-
-    :raises: :class:`stem.ControllerError` if unable to determine the listeners
-      and no default was provided
-    """
-
-    return self.get_listeners(Listener.SOCKS, default)
 
   @with_default()
   def get_protocolinfo(self, default = UNDEFINED):
@@ -3329,7 +3309,6 @@ class Controller(BaseController):
     with self._cache_lock:
       self._request_cache = {}
       self._last_newnym = 0.0
-      self._is_geoip_unavailable = None
 
   def load_conf(self, configtext):
     """
@@ -3848,37 +3827,6 @@ class Controller(BaseController):
       value = min(value, attr_value) if value else attr_value
 
     return value
-
-  def is_geoip_unavailable(self):
-    """
-    Provides **True** if tor's geoip database is unavailable, **False**
-    otherwise.
-
-    .. versionchanged:: 1.6.0
-       No longer requires previously failed GETINFO requests to determine this.
-
-    .. deprecated:: 1.6.0
-       This is available as of Tor 0.3.2.1 through the following instead...
-
-       ::
-
-         controller.get_info('ip-to-country/ipv4-available', 0) == '1'
-
-    :returns: **bool** indicating if we've determined tor's geoip database to
-      be unavailable or not
-    """
-
-    if self._is_geoip_unavailable is None:
-      try:
-        self.get_info('ip-to-country/0.0.0.0')
-        self._is_geoip_unavailable = False
-      except stem.ControllerError as exc:
-        if 'GeoIP data not loaded' in str(exc):
-          self._is_geoip_unavailable = True
-        else:
-          return False  # unexpected issue, fail open and don't cache
-
-    return self._is_geoip_unavailable
 
   def map_address(self, mapping):
     """
