@@ -225,20 +225,13 @@ class Authority(Directory):
   <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_
   to enumerate the relays in the network.
 
-  .. versionchanged:: 1.3.0
-     Added the is_bandwidth_authority attribute.
-
   .. versionchanged:: 1.7.0
      Added the orport_v6 attribute.
-
-  .. deprecated:: 1.7.0
-     The is_bandwidth_authority attribute is deprecated and will be removed in
-     the future.
 
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, orport_v6 = None, v3ident = None, is_bandwidth_authority = False):
+  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, orport_v6 = None, v3ident = None):
     super(Authority, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
 
     if v3ident and not tor_tools.is_valid_fingerprint(v3ident):
@@ -246,7 +239,6 @@ class Authority(Directory):
       raise ValueError('%s has an invalid v3ident: %s' % (identifier, v3ident))
 
     self.v3ident = v3ident
-    self.is_bandwidth_authority = is_bandwidth_authority
 
   @staticmethod
   def from_cache():
@@ -308,7 +300,7 @@ class Authority(Directory):
     return section_lines
 
   def __hash__(self):
-    return stem.util._hash_attr(self, 'v3ident', 'is_bandwidth_authority', parent = Directory, cache = True)
+    return stem.util._hash_attr(self, 'v3ident', parent = Directory, cache = True)
 
   def __eq__(self, other):
     return hash(self) == hash(other) if isinstance(other, Authority) else False
