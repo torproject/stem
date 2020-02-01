@@ -108,17 +108,6 @@ tor       129 atagar   22u  IPv4 0xffffff35c9125500      0t0  TCP 192.168.1.20:9
 tor       129 atagar   23u  IPv4 0xffffff3236168160      0t0  TCP 192.168.1.20:9090->62.135.16.134:14456 (ESTABLISHED)
 """
 
-SOCKSTAT_OUTPUT = """\
-USER     PROCESS              PID      PROTO  SOURCE ADDRESS            FOREIGN ADDRESS           STATE
-atagar   ubuntu-geoip-pr      2164     tcp4   192.168.0.1:55395         141.18.34.33:80           CLOSE_WAIT
-atagar   tor                  15843    tcp4   127.0.0.1:9050            *:*                       LISTEN
-atagar   tor                  15843    tcp4   127.0.0.1:9051            *:*                       LISTEN
-atagar   tor                  15843    tcp4   192.168.0.1:44415         38.229.79.2:443           ESTABLISHED
-atagar   tor                  15843    tcp4   192.168.0.1:44092         68.169.35.102:443         ESTABLISHED
-atagar   firefox              20586    tcp4   192.168.0.1:47486         213.24.100.160:443        ESTABLISHED
-atagar   firefox              20586    tcp4   192.168.0.1:43762         32.188.221.72:443         CLOSE_WAIT
-"""
-
 # I don't have actual sockstat and procstat output for FreeBSD. Rather, these
 # are snippets of output from email threads.
 
@@ -216,10 +205,10 @@ class TestConnection(unittest.TestCase):
     self.assertEqual([Resolver.LSOF], stem.util.connection.system_resolvers('Darwin'))
     self.assertEqual([Resolver.BSD_FSTAT], stem.util.connection.system_resolvers('OpenBSD'))
     self.assertEqual([Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF], stem.util.connection.system_resolvers('FreeBSD'))
-    self.assertEqual([Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
+    self.assertEqual([Resolver.NETSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
     proc_mock.return_value = True
-    self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
+    self.assertEqual([Resolver.PROC, Resolver.NETSTAT, Resolver.LSOF, Resolver.SS], stem.util.connection.system_resolvers('Linux'))
 
     # check that calling without an argument is equivalent to calling for this
     # platform
@@ -387,25 +376,6 @@ class TestConnection(unittest.TestCase):
     ]
 
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 129, process_name = 'tor'))
-
-  @patch('stem.util.system.call')
-  def test_get_connections_by_sockstat(self, call_mock):
-    """
-    Checks the get_connections function with the sockstat resolver.
-    """
-
-    call_mock.return_value = SOCKSTAT_OUTPUT.split('\n')
-    expected = [
-      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp', False),
-      Connection('192.168.0.1', 44092, '68.169.35.102', 443, 'tcp', False),
-    ]
-    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SOCKSTAT, process_pid = 15843, process_name = 'tor'))
-
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 15843, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 1111, process_name = 'tor')
-
-    call_mock.side_effect = OSError('Unable to call sockstat')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SOCKSTAT, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_sockstat_for_bsd(self, call_mock):
