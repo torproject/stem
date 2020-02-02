@@ -1025,7 +1025,7 @@ class TestEvents(unittest.TestCase):
     event = _get_event(NEWCONSENSUS_EVENT)
 
     self.assertTrue(isinstance(event, stem.response.events.NewConsensusEvent))
-    self.assertEqual(expected_desc, event.desc)
+    self.assertEqual(expected_desc, event.entries())
 
   def test_ns_event(self):
     expected_desc = RouterStatusEntryV3.create({

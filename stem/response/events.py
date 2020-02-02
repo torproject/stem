@@ -21,7 +21,6 @@ from stem.util import connection, log, str_tools, tor_tools
 KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)=(\\S*)$')
 QUOTED_KW_ARG = re.compile('^(.*) ([A-Za-z0-9_]+)="(.*)"$')
 CELL_TYPE = re.compile('^[a-z0-9_]+$')
-PARSE_NEWCONSENSUS_EVENTS = True
 
 
 class Event(stem.response.ControlMessage):
@@ -752,17 +751,7 @@ class NewConsensusEvent(Event):
   .. versionchanged:: 1.6.0
      Added the consensus_content attribute.
 
-  .. deprecated:: 1.6.0
-     In Stem 2.0 we'll remove the desc attribute, so this event only provides
-     the unparsed consensus. Callers can then parse it if they'd like. To drop
-     parsing before then you can set...
-
-     ::
-
-       stem.response.events.PARSE_NEWCONSENSUS_EVENTS = False
-
   :var str consensus_content: consensus content
-  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
 
   _SKIP_PARSING = True
@@ -770,18 +759,26 @@ class NewConsensusEvent(Event):
 
   def _parse(self):
     self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
+    self._parsed = None
 
-    # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
-    # our other events.
+  def entries(self):
+    """
+    Relay router status entries residing within this consensus.
 
-    if PARSE_NEWCONSENSUS_EVENTS:
-      self.desc = list(stem.descriptor.router_status_entry._parse_file(
+    .. versionadded:: 2.0.0
+
+    :returns: **list** of :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
+    """
+
+
+    if self._parsed is None:
+      self._parsed = list(stem.descriptor.router_status_entry._parse_file(
         io.BytesIO(str_tools._to_bytes(self.consensus_content)),
         False,
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
       ))
-    else:
-      self.desc = None
+
+    return self._parsed
 
 
 class NewDescEvent(Event):
