@@ -500,11 +500,6 @@ class ConfChangedEvent(Event):
 
   The CONF_CHANGED event was introduced in tor version 0.2.3.3-alpha.
 
-  .. deprecated:: 1.7.0
-     Deprecated the *config* attribute. Some tor configuration options (like
-     ExitPolicy) can have multiple values, so a simple 'str => str' mapping
-     meant that we only provided the last.
-
   .. versionchanged:: 1.7.0
      Added the changed and unset attributes.
 
@@ -519,7 +514,6 @@ class ConfChangedEvent(Event):
   def _parse(self):
     self.changed = {}
     self.unset = []
-    self.config = {}  # TODO: remove in stem 2.0
 
     # Skip first and last line since they're the header and footer. For
     # instance...
@@ -537,8 +531,6 @@ class ConfChangedEvent(Event):
       else:
         key, value = line, None
         self.unset.append(key)
-
-      self.config[key] = value
 
 
 class DescChangedEvent(Event):

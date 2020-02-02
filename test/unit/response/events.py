@@ -862,12 +862,6 @@ class TestEvents(unittest.TestCase):
 
     self.assertEqual(['ExitPolicy'], event.unset)
 
-    self.assertEqual({
-      'ExitNodes': 'caerSidi',
-      'MaxCircuitDirtiness': '20',
-      'ExitPolicy': None,
-    }, event.config)
-
     event = _get_event(CONF_CHANGED_EVENT_MULTIPLE)
     self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
 
@@ -877,11 +871,6 @@ class TestEvents(unittest.TestCase):
     }, event.changed)
 
     self.assertEqual([], event.unset)
-
-    self.assertEqual({
-      'ExitPolicy': 'accept 3.4.53.3',  # overwrote with second value
-      'MaxCircuitDirtiness': '20',
-    }, event.config)
 
   def test_descchanged_event(self):
     # all we can check for is that the event is properly parsed as a
