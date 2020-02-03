@@ -1141,18 +1141,3 @@ def _guess_descriptor_type(resource):
       return 'bandwidth-file 1.0'
 
   raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
-
-
-def get_authorities():
-  """
-  Provides cached Tor directory authority information. The directory
-  information hardcoded into Tor and occasionally changes, so the information
-  this provides might not necessarily match your version of tor.
-
-  .. deprecated:: 1.7.0
-     Use stem.directory.Authority.from_cache() instead.
-
-  :returns: **dict** of **str** nicknames to :class:`~stem.directory.Authority` instances
-  """
-
-  return DirectoryAuthority.from_cache()
