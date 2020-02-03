@@ -34,50 +34,6 @@ class TestConnect(unittest.TestCase):
 
   @test.require.controller
   @patch('sys.stdout', new_callable = io.StringIO)
-  def test_connect_port(self, stdout_mock):
-    """
-    Basic sanity checks for the connect_port function.
-    """
-
-    runner = test.runner.get_runner()
-
-    control_socket = stem.connection.connect_port(
-      port = test.runner.CONTROL_PORT,
-      password = test.runner.CONTROL_PASSWORD,
-      chroot_path = runner.get_chroot(),
-      controller = None)
-
-    if test.runner.Torrc.PORT in runner.get_options():
-      test.runner.exercise_controller(self, control_socket)
-      control_socket.close()
-      self.assertEqual('', stdout_mock.getvalue())
-    else:
-      self.assertEqual(control_socket, None)
-
-  @test.require.controller
-  @patch('sys.stdout', new_callable = io.StringIO)
-  def test_connect_socket_file(self, stdout_mock):
-    """
-    Basic sanity checks for the connect_socket_file function.
-    """
-
-    runner = test.runner.get_runner()
-
-    control_socket = stem.connection.connect_socket_file(
-      path = test.runner.CONTROL_SOCKET_PATH,
-      password = test.runner.CONTROL_PASSWORD,
-      chroot_path = runner.get_chroot(),
-      controller = None)
-
-    if test.runner.Torrc.SOCKET in runner.get_options():
-      test.runner.exercise_controller(self, control_socket)
-      control_socket.close()
-      self.assertEqual('', stdout_mock.getvalue())
-    else:
-      self.assertEqual(control_socket, None)
-
-  @test.require.controller
-  @patch('sys.stdout', new_callable = io.StringIO)
   def test_connect_to_socks_port(self, stdout_mock):
     """
     Common user gotcha is connecting to the SocksPort or ORPort rather than the
@@ -87,8 +43,8 @@ class TestConnect(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    control_socket = stem.connection.connect_port(
-      port = test.runner.SOCKS_PORT,
+    control_socket = stem.connection.connect(
+      control_port = ('127.0.0.1', test.runner.SOCKS_PORT),
       chroot_path = runner.get_chroot(),
       controller = None)
 
