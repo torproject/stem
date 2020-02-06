@@ -705,34 +705,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(900, desc.read_history_interval)
     self.assertEqual([], desc.read_history_values)
 
-  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
-  def test_annotations(self):
-    """
-    Checks that content before a descriptor are parsed as annotations.
-    """
-
-    desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += RelayDescriptor.content()
-    desc_text += b'\ntrailing text that should be invalid, ho hum'
-
-    # running _parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
-    self.assertRaises(ValueError, list, desc_iter)
-
-    desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += RelayDescriptor.content({'router': 'caerSidi 71.35.133.197 9001 0 0'})
-    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
-
-    desc_entries = list(desc_iter)
-    self.assertEqual(1, len(desc_entries))
-    desc = desc_entries[0]
-
-    self.assertEqual('caerSidi', desc.nickname)
-    self.assertEqual('@pepperjack very tasty', desc.get_annotation_lines()[0])
-    self.assertEqual('@mushrooms not so much', desc.get_annotation_lines()[1])
-    self.assertEqual({'@pepperjack': 'very tasty', '@mushrooms': 'not so much'}, desc.get_annotations())
-    self.assertEqual([], desc.get_unrecognized_lines())
-
   def test_duplicate_field(self):
     """
     Constructs with a field appearing twice.

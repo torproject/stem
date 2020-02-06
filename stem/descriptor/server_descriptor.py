@@ -26,9 +26,7 @@ etc). This information is provided from a few sources...
     |  |- is_scrubbed - checks if our content has been properly scrubbed
     |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
-    |- digest - calculates the upper-case hex digest value for our content
-    |- get_annotations - dictionary of content prior to the descriptor entry
-    +- get_annotation_lines - lines that provided the annotations
+    +- digest - calculates the upper-case hex digest value for our content
 
 .. data:: BridgeDistribution (enum)
 
@@ -190,10 +188,14 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   # to the caller).
 
   while True:
-    annotations = _read_until_keywords('router', descriptor_file)
-    annotations = map(bytes.strip, annotations)                      # strip newlines
-    annotations = map(stem.util.str_tools._to_unicode, annotations)  # convert to unicode
-    annotations = list(filter(lambda x: x != '', annotations))       # drop any blanks
+    # skip annotations
+
+    while True:
+      pos = descriptor_file.tell()
+
+      if not descriptor_file.readline().startswith(b'@'):
+        descriptor_file.seek(pos)
+        break
 
     if not is_bridge:
       descriptor_content = _read_until_keywords('router-signature', descriptor_file)
@@ -212,13 +214,10 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
-        yield BridgeDescriptor(descriptor_text, validate, annotations, **kwargs)
+        yield BridgeDescriptor(descriptor_text, validate, **kwargs)
       else:
-        yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
+        yield RelayDescriptor(descriptor_text, validate, **kwargs)
     else:
-      if validate and annotations:
-        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
-
       break  # done parsing descriptors
 
 
@@ -590,7 +589,7 @@ class ServerDescriptor(Descriptor):
     'eventdns': _parse_eventdns_line,
   }
 
-  def __init__(self, raw_contents, validate = False, annotations = None):
+  def __init__(self, raw_contents, validate = False):
     """
     Server descriptor constructor, created from an individual relay's
     descriptor content (as provided by 'GETINFO desc/*', cached descriptors,
@@ -603,13 +602,11 @@ class ServerDescriptor(Descriptor):
     :param str raw_contents: descriptor content provided by the relay
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
-    :param list annotations: lines that appeared prior to the descriptor
 
     :raises: **ValueError** if the contents is malformed and validate is True
     """
 
     super(ServerDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -662,55 +659,6 @@ class ServerDescriptor(Descriptor):
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
-
-  @functools.lru_cache()
-  def get_annotations(self):
-    """
-    Provides content that appeared prior to the descriptor. If this comes from
-    the cached-descriptors file then this commonly contains content like...
-
-    ::
-
-      @downloaded-at 2012-03-18 21:18:29
-      @source "173.254.216.66"
-
-    .. deprecated:: 1.8.0
-       Users very rarely read from cached descriptor files any longer. This
-       method will be removed in Stem 2.x. If you have some need for us to keep
-       this please `let me know
-       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
-
-    :returns: **dict** with the key/value pairs in our annotations
-    """
-
-    annotation_dict = {}
-
-    for line in self._annotation_lines:
-      if ' ' in line:
-        key, value = line.split(' ', 1)
-        annotation_dict[key] = value
-      else:
-        annotation_dict[line] = None
-
-    return annotation_dict
-
-  def get_annotation_lines(self):
-    """
-    Provides the lines of content that appeared prior to the descriptor. This
-    is the same as the
-    :func:`~stem.descriptor.server_descriptor.ServerDescriptor.get_annotations`
-    results, but with the unparsed lines and ordering retained.
-
-    .. deprecated:: 1.8.0
-       Users very rarely read from cached descriptor files any longer. This
-       method will be removed in Stem 2.x. If you have some need for us to keep
-       this please `let me know
-       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
-
-    :returns: **list** with the lines of annotation that came before this descriptor
-    """
-
-    return self._annotation_lines
 
   def _check_constraints(self, entries):
     """
@@ -831,8 +779,8 @@ class RelayDescriptor(ServerDescriptor):
     'router-signature': _parse_router_signature_line,
   })
 
-  def __init__(self, raw_contents, validate = False, annotations = None, skip_crypto_validation = False):
-    super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
+  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+    super(RelayDescriptor, self).__init__(raw_contents, validate)
 
     if validate:
       if self.fingerprint:

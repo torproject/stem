@@ -333,12 +333,10 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     # checking via the iterator
 
-    expected_error_msg = 'Content conform to being a server descriptor:\nsome malformed stuff'
-
     descriptors = list(query)
     self.assertEqual(0, len(descriptors))
     self.assertEqual(ValueError, type(query.error))
-    self.assertEqual(expected_error_msg, str(query.error))
+    self.assertEqual("Descriptor must have a 'router' entry", str(query.error))
 
     # check via the run() method
 
