@@ -59,7 +59,6 @@ import hashlib
 import re
 
 import stem.descriptor.hidden_service
-import stem.descriptor.server_descriptor
 import stem.prereq
 import stem.util
 import stem.util.enum
@@ -377,6 +376,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
       * **ImportError** if cryptography module or ed25519 support unavailable
     """
 
+    import stem.descriptor.server_descriptor
+
     if not stem.prereq.is_crypto_available(ed25519 = True):
       raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
 
@@ -406,6 +407,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
     Provides this descriptor's signing constant, appended with the portion of
     the descriptor that's signed.
     """
+
+    import stem.descriptor.server_descriptor
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
       prefix = SIG_PREFIX_SERVER_DESC

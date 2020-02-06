@@ -51,7 +51,6 @@ import functools
 import hashlib
 import re
 
-import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -61,6 +60,7 @@ import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
+from stem.descriptor.certificate import Ed25519Certificate
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 
 from stem.descriptor import (
@@ -394,15 +394,7 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
-def _parse_identity_ed25519_line(descriptor, entries):
-  # TODO: replace this with Ed25519Certificate._from_descriptor() in stem 2.x
-
-  _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
-
-  if descriptor.ed25519_certificate:
-    descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.from_base64(descriptor.ed25519_certificate)
-
-
+_parse_identity_ed25519_line = Ed25519Certificate._from_descriptor('identity-ed25519', 'certificate')
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
 _parse_master_key_ed25519_for_hash_line = _parse_simple_line('master-key-ed25519', 'ed25519_certificate_hash')
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
@@ -717,7 +709,6 @@ class RelayDescriptor(ServerDescriptor):
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
   :var stem.certificate.Ed25519Certificate certificate: ed25519 certificate
-  :var str ed25519_certificate: base64 encoded ed25519 certificate
   :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
   :var str ed25519_signature: signature of this document using ed25519
 
@@ -731,7 +722,7 @@ class RelayDescriptor(ServerDescriptor):
   **\\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.5.0
-     Added the ed25519_certificate, ed25519_master_key, ed25519_signature,
+     Added the ed25519_master_key, ed25519_signature,
      onion_key_crosscert, ntor_onion_key_crosscert, and
      ntor_onion_key_crosscert_sign attributes.
 
@@ -743,11 +734,6 @@ class RelayDescriptor(ServerDescriptor):
   .. versionchanged:: 1.6.0
      Added the certificate attribute.
 
-  .. deprecated:: 1.6.0
-     Our **ed25519_certificate** is deprecated in favor of our new
-     **certificate** attribute. The base64 encoded certificate is available via
-     the certificate's **encoded** attribute.
-
   .. versionchanged:: 1.6.0
      Added the **skip_crypto_validation** constructor argument.
   """
@@ -756,7 +742,6 @@ class RelayDescriptor(ServerDescriptor):
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'certificate': (None, _parse_identity_ed25519_line),
-    'ed25519_certificate': (None, _parse_identity_ed25519_line),
     'ed25519_master_key': (None, _parse_master_key_ed25519_line),
     'ed25519_signature': (None, _parse_router_sig_ed25519_line),
 
@@ -928,7 +913,7 @@ class RelayDescriptor(ServerDescriptor):
   def _check_constraints(self, entries):
     super(RelayDescriptor, self)._check_constraints(entries)
 
-    if self.ed25519_certificate:
+    if self.certificate:
       if not self.onion_key_crosscert:
         raise ValueError("Descriptor must have a 'onion-key-crosscert' when identity-ed25519 is present")
       elif not self.ed25519_signature:
