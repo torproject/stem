@@ -81,7 +81,6 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
 
   @test.require.controller
-  @test.require.version(Requirement.EVENT_SIGNAL)
   def test_reset_notification(self):
     """
     Checks that a notificiation listener is... well, notified of SIGHUPs.
@@ -342,9 +341,7 @@ class TestController(unittest.TestCase):
 
       if test.runner.Torrc.COOKIE in tor_options:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
-
-        if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
-          auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
+        auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
 
       if test.runner.Torrc.PASSWORD in tor_options:
         auth_methods.append(stem.response.protocolinfo.AuthMethod.PASSWORD)
@@ -553,7 +550,6 @@ class TestController(unittest.TestCase):
             pass
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION)
   def test_without_ephemeral_hidden_services(self):
     """
     Exercises ephemeral hidden service methods when none are present.
@@ -565,7 +561,6 @@ class TestController(unittest.TestCase):
       self.assertEqual(False, controller.remove_ephemeral_hidden_service('gfzprpioee3hoppz'))
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION)
   def test_with_invalid_ephemeral_hidden_service_port(self):
     with test.runner.get_runner().get_tor_controller() as controller:
       for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
@@ -573,7 +568,6 @@ class TestController(unittest.TestCase):
         self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION)
   def test_ephemeral_hidden_services_v2(self):
     """
     Exercises creating v2 ephemeral hidden services.
@@ -618,7 +612,6 @@ class TestController(unittest.TestCase):
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
 
   @test.require.controller
-  @test.require.version(Requirement.HIDDEN_SERVICE_V3)
   def test_ephemeral_hidden_services_v3(self):
     """
     Exercises creating v3 ephemeral hidden services.
@@ -663,7 +656,6 @@ class TestController(unittest.TestCase):
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION_BASIC_AUTH)
   def test_with_ephemeral_hidden_services_basic_auth(self):
     """
     Exercises creating ephemeral hidden services that uses basic authentication.
@@ -683,7 +675,6 @@ class TestController(unittest.TestCase):
       self.assertEqual([], controller.list_ephemeral_hidden_services())
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION_BASIC_AUTH)
   def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
     """
     Exercises creating ephemeral hidden services when attempting to use basic
@@ -697,7 +688,6 @@ class TestController(unittest.TestCase):
       self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, basic_auth = {})
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION)
   def test_with_detached_ephemeral_hidden_services(self):
     """
     Exercises creating detached ephemeral hidden services and methods when
@@ -733,7 +723,6 @@ class TestController(unittest.TestCase):
       controller.remove_ephemeral_hidden_service(response.service_id)
 
   @test.require.controller
-  @test.require.version(Requirement.ADD_ONION)
   def test_rejecting_unanonymous_hidden_services_creation(self):
     """
     Attempt to create a non-anonymous hidden service despite not setting
@@ -852,7 +841,6 @@ class TestController(unittest.TestCase):
       self.assertRaisesWith(stem.InvalidArguments, "DisableAllSwap, User cannot be changed while tor's running", controller.set_options, {'User': 'atagar', 'DisableAllSwap': '1'})
 
   @test.require.controller
-  @test.require.version(Requirement.LOADCONF)
   def test_loadconf(self):
     """
     Exercises Controller.load_conf with valid and invalid requests.
@@ -1004,7 +992,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_extendcircuit(self):
     with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
@@ -1020,7 +1007,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_repurpose_circuit(self):
     """
     Tests Controller.repurpose_circuit with valid and invalid input.
@@ -1043,7 +1029,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_close_circuit(self):
     """
     Tests Controller.close_circuit with valid and invalid input.
@@ -1251,7 +1236,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.MICRODESCRIPTOR_IS_DEFAULT)
   def test_get_microdescriptor(self):
     """
     Basic checks for get_microdescriptor().
@@ -1304,12 +1288,8 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      self.skipTest('(requires server descriptors)')
-
     with runner.get_tor_controller() as controller:
       # we should balk at invalid content
-      self.assertRaises(ValueError, controller.get_server_descriptor, None)
       self.assertRaises(ValueError, controller.get_server_descriptor, '')
       self.assertRaises(ValueError, controller.get_server_descriptor, 5)
       self.assertRaises(ValueError, controller.get_server_descriptor, 'z' * 30)
@@ -1333,9 +1313,6 @@ class TestController(unittest.TestCase):
     """
 
     runner = test.runner.get_runner()
-
-    if test.tor_version() >= Requirement.MICRODESCRIPTOR_IS_DEFAULT:
-      self.skipTest('(requires server descriptors)')
 
     with runner.get_tor_controller() as controller:
       count = 0
@@ -1402,7 +1379,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.HSFETCH)
   def test_get_hidden_service_descriptor(self):
     """
     Fetches a few descriptors via the get_hidden_service_descriptor() method.
@@ -1428,7 +1404,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_attachstream(self):
     host = socket.gethostbyname('www.torproject.org')
     port = 80
@@ -1469,7 +1444,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @test.require.version(Requirement.EXTENDCIRCUIT_PATH_OPTIONAL)
   def test_get_circuits(self):
     """
     Fetches circuits via the get_circuits() method.

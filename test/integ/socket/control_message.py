@@ -99,7 +99,6 @@ class TestControlMessage(unittest.TestCase):
       self.assertEqual([('250', '-', 'config-file=%s' % torrc_dst), ('250', ' ', 'OK')], config_file_response.content())
 
   @test.require.controller
-  @test.require.version(stem.version.Requirement.GETINFO_CONFIG_TEXT)
   def test_getinfo_config_text(self):
     """
     Parses the 'GETINFO config-text' response.

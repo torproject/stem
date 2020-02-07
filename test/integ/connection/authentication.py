@@ -43,17 +43,14 @@ def _can_authenticate(auth_type):
   tor_options = runner.get_options()
   password_auth = test.runner.Torrc.PASSWORD in tor_options
   cookie_auth = test.runner.Torrc.COOKIE in tor_options
-  safecookie_auth = cookie_auth and test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE
 
   if not password_auth and not cookie_auth:
     # open socket, anything but safecookie will work
     return auth_type != stem.connection.AuthMethod.SAFECOOKIE
   elif auth_type == stem.connection.AuthMethod.PASSWORD:
     return password_auth
-  elif auth_type == stem.connection.AuthMethod.COOKIE:
+  elif auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
     return cookie_auth
-  elif auth_type == stem.connection.AuthMethod.SAFECOOKIE:
-    return safecookie_auth
   else:
     return False
 
@@ -100,12 +97,6 @@ def _get_auth_failure_message(auth_type):
 
 
 class TestAuthenticate(unittest.TestCase):
-  def setUp(self):
-    self.cookie_auth_methods = [stem.connection.AuthMethod.COOKIE]
-
-    if test.tor_version() >= stem.version.Requirement.AUTH_SAFECOOKIE:
-      self.cookie_auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
-
   @test.require.controller
   def test_authenticate_general_socket(self):
     """
@@ -293,7 +284,7 @@ class TestAuthenticate(unittest.TestCase):
 
     auth_value = test.runner.get_runner().get_auth_cookie_path()
 
-    for auth_type in self.cookie_auth_methods:
+    for auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
       if not os.path.exists(auth_value):
         # If the authentication cookie doesn't exist then we'll be getting an
         # error for that rather than rejection. This will even fail if
@@ -321,7 +312,7 @@ class TestAuthenticate(unittest.TestCase):
     fake_cookie.write('0' * 32)
     fake_cookie.close()
 
-    for auth_type in self.cookie_auth_methods:
+    for auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
       if _can_authenticate(stem.connection.AuthMethod.NONE):
         # authentication will work anyway unless this is safecookie
         if auth_type == stem.connection.AuthMethod.COOKIE:
@@ -351,7 +342,7 @@ class TestAuthenticate(unittest.TestCase):
     shouldn't exist.
     """
 
-    for auth_type in self.cookie_auth_methods:
+    for auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
       auth_value = "/if/this/exists/then/they're/asking/for/a/failure"
       self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
 
@@ -365,7 +356,7 @@ class TestAuthenticate(unittest.TestCase):
 
     auth_value = test.runner.get_runner().get_torrc_path(True)
 
-    for auth_type in self.cookie_auth_methods:
+    for auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
       if os.path.getsize(auth_value) == 32:
         # Weird coincidence? Fail so we can pick another file to check against.
         self.fail('Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.')

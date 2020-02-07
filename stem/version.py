@@ -11,8 +11,8 @@ easily parsed and compared, for instance...
   >>> my_version = get_system_tor_version()
   >>> print(my_version)
   0.2.1.30
-  >>> my_version >= Requirement.TORRC_CONTROL_SOCKET
-  True
+  >>> my_version >= Requirement.DORMANT_MODE
+  False
 
 **Module Overview:**
 
@@ -26,18 +26,10 @@ easily parsed and compared, for instance...
 
   Enumerations for the version requirements of features.
 
-  .. deprecated:: 1.6.0
-     Requirement entries belonging to tor versions which have been obsolete for
-     at least six months will be removed when we break backward compatibility
-     in the 2.x stem release.
-
   ===================================== ===========
   Requirement                           Description
   ===================================== ===========
-  **AUTH_SAFECOOKIE**                   SAFECOOKIE authentication method
-  **DESCRIPTOR_COMPRESSION**            `Expanded compression support for ZSTD and LZMA <https://gitweb.torproject.org/torspec.git/commit/?id=1cb56afdc1e55e303e3e6b69e90d983ee217d93f>`_
   **DORMANT_MODE**                      **DORMANT** and **ACTIVE** :data:`~stem.Signal`
-  **DROPGUARDS**                        DROPGUARDS requests
   **EVENT_AUTHDIR_NEWDESCS**            AUTHDIR_NEWDESC events
   **EVENT_BUILDTIMEOUT_SET**            BUILDTIMEOUT_SET events
   **EVENT_CIRC_MINOR**                  CIRC_MINOR events
@@ -58,29 +50,7 @@ easily parsed and compared, for instance...
   **EVENT_CELL_STATS**                  CELL_STATS events
   **EVENT_TB_EMPTY**                    TB_EMPTY events
   **EVENT_HS_DESC**                     HS_DESC events
-  **EXTENDCIRCUIT_PATH_OPTIONAL**       EXTENDCIRCUIT queries can omit the path if the circuit is zero
-  **FEATURE_EXTENDED_EVENTS**           'EXTENDED_EVENTS' optional feature
-  **FEATURE_VERBOSE_NAMES**             'VERBOSE_NAMES' optional feature
-  **GETINFO_CONFIG_TEXT**               'GETINFO config-text' query
-  **GETINFO_GEOIP_AVAILABLE**           'GETINFO ip-to-country/ipv4-available' query and its ipv6 counterpart
-  **GETINFO_MICRODESCRIPTORS**          'GETINFO md/all' query
-  **GETINFO_UPTIME**                    'GETINFO uptime' query
-  **HIDDEN_SERVICE_V3**                 Support for v3 hidden services
-  **HSFETCH**                           HSFETCH requests
   **HSFETCH_V3**                        HSFETCH for version 3 hidden services
-  **HSPOST**                            HSPOST requests
-  **ADD_ONION**                         ADD_ONION and DEL_ONION requests
-  **ADD_ONION_BASIC_AUTH**              ADD_ONION supports basic authentication
-  **ADD_ONION_NON_ANONYMOUS**           ADD_ONION supports non-anonymous mode
-  **ADD_ONION_MAX_STREAMS**             ADD_ONION support for MaxStreamsCloseCircuit
-  **LOADCONF**                          LOADCONF requests
-  **MICRODESCRIPTOR_IS_DEFAULT**        Tor gets microdescriptors by default rather than server descriptors
-  **SAVECONF_FORCE**                    Added the 'FORCE' flag to SAVECONF
-  **TAKEOWNERSHIP**                     TAKEOWNERSHIP requests
-  **TORRC_CONTROL_SOCKET**              'ControlSocket <path>' config option
-  **TORRC_PORT_FORWARDING**             'PortForwarding' config option
-  **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
-  **TORRC_VIA_STDIN**                   Allow torrc options via 'tor -f -' (:trac:`13865`)
   ===================================== ===========
 """
 
@@ -341,15 +311,8 @@ class _VersionRequirements(object):
     self.rules.append(new_rule)
 
 
-safecookie_req = _VersionRequirements()
-safecookie_req.in_range(Version('0.2.2.36'), Version('0.2.3.0'))
-safecookie_req.greater_than(Version('0.2.3.13'))
-
 Requirement = stem.util.enum.Enum(
-  ('AUTH_SAFECOOKIE', safecookie_req),
-  ('DESCRIPTOR_COMPRESSION', Version('0.3.1.1-alpha')),
   ('DORMANT_MODE', Version('0.4.0.1-alpha')),
-  ('DROPGUARDS', Version('0.2.5.1-alpha')),
   ('EVENT_AUTHDIR_NEWDESCS', Version('0.1.1.10-alpha')),
   ('EVENT_BUILDTIMEOUT_SET', Version('0.2.2.7-alpha')),
   ('EVENT_CIRC_MINOR', Version('0.2.3.11-alpha')),
@@ -370,27 +333,5 @@ Requirement = stem.util.enum.Enum(
   ('EVENT_CELL_STATS', Version('0.2.5.2-alpha')),
   ('EVENT_TB_EMPTY', Version('0.2.5.2-alpha')),
   ('EVENT_HS_DESC', Version('0.2.5.2-alpha')),
-  ('EXTENDCIRCUIT_PATH_OPTIONAL', Version('0.2.2.9')),
-  ('FEATURE_EXTENDED_EVENTS', Version('0.2.2.1-alpha')),
-  ('FEATURE_VERBOSE_NAMES', Version('0.2.2.1-alpha')),
-  ('GETINFO_CONFIG_TEXT', Version('0.2.2.7-alpha')),
-  ('GETINFO_GEOIP_AVAILABLE', Version('0.3.2.1-alpha')),
-  ('GETINFO_MICRODESCRIPTORS', Version('0.3.5.1-alpha')),
-  ('GETINFO_UPTIME', Version('0.3.5.1-alpha')),
-  ('HIDDEN_SERVICE_V3', Version('0.3.3.1-alpha')),
-  ('HSFETCH', Version('0.2.7.1-alpha')),
   ('HSFETCH_V3', Version('0.4.1.1-alpha')),
-  ('HSPOST', Version('0.2.7.1-alpha')),
-  ('ADD_ONION', Version('0.2.7.1-alpha')),
-  ('ADD_ONION_BASIC_AUTH', Version('0.2.9.1-alpha')),
-  ('ADD_ONION_NON_ANONYMOUS', Version('0.2.9.3-alpha')),
-  ('ADD_ONION_MAX_STREAMS', Version('0.2.7.2-alpha')),
-  ('LOADCONF', Version('0.2.1.1')),
-  ('MICRODESCRIPTOR_IS_DEFAULT', Version('0.2.3.3')),
-  ('SAVECONF_FORCE', Version('0.3.1.1-alpha')),
-  ('TAKEOWNERSHIP', Version('0.2.2.28-beta')),
-  ('TORRC_CONTROL_SOCKET', Version('0.2.0.30')),
-  ('TORRC_PORT_FORWARDING', Version('0.2.3.1-alpha')),
-  ('TORRC_DISABLE_DEBUGGER_ATTACHMENT', Version('0.2.3.9')),
-  ('TORRC_VIA_STDIN', Version('0.2.6.3-alpha')),
 )

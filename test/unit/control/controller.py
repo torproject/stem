@@ -694,19 +694,6 @@ class TestControl(unittest.TestCase):
     self.assertRaises(ControllerError, self.controller.get_effective_rate)
     self.assertEqual('my_default', self.controller.get_effective_rate('my_default'))
 
-  @patch('stem.control.Controller.get_version')
-  def test_drop_guards(self, get_version_mock):
-    """
-    Exercises the drop_guards() method.
-    """
-
-    get_version_mock.return_value = stem.version.Version('0.1.0.14')
-    self.assertRaises(UnsatisfiableRequest, self.controller.drop_guards)
-
-    with patch('stem.control.Controller.msg', Mock(return_value = None)):
-      get_version_mock.return_value = stem.version.Version('0.2.5.2')
-      self.controller.drop_guards()
-
   def _emit_event(self, event):
     # Spins up our Controller's thread pool, emits an event, then shuts it
     # down. This last part is important for a couple reasons...

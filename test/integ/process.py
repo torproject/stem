@@ -310,9 +310,6 @@ class TestProcess(unittest.TestCase):
     Pass configuration options via stdin.
     """
 
-    if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
-      skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
-
     with tempfile.TemporaryDirectory() as data_directory:
       torrc = BASIC_RELAY_TORRC % data_directory
       output = run_tor(tor_cmd, '-f', '-', '--dump-config', 'short', stdin = torrc)
@@ -345,10 +342,7 @@ class TestProcess(unittest.TestCase):
 
       raise AssertionError("Tor shouldn't start with 'HiddenServiceNonAnonymousMode' set but not 'HiddenServiceSingleHopMode'")
     except OSError as exc:
-      if test.tor_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
-        assert_equal('Process terminated: HiddenServiceNonAnonymousMode does not provide any server anonymity. It must be used with HiddenServiceSingleHopMode set to 1.', str(exc))
-      else:
-        assert_equal("Process terminated: Unknown option 'HiddenServiceNonAnonymousMode'.  Failing.", str(exc))
+      assert_equal('Process terminated: HiddenServiceNonAnonymousMode does not provide any server anonymity. It must be used with HiddenServiceSingleHopMode set to 1.', str(exc))
 
     try:
       stem.process.launch_tor_with_config(
@@ -358,10 +352,7 @@ class TestProcess(unittest.TestCase):
 
       raise AssertionError("Tor shouldn't start with 'HiddenServiceSingleHopMode' set but not 'HiddenServiceNonAnonymousMode'")
     except OSError as exc:
-      if test.tor_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
-        assert_equal('Process terminated: HiddenServiceSingleHopMode does not provide any server anonymity. It must be used with HiddenServiceNonAnonymousMode set to 1.', str(exc))
-      else:
-        assert_equal("Process terminated: Unknown option 'HiddenServiceSingleHopMode'.  Failing.", str(exc))
+      assert_equal('Process terminated: HiddenServiceSingleHopMode does not provide any server anonymity. It must be used with HiddenServiceNonAnonymousMode set to 1.', str(exc))
 
   @asynchronous
   def test_can_run_multithreaded(tor_cmd):
@@ -465,9 +456,6 @@ class TestProcess(unittest.TestCase):
     Exercises launch_tor_with_config when we provide our torrc via stdin.
     """
 
-    if test.tor_version() < stem.version.Requirement.TORRC_VIA_STDIN:
-      skip('(requires %s)' % stem.version.Requirement.TORRC_VIA_STDIN)
-
     with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()
       control_socket, tor_process = None, None
@@ -561,8 +549,6 @@ class TestProcess(unittest.TestCase):
 
     if not stem.util.system.is_available('sleep'):
       skip('(sleep unavailable)')
-    elif test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
-      skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
     with tempfile.TemporaryDirectory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
@@ -607,9 +593,6 @@ class TestProcess(unittest.TestCase):
     Checks that the tor process quits after the controller that owns it
     connects, then disconnects..
     """
-
-    if test.tor_version() < stem.version.Requirement.TAKEOWNERSHIP:
-      skip('(requires %s)' % stem.version.Requirement.TAKEOWNERSHIP)
 
     with tempfile.TemporaryDirectory() as data_directory:
       control_port = random_port()

@@ -1615,14 +1615,13 @@ class Controller(BaseController):
     if start_time:
       return start_time
 
-    if self.get_version() >= stem.version.Requirement.GETINFO_UPTIME:
-      uptime = self.get_info('uptime', None)
+    uptime = self.get_info('uptime', None)
 
-      if uptime:
-        if not uptime.isdigit():
-          raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
+    if uptime:
+      if not uptime.isdigit():
+        raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
 
-        start_time = time.time() - float(uptime)
+      start_time = time.time() - float(uptime)
 
     if not start_time and self.is_localhost():
       # Tor doesn't yet support this GETINFO option, attempt to determine the
@@ -1785,45 +1784,13 @@ class Controller(BaseController):
       default was provided
     """
 
-    if self.get_version() >= stem.version.Requirement.GETINFO_MICRODESCRIPTORS:
-      desc_content = self.get_info('md/all', get_bytes = True)
+    desc_content = self.get_info('md/all', get_bytes = True)
 
-      if not desc_content:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+    if not desc_content:
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
-      for desc in stem.descriptor.microdescriptor._parse_file(io.BytesIO(desc_content)):
-        yield desc
-    else:
-      # TODO: remove when tor versions that require this are obsolete
-
-      data_directory = self.get_conf('DataDirectory', None)
-
-      if data_directory is None:
-        raise stem.OperationFailed(message = "Unable to determine tor's data directory")
-
-      if not os.path.exists(data_directory):
-        raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
-
-      microdescriptor_file = None
-
-      for filename in ('cached-microdescs', 'cached-microdescs.new'):
-        cached_descriptors = os.path.join(data_directory, filename)
-
-        if os.path.exists(cached_descriptors):
-          microdescriptor_file = cached_descriptors
-          break
-
-      if microdescriptor_file is None:
-        raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % data_directory)
-
-      for desc in stem.descriptor.parse_file(microdescriptor_file):
-        # It shouldn't be possible for these to be something other than
-        # microdescriptors but as the saying goes: trust but verify.
-
-        if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
-          raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
-
-        yield desc
+    for desc in stem.descriptor.microdescriptor._parse_file(io.BytesIO(desc_content)):
+      yield desc
 
   @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):
@@ -1862,37 +1829,31 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    try:
-      if relay is None:
-        try:
-          relay = self.get_info('fingerprint')
-        except stem.ControllerError as exc:
-          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
-
-      if stem.util.tor_tools.is_valid_fingerprint(relay):
-        query = 'desc/id/%s' % relay
-      elif stem.util.tor_tools.is_valid_nickname(relay):
-        query = 'desc/name/%s' % relay
-      else:
-        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
-
+    if relay is None:
       try:
-        desc_content = self.get_info(query, get_bytes = True)
-      except stem.InvalidArguments as exc:
-        if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
-          raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
-        else:
-          raise
+        relay = self.get_info('fingerprint')
+      except stem.ControllerError as exc:
+        raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
-      if not desc_content:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = 'desc/id/%s' % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = 'desc/name/%s' % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
-    except:
-      if not self._is_server_descriptors_available():
-        raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+    try:
+      desc_content = self.get_info(query, get_bytes = True)
+    except stem.InvalidArguments as exc:
+      if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
+        raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
+      else:
+        raise
 
-      raise
+    if not desc_content:
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
   def get_server_descriptors(self, default = UNDEFINED):
@@ -1925,26 +1886,10 @@ class Controller(BaseController):
     desc_content = self.get_info('desc/all-recent', get_bytes = True)
 
     if not desc_content:
-      if not self._is_server_descriptors_available():
-        raise stem.ControllerError(SERVER_DESCRIPTORS_UNSUPPORTED)
-      else:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
     for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
       yield desc
-
-  def _is_server_descriptors_available(self):
-    """
-    Checks to see if tor server descriptors should be available or not.
-    """
-
-    # TODO: Replace with a 'GETINFO desc/download-enabled' request when they're
-    # widely available...
-    #
-    #   https://gitweb.torproject.org/torspec.git/commit/?id=378699c
-
-    return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
-           self.get_conf('UseMicrodescriptors', None) == '0'
 
   @with_default()
   def get_network_status(self, relay = None, default = UNDEFINED):
@@ -2085,9 +2030,6 @@ class Controller(BaseController):
 
     if not stem.util.tor_tools.is_valid_hidden_service_address(address):
       raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
-
-    if self.get_version() < stem.version.Requirement.HSFETCH:
-      raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
 
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
     hs_desc_content_queue, hs_desc_content_listener = queue.Queue(), None
@@ -2843,9 +2785,6 @@ class Controller(BaseController):
       provided a default response
     """
 
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
-
     result = []
 
     if our_services:
@@ -2971,9 +2910,6 @@ class Controller(BaseController):
       * :class:`stem.Timeout` if **timeout** was reached
     """
 
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
-
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
     start_time = time.time()
 
@@ -2994,20 +2930,13 @@ class Controller(BaseController):
       flags.append('Detach')
 
     if basic_auth is not None:
-      if self.get_version() < stem.version.Requirement.ADD_ONION_BASIC_AUTH:
-        raise stem.UnsatisfiableRequest(message = 'Basic authentication support was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_BASIC_AUTH)
-
       flags.append('BasicAuth')
 
     if max_streams is not None:
-      if self.get_version() < stem.version.Requirement.ADD_ONION_MAX_STREAMS:
-        raise stem.UnsatisfiableRequest(message = 'Limitation of the maximum number of streams to accept was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_MAX_STREAMS)
-
       flags.append('MaxStreamsCloseCircuit')
 
-    if self.get_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
-      if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
-        flags.append('NonAnonymous')
+    if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
+      flags.append('NonAnonymous')
 
     if flags:
       request += ' Flags=%s' % ','.join(flags)
@@ -3077,9 +3006,6 @@ class Controller(BaseController):
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
-
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
 
     response = self.msg('DEL_ONION %s' % service_id)
     stem.response.convert('SINGLELINE', response)
@@ -3346,9 +3272,6 @@ class Controller(BaseController):
         the configuration file
     """
 
-    if self.get_version() < stem.version.Requirement.SAVECONF_FORCE:
-      force = False
-
     response = self.msg('SAVECONF FORCE' if force else 'SAVECONF')
     stem.response.convert('SINGLELINE', response)
 
@@ -3371,24 +3294,10 @@ class Controller(BaseController):
 
     feature = feature.upper()
 
-    if feature in self._enabled_features:
-      return True
-    else:
-      # check if this feature is on by default
-      defaulted_version = None
+    if feature in ('EXTENDED_EVENTS', 'VERBOSE_NAMES'):
+      return True  # EXTENDED_EVENTS and VERBOSE_NAMES are always on as of 0.2.2.1
 
-      if feature == 'EXTENDED_EVENTS':
-        defaulted_version = stem.version.Requirement.FEATURE_EXTENDED_EVENTS
-      elif feature == 'VERBOSE_NAMES':
-        defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
-
-      if defaulted_version:
-        our_version = self.get_version(None)
-
-        if our_version and our_version >= defaulted_version:
-          self._enabled_features.append(feature)
-
-      return feature in self._enabled_features
+    return feature in self._enabled_features
 
   def enable_feature(self, features):
     """
@@ -3396,11 +3305,6 @@ class Controller(BaseController):
     compatibility. Once enabled, a feature cannot be disabled and a new
     control connection must be opened to get a connection with the feature
     disabled. Feature names are case-insensitive.
-
-    The following features are currently accepted:
-
-      * EXTENDED_EVENTS - Requests the extended event syntax
-      * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO results
 
     :param str,list features: a single feature or a list of features to be enabled
 
@@ -3553,16 +3457,7 @@ class Controller(BaseController):
       self.add_event_listener(circ_listener, EventType.CIRC)
 
     try:
-      # we might accidently get integer circuit ids
-      circuit_id = str(circuit_id)
-
-      if path is None and circuit_id == '0':
-        path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
-
-        if not self.get_version() >= path_opt_version:
-          raise stem.InvalidRequest(512, 'EXTENDCIRCUIT requires the path prior to version %s' % path_opt_version)
-
-      args = [circuit_id]
+      args = [str(circuit_id)]
 
       if isinstance(path, (bytes, str)):
         path = [path]
@@ -3861,9 +3756,6 @@ class Controller(BaseController):
 
     :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
     """
-
-    if self.get_version() < stem.version.Requirement.DROPGUARDS:
-      raise stem.UnsatisfiableRequest(message = 'DROPGUARDS was added in tor version %s' % stem.version.Requirement.DROPGUARDS)
 
     self.msg('DROPGUARDS')
 
