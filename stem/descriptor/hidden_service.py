@@ -551,7 +551,6 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' should be followed by a MESSAGE block, but was a %s" % block_type)
 
   descriptor.introduction_points_encoded = block_contents
-  descriptor.introduction_points_auth = []  # field was never implemented in tor (#15190)
 
   try:
     descriptor.introduction_points_content = _bytes_for_block(block_contents)
@@ -646,9 +645,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   :var datetime published: **\\*** time in UTC when this descriptor was made
   :var list protocol_versions: **\\*** list of **int** versions that are supported when establishing a connection
   :var str introduction_points_encoded: raw introduction points blob
-  :var list introduction_points_auth: **\\*** tuples of the form
-    (auth_method, auth_data) for our introduction_points_content
-    (**deprecated**, always **[]**)
   :var bytes introduction_points_content: decoded introduction-points content
     without authentication data, if using cookie authentication this is
     encrypted
@@ -676,7 +672,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     'published': (None, _parse_publication_time_line),
     'protocol_versions': ([], _parse_protocol_versions_line),
     'introduction_points_encoded': (None, _parse_introduction_points_line),
-    'introduction_points_auth': ([], _parse_introduction_points_line),
     'introduction_points_content': (None, _parse_introduction_points_line),
     'signature': (None, _parse_v2_signature_line),
   }

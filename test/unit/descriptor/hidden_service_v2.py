@@ -296,7 +296,6 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     self.assertEqual(datetime.datetime(2015, 2, 24, 20, 0, 0), desc.published)
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual(EXPECTED_BASIC_AUTH_INTRODUCTION_POINTS_ENCODED, desc.introduction_points_encoded)
-    self.assertEqual([], desc.introduction_points_auth)
 
     self.assertRaises(DecryptionFailure, desc.introduction_points)
     self.assertRaises(DecryptionFailure, desc.introduction_points, 'aCmx3qIvArbil8A0KM4KgQ==')
@@ -342,7 +341,6 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     self.assertEqual('jczvydhzetbpdiylj3d5nsnjvaigs7xm', desc.secret_id_part)
     self.assertEqual(datetime.datetime(2015, 2, 24, 20, 0, 0), desc.published)
     self.assertEqual([2, 3], desc.protocol_versions)
-    self.assertEqual([], desc.introduction_points_auth)
 
     self.assertRaises(DecryptionFailure, desc.introduction_points)
     self.assertRaises(DecryptionFailure, desc.introduction_points, 'aCmx3qIvArbil8A0KM4KgQ==')
@@ -382,7 +380,6 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     self.assertEqual(datetime.datetime(2015, 2, 23, 20, 0, 0), desc.published)
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_ENCODED, desc.introduction_points_encoded)
-    self.assertEqual([], desc.introduction_points_auth)
     self.assertEqual(EXPECTED_DDG_INTRODUCTION_POINTS_CONTENT, desc.introduction_points_content)
     self.assertEqual(EXPECTED_DDG_SIGNATURE, desc.signature)
 
@@ -425,7 +422,6 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     self.assertEqual('e24kgecavwsznj7gpbktqsiwgvngsf4e', desc.secret_id_part)
     self.assertEqual([2, 3], desc.protocol_versions)
     self.assertEqual('-----BEGIN MESSAGE-----\n-----END MESSAGE-----', desc.introduction_points_encoded)
-    self.assertEqual([], desc.introduction_points_auth)
     self.assertEqual(b'', desc.introduction_points_content)
     self.assertEqual([], desc.introduction_points())
     self.assertEqual('@type hidden-service-descriptor 1.0', str(desc.type_annotation()))
@@ -517,14 +513,12 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     missing_field_desc = HiddenServiceDescriptorV2.create(exclude = ('introduction-points',))
 
     self.assertEqual(None, missing_field_desc.introduction_points_encoded)
-    self.assertEqual([], missing_field_desc.introduction_points_auth)
     self.assertEqual(None, missing_field_desc.introduction_points_content)
     self.assertEqual([], missing_field_desc.introduction_points())
 
     empty_field_desc = HiddenServiceDescriptorV2.create({'introduction-points': MESSAGE_BLOCK % ''})
 
     self.assertEqual((MESSAGE_BLOCK % '').strip(), empty_field_desc.introduction_points_encoded)
-    self.assertEqual([], empty_field_desc.introduction_points_auth)
     self.assertEqual(b'', empty_field_desc.introduction_points_content)
     self.assertEqual([], empty_field_desc.introduction_points())
 
@@ -540,6 +534,5 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
 
     for test_value in test_values:
       desc = expect_invalid_attr(self, {'introduction-points': test_value}, 'introduction_points_encoded', test_value.strip())
-      self.assertEqual([], desc.introduction_points_auth)
       self.assertEqual(None, desc.introduction_points_content)
       self.assertEqual([], desc.introduction_points())
