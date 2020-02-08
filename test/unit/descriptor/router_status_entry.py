@@ -173,7 +173,6 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(None, entry.version_line)
     self.assertEqual(None, entry.version)
     self.assertEqual('aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70', entry.microdescriptor_digest)
-    self.assertEqual('6A252497006BB9AF36A1B1B902C4D7FA2129923400DBE0101F167B1B031F63BD', entry.digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   @test.require.cryptography
@@ -282,7 +281,7 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual(False, entry.is_unmeasured)
     self.assertEqual([], entry.unrecognized_bandwidth_entries)
     self.assertEqual(expected_protocols, entry.protocols)
-    self.assertEqual('1966FEC636AFD1FB2EC0FC0F36752F5BD43522F9399F3F26D4C70408CE0A63C0', entry.digest)
+    self.assertEqual('GWb+xjav0fsuwPwPNnUvW9Q1Ivk5nz8m1McECM4KY8A', entry.microdescriptor_digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
   def test_missing_fields(self):
