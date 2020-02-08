@@ -172,8 +172,6 @@ def _parse_id_line(descriptor, entries):
       if key_type in identities:
         raise ValueError("There can only be one 'id' line per a key type, but '%s' appeared multiple times" % key_type)
 
-      descriptor.identifier_type = key_type
-      descriptor.identifier = key_value
       identities[key_type] = key_value
     else:
       raise ValueError("'id' lines should contain both the key type and digest: id %s" % entry)
@@ -206,19 +204,10 @@ class Microdescriptor(Descriptor):
     (:trac:`11743`)
   :var dict protocols: mapping of protocols to their supported versions
 
-  :var str identifier: base64 encoded identity digest (**deprecated**, use
-    identifiers instead)
-  :var str identifier_type: identity digest key type (**deprecated**, use
-    identifiers instead)
-
   **\\*** attribute is required when we're parsed with validation
 
-  .. versionchanged:: 1.1.0
-     Added the identifier and identifier_type attributes.
-
   .. versionchanged:: 1.5.0
-     Added the identifiers attribute, and deprecated identifier and
-     identifier_type since the field can now appear multiple times.
+     Added the identifiers attribute.
 
   .. versionchanged:: 1.6.0
      Added the protocols attribute.
@@ -240,8 +229,6 @@ class Microdescriptor(Descriptor):
     'family': ([], _parse_family_line),
     'exit_policy': (stem.exit_policy.MicroExitPolicy('reject 1-65535'), _parse_p_line),
     'exit_policy_v6': (None, _parse_p6_line),
-    'identifier_type': (None, _parse_id_line),  # deprecated in favor of identifiers
-    'identifier': (None, _parse_id_line),  # deprecated in favor of identifiers
     'identifiers': ({}, _parse_id_line),
     'protocols': ({}, _parse_pr_line),
   }
