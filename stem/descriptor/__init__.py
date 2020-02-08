@@ -25,6 +25,21 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
+.. data:: Compression (enum)
+
+  Compression when downloading descriptors.
+
+  .. versionadded:: 1.7.0
+
+  =============== ===========
+  Compression     Description
+  =============== ===========
+  **PLAINTEXT**   Uncompressed data.
+  **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.org/project/zstandard/>`_.
+  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
+  =============== ===========
+
 .. data:: DigestHash (enum)
 
   .. versionadded:: 1.8.0

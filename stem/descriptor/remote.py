@@ -81,21 +81,6 @@ content. For example...
 
   Maximum number of microdescriptors that can requested at a time by their
   hashes.
-
-.. data:: Compression (enum)
-
-  Compression when downloading descriptors.
-
-  .. versionadded:: 1.7.0
-
-  =============== ===========
-  Compression     Description
-  =============== ===========
-  **PLAINTEXT**   Uncompressed data.
-  **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
-  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.org/project/zstandard/>`_.
-  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
-  =============== ===========
 """
 
 import io
@@ -115,23 +100,8 @@ import stem.prereq
 import stem.util.enum
 import stem.util.tor_tools
 
+from stem.descriptor import Compression
 from stem.util import log, str_tools
-
-# TODO: remove in stem 2.x, replaced with stem.descriptor.Compression
-
-Compression = stem.util.enum.Enum(
-  ('PLAINTEXT', 'identity'),
-  ('GZIP', 'gzip'),  # can also be 'deflate'
-  ('ZSTD', 'x-zstd'),
-  ('LZMA', 'x-tor-lzma'),
-)
-
-COMPRESSION_MIGRATION = {
-  'identity': stem.descriptor.Compression.PLAINTEXT,
-  'gzip': stem.descriptor.Compression.GZIP,
-  'x-zstd': stem.descriptor.Compression.ZSTD,
-  'x-tor-lzma': stem.descriptor.Compression.LZMA,
-}
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -364,8 +334,7 @@ class Query(object):
 
   .. versionchanged:: 1.8.0
      Using :class:`~stem.descriptor.__init__.Compression` for our compression
-     argument, usage of strings or this module's Compression enum is deprecated
-     and will be removed in stem 2.x.
+     argument.
 
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
@@ -417,33 +386,19 @@ class Query(object):
     if resource.endswith('.z'):
       compression = [Compression.GZIP]
       resource = resource[:-2]
-    elif not compression:
+    elif isinstance(compression, tuple):
+      compression = list(compression)
+    elif not isinstance(compression, list):
+      compression = [compression]  # caller provided only a single option
+
+    if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
+      compression.remove(Compression.ZSTD)
+
+    if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
+      compression.remove(Compression.LZMA)
+
+    if not compression:
       compression = [Compression.PLAINTEXT]
-    else:
-      if isinstance(compression, str):
-        compression = [compression]  # caller provided only a single option
-
-      if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
-        compression.remove(Compression.ZSTD)
-
-      if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
-        compression.remove(Compression.LZMA)
-
-      if not compression:
-        compression = [Compression.PLAINTEXT]
-
-    # TODO: Normalize from our old compression enum to
-    # stem.descriptor.Compression. This will get removed in Stem 2.x.
-
-    new_compression = []
-
-    for legacy_compression in compression:
-      if isinstance(legacy_compression, stem.descriptor._Compression):
-        new_compression.append(legacy_compression)
-      elif legacy_compression in COMPRESSION_MIGRATION:
-        new_compression.append(COMPRESSION_MIGRATION[legacy_compression])
-      else:
-        raise ValueError("'%s' (%s) is not a recognized type of compression" % (legacy_compression, type(legacy_compression).__name__))
 
     if descriptor_type:
       self.descriptor_type = descriptor_type
@@ -460,7 +415,7 @@ class Query(object):
           raise ValueError("Endpoints must be an stem.ORPort or stem.DirPort. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
-    self.compression = new_compression
+    self.compression = compression
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
