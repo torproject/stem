@@ -301,7 +301,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
-      endpoints = [('128.31.0.39', 9131)],
+      endpoints = [stem.DirPort('128.31.0.39', 9131)],
       compression = Compression.PLAINTEXT,
       validate = True,
     )
@@ -326,7 +326,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
-      endpoints = [('128.31.0.39', 9131)],
+      endpoints = [stem.DirPort('128.31.0.39', 9131)],
       compression = Compression.PLAINTEXT,
       validate = True,
     )
@@ -353,7 +353,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
-      endpoints = [('128.31.0.39', 9131)],
+      endpoints = [stem.DirPort('128.31.0.39', 9131)],
       fall_back_to_authority = False,
       timeout = 0.1,
       validate = True,
@@ -369,12 +369,12 @@ class TestDescriptorDownloader(unittest.TestCase):
     invalid_endpoints = {
       'hello': "'h' is a str.",
       ('hello',): "'hello' is a str.",
+      (('hello',),): "'('hello',)' is a tuple.",
       (15,): "'15' is a int.",
-      (('12.34.56.78', 15, 'third arg'),): "'('12.34.56.78', 15, 'third arg')' is a tuple.",
     }
 
     for endpoints, error_suffix in invalid_endpoints.items():
-      expected_error = 'Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. ' + error_suffix
+      expected_error = 'Endpoints must be an stem.ORPort or stem.DirPort. ' + error_suffix
       self.assertRaisesWith(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
 
   @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
@@ -382,7 +382,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
       'server-descriptor 1.0',
-      endpoints = [('128.31.0.39', 9131)],
+      endpoints = [stem.DirPort('128.31.0.39', 9131)],
       compression = Compression.PLAINTEXT,
       validate = True,
     )

@@ -347,11 +347,6 @@ class Query(object):
      renamed to http.client.HTTPMessage.
 
   .. versionchanged:: 1.7.0
-     Endpoints are now expected to be :class:`~stem.DirPort` or
-     :class:`~stem.ORPort` instances. Usage of tuples for this
-     argument is deprecated and will be removed in the future.
-
-  .. versionchanged:: 1.7.0
      Avoid downloading from tor26. This directory authority throttles its
      DirPort to such an extent that requests either time out or take on the
      order of minutes.
@@ -459,12 +454,10 @@ class Query(object):
 
     if endpoints:
       for endpoint in endpoints:
-        if isinstance(endpoint, tuple) and len(endpoint) == 2:
-          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))  # TODO: remove this in stem 2.0
-        elif isinstance(endpoint, (stem.ORPort, stem.DirPort)):
+        if isinstance(endpoint, (stem.ORPort, stem.DirPort)):
           self.endpoints.append(endpoint)
         else:
-          raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
+          raise ValueError("Endpoints must be an stem.ORPort or stem.DirPort. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
     self.compression = new_compression
@@ -669,13 +662,13 @@ class DescriptorDownloader(object):
     """
 
     directories = [auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in DIR_PORT_BLACKLIST]
-    new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
+    new_endpoints = set([stem.DirPort(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
     for desc in consensus.routers.values():
       if stem.Flag.V2DIR in desc.flags and desc.dir_port:
-        new_endpoints.add((desc.address, desc.dir_port))
+        new_endpoints.add(stem.DirPort(desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
 
@@ -858,7 +851,7 @@ class DescriptorDownloader(object):
     resource = '/tor/status-vote/current/authority'
 
     if 'endpoint' not in query_args:
-      query_args['endpoints'] = [(authority.address, authority.dir_port)]
+      query_args['endpoints'] = [stem.DirPort(authority.address, authority.dir_port)]
 
     return self.query(resource, **query_args)
 
