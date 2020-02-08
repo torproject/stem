@@ -2788,16 +2788,7 @@ class Controller(BaseController):
     result = []
 
     if our_services:
-      try:
-        result += self.get_info('onions/current').split('\n')
-      except (stem.ProtocolError, stem.OperationFailed) as exc:
-        # TODO: Tor's behavior around this was changed in Feb 2017, we should
-        # drop it when all versions that did this are deprecated...
-        #
-        #   https://trac.torproject.org/projects/tor/ticket/21329
-
-        if 'No onion services of the specified type.' not in str(exc):
-          raise
+      result += self.get_info('onions/current').split('\n')
 
     if detached:
       try:
