@@ -1281,6 +1281,7 @@ class TestController(unittest.TestCase):
           break
 
   @test.require.controller
+  @test.require.online
   def test_get_server_descriptor(self):
     """
     Basic checks for get_server_descriptor().
