@@ -23,7 +23,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     authority = DirectoryAuthority.create()
 
     self.assertTrue(authority.nickname.startswith('Unnamed'))
-    self.assertEqual(40, len(authority.fingerprint))
+    self.assertEqual(40, len(authority.v3ident))
     self.assertEqual('no.place.com', authority.hostname)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
@@ -42,7 +42,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     authority = DirectoryAuthority.create(is_vote = True)
 
     self.assertTrue(authority.nickname.startswith('Unnamed'))
-    self.assertEqual(40, len(authority.fingerprint))
+    self.assertEqual(40, len(authority.v3ident))
     self.assertEqual('no.place.com', authority.hostname)
     self.assertEqual(9030, authority.dir_port)
     self.assertEqual(9090, authority.or_port)
@@ -73,7 +73,7 @@ class TestDirectoryAuthority(unittest.TestCase):
     authority = DirectoryAuthority(content, is_vote = False)
 
     self.assertEqual('gabelmoo-legacy', authority.nickname)
-    self.assertEqual('81349FC1F2DBA2C2C11B45CB9706637D480AB913', authority.fingerprint)
+    self.assertEqual('81349FC1F2DBA2C2C11B45CB9706637D480AB913', authority.v3ident)
     self.assertEqual('131.188.40.189', authority.hostname)
     self.assertEqual('131.188.40.189', authority.address)
     self.assertEqual(80, authority.dir_port)
@@ -148,7 +148,7 @@ class TestDirectoryAuthority(unittest.TestCase):
       authority = DirectoryAuthority(content, False)
 
       self.assertEqual(None, authority.nickname)
-      self.assertEqual(None, authority.fingerprint)
+      self.assertEqual(None, authority.v3ident)
       self.assertEqual(None, authority.hostname)
       self.assertEqual(None, authority.address)
       self.assertEqual(None, authority.dir_port)
@@ -171,7 +171,7 @@ class TestDirectoryAuthority(unittest.TestCase):
       self.assertRaises(ValueError, DirectoryAuthority, content, True)
 
       authority = DirectoryAuthority(content, False)
-      self.assertEqual(None, authority.fingerprint)
+      self.assertEqual(None, authority.v3ident)
 
   def test_malformed_address(self):
     """

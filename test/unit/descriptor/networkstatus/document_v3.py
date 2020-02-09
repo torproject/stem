@@ -132,7 +132,7 @@ ci356fosgLiM1sVqCUkNdA==
       authority = document.directory_authorities[0]
       self.assertEqual(2, len(document.directory_authorities))
       self.assertEqual('test001a', authority.nickname)
-      self.assertEqual('596CD48D61FDA4E868F4AA10FF559917BE3B1A35', authority.fingerprint)
+      self.assertEqual('596CD48D61FDA4E868F4AA10FF559917BE3B1A35', authority.v3ident)
       self.assertEqual('127.0.0.1', authority.hostname)
       self.assertEqual('127.0.0.1', authority.address)
       self.assertEqual(7001, authority.dir_port)
@@ -256,7 +256,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
       authority = document.directory_authorities[0]
       self.assertEqual(1, len(document.directory_authorities))
       self.assertEqual('turtles', authority.nickname)
-      self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.fingerprint)
+      self.assertEqual('27B6B5996C426270A5C95488AA5BCEB6BCC86956', authority.v3ident)
       self.assertEqual('76.73.17.194', authority.hostname)
       self.assertEqual('76.73.17.194', authority.address)
       self.assertEqual(9030, authority.dir_port)

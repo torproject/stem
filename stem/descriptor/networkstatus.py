@@ -1560,10 +1560,6 @@ class DirectoryAuthority(Descriptor):
 
   **\\*** mandatory attribute
 
-  .. versionchanged:: 1.4.0
-     Renamed our 'fingerprint' attribute to 'v3ident' (prior attribute exists
-     for backward compatability, but is deprecated).
-
   .. versionchanged:: 1.6.0
      Added the is_shared_randomness_participate, shared_randomness_commitments,
      shared_randomness_previous_reveal_count,
@@ -1701,12 +1697,6 @@ class DirectoryAuthority(Descriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
-
-    # TODO: Due to a bug we had a 'fingerprint' rather than 'v3ident' attribute
-    # for a long while. Keeping this around for backward compatability, but
-    # this will be dropped in stem's 2.0 release.
-
-    self.fingerprint = self.v3ident
 
 
 def _parse_dir_address_line(descriptor, entries):
