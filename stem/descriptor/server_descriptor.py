@@ -502,10 +502,6 @@ class ServerDescriptor(Descriptor):
 
   .. versionchanged:: 1.7.0
      Added the is_hidden_service_dir attribute.
-
-  .. versionchanged:: 1.7.0
-     Deprecated the hidden_service_dir field, it's never been populated
-     (:spec:`43c2f78`). This field will be removed in Stem 2.0.
   """
 
   ATTRIBUTES = {
@@ -609,12 +605,6 @@ class ServerDescriptor(Descriptor):
     # does not matter so breaking it into key / value pairs.
 
     entries, self._unparsed_exit_policy = _descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
-
-    # TODO: Remove the following field in Stem 2.0. It has never been populated...
-    #
-    #   https://gitweb.torproject.org/torspec.git/commit/?id=43c2f78
-
-    self.hidden_service_dir = ['2']
 
     if validate:
       self._parse(entries, validate)
