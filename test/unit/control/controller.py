@@ -196,57 +196,6 @@ class TestControl(unittest.TestCase):
 
   @patch('stem.control.Controller.get_info')
   @patch('stem.control.Controller.get_conf')
-  def test_get_exit_policy_if_not_relaying(self, get_conf_mock, get_info_mock):
-    # If tor lacks an ORPort, resolved extrnal address, hasn't finished making
-    # our server descriptor (ie. tor just started), etc 'GETINFO
-    # exit-policy/full' will fail.
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'ExitRelay': '1',
-      'ExitPolicyRejectPrivate': '1',
-      'ExitPolicy': ['accept *:80,   accept *:443', 'accept 43.5.5.5,reject *:22'],
-    }[param]
-
-    expected = ExitPolicy(
-      'reject 0.0.0.0/8:*',
-      'reject 169.254.0.0/16:*',
-      'reject 127.0.0.0/8:*',
-      'reject 192.168.0.0/16:*',
-      'reject 10.0.0.0/8:*',
-      'reject 172.16.0.0/12:*',
-      'reject 1.2.3.4:*',
-      'accept *:80',
-      'accept *:443',
-      'accept 43.5.5.5:*',
-      'reject *:22',
-    )
-
-    # Unfortunate it's a bit tricky to have a mock that raises exceptions in
-    # response to some arguments, and returns a response for others. As such
-    # mapping it to the following function.
-
-    exit_policy_exception = None
-
-    def getinfo_response(param, default = None):
-      if param == 'address':
-        return '1.2.3.4'
-      elif param == 'exit-policy/default':
-        return ''
-      elif param == 'exit-policy/full' and exit_policy_exception:
-        raise exit_policy_exception
-      else:
-        raise ValueError("Unmocked request for 'GETINFO %s'" % param)
-
-    get_info_mock.side_effect = getinfo_response
-
-    exit_policy_exception = stem.OperationFailed('552', 'Not running in server mode')
-    self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
-
-    exit_policy_exception = stem.OperationFailed('551', 'Descriptor still rebuilding - not ready yet')
-    self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
-
-  @patch('stem.control.Controller.get_info')
-  @patch('stem.control.Controller.get_conf')
   def test_get_ports(self, get_conf_mock, get_info_mock):
     """
     Exercises the get_ports() and get_listeners() methods.
@@ -314,116 +263,6 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual([], self.controller.get_listeners(Listener.CONTROL))
     self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
-
-  @patch('stem.control.Controller.get_info')
-  @patch('stem.control.Controller.get_conf')
-  def test_get_socks_listeners_old(self, get_conf_mock, get_info_mock):
-    """
-    Exercises the get_socks_listeners() method as though talking to an old tor
-    instance.
-    """
-
-    # An old tor raises stem.InvalidArguments for get_info about socks, but
-    # get_socks_listeners should work anyway.
-
-    get_info_mock.side_effect = InvalidArguments
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '9050',
-      'SocksListenAddress': ['127.0.0.1'],
-    }[param]
-
-    self.assertEqual([('127.0.0.1', 9050)], self.controller.get_socks_listeners())
-    self.controller.clear_cache()
-
-    # Again, an old tor, but SocksListenAddress overrides the port number.
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '9050',
-      'SocksListenAddress': ['127.0.0.1:1112'],
-    }[param]
-
-    self.assertEqual([('127.0.0.1', 1112)], self.controller.get_socks_listeners())
-    self.controller.clear_cache()
-
-    # Again, an old tor, but multiple listeners
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '9050',
-      'SocksListenAddress': ['127.0.0.1:1112', '127.0.0.1:1114'],
-    }[param]
-
-    self.assertEqual([('127.0.0.1', 1112), ('127.0.0.1', 1114)], self.controller.get_socks_listeners())
-    self.controller.clear_cache()
-
-    # Again, an old tor, but no SOCKS listeners
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '0',
-      'SocksListenAddress': [],
-    }[param]
-
-    self.assertEqual([], self.controller.get_socks_listeners())
-    self.controller.clear_cache()
-
-    # Where tor provides invalid ports or addresses
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': 'blarg',
-      'SocksListenAddress': ['127.0.0.1'],
-    }[param]
-
-    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '0',
-      'SocksListenAddress': ['127.0.0.1:abc'],
-    }[param]
-
-    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
-
-    get_conf_mock.side_effect = lambda param, **kwargs: {
-      'SocksPort': '40',
-      'SocksListenAddress': ['500.0.0.1'],
-    }[param]
-
-    self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
-
-  @patch('stem.control.Controller.get_info')
-  def test_get_socks_listeners_new(self, get_info_mock):
-    """
-    Exercises the get_socks_listeners() method as if talking to a newer tor
-    instance.
-    """
-
-    # multiple SOCKS listeners
-
-    get_info_mock.return_value = '"127.0.0.1:1112" "127.0.0.1:1114"'
-
-    self.assertEqual(
-      [('127.0.0.1', 1112), ('127.0.0.1', 1114)],
-      self.controller.get_socks_listeners()
-    )
-
-    # no SOCKS listeners
-
-    self.controller.clear_cache()
-    get_info_mock.return_value = ''
-    self.assertEqual([], self.controller.get_socks_listeners())
-
-    # check where GETINFO provides malformed content
-
-    invalid_responses = (
-      '"127.0.0.1"',         # address only
-      '"1112"',              # port only
-      '"5127.0.0.1:1112"',   # invlaid address
-      '"127.0.0.1:991112"',  # invalid port
-    )
-
-    for response in invalid_responses:
-      self.controller.clear_cache()
-      get_info_mock.return_value = response
-      self.assertRaises(stem.ProtocolError, self.controller.get_socks_listeners)
 
   @patch('stem.control.Controller.get_info')
   @patch('time.time', Mock(return_value = 1410723598.276578))
@@ -854,19 +693,6 @@ class TestControl(unittest.TestCase):
     get_conf_mock.side_effect = ControllerError('nope, too bad')
     self.assertRaises(ControllerError, self.controller.get_effective_rate)
     self.assertEqual('my_default', self.controller.get_effective_rate('my_default'))
-
-  @patch('stem.control.Controller.get_version')
-  def test_drop_guards(self, get_version_mock):
-    """
-    Exercises the drop_guards() method.
-    """
-
-    get_version_mock.return_value = stem.version.Version('0.1.0.14')
-    self.assertRaises(UnsatisfiableRequest, self.controller.drop_guards)
-
-    with patch('stem.control.Controller.msg', Mock(return_value = None)):
-      get_version_mock.return_value = stem.version.Version('0.2.5.2')
-      self.controller.drop_guards()
 
   def _emit_event(self, event):
     # Spins up our Controller's thread pool, emits an event, then shuts it

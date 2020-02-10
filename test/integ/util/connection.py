@@ -92,7 +92,6 @@ class TestConnection(unittest.TestCase):
       Resolver.NETSTAT_WINDOWS,
       Resolver.SS,
       Resolver.LSOF,
-      Resolver.SOCKSTAT,
       Resolver.BSD_SOCKSTAT,
       Resolver.BSD_PROCSTAT,
       Resolver.BSD_FSTAT,

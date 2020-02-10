@@ -116,7 +116,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(None, desc.dir_port)
     self.assertEqual(None, desc.certificate)
-    self.assertEqual(None, desc.ed25519_certificate)
     self.assertEqual(None, desc.ed25519_master_key)
     self.assertEqual(None, desc.ed25519_signature)
     self.assertEqual(b'Tor 0.2.1.30 on Linux x86_64', desc.platform)
@@ -148,9 +147,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(expected_signature, desc.signature)
     self.assertEqual([], desc.get_unrecognized_lines())
     self.assertEqual('2C7B27BEAB04B4E2459D89CA6D5CD1CC5F95A689', desc.digest())
-
     self.assertEqual('@type server-descriptor 1.0', str(desc.type_annotation()))
-    self.assertEqual(['2'], desc.hidden_service_dir)  # obsolete field
 
   def test_metrics_descriptor_multiple(self):
     """
@@ -374,7 +371,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(9001, desc.or_port)
     self.assertEqual(None, desc.socks_port)
     self.assertEqual(443, desc.dir_port)
-    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.ed25519_certificate)
     self.assertEqual('Z6a1UabSK+N21j6NnyM6N7jssH6DK68qa6W5uB4QpGQ', desc.ed25519_master_key)
     self.assertEqual('w+cKNZTlL7vz/4WgYdFUblzJy3VdTw0mfFK4N3SPFCt20fNKt9SgiZ5V/2ai3kgGsc6oCsyUesSiYtPcTXMLCw', desc.ed25519_signature)
     self.assertEqual(b'Tor 0.2.7.2-alpha-dev on Linux', desc.platform)
@@ -428,7 +424,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual('ChandlerObfs11', desc.nickname)
     self.assertEqual('678912ABD7398DF8EFC8FA2BC7DEF610710360C4', desc.fingerprint)
     self.assertEqual('10.162.85.172', desc.address)
-    self.assertFalse(hasattr(desc, 'ed25519_certificate'))
     self.assertEqual('lgIuiAJCoXPRwWoHgG4ZAoKtmrv47aPr4AsbmESj8AA', desc.ed25519_certificate_hash)
     self.assertEqual('OB/fqLD8lYmjti09R+xXH/D4S2qlizxdZqtudnsunxE', desc.router_digest_sha256)
     self.assertEqual('@type bridge-server-descriptor 1.0', str(desc.type_annotation()))
@@ -704,34 +699,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual(datetime.datetime(2005, 12, 17, 1, 23, 11), desc.read_history_end)
     self.assertEqual(900, desc.read_history_interval)
     self.assertEqual([], desc.read_history_values)
-
-  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
-  def test_annotations(self):
-    """
-    Checks that content before a descriptor are parsed as annotations.
-    """
-
-    desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += RelayDescriptor.content()
-    desc_text += b'\ntrailing text that should be invalid, ho hum'
-
-    # running _parse_file should provide an iterator with a single descriptor
-    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text), validate = True)
-    self.assertRaises(ValueError, list, desc_iter)
-
-    desc_text = b'@pepperjack very tasty\n@mushrooms not so much\n'
-    desc_text += RelayDescriptor.content({'router': 'caerSidi 71.35.133.197 9001 0 0'})
-    desc_iter = stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_text))
-
-    desc_entries = list(desc_iter)
-    self.assertEqual(1, len(desc_entries))
-    desc = desc_entries[0]
-
-    self.assertEqual('caerSidi', desc.nickname)
-    self.assertEqual('@pepperjack very tasty', desc.get_annotation_lines()[0])
-    self.assertEqual('@mushrooms not so much', desc.get_annotation_lines()[1])
-    self.assertEqual({'@pepperjack': 'very tasty', '@mushrooms': 'not so much'}, desc.get_annotations())
-    self.assertEqual([], desc.get_unrecognized_lines())
 
   def test_duplicate_field(self):
     """

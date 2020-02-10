@@ -81,21 +81,6 @@ content. For example...
 
   Maximum number of microdescriptors that can requested at a time by their
   hashes.
-
-.. data:: Compression (enum)
-
-  Compression when downloading descriptors.
-
-  .. versionadded:: 1.7.0
-
-  =============== ===========
-  Compression     Description
-  =============== ===========
-  **PLAINTEXT**   Uncompressed data.
-  **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
-  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.org/project/zstandard/>`_.
-  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
-  =============== ===========
 """
 
 import io
@@ -115,23 +100,8 @@ import stem.prereq
 import stem.util.enum
 import stem.util.tor_tools
 
+from stem.descriptor import Compression
 from stem.util import log, str_tools
-
-# TODO: remove in stem 2.x, replaced with stem.descriptor.Compression
-
-Compression = stem.util.enum.Enum(
-  ('PLAINTEXT', 'identity'),
-  ('GZIP', 'gzip'),  # can also be 'deflate'
-  ('ZSTD', 'x-zstd'),
-  ('LZMA', 'x-tor-lzma'),
-)
-
-COMPRESSION_MIGRATION = {
-  'identity': stem.descriptor.Compression.PLAINTEXT,
-  'gzip': stem.descriptor.Compression.GZIP,
-  'x-zstd': stem.descriptor.Compression.ZSTD,
-  'x-tor-lzma': stem.descriptor.Compression.LZMA,
-}
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -140,14 +110,6 @@ MAX_FINGERPRINTS = 96
 MAX_MICRODESCRIPTOR_HASHES = 90
 
 SINGLETON_DOWNLOADER = None
-
-# Detached signatures do *not* have a specified type annotation. But our
-# parsers expect that all descriptors have a type. As such making one up.
-# This may change in the future if these ever get an official @type.
-#
-#   https://trac.torproject.org/projects/tor/ticket/28615
-
-DETACHED_SIGNATURE_TYPE = 'detached-signature'
 
 # Some authorities intentionally break their DirPort to discourage DOS. In
 # particular they throttle the rate to such a degree that requests can take
@@ -347,11 +309,6 @@ class Query(object):
      renamed to http.client.HTTPMessage.
 
   .. versionchanged:: 1.7.0
-     Endpoints are now expected to be :class:`~stem.DirPort` or
-     :class:`~stem.ORPort` instances. Usage of tuples for this
-     argument is deprecated and will be removed in the future.
-
-  .. versionchanged:: 1.7.0
      Avoid downloading from tor26. This directory authority throttles its
      DirPort to such an extent that requests either time out or take on the
      order of minutes.
@@ -369,8 +326,7 @@ class Query(object):
 
   .. versionchanged:: 1.8.0
      Using :class:`~stem.descriptor.__init__.Compression` for our compression
-     argument, usage of strings or this module's Compression enum is deprecated
-     and will be removed in stem 2.x.
+     argument.
 
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
@@ -422,33 +378,19 @@ class Query(object):
     if resource.endswith('.z'):
       compression = [Compression.GZIP]
       resource = resource[:-2]
-    elif not compression:
+    elif isinstance(compression, tuple):
+      compression = list(compression)
+    elif not isinstance(compression, list):
+      compression = [compression]  # caller provided only a single option
+
+    if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
+      compression.remove(Compression.ZSTD)
+
+    if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
+      compression.remove(Compression.LZMA)
+
+    if not compression:
       compression = [Compression.PLAINTEXT]
-    else:
-      if isinstance(compression, str):
-        compression = [compression]  # caller provided only a single option
-
-      if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
-        compression.remove(Compression.ZSTD)
-
-      if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
-        compression.remove(Compression.LZMA)
-
-      if not compression:
-        compression = [Compression.PLAINTEXT]
-
-    # TODO: Normalize from our old compression enum to
-    # stem.descriptor.Compression. This will get removed in Stem 2.x.
-
-    new_compression = []
-
-    for legacy_compression in compression:
-      if isinstance(legacy_compression, stem.descriptor._Compression):
-        new_compression.append(legacy_compression)
-      elif legacy_compression in COMPRESSION_MIGRATION:
-        new_compression.append(COMPRESSION_MIGRATION[legacy_compression])
-      else:
-        raise ValueError("'%s' (%s) is not a recognized type of compression" % (legacy_compression, type(legacy_compression).__name__))
 
     if descriptor_type:
       self.descriptor_type = descriptor_type
@@ -459,15 +401,13 @@ class Query(object):
 
     if endpoints:
       for endpoint in endpoints:
-        if isinstance(endpoint, tuple) and len(endpoint) == 2:
-          self.endpoints.append(stem.DirPort(endpoint[0], endpoint[1]))  # TODO: remove this in stem 2.0
-        elif isinstance(endpoint, (stem.ORPort, stem.DirPort)):
+        if isinstance(endpoint, (stem.ORPort, stem.DirPort)):
           self.endpoints.append(endpoint)
         else:
-          raise ValueError("Endpoints must be an stem.ORPort, stem.DirPort, or two value tuple. '%s' is a %s." % (endpoint, type(endpoint).__name__))
+          raise ValueError("Endpoints must be an stem.ORPort or stem.DirPort. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
-    self.compression = new_compression
+    self.compression = compression
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
@@ -548,24 +488,13 @@ class Query(object):
           raise ValueError('BUG: _download_descriptors() finished without either results or an error')
 
         try:
-          # TODO: special handling until we have an official detatched
-          # signature @type...
-          #
-          #   https://trac.torproject.org/projects/tor/ticket/28615
-
-          if self.descriptor_type.startswith(DETACHED_SIGNATURE_TYPE):
-            results = stem.descriptor.networkstatus._parse_file_detached_sigs(
-              io.BytesIO(self.content),
-              validate = self.validate,
-            )
-          else:
-            results = stem.descriptor.parse_file(
-              io.BytesIO(self.content),
-              self.descriptor_type,
-              validate = self.validate,
-              document_handler = self.document_handler,
-              **self.kwargs
-            )
+          results = stem.descriptor.parse_file(
+            io.BytesIO(self.content),
+            self.descriptor_type,
+            validate = self.validate,
+            document_handler = self.document_handler,
+            **self.kwargs
+          )
 
           for desc in results:
             yield desc
@@ -669,13 +598,13 @@ class DescriptorDownloader(object):
     """
 
     directories = [auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in DIR_PORT_BLACKLIST]
-    new_endpoints = set([(directory.address, directory.dir_port) for directory in directories])
+    new_endpoints = set([stem.DirPort(directory.address, directory.dir_port) for directory in directories])
 
     consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
 
     for desc in consensus.routers.values():
       if stem.Flag.V2DIR in desc.flags and desc.dir_port:
-        new_endpoints.add((desc.address, desc.dir_port))
+        new_endpoints.add(stem.DirPort(desc.address, desc.dir_port))
 
     # we need our endpoints to be a list rather than set for random.choice()
 
@@ -858,7 +787,7 @@ class DescriptorDownloader(object):
     resource = '/tor/status-vote/current/authority'
 
     if 'endpoint' not in query_args:
-      query_args['endpoints'] = [(authority.address, authority.dir_port)]
+      query_args['endpoints'] = [stem.DirPort(authority.address, authority.dir_port)]
 
     return self.query(resource, **query_args)
 
@@ -1134,32 +1063,10 @@ def _guess_descriptor_type(resource):
     elif resource.endswith('/consensus-microdesc'):
       return 'network-status-microdesc-consensus-3 1.0'
     elif resource.endswith('/consensus-signatures'):
-      return '%s 1.0' % DETACHED_SIGNATURE_TYPE
+      return 'detached-signature-3 1.0'
     elif stem.util.tor_tools.is_valid_fingerprint(resource.split('/')[-1]):
       return 'network-status-consensus-3 1.0'
     elif resource.endswith('/bandwidth'):
       return 'bandwidth-file 1.0'
 
   raise ValueError("Unable to determine the descriptor type for '%s'" % resource)
-
-
-def get_authorities():
-  """
-  Provides cached Tor directory authority information. The directory
-  information hardcoded into Tor and occasionally changes, so the information
-  this provides might not necessarily match your version of tor.
-
-  .. deprecated:: 1.7.0
-     Use stem.directory.Authority.from_cache() instead.
-
-  :returns: **dict** of **str** nicknames to :class:`~stem.directory.Authority` instances
-  """
-
-  return DirectoryAuthority.from_cache()
-
-
-# TODO: drop aliases in stem 2.0
-
-Directory = stem.directory.Directory
-DirectoryAuthority = stem.directory.Authority
-FallbackDirectory = stem.directory.Fallback

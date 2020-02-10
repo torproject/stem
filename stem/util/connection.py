@@ -36,10 +36,6 @@ Connection and networking based utility functions.
   .. versionchanged:: 1.6.0
      Added **BSD_FSTAT**.
 
-  .. deprecated:: 1.6.0
-     The SOCKSTAT connection resolver is proving to be unreliable
-     (:trac:`23057`), and will be dropped in the 2.0.0 release unless fixed.
-
   ====================  ===========
   Resolver              Description
   ====================  ===========
@@ -48,7 +44,6 @@ Connection and networking based utility functions.
   **NETSTAT_WINDOWS**   netstat command under Windows
   **SS**                ss command
   **LSOF**              lsof command
-  **SOCKSTAT**          sockstat command under \\*nix
   **BSD_SOCKSTAT**      sockstat command under FreeBSD
   **BSD_PROCSTAT**      procstat command under FreeBSD
   **BSD_FSTAT**         fstat command under OpenBSD
@@ -84,7 +79,6 @@ Resolver = enum.Enum(
   ('NETSTAT_WINDOWS', 'netstat (windows)'),
   ('SS', 'ss'),
   ('LSOF', 'lsof'),
-  ('SOCKSTAT', 'sockstat'),
   ('BSD_SOCKSTAT', 'sockstat (bsd)'),
   ('BSD_PROCSTAT', 'procstat (bsd)'),
   ('BSD_FSTAT', 'fstat (bsd)')
@@ -111,8 +105,6 @@ RESOLVER_COMMAND = {
   # (lsof provides a '-p <pid>' but oddly in practice it seems to be ~11-28% slower)
   Resolver.LSOF: 'lsof -wnPi',
 
-  Resolver.SOCKSTAT: 'sockstat',
-
   # -4 = IPv4, -c = connected sockets
   Resolver.BSD_SOCKSTAT: 'sockstat -4c',
 
@@ -137,9 +129,6 @@ RESOLVER_FILTER = {
 
   # tor  3873  atagar  45u  IPv4  40994  0t0  TCP 10.243.55.20:45724->194.154.227.109:9001 (ESTABLISHED)
   Resolver.LSOF: '^{name}\\s+{pid}\\s+.*\\s+{protocol}\\s+{local}->{remote} \\(ESTABLISHED\\)$',
-
-  # atagar   tor                  15843    tcp4   192.168.0.20:44092        68.169.35.102:443         ESTABLISHED
-  Resolver.SOCKSTAT: '^\\S+\\s+{name}\\s+{pid}\\s+{protocol}4\\s+{local}\\s+{remote}\\s+ESTABLISHED$',
 
   # _tor     tor        4397  12 tcp4   172.27.72.202:54011   127.0.0.1:9001
   Resolver.BSD_SOCKSTAT: '^\\S+\\s+{name}\\s+{pid}\\s+\\S+\\s+{protocol}4\\s+{local}\\s+{remote}$',
@@ -380,9 +369,7 @@ def system_resolvers(system = None):
 
     resolvers = [Resolver.BSD_SOCKSTAT, Resolver.BSD_PROCSTAT, Resolver.LSOF]
   else:
-    # Sockstat isn't available by default on ubuntu.
-
-    resolvers = [Resolver.NETSTAT, Resolver.SOCKSTAT, Resolver.LSOF, Resolver.SS]
+    resolvers = [Resolver.NETSTAT, Resolver.LSOF, Resolver.SS]
 
   # remove any that aren't in the user's PATH
 
@@ -783,10 +770,3 @@ def _address_to_binary(address):
     return ''.join([_get_binary(int(grouping, 16), 16) for grouping in address.split(':')])
   else:
     raise ValueError("'%s' is neither an IPv4 or IPv6 address" % address)
-
-
-# TODO: drop with stem 2.x
-# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
-
-get_system_resolvers = system_resolvers

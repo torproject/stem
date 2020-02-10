@@ -69,11 +69,7 @@ def _can_access_controller():
 
 
 def _can_ptrace():
-  # If we're running a tor version where ptrace is disabled and we didn't
-  # set 'DisableDebuggerAttachment=1' then we can infer that it's disabled.
-
-  has_option = test.tor_version() >= stem.version.Requirement.TORRC_DISABLE_DEBUGGER_ATTACHMENT
-  return not has_option or test.runner.Torrc.PTRACE in test.runner.get_runner().get_options()
+  return test.runner.Torrc.PTRACE in test.runner.get_runner().get_options()
 
 
 def _is_online():

@@ -924,10 +924,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       ('published', _random_date()),
     )
 
-    if signing_key:
-      sign = True
-
-    if sign:
+    if sign or signing_key:
       if attr and 'router-signature' in attr:
         raise ValueError('Cannot sign the descriptor if a router-signature has been provided')
 
@@ -990,10 +987,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('extra-info', 'ec2bridgereaac65a3 %s' % _random_fingerprint()),
       ('published', _random_date()),

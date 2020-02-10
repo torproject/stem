@@ -87,12 +87,6 @@ def encoding(*attrs):
   term_encodings = []
 
   for attr in attrs:
-    # TODO: Account for an earlier misspelled attribute. This should be dropped
-    # in Stem. 2.0.x.
-
-    if attr == 'HILIGHT':
-      attr = 'HIGHLIGHT'
-
     attr = stem.util.str_tools._to_camel_case(attr)
     term_encoding = FG_ENCODING.get(attr, None)
     term_encoding = BG_ENCODING.get(attr, term_encoding)

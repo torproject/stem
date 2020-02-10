@@ -295,65 +295,6 @@ def connect(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/
   return _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
 
 
-def connect_port(address = '127.0.0.1', port = 9051, password = None, chroot_path = None, controller = stem.control.Controller):
-  """
-  Convenience function for quickly getting a control connection. This is very
-  handy for debugging or CLI setup, handling setup and prompting for a password
-  if necessary (and none is provided). If any issues arise this prints a
-  description of the problem and returns **None**.
-
-  .. deprecated:: 1.2.0
-     Use :func:`~stem.connection.connect` instead.
-
-  :param str address: ip address of the controller
-  :param int port: port number of the controller
-  :param str password: passphrase to authenticate to the socket
-  :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: :class:`~stem.control.BaseController` subclass to be
-    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
-
-  :returns: authenticated control connection, the type based on the controller argument
-  """
-
-  try:
-    control_port = stem.socket.ControlPort(address, port)
-  except stem.SocketError as exc:
-    print(exc)
-    return None
-
-  return _connect_auth(control_port, password, True, chroot_path, controller)
-
-
-def connect_socket_file(path = '/var/run/tor/control', password = None, chroot_path = None, controller = stem.control.Controller):
-  """
-  Convenience function for quickly getting a control connection. For more
-  information see the :func:`~stem.connection.connect_port` function.
-
-  In much the same vein as git porcelain commands, users should not rely on
-  details of how this works. Messages or details of this function's behavior
-  might change in the future.
-
-  .. deprecated:: 1.2.0
-     Use :func:`~stem.connection.connect` instead.
-
-  :param str path: path where the control socket is located
-  :param str password: passphrase to authenticate to the socket
-  :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: :class:`~stem.control.BaseController` subclass to be
-    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
-
-  :returns: authenticated control connection, the type based on the controller argument
-  """
-
-  try:
-    control_socket = stem.socket.ControlSocketFile(path)
-  except stem.SocketError as exc:
-    print(exc)
-    return None
-
-  return _connect_auth(control_socket, password, True, chroot_path, controller)
-
-
 def _connect_auth(control_socket, password, password_prompt, chroot_path, controller):
   """
   Helper for the connect_* functions that authenticates the socket and

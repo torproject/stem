@@ -140,7 +140,6 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- is_newnym_available - true if tor would currently accept a NEWNYM signal
     |- get_newnym_wait - seconds until tor would accept a NEWNYM signal
     |- get_effective_rate - provides our effective relaying rate limit
-    |- is_geoip_unavailable - true if we've discovered our geoip db to be unavailable
     |- map_address - maps one address to another such that connections to the original are replaced with the other
     +- drop_guards - drops our set of guard relays and picks a new set
 
@@ -182,16 +181,10 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   Enums are mapped to :class:`~stem.response.events.Event` subclasses as
   follows...
 
-  .. deprecated:: 1.6.0
-
-     Tor dropped EventType.AUTHDIR_NEWDESCS as of version 0.3.2.1.
-     (:spec:`6e887ba`)
-
   ======================= ===========
   EventType               Event Class
   ======================= ===========
   **ADDRMAP**             :class:`stem.response.events.AddrMapEvent`
-  **AUTHDIR_NEWDESCS**    :class:`stem.response.events.AuthDirNewDescEvent`
   **BUILDTIMEOUT_SET**    :class:`stem.response.events.BuildTimeoutSetEvent`
   **BW**                  :class:`stem.response.events.BandwidthEvent`
   **CELL_STATS**          :class:`stem.response.events.CellStatsEvent`
@@ -258,7 +251,6 @@ import threading
 import time
 
 import stem.descriptor.microdescriptor
-import stem.descriptor.reader
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
@@ -292,7 +284,6 @@ State = stem.util.enum.Enum('INIT', 'RESET', 'CLOSED')
 
 EventType = stem.util.enum.UppercaseEnum(
   'ADDRMAP',
-  'AUTHDIR_NEWDESCS',
   'BUILDTIMEOUT_SET',
   'BW',
   'CELL_STATS',
@@ -382,6 +373,7 @@ CACHEABLE_GETINFO_PARAMS = (
   'config/names',
   'config/defaults',
   'info/names',
+  'ip-to-country/ipv4-available',
   'events/names',
   'features/names',
   'process/descriptor-limit',
@@ -1050,7 +1042,6 @@ class Controller(BaseController):
     self._event_listeners = {}
     self._event_listeners_lock = threading.RLock()
     self._enabled_features = []
-    self._is_geoip_unavailable = None
 
     self._last_address_exc = None
     self._last_fingerprint_exc = None
@@ -1166,7 +1157,7 @@ class Controller(BaseController):
       params = set(params)
 
     for param in params:
-      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.is_geoip_unavailable():
+      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.get_info('ip-to-country/ipv4-available', '0') != '1':
         raise stem.ProtocolError('Tor geoip database is unavailable')
       elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
@@ -1296,41 +1287,8 @@ class Controller(BaseController):
     policy = self._get_cache('exit_policy')
 
     if not policy:
-      try:
-        policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
-        self._set_cache({'exit_policy': policy})
-      except stem.OperationFailed:
-        # There's a few situations where 'GETINFO exit-policy/full' will fail,
-        # most commonly...
-        #
-        #   * Error 551: Descriptor still rebuilding - not ready yet
-        #
-        #     Tor hasn't yet finished making our server descriptor. This often
-        #     arises when tor has first started.
-        #
-        #   * Error 552: Not running in server mode
-        #
-        #     We're not configured to be a relay (no ORPort), or haven't yet
-        #     been able to determine our externally facing IP address.
-        #
-        # When these arise best we can do is infer our policy from the torrc.
-        # Skipping caching so we'll retry GETINFO policy resolution next time
-        # we're called.
-
-        rules = []
-
-        if self.get_conf('ExitRelay') == '0':
-          rules.append('reject *:*')
-
-        if self.get_conf('ExitPolicyRejectPrivate') == '1':
-          rules.append('reject private:*')
-
-        for policy_line in self.get_conf('ExitPolicy', multiple = True):
-          rules += policy_line.split(',')
-
-        rules += self.get_info('exit-policy/default').split(',')
-
-        policy = stem.exit_policy.get_config_policy(rules, self.get_info('address', None))
+      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      self._set_cache({'exit_policy': policy})
 
     return policy
 
@@ -1521,25 +1479,6 @@ class Controller(BaseController):
       write_limit = used_written + left_written,
     )
 
-  def get_socks_listeners(self, default = UNDEFINED):
-    """
-    Provides the SOCKS **(address, port)** tuples that tor has open.
-
-    .. deprecated:: 1.2.0
-       Use :func:`~stem.control.Controller.get_listeners` with
-       **Listener.SOCKS** instead.
-
-    :param object default: response if the query fails
-
-    :returns: list of **(address, port)** tuples for the available SOCKS
-      listeners
-
-    :raises: :class:`stem.ControllerError` if unable to determine the listeners
-      and no default was provided
-    """
-
-    return self.get_listeners(Listener.SOCKS, default)
-
   @with_default()
   def get_protocolinfo(self, default = UNDEFINED):
     """
@@ -1676,14 +1615,13 @@ class Controller(BaseController):
     if start_time:
       return start_time
 
-    if self.get_version() >= stem.version.Requirement.GETINFO_UPTIME:
-      uptime = self.get_info('uptime', None)
+    uptime = self.get_info('uptime', None)
 
-      if uptime:
-        if not uptime.isdigit():
-          raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
+    if uptime:
+      if not uptime.isdigit():
+        raise ValueError("'GETINFO uptime' did not provide a valid numeric response: %s" % uptime)
 
-        start_time = time.time() - float(uptime)
+      start_time = time.time() - float(uptime)
 
     if not start_time and self.is_localhost():
       # Tor doesn't yet support this GETINFO option, attempt to determine the
@@ -1846,45 +1784,13 @@ class Controller(BaseController):
       default was provided
     """
 
-    if self.get_version() >= stem.version.Requirement.GETINFO_MICRODESCRIPTORS:
-      desc_content = self.get_info('md/all', get_bytes = True)
+    desc_content = self.get_info('md/all', get_bytes = True)
 
-      if not desc_content:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+    if not desc_content:
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
-      for desc in stem.descriptor.microdescriptor._parse_file(io.BytesIO(desc_content)):
-        yield desc
-    else:
-      # TODO: remove when tor versions that require this are obsolete
-
-      data_directory = self.get_conf('DataDirectory', None)
-
-      if data_directory is None:
-        raise stem.OperationFailed(message = "Unable to determine tor's data directory")
-
-      if not os.path.exists(data_directory):
-        raise stem.OperationFailed(message = "Data directory reported by tor doesn't exist (%s)" % data_directory)
-
-      microdescriptor_file = None
-
-      for filename in ('cached-microdescs', 'cached-microdescs.new'):
-        cached_descriptors = os.path.join(data_directory, filename)
-
-        if os.path.exists(cached_descriptors):
-          microdescriptor_file = cached_descriptors
-          break
-
-      if microdescriptor_file is None:
-        raise stem.OperationFailed(message = "Data directory doesn't contain cached microdescriptors (%s)" % data_directory)
-
-      for desc in stem.descriptor.parse_file(microdescriptor_file):
-        # It shouldn't be possible for these to be something other than
-        # microdescriptors but as the saying goes: trust but verify.
-
-        if not isinstance(desc, stem.descriptor.microdescriptor.Microdescriptor):
-          raise stem.OperationFailed(message = 'BUG: Descriptor reader provided non-microdescriptor content (%s)' % type(desc))
-
-        yield desc
+    for desc in stem.descriptor.microdescriptor._parse_file(io.BytesIO(desc_content)):
+      yield desc
 
   @with_default()
   def get_server_descriptor(self, relay = None, default = UNDEFINED):
@@ -1923,37 +1829,31 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    try:
-      if relay is None:
-        try:
-          relay = self.get_info('fingerprint')
-        except stem.ControllerError as exc:
-          raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
-
-      if stem.util.tor_tools.is_valid_fingerprint(relay):
-        query = 'desc/id/%s' % relay
-      elif stem.util.tor_tools.is_valid_nickname(relay):
-        query = 'desc/name/%s' % relay
-      else:
-        raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
-
+    if relay is None:
       try:
-        desc_content = self.get_info(query, get_bytes = True)
-      except stem.InvalidArguments as exc:
-        if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
-          raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
-        else:
-          raise
+        relay = self.get_info('fingerprint')
+      except stem.ControllerError as exc:
+        raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
-      if not desc_content:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+    if stem.util.tor_tools.is_valid_fingerprint(relay):
+      query = 'desc/id/%s' % relay
+    elif stem.util.tor_tools.is_valid_nickname(relay):
+      query = 'desc/name/%s' % relay
+    else:
+      raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
-      return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
-    except:
-      if not self._is_server_descriptors_available():
-        raise ValueError(SERVER_DESCRIPTORS_UNSUPPORTED)
+    try:
+      desc_content = self.get_info(query, get_bytes = True)
+    except stem.InvalidArguments as exc:
+      if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
+        raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
+      else:
+        raise
 
-      raise
+    if not desc_content:
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+
+    return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
   def get_server_descriptors(self, default = UNDEFINED):
@@ -1986,26 +1886,10 @@ class Controller(BaseController):
     desc_content = self.get_info('desc/all-recent', get_bytes = True)
 
     if not desc_content:
-      if not self._is_server_descriptors_available():
-        raise stem.ControllerError(SERVER_DESCRIPTORS_UNSUPPORTED)
-      else:
-        raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
+      raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
 
     for desc in stem.descriptor.server_descriptor._parse_file(io.BytesIO(desc_content)):
       yield desc
-
-  def _is_server_descriptors_available(self):
-    """
-    Checks to see if tor server descriptors should be available or not.
-    """
-
-    # TODO: Replace with a 'GETINFO desc/download-enabled' request when they're
-    # widely available...
-    #
-    #   https://gitweb.torproject.org/torspec.git/commit/?id=378699c
-
-    return self.get_version() < stem.version.Requirement.MICRODESCRIPTOR_IS_DEFAULT or \
-           self.get_conf('UseMicrodescriptors', None) == '0'
 
   @with_default()
   def get_network_status(self, relay = None, default = UNDEFINED):
@@ -2146,9 +2030,6 @@ class Controller(BaseController):
 
     if not stem.util.tor_tools.is_valid_hidden_service_address(address):
       raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
-
-    if self.get_version() < stem.version.Requirement.HSFETCH:
-      raise stem.UnsatisfiableRequest(message = 'HSFETCH was added in tor version %s' % stem.version.Requirement.HSFETCH)
 
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
     hs_desc_content_queue, hs_desc_content_listener = queue.Queue(), None
@@ -2904,22 +2785,10 @@ class Controller(BaseController):
       provided a default response
     """
 
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
-
     result = []
 
     if our_services:
-      try:
-        result += self.get_info('onions/current').split('\n')
-      except (stem.ProtocolError, stem.OperationFailed) as exc:
-        # TODO: Tor's behavior around this was changed in Feb 2017, we should
-        # drop it when all versions that did this are deprecated...
-        #
-        #   https://trac.torproject.org/projects/tor/ticket/21329
-
-        if 'No onion services of the specified type.' not in str(exc):
-          raise
+      result += self.get_info('onions/current').split('\n')
 
     if detached:
       try:
@@ -3032,9 +2901,6 @@ class Controller(BaseController):
       * :class:`stem.Timeout` if **timeout** was reached
     """
 
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
-
     hs_desc_queue, hs_desc_listener = queue.Queue(), None
     start_time = time.time()
 
@@ -3055,20 +2921,13 @@ class Controller(BaseController):
       flags.append('Detach')
 
     if basic_auth is not None:
-      if self.get_version() < stem.version.Requirement.ADD_ONION_BASIC_AUTH:
-        raise stem.UnsatisfiableRequest(message = 'Basic authentication support was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_BASIC_AUTH)
-
       flags.append('BasicAuth')
 
     if max_streams is not None:
-      if self.get_version() < stem.version.Requirement.ADD_ONION_MAX_STREAMS:
-        raise stem.UnsatisfiableRequest(message = 'Limitation of the maximum number of streams to accept was added to ADD_ONION in tor version %s' % stem.version.Requirement.ADD_ONION_MAX_STREAMS)
-
       flags.append('MaxStreamsCloseCircuit')
 
-    if self.get_version() >= stem.version.Requirement.ADD_ONION_NON_ANONYMOUS:
-      if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
-        flags.append('NonAnonymous')
+    if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
+      flags.append('NonAnonymous')
 
     if flags:
       request += ' Flags=%s' % ','.join(flags)
@@ -3138,9 +2997,6 @@ class Controller(BaseController):
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
-
-    if self.get_version() < stem.version.Requirement.ADD_ONION:
-      raise stem.UnsatisfiableRequest(message = 'Ephemeral hidden services were added in tor version %s' % stem.version.Requirement.ADD_ONION)
 
     response = self.msg('DEL_ONION %s' % service_id)
     stem.response.convert('SINGLELINE', response)
@@ -3370,7 +3226,6 @@ class Controller(BaseController):
     with self._cache_lock:
       self._request_cache = {}
       self._last_newnym = 0.0
-      self._is_geoip_unavailable = None
 
   def load_conf(self, configtext):
     """
@@ -3408,9 +3263,6 @@ class Controller(BaseController):
         the configuration file
     """
 
-    if self.get_version() < stem.version.Requirement.SAVECONF_FORCE:
-      force = False
-
     response = self.msg('SAVECONF FORCE' if force else 'SAVECONF')
     stem.response.convert('SINGLELINE', response)
 
@@ -3433,24 +3285,10 @@ class Controller(BaseController):
 
     feature = feature.upper()
 
-    if feature in self._enabled_features:
-      return True
-    else:
-      # check if this feature is on by default
-      defaulted_version = None
+    if feature in ('EXTENDED_EVENTS', 'VERBOSE_NAMES'):
+      return True  # EXTENDED_EVENTS and VERBOSE_NAMES are always on as of 0.2.2.1
 
-      if feature == 'EXTENDED_EVENTS':
-        defaulted_version = stem.version.Requirement.FEATURE_EXTENDED_EVENTS
-      elif feature == 'VERBOSE_NAMES':
-        defaulted_version = stem.version.Requirement.FEATURE_VERBOSE_NAMES
-
-      if defaulted_version:
-        our_version = self.get_version(None)
-
-        if our_version and our_version >= defaulted_version:
-          self._enabled_features.append(feature)
-
-      return feature in self._enabled_features
+    return feature in self._enabled_features
 
   def enable_feature(self, features):
     """
@@ -3458,11 +3296,6 @@ class Controller(BaseController):
     compatibility. Once enabled, a feature cannot be disabled and a new
     control connection must be opened to get a connection with the feature
     disabled. Feature names are case-insensitive.
-
-    The following features are currently accepted:
-
-      * EXTENDED_EVENTS - Requests the extended event syntax
-      * VERBOSE_NAMES - Replaces ServerID with LongName in events and GETINFO results
 
     :param str,list features: a single feature or a list of features to be enabled
 
@@ -3615,16 +3448,7 @@ class Controller(BaseController):
       self.add_event_listener(circ_listener, EventType.CIRC)
 
     try:
-      # we might accidently get integer circuit ids
-      circuit_id = str(circuit_id)
-
-      if path is None and circuit_id == '0':
-        path_opt_version = stem.version.Requirement.EXTENDCIRCUIT_PATH_OPTIONAL
-
-        if not self.get_version() >= path_opt_version:
-          raise stem.InvalidRequest(512, 'EXTENDCIRCUIT requires the path prior to version %s' % path_opt_version)
-
-      args = [circuit_id]
+      args = [str(circuit_id)]
 
       if isinstance(path, (bytes, str)):
         path = [path]
@@ -3890,37 +3714,6 @@ class Controller(BaseController):
 
     return value
 
-  def is_geoip_unavailable(self):
-    """
-    Provides **True** if tor's geoip database is unavailable, **False**
-    otherwise.
-
-    .. versionchanged:: 1.6.0
-       No longer requires previously failed GETINFO requests to determine this.
-
-    .. deprecated:: 1.6.0
-       This is available as of Tor 0.3.2.1 through the following instead...
-
-       ::
-
-         controller.get_info('ip-to-country/ipv4-available', 0) == '1'
-
-    :returns: **bool** indicating if we've determined tor's geoip database to
-      be unavailable or not
-    """
-
-    if self._is_geoip_unavailable is None:
-      try:
-        self.get_info('ip-to-country/0.0.0.0')
-        self._is_geoip_unavailable = False
-      except stem.ControllerError as exc:
-        if 'GeoIP data not loaded' in str(exc):
-          self._is_geoip_unavailable = True
-        else:
-          return False  # unexpected issue, fail open and don't cache
-
-    return self._is_geoip_unavailable
-
   def map_address(self, mapping):
     """
     Map addresses to replacement addresses. Tor replaces subseqent connections
@@ -3954,9 +3747,6 @@ class Controller(BaseController):
 
     :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
     """
-
-    if self.get_version() < stem.version.Requirement.DROPGUARDS:
-      raise stem.UnsatisfiableRequest(message = 'DROPGUARDS was added in tor version %s' % stem.version.Requirement.DROPGUARDS)
 
     self.msg('DROPGUARDS')
 

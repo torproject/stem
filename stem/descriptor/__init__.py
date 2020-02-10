@@ -25,6 +25,21 @@ Package for parsing and processing descriptor data.
     |- get_unrecognized_lines - unparsed descriptor content
     +- __str__ - string that the descriptor was made from
 
+.. data:: Compression (enum)
+
+  Compression when downloading descriptors.
+
+  .. versionadded:: 1.7.0
+
+  =============== ===========
+  Compression     Description
+  =============== ===========
+  **PLAINTEXT**   Uncompressed data.
+  **GZIP**        `GZip compression <https://www.gnu.org/software/gzip/>`_.
+  **ZSTD**        `Zstandard compression <https://www.zstd.net>`_, this requires the `zstandard module <https://pypi.org/project/zstandard/>`_.
+  **LZMA**        `LZMA compression <https://en.wikipedia.org/wiki/LZMA>`_, this requires the 'lzma module <https://docs.python.org/3/library/lzma.html>`_.
+  =============== ===========
+
 .. data:: DigestHash (enum)
 
   .. versionadded:: 1.8.0
@@ -110,12 +125,10 @@ __all__ = [
   'bandwidth_file',
   'certificate',
   'collector',
-  'export',
   'extrainfo_descriptor',
   'hidden_service',
   'microdescriptor',
   'networkstatus',
-  'reader',
   'remote',
   'router_status_entry',
   'server_descriptor',
@@ -296,10 +309,6 @@ def parse_file(descriptor_file, descriptor_type = None, validate = False, docume
 
   * The filename if it matches something from tor's data directory. For
     instance, tor's 'cached-descriptors' contains server descriptors.
-
-  This is a handy function for simple usage, but if you're reading multiple
-  descriptor files you might want to consider the
-  :class:`~stem.descriptor.reader.DescriptorReader`.
 
   Descriptor types include the following, including further minor versions (ie.
   if we support 1.1 then we also support everything from 1.0 and most things
@@ -856,7 +865,7 @@ class Descriptor(object):
       raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = ()):
     """
     Creates descriptor content with the given attributes. Mandatory fields are
     filled with dummy information unless data is supplied. This doesn't yet
@@ -867,7 +876,6 @@ class Descriptor(object):
     :param dict attr: keyword/value mappings to be included in the descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
-    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: **str** with the content of a descriptor
 
@@ -876,12 +884,10 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    # TODO: drop the 'sign' argument in stem 2.x (only a few subclasses use this)
-
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+  def create(cls, attr = None, exclude = (), validate = True):
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
     with dummy information unless data is supplied. This doesn't yet create a
@@ -894,7 +900,6 @@ class Descriptor(object):
       results in an invalid descriptor
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
-    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: :class:`~stem.descriptor.Descriptor` subclass
 
@@ -904,7 +909,7 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    return cls(cls.content(attr, exclude, sign), validate = validate)
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def type_annotation(self):
     """
@@ -940,9 +945,9 @@ class Descriptor(object):
   def get_archive_path(self):
     """
     If this descriptor came from an archive then provides its path within the
-    archive. This is only set if the descriptor came from a
-    :class:`~stem.descriptor.reader.DescriptorReader`, and is **None** if this
-    descriptor didn't come from an archive.
+    archive. This is only set if the descriptor was read by
+    :class:`~stem.descriptor.__init__.parse_file` from an archive, and **None**
+    otherwise.
 
     :returns: **str** with the descriptor's path within the archive
     """

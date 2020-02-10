@@ -18,7 +18,7 @@ These are only available through the Controller's
 
 ::
 
-  BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
+  HiddenServiceDescriptor - Common parent for hidden service descriptors
     |- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
     +- HiddenServiceDescriptorV3 - Version 3 hidden service descriptor
          |- address_from_identity_key - convert an identity key to address
@@ -133,9 +133,7 @@ class DecryptionFailure(Exception):
   """
 
 
-# TODO: rename in stem 2.x (add 'V2' and drop plural)
-
-class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
+class IntroductionPointV2(collections.namedtuple('IntroductionPointV2', INTRODUCTION_POINTS_ATTR.keys())):
   """
   Introduction point for a v2 hidden service.
 
@@ -439,7 +437,7 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
   Iterates over the hidden service descriptors in a file.
 
   :param file descriptor_file: file with descriptor content
-  :param class desc_type: BaseHiddenServiceDescriptor subclass
+  :param class desc_type: HiddenServiceDescriptor subclass
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
@@ -551,7 +549,6 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' should be followed by a MESSAGE block, but was a %s" % block_type)
 
   descriptor.introduction_points_encoded = block_contents
-  descriptor.introduction_points_auth = []  # field was never implemented in tor (#15190)
 
   try:
     descriptor.introduction_points_content = _bytes_for_block(block_contents)
@@ -624,17 +621,15 @@ _parse_v3_inner_intro_auth = _parse_simple_line('intro-auth-required', 'intro_au
 _parse_v3_inner_single_service = _parse_if_present('single-onion-service', 'is_single_service')
 
 
-class BaseHiddenServiceDescriptor(Descriptor):
+class HiddenServiceDescriptor(Descriptor):
   """
   Hidden service descriptor.
 
   .. versionadded:: 1.8.0
   """
 
-  # TODO: rename this class to HiddenServiceDescriptor in stem 2.x
 
-
-class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
+class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
   """
   Version 2 hidden service descriptor.
 
@@ -646,9 +641,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   :var datetime published: **\\*** time in UTC when this descriptor was made
   :var list protocol_versions: **\\*** list of **int** versions that are supported when establishing a connection
   :var str introduction_points_encoded: raw introduction points blob
-  :var list introduction_points_auth: **\\*** tuples of the form
-    (auth_method, auth_data) for our introduction_points_content
-    (**deprecated**, always **[]**)
   :var bytes introduction_points_content: decoded introduction-points content
     without authentication data, if using cookie authentication this is
     encrypted
@@ -676,7 +668,6 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     'published': (None, _parse_publication_time_line),
     'protocol_versions': ([], _parse_protocol_versions_line),
     'introduction_points_encoded': (None, _parse_introduction_points_line),
-    'introduction_points_auth': ([], _parse_introduction_points_line),
     'introduction_points_content': (None, _parse_introduction_points_line),
     'signature': (None, _parse_v2_signature_line),
   }
@@ -693,10 +684,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
       ('version', '2'),
@@ -710,8 +698,8 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True):
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
     super(HiddenServiceDescriptorV2, self).__init__(raw_contents, lazy_load = not validate)
@@ -746,7 +734,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     """
     Provided this service's introduction points.
 
-    :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPoints`
+    :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPointV2`
 
     :raises:
       * **ValueError** if the our introduction-points is malformed
@@ -841,7 +829,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   @staticmethod
   def _parse_introduction_points(content):
     """
-    Provides the parsed list of IntroductionPoints for the unencrypted content.
+    Provides the parsed list of IntroductionPointV2 for the unencrypted content.
     """
 
     introduction_points = []
@@ -888,12 +876,12 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
             auth_type, auth_data = auth_value.split(' ')[:2]
             auth_entries.append((auth_type, auth_data))
 
-      introduction_points.append(IntroductionPoints(**attr))
+      introduction_points.append(IntroductionPointV2(**attr))
 
     return introduction_points
 
 
-class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
+class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
   """
   Version 3 hidden service descriptor.
 
@@ -909,8 +897,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   .. versionadded:: 1.8.0
   """
-
-  # TODO: requested this @type on https://trac.torproject.org/projects/tor/ticket/31481
 
   TYPE_ANNOTATION_NAME = 'hidden-service-descriptor-3'
 
@@ -1307,7 +1293,7 @@ class InnerLayer(Descriptor):
     return _encrypt_layer(self.get_bytes(), b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, introduction_points = None):
+  def content(cls, attr = None, exclude = (), introduction_points = None):
     if introduction_points:
       suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
     else:
@@ -1318,8 +1304,8 @@ class InnerLayer(Descriptor):
     )) + stem.util.str_tools._to_bytes(suffix)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, introduction_points = None):
-    return cls(cls.content(attr, exclude, sign, introduction_points), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, introduction_points = None):
+    return cls(cls.content(attr, exclude, introduction_points), validate = validate)
 
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
@@ -1388,8 +1374,3 @@ def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
   S = (r + ed25519.Hint(ed25519.encodepoint(R) + blinded_key + msg) * a) % ed25519.l
 
   return ed25519.encodepoint(R) + ed25519.encodeint(S)
-
-
-# TODO: drop this alias in stem 2.x
-
-HiddenServiceDescriptor = HiddenServiceDescriptorV2

@@ -26,9 +26,7 @@ etc). This information is provided from a few sources...
     |  |- is_scrubbed - checks if our content has been properly scrubbed
     |  +- get_scrubbing_issues - description of issues with our scrubbing
     |
-    |- digest - calculates the upper-case hex digest value for our content
-    |- get_annotations - dictionary of content prior to the descriptor entry
-    +- get_annotation_lines - lines that provided the annotations
+    +- digest - calculates the upper-case hex digest value for our content
 
 .. data:: BridgeDistribution (enum)
 
@@ -53,7 +51,6 @@ import functools
 import hashlib
 import re
 
-import stem.descriptor.certificate
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
 import stem.prereq
@@ -63,6 +60,7 @@ import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
+from stem.descriptor.certificate import Ed25519Certificate
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 
 from stem.descriptor import (
@@ -190,10 +188,14 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
   # to the caller).
 
   while True:
-    annotations = _read_until_keywords('router', descriptor_file)
-    annotations = map(bytes.strip, annotations)                      # strip newlines
-    annotations = map(stem.util.str_tools._to_unicode, annotations)  # convert to unicode
-    annotations = list(filter(lambda x: x != '', annotations))       # drop any blanks
+    # skip annotations
+
+    while True:
+      pos = descriptor_file.tell()
+
+      if not descriptor_file.readline().startswith(b'@'):
+        descriptor_file.seek(pos)
+        break
 
     if not is_bridge:
       descriptor_content = _read_until_keywords('router-signature', descriptor_file)
@@ -212,13 +214,10 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
-        yield BridgeDescriptor(descriptor_text, validate, annotations, **kwargs)
+        yield BridgeDescriptor(descriptor_text, validate, **kwargs)
       else:
-        yield RelayDescriptor(descriptor_text, validate, annotations, **kwargs)
+        yield RelayDescriptor(descriptor_text, validate, **kwargs)
     else:
-      if validate and annotations:
-        raise ValueError('Content conform to being a server descriptor:\n%s' % '\n'.join(annotations))
-
       break  # done parsing descriptors
 
 
@@ -395,15 +394,7 @@ def _parse_exit_policy(descriptor, entries):
     del descriptor._unparsed_exit_policy
 
 
-def _parse_identity_ed25519_line(descriptor, entries):
-  # TODO: replace this with Ed25519Certificate._from_descriptor() in stem 2.x
-
-  _parse_key_block('identity-ed25519', 'ed25519_certificate', 'ED25519 CERT')(descriptor, entries)
-
-  if descriptor.ed25519_certificate:
-    descriptor.certificate = stem.descriptor.certificate.Ed25519Certificate.from_base64(descriptor.ed25519_certificate)
-
-
+_parse_identity_ed25519_line = Ed25519Certificate._from_descriptor('identity-ed25519', 'certificate')
 _parse_master_key_ed25519_line = _parse_simple_line('master-key-ed25519', 'ed25519_master_key')
 _parse_master_key_ed25519_for_hash_line = _parse_simple_line('master-key-ed25519', 'ed25519_certificate_hash')
 _parse_contact_line = _parse_bytes_line('contact', 'contact')
@@ -511,10 +502,6 @@ class ServerDescriptor(Descriptor):
 
   .. versionchanged:: 1.7.0
      Added the is_hidden_service_dir attribute.
-
-  .. versionchanged:: 1.7.0
-     Deprecated the hidden_service_dir field, it's never been populated
-     (:spec:`43c2f78`). This field will be removed in Stem 2.0.
   """
 
   ATTRIBUTES = {
@@ -590,7 +577,7 @@ class ServerDescriptor(Descriptor):
     'eventdns': _parse_eventdns_line,
   }
 
-  def __init__(self, raw_contents, validate = False, annotations = None):
+  def __init__(self, raw_contents, validate = False):
     """
     Server descriptor constructor, created from an individual relay's
     descriptor content (as provided by 'GETINFO desc/*', cached descriptors,
@@ -603,13 +590,11 @@ class ServerDescriptor(Descriptor):
     :param str raw_contents: descriptor content provided by the relay
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
-    :param list annotations: lines that appeared prior to the descriptor
 
     :raises: **ValueError** if the contents is malformed and validate is True
     """
 
     super(ServerDescriptor, self).__init__(raw_contents, lazy_load = not validate)
-    self._annotation_lines = annotations if annotations else []
 
     # A descriptor contains a series of 'keyword lines' which are simply a
     # keyword followed by an optional value. Lines can also be followed by a
@@ -620,12 +605,6 @@ class ServerDescriptor(Descriptor):
     # does not matter so breaking it into key / value pairs.
 
     entries, self._unparsed_exit_policy = _descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
-
-    # TODO: Remove the following field in Stem 2.0. It has never been populated...
-    #
-    #   https://gitweb.torproject.org/torspec.git/commit/?id=43c2f78
-
-    self.hidden_service_dir = ['2']
 
     if validate:
       self._parse(entries, validate)
@@ -662,55 +641,6 @@ class ServerDescriptor(Descriptor):
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
-
-  @functools.lru_cache()
-  def get_annotations(self):
-    """
-    Provides content that appeared prior to the descriptor. If this comes from
-    the cached-descriptors file then this commonly contains content like...
-
-    ::
-
-      @downloaded-at 2012-03-18 21:18:29
-      @source "173.254.216.66"
-
-    .. deprecated:: 1.8.0
-       Users very rarely read from cached descriptor files any longer. This
-       method will be removed in Stem 2.x. If you have some need for us to keep
-       this please `let me know
-       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
-
-    :returns: **dict** with the key/value pairs in our annotations
-    """
-
-    annotation_dict = {}
-
-    for line in self._annotation_lines:
-      if ' ' in line:
-        key, value = line.split(' ', 1)
-        annotation_dict[key] = value
-      else:
-        annotation_dict[line] = None
-
-    return annotation_dict
-
-  def get_annotation_lines(self):
-    """
-    Provides the lines of content that appeared prior to the descriptor. This
-    is the same as the
-    :func:`~stem.descriptor.server_descriptor.ServerDescriptor.get_annotations`
-    results, but with the unparsed lines and ordering retained.
-
-    .. deprecated:: 1.8.0
-       Users very rarely read from cached descriptor files any longer. This
-       method will be removed in Stem 2.x. If you have some need for us to keep
-       this please `let me know
-       <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_.
-
-    :returns: **list** with the lines of annotation that came before this descriptor
-    """
-
-    return self._annotation_lines
 
   def _check_constraints(self, entries):
     """
@@ -769,7 +699,6 @@ class RelayDescriptor(ServerDescriptor):
   <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_)
 
   :var stem.certificate.Ed25519Certificate certificate: ed25519 certificate
-  :var str ed25519_certificate: base64 encoded ed25519 certificate
   :var str ed25519_master_key: base64 encoded master key for our ed25519 certificate
   :var str ed25519_signature: signature of this document using ed25519
 
@@ -783,7 +712,7 @@ class RelayDescriptor(ServerDescriptor):
   **\\*** attribute is required when we're parsed with validation
 
   .. versionchanged:: 1.5.0
-     Added the ed25519_certificate, ed25519_master_key, ed25519_signature,
+     Added the ed25519_master_key, ed25519_signature,
      onion_key_crosscert, ntor_onion_key_crosscert, and
      ntor_onion_key_crosscert_sign attributes.
 
@@ -795,11 +724,6 @@ class RelayDescriptor(ServerDescriptor):
   .. versionchanged:: 1.6.0
      Added the certificate attribute.
 
-  .. deprecated:: 1.6.0
-     Our **ed25519_certificate** is deprecated in favor of our new
-     **certificate** attribute. The base64 encoded certificate is available via
-     the certificate's **encoded** attribute.
-
   .. versionchanged:: 1.6.0
      Added the **skip_crypto_validation** constructor argument.
   """
@@ -808,7 +732,6 @@ class RelayDescriptor(ServerDescriptor):
 
   ATTRIBUTES = dict(ServerDescriptor.ATTRIBUTES, **{
     'certificate': (None, _parse_identity_ed25519_line),
-    'ed25519_certificate': (None, _parse_identity_ed25519_line),
     'ed25519_master_key': (None, _parse_master_key_ed25519_line),
     'ed25519_signature': (None, _parse_router_sig_ed25519_line),
 
@@ -831,8 +754,8 @@ class RelayDescriptor(ServerDescriptor):
     'router-signature': _parse_router_signature_line,
   })
 
-  def __init__(self, raw_contents, validate = False, annotations = None, skip_crypto_validation = False):
-    super(RelayDescriptor, self).__init__(raw_contents, validate, annotations)
+  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+    super(RelayDescriptor, self).__init__(raw_contents, validate)
 
     if validate:
       if self.fingerprint:
@@ -858,9 +781,6 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, signing_key = None, exit_policy = None):
-    if signing_key:
-      sign = True
-
     if attr is None:
       attr = {}
 
@@ -878,7 +798,7 @@ class RelayDescriptor(ServerDescriptor):
       ('signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ]
 
-    if sign:
+    if sign or signing_key:
       if attr and 'signing-key' in attr:
         raise ValueError('Cannot sign the descriptor if a signing-key has been provided')
       elif attr and 'router-signature' in attr:
@@ -980,7 +900,7 @@ class RelayDescriptor(ServerDescriptor):
   def _check_constraints(self, entries):
     super(RelayDescriptor, self)._check_constraints(entries)
 
-    if self.ed25519_certificate:
+    if self.certificate:
       if not self.onion_key_crosscert:
         raise ValueError("Descriptor must have a 'onion-key-crosscert' when identity-ed25519 is present")
       elif not self.ed25519_signature:
@@ -1016,10 +936,7 @@ class BridgeDescriptor(ServerDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),

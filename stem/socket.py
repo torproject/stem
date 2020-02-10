@@ -437,11 +437,6 @@ class ControlSocket(BaseSocket):
     Formats and sends a message to the control socket. For more information see
     the :func:`~stem.socket.send_message` function.
 
-    .. deprecated:: 1.7.0
-       The **raw** argument was unhelpful and be removed. Use
-       :func:`stem.socket.send_message` if you need this level of control
-       instead.
-
     :param str message: message to be formatted and sent to the socket
 
     :raises:
@@ -494,30 +489,6 @@ class ControlPort(ControlSocket):
     if connect:
       self.connect()
 
-  def get_address(self):
-    """
-    Provides the ip address our socket connects to.
-
-    .. deprecated:: 1.7.0
-       Use the **address** attribute instead.
-
-    :returns: str with the ip address of our socket
-    """
-
-    return self.address
-
-  def get_port(self):
-    """
-    Provides the port our socket connects to.
-
-    .. deprecated:: 1.7.0
-       Use the **port** attribute instead.
-
-    :returns: int with the port of our socket
-    """
-
-    return self.port
-
   def is_localhost(self):
     return self.address == '127.0.0.1'
 
@@ -554,18 +525,6 @@ class ControlSocketFile(ControlSocket):
 
     if connect:
       self.connect()
-
-  def get_socket_path(self):
-    """
-    Provides the path our socket connects to.
-
-    .. deprecated:: 1.7.0
-       Use the **path** attribute instead.
-
-    :returns: str with the path for our control socket
-    """
-
-    return self.path
 
   def is_localhost(self):
     return True

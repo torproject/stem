@@ -3,6 +3,8 @@ Unit tests for the stem.response.events classes.
 """
 
 import datetime
+import logging.handlers
+import queue
 import threading
 import unittest
 
@@ -638,21 +640,6 @@ class TestEvents(unittest.TestCase):
     # the CACHED argument should only allow YES or NO
     self.assertRaises(ProtocolError, _get_event, ADDRMAP_CACHED_MALFORMED)
 
-  def test_authdir_newdesc_event(self):
-    minimal_event = _get_event('650+AUTHDIR_NEWDESCS\nAction\nMessage\nDescriptor\n.\n650 OK\n')
-
-    self.assertTrue(isinstance(minimal_event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual('Action', minimal_event.action)
-    self.assertEqual('Message', minimal_event.message)
-    self.assertEqual('Descriptor', minimal_event.descriptor)
-
-    event = _get_event(AUTHDIR_NEWDESC)
-
-    self.assertTrue(isinstance(event, stem.response.events.AuthDirNewDescEvent))
-    self.assertEqual('DROPPED', event.action)
-    self.assertEqual('Not replacing router descriptor; no information has changed since the last one with this identity.', event.message)
-    self.assertTrue('Descripto', event.descriptor.startswith('@uploaded-at 2017-05-25 04:46:21'))
-
   def test_build_timeout_set_event(self):
     event = _get_event(BUILD_TIMEOUT_EVENT)
 
@@ -875,12 +862,6 @@ class TestEvents(unittest.TestCase):
 
     self.assertEqual(['ExitPolicy'], event.unset)
 
-    self.assertEqual({
-      'ExitNodes': 'caerSidi',
-      'MaxCircuitDirtiness': '20',
-      'ExitPolicy': None,
-    }, event.config)
-
     event = _get_event(CONF_CHANGED_EVENT_MULTIPLE)
     self.assertTrue(isinstance(event, stem.response.events.ConfChangedEvent))
 
@@ -890,11 +871,6 @@ class TestEvents(unittest.TestCase):
     }, event.changed)
 
     self.assertEqual([], event.unset)
-
-    self.assertEqual({
-      'ExitPolicy': 'accept 3.4.53.3',  # overwrote with second value
-      'MaxCircuitDirtiness': '20',
-    }, event.config)
 
   def test_descchanged_event(self):
     # all we can check for is that the event is properly parsed as a
@@ -1049,7 +1025,7 @@ class TestEvents(unittest.TestCase):
     event = _get_event(NEWCONSENSUS_EVENT)
 
     self.assertTrue(isinstance(event, stem.response.events.NewConsensusEvent))
-    self.assertEqual(expected_desc, event.desc)
+    self.assertEqual(expected_desc, event.entries())
 
   def test_ns_event(self):
     expected_desc = RouterStatusEntryV3.create({
@@ -1060,7 +1036,7 @@ class TestEvents(unittest.TestCase):
     event = _get_event(NS_EVENT)
 
     self.assertTrue(isinstance(event, stem.response.events.NetworkStatusEvent))
-    self.assertEqual([expected_desc], event.desc)
+    self.assertEqual([expected_desc], event.descriptors)
 
   def test_orconn_event(self):
     event = _get_event(ORCONN_CLOSED)
@@ -1642,21 +1618,22 @@ class TestEvents(unittest.TestCase):
     """
 
     stem_logger = stem.util.log.get_logger()
-    logging_buffer = stem.util.log.LogBuffer(stem.util.log.INFO)
-    stem_logger.addHandler(logging_buffer)
+
+    messages = queue.Queue()
+    handler = logging.handlers.QueueHandler(messages)
+    handler.setLevel(stem.util.log.INFO)
+    stem_logger.addHandler(handler)
 
     # Try parsing a valid event. We shouldn't log anything.
 
     _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED)
-    self.assertTrue(logging_buffer.is_empty())
-    self.assertEqual([], list(logging_buffer))
+    self.assertTrue(messages.empty())
 
     # Parse an invalid runlevel.
 
     _get_event(STATUS_GENERAL_CONSENSUS_ARRIVED.replace('NOTICE', 'OMEGA_CRITICAL!!!'))
-    logged_events = list(logging_buffer)
 
-    self.assertEqual(1, len(logged_events))
-    self.assertTrue('STATUS_GENERAL event had an unrecognized runlevel' in logged_events[0])
+    self.assertEqual(1, messages.qsize())
+    self.assertTrue('STATUS_GENERAL event had an unrecognized runlevel' in str(messages.get_nowait()))
 
-    stem_logger.removeHandler(logging_buffer)
+    stem_logger.removeHandler(handler)

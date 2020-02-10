@@ -15,10 +15,6 @@ Dave Daeschler, Giampaolo Rodola' and is under the BSD license.
 **These functions are not being vended to stem users. They may change in the
 future, use them at your own risk.**
 
-.. versionchanged:: 1.3.0
-   Dropped the get_* prefix from several function names. The old names still
-   work, but are deprecated aliases.
-
 **Module Overview:**
 
 ::
@@ -579,16 +575,3 @@ def _log_failure(parameter, exc):
   """
 
   log.debug('proc call failed (%s): %s' % (parameter, exc))
-
-
-# TODO: drop with stem 2.x
-# We renamed our methods to drop a redundant 'get_*' prefix, so alias the old
-# names for backward compatability.
-
-get_system_start_time = system_start_time
-get_physical_memory = physical_memory
-get_cwd = cwd
-get_uid = uid
-get_memory_usage = memory_usage
-get_stats = stats
-get_connections = connections

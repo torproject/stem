@@ -242,14 +242,6 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
     timeout without success
   """
 
-  # TODO: Drop this version check when tor 0.2.6.3 or higher is the only game
-  # in town.
-
-  try:
-    use_stdin = stem.version.get_system_tor_version(tor_cmd) >= stem.version.Requirement.TORRC_VIA_STDIN
-  except IOError:
-    use_stdin = False
-
   # we need to be sure that we're logging to stdout to figure out when we're
   # done bootstrapping
 
@@ -278,22 +270,4 @@ def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, in
       for value in values:
         config_str += '%s %s\n' % (key, value)
 
-  if use_stdin:
-    return launch_tor(tor_cmd, ['-f', '-'], None, completion_percent, init_msg_handler, timeout, take_ownership, close_output, stdin = config_str)
-  else:
-    torrc_descriptor, torrc_path = tempfile.mkstemp(prefix = 'torrc-', text = True)
-
-    try:
-      with open(torrc_path, 'w') as torrc_file:
-        torrc_file.write(config_str)
-
-      # prevents tor from erroring out due to a missing torrc if it gets a sighup
-      args = ['__ReloadTorrcOnSIGHUP', '0']
-
-      return launch_tor(tor_cmd, args, torrc_path, completion_percent, init_msg_handler, timeout, take_ownership)
-    finally:
-      try:
-        os.close(torrc_descriptor)
-        os.remove(torrc_path)
-      except:
-        pass
+  return launch_tor(tor_cmd, ['-f', '-'], None, completion_percent, init_msg_handler, timeout, take_ownership, close_output, stdin = config_str)

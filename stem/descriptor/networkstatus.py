@@ -598,10 +598,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('network-status-version', '2'),
       ('dir-source', '%s %s 80' % (_random_ipv4_address(), _random_ipv4_address())),
@@ -1009,8 +1006,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      Added the packages attribute.
 
   .. versionchanged:: 1.5.0
-     Added the is_shared_randomness_participate, shared_randomness_commitments,
-     shared_randomness_previous_reveal_count,
+     Added the shared_randomness_previous_reveal_count,
      shared_randomness_previous_value,
      shared_randomness_current_reveal_count, and
      shared_randomness_current_value attributes.
@@ -1018,11 +1014,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   .. versionchanged:: 1.6.0
      Added the recommended_client_protocols, recommended_relay_protocols,
      required_client_protocols, and required_relay_protocols attributes.
-
-  .. versionchanged:: 1.6.0
-     The is_shared_randomness_participate and shared_randomness_commitments
-     were misdocumented in the tor spec and as such never set. They're now an
-     attribute of votes in the **directory_authorities**.
 
   .. versionchanged:: 1.7.0
      The shared_randomness_current_reveal_count and
@@ -1105,10 +1096,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, authorities = None, routers = None):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = (), authorities = None, routers = None):
     attr = {} if attr is None else dict(attr)
     is_vote = attr.get('vote-status') == 'vote'
 
@@ -1180,8 +1168,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, authorities = None, routers = None):
-    return cls(cls.content(attr, exclude, sign, authorities, routers), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, authorities = None, routers = None):
+    return cls(cls.content(attr, exclude, authorities, routers), validate = validate)
 
   def __init__(self, raw_content, validate = False, default_params = True):
     """
@@ -1197,13 +1185,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     super(NetworkStatusDocumentV3, self).__init__(raw_content, lazy_load = not validate)
     document_file = io.BytesIO(raw_content)
-
-    # TODO: Tor misdocumented these as being in the header rather than the
-    # authority section. As such these have never been set but we need the
-    # attributes for stem 1.5 compatability. Drop these in 2.0.
-
-    self.is_shared_randomness_participate = False
-    self.shared_randomness_commitments = []
 
     self._default_params = default_params
     self._header(document_file, validate)
@@ -1560,10 +1541,6 @@ class DirectoryAuthority(Descriptor):
 
   **\\*** mandatory attribute
 
-  .. versionchanged:: 1.4.0
-     Renamed our 'fingerprint' attribute to 'v3ident' (prior attribute exists
-     for backward compatability, but is deprecated).
-
   .. versionchanged:: 1.6.0
      Added the is_shared_randomness_participate, shared_randomness_commitments,
      shared_randomness_previous_reveal_count,
@@ -1603,10 +1580,7 @@ class DirectoryAuthority(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, is_vote = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = (), is_vote = False):
     attr = {} if attr is None else dict(attr)
 
     # include mandatory 'vote-digest' if a consensus
@@ -1625,8 +1599,8 @@ class DirectoryAuthority(Descriptor):
     return content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, is_vote = False):
-    return cls(cls.content(attr, exclude, sign, is_vote), validate = validate, is_vote = is_vote)
+  def create(cls, attr = None, exclude = (), validate = True, is_vote = False):
+    return cls(cls.content(attr, exclude, is_vote), validate = validate, is_vote = is_vote)
 
   def __init__(self, raw_content, validate = False, is_vote = False):
     """
@@ -1701,12 +1675,6 @@ class DirectoryAuthority(Descriptor):
       self._parse(entries, validate)
     else:
       self._entries = entries
-
-    # TODO: Due to a bug we had a 'fingerprint' rather than 'v3ident' attribute
-    # for a long while. Keeping this around for backward compatability, but
-    # this will be dropped in stem's 2.0 release.
-
-    self.fingerprint = self.v3ident
 
 
 def _parse_dir_address_line(descriptor, entries):
@@ -1784,10 +1752,7 @@ class KeyCertificate(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('dir-key-certificate-version', '3'),
       ('fingerprint', _random_fingerprint()),
@@ -1933,10 +1898,7 @@ class DetachedSignature(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('consensus-digest', '6D3CC0EFA408F228410A4A8145E1B0BB0670E442'),
       ('valid-after', _random_date()),

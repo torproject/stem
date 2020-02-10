@@ -95,8 +95,6 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEqual(stem.exit_policy.MicroExitPolicy('reject 1-65535'), desc.exit_policy)
     self.assertEqual(None, desc.exit_policy_v6)
     self.assertEqual({}, desc.identifiers)
-    self.assertEqual(None, desc.identifier_type)
-    self.assertEqual(None, desc.identifier)
     self.assertEqual({}, desc.protocols)
     self.assertEqual([], desc.get_unrecognized_lines())
 
@@ -184,8 +182,6 @@ class TestMicrodescriptor(unittest.TestCase):
 
     desc = Microdescriptor.create({'id': 'rsa1024 Cd47okjCHD83YGzThGBDptXs9Z4'})
     self.assertEqual({'rsa1024': 'Cd47okjCHD83YGzThGBDptXs9Z4'}, desc.identifiers)
-    self.assertEqual('rsa1024', desc.identifier_type)
-    self.assertEqual('Cd47okjCHD83YGzThGBDptXs9Z4', desc.identifier)
 
     # check when there's multiple key types
 
@@ -197,8 +193,6 @@ class TestMicrodescriptor(unittest.TestCase):
 
     desc = Microdescriptor(desc_text, validate = True)
     self.assertEqual({'rsa1024': 'Cd47okjCHD83YGzThGBDptXs9Z4', 'ed25519': '50f6ddbecdc848dcc6b818b14d1'}, desc.identifiers)
-    self.assertEqual('ed25519', desc.identifier_type)
-    self.assertEqual('50f6ddbecdc848dcc6b818b14d1', desc.identifier)
 
     # check when there's conflicting keys
 
