@@ -385,18 +385,9 @@ class Manual(object):
         it or the schema is out of date
     """
 
-    # TODO: drop _from_config_cache() with stem 2.x
-
     if path is None:
       path = CACHE_PATH
 
-    if path is not None and path.endswith('.sqlite'):
-      return Manual._from_sqlite_cache(path)
-    else:
-      return Manual._from_config_cache(path)
-
-  @staticmethod
-  def _from_sqlite_cache(path):
     if not stem.prereq.is_sqlite_available():
       raise ImportError('Reading a sqlite cache requires the sqlite3 module')
 
@@ -432,41 +423,6 @@ class Manual(object):
       manual.schema = schema
 
       return manual
-
-  @staticmethod
-  def _from_config_cache(path):
-    conf = stem.util.conf.Config()
-    conf.load(path, commenting = False)
-
-    config_options = collections.OrderedDict()
-
-    for key in conf.keys():
-      if key.startswith('config_options.'):
-        key = key.split('.')[1]
-
-        if key not in config_options:
-          config_options[key] = ConfigOption(
-            conf.get('config_options.%s.name' % key, ''),
-            conf.get('config_options.%s.category' % key, ''),
-            conf.get('config_options.%s.usage' % key, ''),
-            conf.get('config_options.%s.summary' % key, ''),
-            conf.get('config_options.%s.description' % key, '')
-          )
-
-    manual = Manual(
-      conf.get('name', ''),
-      conf.get('synopsis', ''),
-      conf.get('description', ''),
-      conf.get('commandline_options', collections.OrderedDict()),
-      conf.get('signals', collections.OrderedDict()),
-      conf.get('files', collections.OrderedDict()),
-      config_options,
-    )
-
-    manual.man_commit = conf.get('man_commit', None)
-    manual.stem_commit = conf.get('stem_commit', None)
-
-    return manual
 
   @staticmethod
   def from_man(man_path = 'tor'):
@@ -561,14 +517,6 @@ class Manual(object):
       * **IOError** if unsuccessful
     """
 
-    # TODO: drop _save_as_config() with stem 2.x
-
-    if path.endswith('.sqlite'):
-      return self._save_as_sqlite(path)
-    else:
-      return self._save_as_config(path)
-
-  def _save_as_sqlite(self, path):
     if not stem.prereq.is_sqlite_available():
       raise ImportError('Saving a sqlite cache requires the sqlite3 module')
 
@@ -600,36 +548,6 @@ class Manual(object):
       os.remove(path)
 
     os.rename(tmp_path, path)
-
-  def _save_as_config(self, path):
-    conf = stem.util.conf.Config()
-    conf.set('name', self.name)
-    conf.set('synopsis', self.synopsis)
-    conf.set('description', self.description)
-
-    if self.man_commit:
-      conf.set('man_commit', self.man_commit)
-
-    if self.stem_commit:
-      conf.set('stem_commit', self.stem_commit)
-
-    for k, v in self.commandline_options.items():
-      conf.set('commandline_options', '%s => %s' % (k, v), overwrite = False)
-
-    for k, v in self.signals.items():
-      conf.set('signals', '%s => %s' % (k, v), overwrite = False)
-
-    for k, v in self.files.items():
-      conf.set('files', '%s => %s' % (k, v), overwrite = False)
-
-    for k, v in self.config_options.items():
-      conf.set('config_options.%s.category' % k, v.category)
-      conf.set('config_options.%s.name' % k, v.name)
-      conf.set('config_options.%s.usage' % k, v.usage)
-      conf.set('config_options.%s.summary' % k, v.summary)
-      conf.set('config_options.%s.description' % k, v.description)
-
-    conf.save(path)
 
   def __hash__(self):
     return stem.util._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options', cache = True)
