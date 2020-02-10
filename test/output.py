@@ -87,9 +87,9 @@ def print_logging(logging_buffer):
   if SUPPRESS_STDOUT or logging_buffer is None:
     return
 
-  if not logging_buffer.is_empty():
-    for entry in logging_buffer:
-      println(entry.replace('\n', '\n  '), term.Color.MAGENTA)
+  if not logging_buffer.empty():
+    while not logging_buffer.empty():
+      println(logging_buffer.get_nowait().getMessage().replace('\n', '\n  '), term.Color.MAGENTA)
 
     print('')
 

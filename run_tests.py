@@ -10,8 +10,10 @@ import errno
 import io
 import importlib
 import logging
+import logging.handlers
 import multiprocessing
 import os
+import queue
 import signal
 import sys
 import threading
@@ -227,7 +229,7 @@ def main():
   # Test logging. If '--log-file' is provided we log to that location,
   # otherwise we buffer messages and log to stdout after its test completes.
 
-  logging_buffer = None
+  logging_buffer = queue.Queue()
 
   if args.logging_runlevel:
     if args.logging_path:
@@ -235,7 +237,8 @@ def main():
       handler.setLevel(stem.util.log.logging_level(args.logging_runlevel))
       handler.setFormatter(stem.util.log.FORMATTER)
     else:
-      handler = logging_buffer = stem.util.log.LogBuffer(args.logging_runlevel)
+      handler = logging.handlers.QueueHandler(logging_buffer)
+      handler.setLevel(stem.util.log.logging_level(args.logging_runlevel))
 
     stem.util.log.get_logger().addHandler(handler)
 
