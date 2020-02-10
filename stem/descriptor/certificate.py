@@ -137,12 +137,10 @@ class Ed25519Certificate(object):
   Base class for an Ed25519 certificate.
 
   :var int version: certificate format version
-  :var unicode encoded: base64 encoded ed25519 certificate
   """
 
   def __init__(self, version):
     self.version = version
-    self.encoded = None  # TODO: remove in stem 2.x
 
   @staticmethod
   def unpack(content):
@@ -235,10 +233,6 @@ class Ed25519Certificate(object):
 
   def __str__(self):
     return self.to_base64(pem = True)
-
-  @staticmethod
-  def parse(content):
-    return Ed25519Certificate.from_base64(content)  # TODO: drop this alias in stem 2.x
 
 
 class Ed25519CertificateV1(Ed25519Certificate):
