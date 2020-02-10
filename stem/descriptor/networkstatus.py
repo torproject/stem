@@ -1009,8 +1009,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
      Added the packages attribute.
 
   .. versionchanged:: 1.5.0
-     Added the is_shared_randomness_participate, shared_randomness_commitments,
-     shared_randomness_previous_reveal_count,
+     Added the shared_randomness_previous_reveal_count,
      shared_randomness_previous_value,
      shared_randomness_current_reveal_count, and
      shared_randomness_current_value attributes.
@@ -1018,11 +1017,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   .. versionchanged:: 1.6.0
      Added the recommended_client_protocols, recommended_relay_protocols,
      required_client_protocols, and required_relay_protocols attributes.
-
-  .. versionchanged:: 1.6.0
-     The is_shared_randomness_participate and shared_randomness_commitments
-     were misdocumented in the tor spec and as such never set. They're now an
-     attribute of votes in the **directory_authorities**.
 
   .. versionchanged:: 1.7.0
      The shared_randomness_current_reveal_count and
@@ -1197,13 +1191,6 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     super(NetworkStatusDocumentV3, self).__init__(raw_content, lazy_load = not validate)
     document_file = io.BytesIO(raw_content)
-
-    # TODO: Tor misdocumented these as being in the header rather than the
-    # authority section. As such these have never been set but we need the
-    # attributes for stem 1.5 compatability. Drop these in 2.0.
-
-    self.is_shared_randomness_participate = False
-    self.shared_randomness_commitments = []
 
     self._default_params = default_params
     self._header(document_file, validate)
