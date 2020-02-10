@@ -1036,7 +1036,7 @@ class TestEvents(unittest.TestCase):
     event = _get_event(NS_EVENT)
 
     self.assertTrue(isinstance(event, stem.response.events.NetworkStatusEvent))
-    self.assertEqual([expected_desc], event.desc)
+    self.assertEqual([expected_desc], event.descriptors)
 
   def test_orconn_event(self):
     event = _get_event(ORCONN_CLOSED)

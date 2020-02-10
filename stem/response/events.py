@@ -704,7 +704,7 @@ class NetworkStatusEvent(Event):
 
   The NS event was introduced in tor version 0.1.2.3-alpha.
 
-  :var list desc: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
+  :var list descriptors: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for the changed descriptors
   """
 
   _SKIP_PARSING = True
@@ -713,10 +713,7 @@ class NetworkStatusEvent(Event):
   def _parse(self):
     content = str(self).lstrip('NS\n').rstrip('\nOK')
 
-    # TODO: For stem 2.0.0 consider changing 'desc' to 'descriptors' to match
-    # our other events.
-
-    self.desc = list(stem.descriptor.router_status_entry._parse_file(
+    self.descriptors = list(stem.descriptor.router_status_entry._parse_file(
       io.BytesIO(str_tools._to_bytes(content)),
       False,
       entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
