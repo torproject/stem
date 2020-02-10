@@ -245,10 +245,7 @@ class Microdescriptor(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ))

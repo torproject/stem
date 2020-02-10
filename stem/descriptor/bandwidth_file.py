@@ -301,7 +301,7 @@ class BandwidthFile(Descriptor):
   ATTRIBUTES.update(dict([(k, (None, _parse_header)) for k in HEADER_ATTR.keys()]))
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = ()):
     """
     Creates descriptor content with the given attributes. This descriptor type
     differs somewhat from others and treats our attr/exclude attributes as
@@ -323,9 +323,6 @@ class BandwidthFile(Descriptor):
         'content': [],
       })
     """
-
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
 
     header = collections.OrderedDict(attr) if attr is not None else collections.OrderedDict()
     timestamp = header.pop('timestamp', str(int(time.time())))

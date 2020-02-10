@@ -688,10 +688,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
       ('version', '2'),
@@ -705,8 +702,8 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
-    return cls(cls.content(attr, exclude, sign), validate = validate, skip_crypto_validation = not sign)
+  def create(cls, attr = None, exclude = (), validate = True):
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
     super(HiddenServiceDescriptorV2, self).__init__(raw_contents, lazy_load = not validate)
@@ -1302,7 +1299,7 @@ class InnerLayer(Descriptor):
     return _encrypt_layer(self.get_bytes(), b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, introduction_points = None):
+  def content(cls, attr = None, exclude = (), introduction_points = None):
     if introduction_points:
       suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
     else:
@@ -1313,8 +1310,8 @@ class InnerLayer(Descriptor):
     )) + stem.util.str_tools._to_bytes(suffix)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, introduction_points = None):
-    return cls(cls.content(attr, exclude, sign, introduction_points), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, introduction_points = None):
+    return cls(cls.content(attr, exclude, introduction_points), validate = validate)
 
   def __init__(self, content, validate = False, outer_layer = None):
     super(InnerLayer, self).__init__(content, lazy_load = not validate)

@@ -865,7 +865,7 @@ class Descriptor(object):
       raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
+  def content(cls, attr = None, exclude = ()):
     """
     Creates descriptor content with the given attributes. Mandatory fields are
     filled with dummy information unless data is supplied. This doesn't yet
@@ -876,7 +876,6 @@ class Descriptor(object):
     :param dict attr: keyword/value mappings to be included in the descriptor
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
-    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: **str** with the content of a descriptor
 
@@ -885,12 +884,10 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    # TODO: drop the 'sign' argument in stem 2.x (only a few subclasses use this)
-
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False):
+  def create(cls, attr = None, exclude = (), validate = True):
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
     with dummy information unless data is supplied. This doesn't yet create a
@@ -903,7 +900,6 @@ class Descriptor(object):
       results in an invalid descriptor
     :param bool validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
-    :param bool sign: includes cryptographic signatures and digests if True
 
     :returns: :class:`~stem.descriptor.Descriptor` subclass
 
@@ -913,7 +909,7 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    return cls(cls.content(attr, exclude, sign), validate = validate)
+    return cls(cls.content(attr, exclude), validate = validate)
 
   def type_annotation(self):
     """

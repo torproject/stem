@@ -513,10 +513,7 @@ class RouterStatusEntryV2(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('r', '%s p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE %s %s 9001 0' % (_random_nickname(), _random_date(), _random_ipv4_address())),
     ))
@@ -607,10 +604,7 @@ class RouterStatusEntryV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('r', '%s p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE %s %s 9001 0' % (_random_nickname(), _random_date(), _random_ipv4_address())),
       ('s', 'Fast Named Running Stable Valid'),
@@ -675,10 +669,7 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('r', '%s ARIJF2zbqirB9IwsW0mQznccWww %s %s 9001 9030' % (_random_nickname(), _random_date(), _random_ipv4_address())),
       ('m', 'aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70'),

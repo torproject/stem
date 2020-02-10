@@ -598,10 +598,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('network-status-version', '2'),
       ('dir-source', '%s %s 80' % (_random_ipv4_address(), _random_ipv4_address())),
@@ -1099,10 +1096,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, authorities = None, routers = None):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = (), authorities = None, routers = None):
     attr = {} if attr is None else dict(attr)
     is_vote = attr.get('vote-status') == 'vote'
 
@@ -1174,8 +1168,8 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, authorities = None, routers = None):
-    return cls(cls.content(attr, exclude, sign, authorities, routers), validate = validate)
+  def create(cls, attr = None, exclude = (), validate = True, authorities = None, routers = None):
+    return cls(cls.content(attr, exclude, authorities, routers), validate = validate)
 
   def __init__(self, raw_content, validate = False, default_params = True):
     """
@@ -1586,10 +1580,7 @@ class DirectoryAuthority(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, is_vote = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = (), is_vote = False):
     attr = {} if attr is None else dict(attr)
 
     # include mandatory 'vote-digest' if a consensus
@@ -1608,8 +1599,8 @@ class DirectoryAuthority(Descriptor):
     return content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, is_vote = False):
-    return cls(cls.content(attr, exclude, sign, is_vote), validate = validate, is_vote = is_vote)
+  def create(cls, attr = None, exclude = (), validate = True, is_vote = False):
+    return cls(cls.content(attr, exclude, is_vote), validate = validate, is_vote = is_vote)
 
   def __init__(self, raw_content, validate = False, is_vote = False):
     """
@@ -1761,10 +1752,7 @@ class KeyCertificate(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('dir-key-certificate-version', '3'),
       ('fingerprint', _random_fingerprint()),
@@ -1910,10 +1898,7 @@ class DetachedSignature(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('consensus-digest', '6D3CC0EFA408F228410A4A8145E1B0BB0670E442'),
       ('valid-after', _random_date()),

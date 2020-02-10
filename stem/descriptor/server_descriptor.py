@@ -781,9 +781,6 @@ class RelayDescriptor(ServerDescriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, signing_key = None, exit_policy = None):
-    if signing_key:
-      sign = True
-
     if attr is None:
       attr = {}
 
@@ -801,7 +798,7 @@ class RelayDescriptor(ServerDescriptor):
       ('signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ]
 
-    if sign:
+    if sign or signing_key:
       if attr and 'signing-key' in attr:
         raise ValueError('Cannot sign the descriptor if a signing-key has been provided')
       elif attr and 'router-signature' in attr:
@@ -939,10 +936,7 @@ class BridgeDescriptor(ServerDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False):
-    if sign:
-      raise NotImplementedError('Signing of %s not implemented' % cls.__name__)
-
+  def content(cls, attr = None, exclude = ()):
     return _descriptor_content(attr, exclude, (
       ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
