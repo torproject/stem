@@ -142,16 +142,11 @@ def query(query, *param):
   # The only reason to explicitly close the sqlite connection is to ensure
   # transactions are committed. Since we're only using read-only access this
   # doesn't matter, and can allow interpreter shutdown to do the needful.
-  #
-  # TODO: When we only support python 3.4+ we can use sqlite's uri argument
-  # to enforce a read-only connection...
-  #
-  #   https://docs.python.org/3/library/sqlite3.html#sqlite3.connect
 
   global DATABASE
 
   if DATABASE is None:
-    DATABASE = sqlite3.connect(CACHE_PATH)
+    DATABASE = sqlite3.connect('file:%s?mode=ro' % CACHE_PATH, uri=True)
 
   return DATABASE.execute(query, param)
 
