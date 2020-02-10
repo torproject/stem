@@ -18,7 +18,7 @@ These are only available through the Controller's
 
 ::
 
-  BaseHiddenServiceDescriptor - Common parent for hidden service descriptors
+  HiddenServiceDescriptor - Common parent for hidden service descriptors
     |- HiddenServiceDescriptorV2 - Version 2 hidden service descriptor
     +- HiddenServiceDescriptorV3 - Version 3 hidden service descriptor
          |- address_from_identity_key - convert an identity key to address
@@ -437,7 +437,7 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
   Iterates over the hidden service descriptors in a file.
 
   :param file descriptor_file: file with descriptor content
-  :param class desc_type: BaseHiddenServiceDescriptor subclass
+  :param class desc_type: HiddenServiceDescriptor subclass
   :param bool validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
@@ -621,17 +621,15 @@ _parse_v3_inner_intro_auth = _parse_simple_line('intro-auth-required', 'intro_au
 _parse_v3_inner_single_service = _parse_if_present('single-onion-service', 'is_single_service')
 
 
-class BaseHiddenServiceDescriptor(Descriptor):
+class HiddenServiceDescriptor(Descriptor):
   """
   Hidden service descriptor.
 
   .. versionadded:: 1.8.0
   """
 
-  # TODO: rename this class to HiddenServiceDescriptor in stem 2.x
 
-
-class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
+class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
   """
   Version 2 hidden service descriptor.
 
@@ -883,7 +881,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     return introduction_points
 
 
-class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
+class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
   """
   Version 3 hidden service descriptor.
 
@@ -899,8 +897,6 @@ class HiddenServiceDescriptorV3(BaseHiddenServiceDescriptor):
 
   .. versionadded:: 1.8.0
   """
-
-  # TODO: requested this @type on https://trac.torproject.org/projects/tor/ticket/31481
 
   TYPE_ANNOTATION_NAME = 'hidden-service-descriptor-3'
 
