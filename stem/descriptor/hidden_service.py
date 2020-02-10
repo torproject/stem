@@ -133,9 +133,7 @@ class DecryptionFailure(Exception):
   """
 
 
-# TODO: rename in stem 2.x (add 'V2' and drop plural)
-
-class IntroductionPoints(collections.namedtuple('IntroductionPoints', INTRODUCTION_POINTS_ATTR.keys())):
+class IntroductionPointV2(collections.namedtuple('IntroductionPointV2', INTRODUCTION_POINTS_ATTR.keys())):
   """
   Introduction point for a v2 hidden service.
 
@@ -738,7 +736,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
     """
     Provided this service's introduction points.
 
-    :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPoints`
+    :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPointV2`
 
     :raises:
       * **ValueError** if the our introduction-points is malformed
@@ -833,7 +831,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
   @staticmethod
   def _parse_introduction_points(content):
     """
-    Provides the parsed list of IntroductionPoints for the unencrypted content.
+    Provides the parsed list of IntroductionPointV2 for the unencrypted content.
     """
 
     introduction_points = []
@@ -880,7 +878,7 @@ class HiddenServiceDescriptorV2(BaseHiddenServiceDescriptor):
             auth_type, auth_data = auth_value.split(' ')[:2]
             auth_entries.append((auth_type, auth_data))
 
-      introduction_points.append(IntroductionPoints(**attr))
+      introduction_points.append(IntroductionPointV2(**attr))
 
     return introduction_points
 
