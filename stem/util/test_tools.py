@@ -44,7 +44,6 @@ import stem.util.enum
 import stem.util.system
 
 CONFIG = stem.util.conf.config_dict('test', {
-  'pep8.ignore': [],  # TODO: drop with stem 2.x, legacy alias for pycodestyle.ignore
   'pycodestyle.ignore': [],
   'pyflakes.ignore': [],
   'exclude_paths': [],
@@ -345,8 +344,6 @@ def is_pycodestyle_available():
 
   if _module_exists('pycodestyle'):
     import pycodestyle
-  elif _module_exists('pep8'):
-    import pep8 as pycodestyle
   else:
     return False
 
@@ -417,7 +414,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   ignore_for_file = []
   ignore_all_for_files = []
 
-  for rule in CONFIG['pycodestyle.ignore'] + CONFIG['pep8.ignore']:
+  for rule in CONFIG['pycodestyle.ignore']:
     if '=>' in rule:
       path, rule_entry = rule.split('=>', 1)
 
@@ -441,10 +438,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     return False
 
   if is_pycodestyle_available():
-    if _module_exists('pep8'):
-      import pep8 as pycodestyle
-    else:
-      import pycodestyle
+    import pycodestyle
 
     class StyleReport(pycodestyle.BaseReport):
       def init_file(self, filename, lines, expected, line_offset):
