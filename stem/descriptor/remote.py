@@ -111,14 +111,6 @@ MAX_MICRODESCRIPTOR_HASHES = 90
 
 SINGLETON_DOWNLOADER = None
 
-# Detached signatures do *not* have a specified type annotation. But our
-# parsers expect that all descriptors have a type. As such making one up.
-# This may change in the future if these ever get an official @type.
-#
-#   https://trac.torproject.org/projects/tor/ticket/28615
-
-DETACHED_SIGNATURE_TYPE = 'detached-signature'
-
 # Some authorities intentionally break their DirPort to discourage DOS. In
 # particular they throttle the rate to such a degree that requests can take
 # hours to complete. Unfortunately Python's socket timeouts only kick in
@@ -496,24 +488,13 @@ class Query(object):
           raise ValueError('BUG: _download_descriptors() finished without either results or an error')
 
         try:
-          # TODO: special handling until we have an official detatched
-          # signature @type...
-          #
-          #   https://trac.torproject.org/projects/tor/ticket/28615
-
-          if self.descriptor_type.startswith(DETACHED_SIGNATURE_TYPE):
-            results = stem.descriptor.networkstatus._parse_file_detached_sigs(
-              io.BytesIO(self.content),
-              validate = self.validate,
-            )
-          else:
-            results = stem.descriptor.parse_file(
-              io.BytesIO(self.content),
-              self.descriptor_type,
-              validate = self.validate,
-              document_handler = self.document_handler,
-              **self.kwargs
-            )
+          results = stem.descriptor.parse_file(
+            io.BytesIO(self.content),
+            self.descriptor_type,
+            validate = self.validate,
+            document_handler = self.document_handler,
+            **self.kwargs
+          )
 
           for desc in results:
             yield desc
@@ -1082,7 +1063,7 @@ def _guess_descriptor_type(resource):
     elif resource.endswith('/consensus-microdesc'):
       return 'network-status-microdesc-consensus-3 1.0'
     elif resource.endswith('/consensus-signatures'):
-      return '%s 1.0' % DETACHED_SIGNATURE_TYPE
+      return 'detached-signature-3 1.0'
     elif stem.util.tor_tools.is_valid_fingerprint(resource.split('/')[-1]):
       return 'network-status-consensus-3 1.0'
     elif resource.endswith('/bandwidth'):
