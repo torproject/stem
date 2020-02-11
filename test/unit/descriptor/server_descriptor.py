@@ -261,7 +261,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
   @test.require.cryptography
   def test_descriptor_signing(self):
     RelayDescriptor.create(sign = True)
-    self.assertRaisesWith(NotImplementedError, 'Signing of BridgeDescriptor not implemented', BridgeDescriptor.create, sign = True)
 
   def test_router_status_entry(self):
     """

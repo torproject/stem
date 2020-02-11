@@ -52,10 +52,6 @@ class TestDirectoryAuthority(unittest.TestCase):
     self.assertEqual(None, authority.legacy_dir_key)
     self.assertEqual([], authority.get_unrecognized_lines())
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of DirectoryAuthority not implemented', DirectoryAuthority.create, sign = True)
-
   def test_unrecognized_line(self):
     """
     Includes unrecognized content in the descriptor.

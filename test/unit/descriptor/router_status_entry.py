@@ -175,12 +175,6 @@ class TestRouterStatusEntry(unittest.TestCase):
     self.assertEqual('aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70', entry.microdescriptor_digest)
     self.assertEqual([], entry.get_unrecognized_lines())
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryV2 not implemented', RouterStatusEntryV2.create, sign = True)
-    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryV3 not implemented', RouterStatusEntryV3.create, sign = True)
-    self.assertRaisesWith(NotImplementedError, 'Signing of RouterStatusEntryMicroV3 not implemented', RouterStatusEntryMicroV3.create, sign = True)
-
   def test_without_ed25519(self):
     """
     Parses a router status entry without a ed25519 value.

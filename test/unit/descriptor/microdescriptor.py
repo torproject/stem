@@ -98,10 +98,6 @@ class TestMicrodescriptor(unittest.TestCase):
     self.assertEqual({}, desc.protocols)
     self.assertEqual([], desc.get_unrecognized_lines())
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of Microdescriptor not implemented', Microdescriptor.create, sign = True)
-
   def test_unrecognized_line(self):
     """
     Includes unrecognized content in the descriptor.

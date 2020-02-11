@@ -142,11 +142,6 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
 
     self.assertEqual('@type bridge-extra-info 1.0', str(desc.type_annotation()))
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    RelayExtraInfoDescriptor.create(sign = True)
-    self.assertRaisesWith(NotImplementedError, 'Signing of BridgeExtraInfoDescriptor not implemented', BridgeExtraInfoDescriptor.create, sign = True)
-
   def test_multiple_metrics_bridge_descriptors(self):
     """
     Check that we can read bridge descriptors when there's multiple in a file.

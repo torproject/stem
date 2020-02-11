@@ -140,10 +140,6 @@ GM9hAsAMRX9Ogqhq5UjDNqEsvDKuyVeyh7unSZEOip9Zr6K/+7VsVPNb8vfBRBjo
       self.assertEqual(expected_key_cert, cert.certification)
       self.assertEqual([], cert.get_unrecognized_lines())
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of KeyCertificate not implemented', KeyCertificate.create, sign = True)
-
   def test_unrecognized_line(self):
     """
     Includes unrecognized content in the descriptor.

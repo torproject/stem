@@ -278,10 +278,6 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     self.assertEqual([2, 3], desc.protocol_versions)
 
   @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of HiddenServiceDescriptorV2 not implemented', HiddenServiceDescriptorV2.create, sign = True)
-
-  @test.require.cryptography
   def test_with_basic_auth(self):
     """
     Parse a descriptor with introduction-points encrypted with basic auth.

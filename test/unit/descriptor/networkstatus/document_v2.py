@@ -104,7 +104,3 @@ TpQQk3nNQF8z6UIvdlvP+DnJV4izWVkQEZgUZgIVM0E=
     self.assertEqual([], document.server_versions)
     self.assertEqual([], document.options)
     self.assertEqual('moria2', document.signing_authority)
-
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of NetworkStatusDocumentV2 not implemented', NetworkStatusDocumentV2.create, sign = True)

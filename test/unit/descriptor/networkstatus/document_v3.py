@@ -358,10 +358,6 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual({}, document.bandwidth_weights)
     self.assertEqual([], document.get_unrecognized_lines())
 
-  @test.require.cryptography
-  def test_descriptor_signing(self):
-    self.assertRaisesWith(NotImplementedError, 'Signing of NetworkStatusDocumentV3 not implemented', NetworkStatusDocumentV3.create, sign = True)
-
   def test_examples(self):
     """
     Run something similar to the examples in the header pydocs.
