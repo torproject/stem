@@ -522,7 +522,6 @@ __all__ = [
   'control',
   'directory',
   'exit_policy',
-  'prereq',
   'process',
   'socket',
   'version',

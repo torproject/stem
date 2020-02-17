@@ -9,7 +9,6 @@ import unittest
 
 import stem.response
 import stem.descriptor.remote
-import stem.prereq
 
 from unittest.mock import Mock, patch
 

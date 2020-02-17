@@ -6,7 +6,7 @@ import datetime
 import io
 import unittest
 
-import stem.prereq
+import stem.descriptor.collector
 
 from unittest.mock import Mock, patch
 

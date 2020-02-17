@@ -44,7 +44,6 @@ import time
 
 import stem.client.datatype
 import stem.descriptor.certificate
-import stem.prereq
 import stem.util
 import stem.util.connection
 import stem.util.str_tools
@@ -218,9 +217,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :raises: **ValueError** if the address, port, or keys are malformed
     """
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
-    elif not stem.util.connection.is_valid_port(port):
+    if not stem.util.connection.is_valid_port(port):
       raise ValueError("'%s' is an invalid port" % port)
 
     if stem.util.connection.is_valid_ipv4_address(address):
@@ -250,11 +247,11 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :raises: **ValueError** if the address, port, or keys are malformed
     """
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
+    try:
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+      from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+    except ImportError:
       raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
-
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 
     if expiration is None:
       expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
@@ -354,7 +351,11 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   def _key_as(value, x25519 = False, ed25519 = False):
     if value is None or (not x25519 and not ed25519):
       return value
-    elif not stem.prereq.is_crypto_available():
+
+    try:
+      from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    except ImportError:
       raise ImportError('cryptography module unavailable')
 
     if x25519:
@@ -364,14 +365,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
         raise EnvironmentError('OpenSSL x25519 unsupported')
 
-      from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
       return X25519PublicKey.from_public_bytes(base64.b64decode(value))
 
     if ed25519:
-      if not stem.prereq.is_crypto_available(ed25519 = True):
-        raise EnvironmentError('cryptography ed25519 unsupported')
-
-      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
       return Ed25519PublicKey.from_public_bytes(value)
 
   @staticmethod
@@ -719,13 +715,16 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
 
       self._parse(entries, validate)
 
-      if not skip_crypto_validation and stem.prereq.is_crypto_available():
-        signed_digest = self._digest_for_signature(self.permanent_key, self.signature)
-        digest_content = self._content_range('rendezvous-service-descriptor ', '\nsignature\n')
-        content_digest = hashlib.sha1(digest_content).hexdigest().upper()
+      if not skip_crypto_validation:
+        try:
+          signed_digest = self._digest_for_signature(self.permanent_key, self.signature)
+          digest_content = self._content_range('rendezvous-service-descriptor ', '\nsignature\n')
+          content_digest = hashlib.sha1(digest_content).hexdigest().upper()
 
-        if signed_digest != content_digest:
-          raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, content_digest))
+          if signed_digest != content_digest:
+            raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, content_digest))
+        except ImportError:
+          pass  # cryptography module unavailable
     else:
       self._entries = entries
 
@@ -746,9 +745,6 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     if not content:
       return []
     elif authentication_cookie:
-      if not stem.prereq.is_crypto_available():
-        raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
-
       try:
         authentication_cookie = stem.util.str_tools._decode_b64(authentication_cookie)
       except TypeError as exc:
@@ -772,8 +768,11 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
 
   @staticmethod
   def _decrypt_basic_auth(content, authentication_cookie):
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.backends import default_backend
+    try:
+      from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+      from cryptography.hazmat.backends import default_backend
+    except ImportError:
+      raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
     try:
       client_blocks = int(binascii.hexlify(content[1:2]), 16)
@@ -816,8 +815,11 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
 
   @staticmethod
   def _decrypt_stealth_auth(content, authentication_cookie):
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.backends import default_backend
+    try:
+      from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+      from cryptography.hazmat.backends import default_backend
+    except ImportError:
+      raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
     # byte 1 = authentication type, 2-17 = input vector, 18 on = encrypted content
     iv, encrypted = content[1:17], content[17:]
@@ -965,14 +967,13 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
       * **ImportError** if cryptography is unavailable
     """
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
+    try:
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    except ImportError:
       raise ImportError('Hidden service descriptor creation requires cryptography version 2.6')
-    elif not stem.prereq._is_sha3_available():
-      raise ImportError('Hidden service descriptor creation requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-    elif blinding_nonce and len(blinding_nonce) != 32:
-      raise ValueError('Blinding nonce must be 32 bytes, but was %i' % len(blinding_nonce))
 
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    if blinding_nonce and len(blinding_nonce) != 32:
+      raise ValueError('Blinding nonce must be 32 bytes, but was %i' % len(blinding_nonce))
 
     inner_layer = inner_layer if inner_layer else InnerLayer.create(exclude = exclude)
     identity_key = identity_key if identity_key else Ed25519PrivateKey.generate()
@@ -1038,8 +1039,11 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
       self._parse(entries, validate)
 
-      if self.signing_cert and stem.prereq.is_crypto_available(ed25519 = True):
-        self.signing_cert.validate(self)
+      if self.signing_cert:
+        try:
+          self.signing_cert.validate(self)
+        except ImportError:
+          pass  # cryptography module unavailable
     else:
       self._entries = entries
 
@@ -1059,22 +1063,20 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
       * **ValueError** if unable to decrypt or validation fails
     """
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
-      raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
-    elif not stem.prereq._is_sha3_available():
-      raise ImportError('Hidden service descriptor decryption requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-
     if self._inner_layer is None:
-      blinded_key = self.signing_cert.signing_key() if self.signing_cert else None
+      try:
+        blinded_key = self.signing_cert.signing_key() if self.signing_cert else None
 
-      if not blinded_key:
-        raise ValueError('No signing key is present')
+        if not blinded_key:
+          raise ValueError('No signing key is present')
 
-      identity_public_key = HiddenServiceDescriptorV3.identity_key_from_address(onion_address)
-      subcredential = HiddenServiceDescriptorV3._subcredential(identity_public_key, blinded_key)
+        identity_public_key = HiddenServiceDescriptorV3.identity_key_from_address(onion_address)
+        subcredential = HiddenServiceDescriptorV3._subcredential(identity_public_key, blinded_key)
 
-      outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
-      self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
+        outer_layer = OuterLayer._decrypt(self.superencrypted, self.revision_counter, subcredential, blinded_key)
+        self._inner_layer = InnerLayer._decrypt(outer_layer, self.revision_counter, subcredential, blinded_key)
+      except ImportError:
+        raise ImportError('Hidden service descriptor decryption requires cryptography version 2.6')
 
     return self._inner_layer
 
@@ -1091,9 +1093,6 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
     :raises: **ImportError** if sha3 unsupported
     """
-
-    if not stem.prereq._is_sha3_available():
-      raise ImportError('Hidden service address conversion requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
     key = stem.util._pubkey_bytes(key)  # normalize key into bytes
 
@@ -1116,9 +1115,6 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
       * **ImportError** if sha3 unsupported
       * **ValueError** if address malformed or checksum is invalid
     """
-
-    if not stem.prereq._is_sha3_available():
-      raise ImportError('Hidden service address conversion requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
 
     if onion_address.endswith('.onion'):
       onion_address = onion_address[:-6]
@@ -1202,15 +1198,14 @@ class OuterLayer(Descriptor):
 
   @classmethod
   def content(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, authorized_clients = None, subcredential = None, blinded_key = None):
-    if not stem.prereq.is_crypto_available(ed25519 = True):
+    try:
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+      from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+    except ImportError:
       raise ImportError('Hidden service layer creation requires cryptography version 2.6')
-    elif not stem.prereq._is_sha3_available():
-      raise ImportError('Hidden service layer creation requires python 3.6+ or the pysha3 module (https://pypi.org/project/pysha3/)')
-    elif authorized_clients and 'auth-client' in attr:
-      raise ValueError('Authorized clients cannot be specified through both attr and authorized_clients')
 
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+    if authorized_clients and 'auth-client' in attr:
+      raise ValueError('Authorized clients cannot be specified through both attr and authorized_clients')
 
     inner_layer = inner_layer if inner_layer else InnerLayer.create()
     revision_counter = revision_counter if revision_counter else 1

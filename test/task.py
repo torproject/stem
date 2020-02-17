@@ -34,12 +34,12 @@ import time
 import traceback
 
 import stem
-import stem.prereq
 import stem.util.conf
 import stem.util.system
 import stem.util.test_tools
 import stem.version
 import test
+import test.require
 import test.output
 
 from test.output import STATUS, ERROR, NO_NL, println
@@ -321,7 +321,7 @@ STEM_VERSION = Task('stem version', _check_stem_version)
 TOR_VERSION = Task('tor version', _check_tor_version)
 PYTHON_VERSION = Task('python version', _check_python_version)
 PLATFORM_VERSION = Task('operating system', _check_platform_version)
-CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', stem.prereq.is_crypto_available)
+CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', lambda: test.require.CRYPTOGRAPHY_AVAILABLE)
 PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)

@@ -7,8 +7,6 @@ Utility functions used by the stem library.
 
 import datetime
 
-import stem.prereq
-
 __all__ = [
   'conf',
   'connection',
@@ -88,14 +86,12 @@ def _pubkey_bytes(key):
   if isinstance(key, (bytes, str)):
     return key
 
-  if not stem.prereq.is_crypto_available():
-    raise ImportError('Key normalization requires the cryptography module')
-  elif not stem.prereq.is_crypto_available(ed25519 = True):
-    raise ImportError('Key normalization requires the cryptography ed25519 support')
-
-  from cryptography.hazmat.primitives import serialization
-  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
-  from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+  try:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
+  except ImportError:
+    raise ImportError('Key normalization requires the cryptography module with ed25519 support')
 
   if isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
     return key.public_key().public_bytes(

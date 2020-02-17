@@ -7,7 +7,6 @@ import re
 import stem
 import stem.control
 import stem.descriptor.router_status_entry
-import stem.prereq
 import stem.response
 import stem.util
 import stem.version

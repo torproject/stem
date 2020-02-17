@@ -38,7 +38,6 @@ import time
 import traceback
 import unittest
 
-import stem.prereq
 import stem.util.conf
 import stem.util.enum
 import stem.util.system

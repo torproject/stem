@@ -5,7 +5,6 @@ running with.
 
 import unittest
 
-import stem.prereq
 import stem.version
 import test.require
 import test.runner

@@ -51,7 +51,6 @@ import socket
 import sys
 import time
 
-import stem.prereq
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools

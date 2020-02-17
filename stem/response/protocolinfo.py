@@ -3,7 +3,6 @@
 
 import sys
 
-import stem.prereq
 import stem.response
 import stem.socket
 import stem.version

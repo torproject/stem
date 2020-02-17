@@ -68,7 +68,6 @@ import functools
 import hashlib
 
 import stem.exit_policy
-import stem.prereq
 
 from stem.descriptor import (
   Descriptor,

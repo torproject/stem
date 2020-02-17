@@ -58,7 +58,6 @@ import functools
 import os
 import re
 
-import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.system

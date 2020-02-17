@@ -16,7 +16,6 @@ import stem.descriptor
 import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
-import stem.prereq
 import stem.version
 import stem.util.str_tools
 import test.require
@@ -646,18 +645,6 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     expect_invalid_attr(self, {'opt': 'protocols Link 1 2'}, 'circuit_protocols')
-
-  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
-  def test_published_leap_year(self):
-    """
-    Constructs with a published entry for a leap year, and when the date is
-    invalid.
-    """
-
-    expect_invalid_attr(self, {'published': '2011-02-29 04:03:19'}, 'published')
-
-    desc = RelayDescriptor.create({'published': '2012-02-29 04:03:19'})
-    self.assertEqual(datetime.datetime(2012, 2, 29, 4, 3, 19), desc.published)
 
   def test_published_no_time(self):
     """

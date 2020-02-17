@@ -7,8 +7,6 @@ Provides our /help responses.
 
 import functools
 
-import stem.prereq
-
 from stem.interpreter import (
   STANDARD_OUTPUT,
   BOLD_OUTPUT,

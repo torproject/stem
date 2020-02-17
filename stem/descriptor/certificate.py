@@ -59,7 +59,6 @@ import hashlib
 import re
 
 import stem.descriptor.hidden_service
-import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.str_tools
@@ -372,7 +371,10 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     import stem.descriptor.server_descriptor
 
-    if not stem.prereq.is_crypto_available(ed25519 = True):
+    try:
+      from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+      from cryptography.exceptions import InvalidSignature
+    except ImportError:
       raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
@@ -385,9 +387,6 @@ class Ed25519CertificateV1(Ed25519Certificate):
       signature = stem.util.str_tools._decode_b64(descriptor.signature)
     else:
       raise TypeError('Certificate validation only supported for server and hidden service descriptors, not %s' % type(descriptor).__name__)
-
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    from cryptography.exceptions import InvalidSignature
 
     try:
       key = Ed25519PublicKey.from_public_bytes(self.key)

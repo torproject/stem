@@ -7,8 +7,6 @@ Tab completion for our interpreter prompt.
 
 import functools
 
-import stem.prereq
-
 from stem.interpreter import uses_settings
 
 

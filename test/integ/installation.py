@@ -4,6 +4,7 @@ Tests installation of our library.
 
 import glob
 import os
+import platform
 import shutil
 import sys
 import tarfile
@@ -11,7 +12,6 @@ import time
 import unittest
 
 import stem
-import stem.prereq
 import stem.util.system
 import stem.util.test_tools
 import test
@@ -75,7 +75,7 @@ class TestInstallation(unittest.TestCase):
         stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE)
         stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
 
-        if stem.prereq.is_pypy():
+        if platform.python_implementation() == 'PyPy':
           site_packages_paths = glob.glob('%s/site-packages' % BASE_INSTALL_PATH)
         else:
           site_packages_paths = glob.glob('%s/lib*/*/site-packages' % BASE_INSTALL_PATH)

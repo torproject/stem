@@ -8,11 +8,10 @@ system running the tests.
 import functools
 import ntpath
 import os
+import platform
 import posixpath
 import tempfile
 import unittest
-
-import stem.prereq
 
 from unittest.mock import Mock, patch
 
@@ -152,7 +151,7 @@ class TestSystem(unittest.TestCase):
     Exercises the size_of function.
     """
 
-    if stem.prereq.is_pypy():
+    if platform.python_implementation() == 'PyPy':
       self.assertRaises(NotImplementedError, system.size_of, 'hello')
     else:
       self.assertTrue(system.size_of('') < system.size_of('hello') < system.size_of('hello world'))

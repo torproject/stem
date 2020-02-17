@@ -10,7 +10,6 @@ import tempfile
 import unittest
 import urllib.request
 
-import stem.prereq
 import stem.manual
 import stem.util.system
 import test.require

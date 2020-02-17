@@ -7,7 +7,6 @@ import functools
 import unittest
 
 import stem.descriptor
-import stem.prereq
 import test.require
 
 from stem.descriptor.hidden_service import (

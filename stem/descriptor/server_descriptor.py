@@ -53,7 +53,6 @@ import re
 
 import stem.descriptor.extrainfo_descriptor
 import stem.exit_policy
-import stem.prereq
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
@@ -764,20 +763,26 @@ class RelayDescriptor(ServerDescriptor):
         if key_hash != self.fingerprint.lower():
           raise ValueError('Fingerprint does not match the hash of our signing key (fingerprint: %s, signing key hash: %s)' % (self.fingerprint.lower(), key_hash))
 
-      if not skip_crypto_validation and stem.prereq.is_crypto_available():
-        signed_digest = self._digest_for_signature(self.signing_key, self.signature)
+      if not skip_crypto_validation:
+        try:
+          signed_digest = self._digest_for_signature(self.signing_key, self.signature)
 
-        if signed_digest != self.digest():
-          raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
+          if signed_digest != self.digest():
+            raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
-        if self.onion_key_crosscert and stem.prereq.is_crypto_available():
-          onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
+          if self.onion_key_crosscert:
+            onion_key_crosscert_digest = self._digest_for_signature(self.onion_key, self.onion_key_crosscert)
 
-          if onion_key_crosscert_digest != self._onion_key_crosscert_digest():
-            raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self._onion_key_crosscert_digest()))
+            if onion_key_crosscert_digest != self._onion_key_crosscert_digest():
+              raise ValueError('Decrypted onion-key-crosscert digest does not match local digest (calculated: %s, local: %s)' % (onion_key_crosscert_digest, self._onion_key_crosscert_digest()))
+        except ImportError:
+          pass  # cryptography module unavailable
 
-      if stem.prereq.is_crypto_available(ed25519 = True) and self.certificate:
-        self.certificate.validate(self)
+      if self.certificate:
+        try:
+          self.certificate.validate(self)
+        except ImportError:
+          pass  # cryptography module unavailable
 
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, signing_key = None, exit_policy = None):

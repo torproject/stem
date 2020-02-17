@@ -5,10 +5,10 @@ that we're running.
 
 import getpass
 import os
+import platform
 import tempfile
 import unittest
 
-import stem.prereq
 import stem.util.proc
 import stem.util.system
 import test.require
@@ -556,7 +556,7 @@ class TestSystem(unittest.TestCase):
     Exercises the get_process_name() and set_process_name() methods.
     """
 
-    if stem.prereq.is_pypy():
+    if platform.python_implementation() == 'PyPy':
       self.skipTest('(unimplemented for pypy)')
 
     initial_name = stem.util.system.get_process_name()

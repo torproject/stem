@@ -21,7 +21,6 @@ import time
 import traceback
 import unittest
 
-import stem.prereq
 import stem.util.conf
 import stem.util.log
 import stem.util.system
@@ -179,10 +178,10 @@ def _get_tests(modules, module_prefixes, exclude):
 def main():
   start_time = time.time()
 
-  try:
-    stem.prereq.check_requirements()
-  except ImportError as exc:
-    println('%s\n' % exc)
+  major_version, minor_version = sys.version_info[0:2]
+
+  if major_version < 3 or (major_version == 3 and minor_version < 6):
+    println('stem requires python version 3.6 or greater\n')
     sys.exit(1)
 
   signal.signal(signal.SIGABRT, log_traceback)

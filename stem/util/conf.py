@@ -162,8 +162,6 @@ import inspect
 import os
 import threading
 
-import stem.prereq
-
 from stem.util import log
 
 CONFS = {}  # mapping of identifier to singleton instances of configs

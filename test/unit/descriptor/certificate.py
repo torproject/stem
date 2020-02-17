@@ -9,7 +9,6 @@ import unittest
 
 import stem.descriptor.certificate
 import stem.util.str_tools
-import stem.prereq
 import test.require
 
 from stem.client.datatype import Size, CertType
@@ -183,7 +182,7 @@ class TestEd25519Certificate(unittest.TestCase):
     exc_msg = 'Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was 2.'
     self.assertRaisesWith(ValueError, exc_msg, Ed25519Certificate.from_base64, certificate(extension_data = [b'\x00\x02\x04\x07\11\12']))
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_validation_with_descriptor_key(self):
     """
     Validate a descriptor signature using the ed25519 master key within the
@@ -195,7 +194,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     desc.certificate.validate(desc)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_validation_with_embedded_key(self):
     """
     Validate a descriptor signature using the signing key within the ed25519
@@ -208,7 +207,7 @@ class TestEd25519Certificate(unittest.TestCase):
     desc.ed25519_master_key = None
     desc.certificate.validate(desc)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_validation_with_invalid_descriptor(self):
     """
     Validate a descriptor without a valid signature.

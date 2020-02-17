@@ -96,7 +96,6 @@ import stem.client
 import stem.descriptor
 import stem.descriptor.networkstatus
 import stem.directory
-import stem.prereq
 import stem.util.enum
 import stem.util.tor_tools
 
@@ -383,10 +382,10 @@ class Query(object):
     elif not isinstance(compression, list):
       compression = [compression]  # caller provided only a single option
 
-    if Compression.ZSTD in compression and not stem.prereq.is_zstd_available():
+    if Compression.ZSTD in compression and not Compression.ZSTD.available:
       compression.remove(Compression.ZSTD)
 
-    if Compression.LZMA in compression and not stem.prereq.is_lzma_available():
+    if Compression.LZMA in compression and not Compression.LZMA.available:
       compression.remove(Compression.LZMA)
 
     if not compression:
@@ -765,10 +764,14 @@ class DescriptorDownloader(object):
     # if we're performing validation then check that it's signed by the
     # authority key certificates
 
-    if consensus_query.validate and consensus_query.document_handler == stem.descriptor.DocumentHandler.DOCUMENT and stem.prereq.is_crypto_available():
+    if consensus_query.validate and consensus_query.document_handler == stem.descriptor.DocumentHandler.DOCUMENT:
       consensus = list(consensus_query.run())[0]
       key_certs = self.get_key_certificates(**query_args).run()
-      consensus.validate_signatures(key_certs)
+
+      try:
+        consensus.validate_signatures(key_certs)
+      except ImportError:
+        pass  # cryptography module unavailable
 
     return consensus_query
 

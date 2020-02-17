@@ -303,11 +303,11 @@ class Circuit(object):
   """
 
   def __init__(self, relay, circ_id, kdf):
-    if not stem.prereq.is_crypto_available():
+    try:
+      from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+      from cryptography.hazmat.backends import default_backend
+    except ImportError:
       raise ImportError('Circuit construction requires the cryptography module')
-
-    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.backends import default_backend
 
     ctr = modes.CTR(ZERO * (algorithms.AES.block_size // 8))
 

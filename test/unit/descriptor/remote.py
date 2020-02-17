@@ -11,7 +11,6 @@ import unittest
 import stem
 import stem.descriptor
 import stem.descriptor.remote
-import stem.prereq
 import stem.util.str_tools
 
 from unittest.mock import patch, Mock, MagicMock
@@ -168,24 +167,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
 
-  def test_zstd_support_check(self):
-    with patch('stem.prereq.is_zstd_available', Mock(return_value = True)):
-      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
-      self.assertEqual([stem.descriptor.Compression.ZSTD], query.compression)
-
-    with patch('stem.prereq.is_zstd_available', Mock(return_value = False)):
-      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.ZSTD, start = False)
-      self.assertEqual([stem.descriptor.Compression.PLAINTEXT], query.compression)
-
-  def test_lzma_support_check(self):
-    with patch('stem.prereq.is_lzma_available', Mock(return_value = True)):
-      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
-      self.assertEqual([stem.descriptor.Compression.LZMA], query.compression)
-
-    with patch('stem.prereq.is_lzma_available', Mock(return_value = False)):
-      query = stem.descriptor.remote.Query(TEST_RESOURCE, compression = Compression.LZMA, start = False)
-      self.assertEqual([stem.descriptor.Compression.PLAINTEXT], query.compression)
-
   @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_identity'), encoding = 'identity'))
   def test_compression_plaintext(self):
     """
@@ -222,7 +203,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a zstd compressed descriptor.
     """
 
-    if not stem.prereq.is_zstd_available():
+    if not Compression.ZSTD.available:
       self.skipTest('(requires zstd module)')
 
     descriptors = list(stem.descriptor.remote.get_server_descriptors(
@@ -240,7 +221,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a lzma compressed descriptor.
     """
 
-    if not stem.prereq.is_lzma_available():
+    if not Compression.LZMA.available:
       self.skipTest('(requires lzma module)')
 
     descriptors = list(stem.descriptor.remote.get_server_descriptors(

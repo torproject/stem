@@ -25,7 +25,6 @@ import subprocess
 import tempfile
 import threading
 
-import stem.prereq
 import stem.util.str_tools
 import stem.util.system
 import stem.version

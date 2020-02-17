@@ -57,7 +57,6 @@ import tempfile
 import urllib.request
 
 import stem
-import stem.prereq
 import stem.util
 import stem.util.conf
 import stem.util.enum
@@ -134,10 +133,10 @@ def query(query, *param):
     * **sqlite3.OperationalError** if query fails
   """
 
-  if not stem.prereq.is_sqlite_available():
+  try:
+    import sqlite3
+  except ImportError:
     raise ImportError('Querying requires the sqlite3 module')
-
-  import sqlite3
 
   # The only reason to explicitly close the sqlite connection is to ensure
   # transactions are committed. Since we're only using read-only access this
@@ -385,13 +384,13 @@ class Manual(object):
         it or the schema is out of date
     """
 
-    if path is None:
-      path = CACHE_PATH
-
-    if not stem.prereq.is_sqlite_available():
+    try:
+      import sqlite3
+    except ImportError:
       raise ImportError('Reading a sqlite cache requires the sqlite3 module')
 
-    import sqlite3
+    if path is None:
+      path = CACHE_PATH
 
     if not os.path.exists(path):
       raise IOError("%s doesn't exist" % path)
@@ -517,10 +516,11 @@ class Manual(object):
       * **IOError** if unsuccessful
     """
 
-    if not stem.prereq.is_sqlite_available():
+    try:
+      import sqlite3
+    except ImportError:
       raise ImportError('Saving a sqlite cache requires the sqlite3 module')
 
-    import sqlite3
     tmp_path = path + '.new'
 
     if os.path.exists(tmp_path):

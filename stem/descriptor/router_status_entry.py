@@ -25,7 +25,6 @@ import binascii
 import io
 
 import stem.exit_policy
-import stem.prereq
 import stem.util.str_tools
 
 from stem.descriptor import (

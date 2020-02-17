@@ -71,7 +71,6 @@ import functools
 import hashlib
 import re
 
-import stem.prereq
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools

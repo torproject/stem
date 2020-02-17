@@ -23,7 +23,6 @@ import datetime
 import re
 import sys
 
-import stem.prereq
 import stem.util
 import stem.util.enum
 

@@ -12,7 +12,6 @@ run.
   |- needs - skips the test unless a requirement is met
   |
   |- cryptography - skips test unless the cryptography module is present
-  |- ed25519_support - skips test unless cryptography has ed25519 support
   |- command - requires a command to be on the path
   |- proc - requires the platform to have recognized /proc contents
   |
@@ -26,6 +25,22 @@ import stem.util.system
 import stem.version
 import test
 import test.runner
+
+try:
+  from cryptography.utils import int_from_bytes, int_to_bytes
+  from cryptography.hazmat.backends import default_backend
+  from cryptography.hazmat.backends.openssl.backend import backend
+  from cryptography.hazmat.primitives.asymmetric import rsa
+  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+  from cryptography.hazmat.primitives.serialization import load_der_public_key
+  from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+
+  if not hasattr(rsa.RSAPrivateKey, 'sign') or not hasattr(backend, 'ed25519_supported') or not backend.ed25519_supported():
+    raise ImportError()
+
+  CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+  CRYPTOGRAPHY_AVAILABLE = False
 
 RAN_TESTS = []
 
@@ -94,8 +109,7 @@ def version(req_version):
   return needs(lambda: test.tor_version() >= req_version, 'requires %s' % req_version)
 
 
-cryptography = needs(stem.prereq.is_crypto_available, 'requires cryptography')
-ed25519_support = needs(lambda: stem.prereq.is_crypto_available(ed25519 = True), 'requires ed25519 support')
+cryptography = needs(lambda: CRYPTOGRAPHY_AVAILABLE, 'requires cryptography')
 proc = needs(stem.util.proc.is_available, 'proc unavailable')
 controller = needs(_can_access_controller, 'no connection')
 ptrace = needs(_can_ptrace, 'DisableDebuggerAttachment is set')

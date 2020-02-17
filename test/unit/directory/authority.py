@@ -7,7 +7,6 @@ import unittest
 
 import stem
 import stem.directory
-import stem.prereq
 
 from unittest.mock import patch, Mock
 

@@ -15,7 +15,6 @@ import threading
 import time
 import unittest
 
-import stem.prereq
 import stem.process
 import stem.socket
 import stem.util.str_tools

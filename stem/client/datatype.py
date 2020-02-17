@@ -140,7 +140,6 @@ import collections
 import hashlib
 
 import stem.client.cell
-import stem.prereq
 import stem.util
 import stem.util.connection
 import stem.util.enum

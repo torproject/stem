@@ -11,7 +11,6 @@ import sys
 
 import stem
 import stem.connection
-import stem.prereq
 import stem.process
 import stem.util.conf
 import stem.util.system

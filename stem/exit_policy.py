@@ -70,7 +70,6 @@ import re
 import socket
 import zlib
 
-import stem.prereq
 import stem.util
 import stem.util.connection
 import stem.util.enum

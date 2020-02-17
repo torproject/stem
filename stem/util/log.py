@@ -50,7 +50,6 @@ them at your own risk.**
 
 import logging
 
-import stem.prereq
 import stem.util.enum
 import stem.util.str_tools
 

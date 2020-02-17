@@ -168,7 +168,6 @@ class TestTutorial(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
-  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
   def test_mirror_mirror_on_the_wall_5(self, downloader_mock, stdout_mock):
     def tutorial_example():
       from stem.descriptor.remote import DescriptorDownloader

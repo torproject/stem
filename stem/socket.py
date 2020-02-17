@@ -78,7 +78,6 @@ import ssl
 import threading
 import time
 
-import stem.prereq
 import stem.response
 import stem.util.str_tools
 

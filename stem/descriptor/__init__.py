@@ -115,7 +115,6 @@ import re
 import string
 import tarfile
 
-import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.str_tools
@@ -205,6 +204,13 @@ class _Compression(object):
       try:
         self._module = __import__(module)
         self.available = True
+
+        # Unfortunately the zstandard module uses the same namespace as another
+        # zstd module (https://pypi.org/project/zstd/), so we need to
+        # differentiate them.
+
+        if module == 'zstd' and not hasattr(self._module, 'ZstdDecompressor'):
+          raise ImportError()
       except ImportError:
         self._module = None
         self.available = False
@@ -1033,12 +1039,12 @@ class Descriptor(object):
     :raises: ValueError if unable to provide a validly signed digest
     """
 
-    if not stem.prereq.is_crypto_available():
+    try:
+      from cryptography.hazmat.backends import default_backend
+      from cryptography.hazmat.primitives.serialization import load_der_public_key
+      from cryptography.utils import int_to_bytes, int_from_bytes
+    except ImportError:
       raise ValueError('Generating the signed digest requires the cryptography module')
-
-    from cryptography.hazmat.backends import default_backend
-    from cryptography.hazmat.primitives.serialization import load_der_public_key
-    from cryptography.utils import int_to_bytes, int_from_bytes
 
     key = load_der_public_key(_bytes_for_block(signing_key), default_backend())
     modulus = key.public_numbers().n
@@ -1334,12 +1340,12 @@ def create_signing_key(private_key = None):
   :raises: **ImportError** if the cryptography module is unavailable
   """
 
-  if not stem.prereq.is_crypto_available():
+  try:
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+  except ImportError:
     raise ImportError('Signing requires the cryptography module')
-
-  from cryptography.hazmat.backends import default_backend
-  from cryptography.hazmat.primitives import serialization
-  from cryptography.hazmat.primitives.asymmetric import rsa
 
   if private_key is None:
     private_key = rsa.generate_private_key(
@@ -1381,11 +1387,11 @@ def _append_router_signature(content, private_key):
   :returns: **bytes** with the signed descriptor content
   """
 
-  if not stem.prereq.is_crypto_available():
+  try:
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.asymmetric import padding
+  except ImportError:
     raise ImportError('Signing requires the cryptography module')
-
-  from cryptography.hazmat.primitives import hashes
-  from cryptography.hazmat.primitives.asymmetric import padding
 
   signature = base64.b64encode(private_key.sign(content, padding.PKCS1v15(), hashes.SHA1()))
   return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])

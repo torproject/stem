@@ -75,7 +75,6 @@ import tarfile
 import threading
 import time
 
-import stem.prereq
 import stem.util
 import stem.util.enum
 import stem.util.proc
@@ -483,7 +482,7 @@ def size_of(obj, exclude = None):
   :raises: **NotImplementedError** if using PyPy
   """
 
-  if stem.prereq.is_pypy():
+  if platform.python_implementation() == 'PyPy':
     raise NotImplementedError('PyPy does not implement sys.getsizeof()')
 
   if exclude is None:

@@ -10,7 +10,6 @@ import unittest
 import stem.client.datatype
 import stem.descriptor
 import stem.descriptor.hidden_service
-import stem.prereq
 
 import test.require
 
@@ -30,7 +29,6 @@ from test.unit.descriptor import (
   base_expect_invalid_attr_for_text,
 )
 
-require_sha3 = test.require.needs(stem.prereq._is_sha3_available, 'requires sha3')
 require_x25519 = test.require.needs(lambda: stem.descriptor.hidden_service.X25519_AVAILABLE, 'requires openssl x5509')
 
 expect_invalid_attr = functools.partial(base_expect_invalid_attr, HiddenServiceDescriptorV3, 'version', 3)
@@ -89,8 +87,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertTrue('eaH8VdaTKS' in desc.superencrypted)
     self.assertEqual('aglChCQF+lbzKgyxJJTpYGVShV/GMDRJ4+cRGCp+a2y/yX/tLSh7hzqI7rVZrUoGj74Xr1CLMYO3fXYCS+DPDQ', desc.signature)
 
-  @require_sha3
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_decryption(self):
     """
     Decrypt our descriptor and validate its content.
@@ -152,7 +149,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key_cert)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_required_fields(self):
     """
     Check that we require the mandatory fields.
@@ -171,7 +168,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       desc_text = HiddenServiceDescriptorV3.content(exclude = (line,))
       expect_invalid_attr_for_text(self, desc_text, line_to_attr[line], None)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_invalid_version(self):
     """
     Checks that our version field expects a numeric value.
@@ -186,7 +183,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'hs-descriptor': test_value}, 'version')
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_invalid_lifetime(self):
     """
     Checks that our lifetime field expects a numeric value.
@@ -201,7 +198,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'descriptor-lifetime': test_value}, 'lifetime')
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_invalid_revision_counter(self):
     """
     Checks that our revision counter field expects a numeric value.
@@ -216,11 +213,9 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     for test_value in test_values:
       expect_invalid_attr(self, {'revision-counter': test_value}, 'revision_counter')
 
-  @require_sha3
   def test_address_from_identity_key(self):
     self.assertEqual(HS_ADDRESS, HiddenServiceDescriptorV3.address_from_identity_key(HS_PUBKEY))
 
-  @require_sha3
   def test_identity_key_from_address(self):
     self.assertEqual(HS_PUBKEY, HiddenServiceDescriptorV3.identity_key_from_address(HS_ADDRESS))
     self.assertRaisesWith(ValueError, "'boom.onion' isn't a valid hidden service v3 address", HiddenServiceDescriptorV3.identity_key_from_address, 'boom')
@@ -249,7 +244,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(INTRO_POINT_STR.rstrip(), intro_point.encode())
 
   @require_x25519
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_intro_point_crypto(self):
     """
     Retrieve IntroductionPointV3 cryptographic materials.
@@ -276,16 +271,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(None, intro_point.legacy_key_raw)
     self.assertEqual(None, intro_point.legacy_key())
 
-  @patch('stem.prereq.is_crypto_available', Mock(return_value = False))
-  def test_intro_point_crypto_without_prereq(self):
-    """
-    Fetch cryptographic materials when the module is unavailable.
-    """
-
-    intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
-    self.assertRaisesWith(ImportError, 'cryptography module unavailable', intro_point.onion_key)
-
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_intro_point_creation(self):
     """
     Create an introduction point, encode it, then re-parse.
@@ -301,7 +287,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     reparsed = IntroductionPointV3.parse(intro_point.encode())
     self.assertEqual(intro_point, reparsed)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_inner_layer_creation(self):
     """
     Internal layer creation.
@@ -344,7 +330,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       IntroductionPointV3.create_for_address('1.1.1.1', 9001),
     ]).startswith(b'create2-formats 2\nintroduction-point AQAGAQEBASMp'))
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_outer_layer_creation(self):
     """
     Outer layer creation.
@@ -402,7 +388,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(1, len(inner_layer.introduction_points))
     self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_descriptor_creation(self):
     """
     HiddenServiceDescriptorV3 creation.
@@ -451,7 +437,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
     self.assertEqual(3, len(inner_layer.introduction_points))
     self.assertEqual('1.1.1.1', inner_layer.introduction_points[0].link_specifiers[0].address)
 
-  @test.require.ed25519_support
+  @test.require.cryptography
   def test_blinding(self):
     """
     Create a descriptor with key blinding.
