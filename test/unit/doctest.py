@@ -119,6 +119,12 @@ class TestDocumentation(unittest.TestCase):
       elif path.endswith('/stem/version.py'):
         with patch('stem.version.get_system_tor_version', Mock(return_value = stem.version.Version('0.2.1.30'))):
           test_run = doctest.testfile(path, **args)
+      elif path.endswith('/stem/manual.py'):
+        try:
+          import sqlite3
+          test_run = doctest.testfile(path, **args)
+        except ImportError:
+          pass  # manual module requires sqlite3
       else:
         test_run = doctest.testfile(path, **args)
 

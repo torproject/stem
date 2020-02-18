@@ -135,7 +135,7 @@ def query(query, *param):
 
   try:
     import sqlite3
-  except ImportError:
+  except (ImportError, ModuleNotFoundError):
     raise ImportError('Querying requires the sqlite3 module')
 
   # The only reason to explicitly close the sqlite connection is to ensure
@@ -386,7 +386,7 @@ class Manual(object):
 
     try:
       import sqlite3
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
       raise ImportError('Reading a sqlite cache requires the sqlite3 module')
 
     if path is None:
@@ -518,7 +518,7 @@ class Manual(object):
 
     try:
       import sqlite3
-    except ImportError:
+    except (ImportError, ModuleNotFoundError):
       raise ImportError('Saving a sqlite cache requires the sqlite3 module')
 
     tmp_path = path + '.new'

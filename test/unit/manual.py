@@ -5,7 +5,6 @@ Unit testing for the stem.manual module.
 import collections
 import io
 import os
-import sqlite3
 import tempfile
 import unittest
 import urllib.request
@@ -90,13 +89,18 @@ def _cached_manual():
 
 
 class TestManual(unittest.TestCase):
+  @test.require.module('sqlite3')
   def test_query(self):
     self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name="CookieAuthFile"').fetchone()[0])
     self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name=?', 'CookieAuthFile').fetchone()[0])
 
+  @test.require.module('sqlite3')
   def test_query_on_failure(self):
+    import sqlite3
+
     self.assertRaisesWith(sqlite3.OperationalError, 'near "hello": syntax error', stem.manual.query, 'hello world')
 
+  @test.require.module('sqlite3')
   def test_has_all_summaries(self):
     """
     Check that we have brief, human readable summaries for all of tor's
@@ -182,6 +186,7 @@ class TestManual(unittest.TestCase):
     self.assertEqual('Description of this new option.', option.description)
 
   @test.require.command('man')
+  @test.require.module('sqlite3')
   def test_saving_manual_as_config(self):
     """
     Check that we can save and reload manuals as a config.
@@ -198,6 +203,7 @@ class TestManual(unittest.TestCase):
       self.assertEqual(manual, loaded_manual)
 
   @test.require.command('man')
+  @test.require.module('sqlite3')
   def test_saving_manual_as_sqlite(self):
     """
     Check that we can save and reload manuals as sqlite.
@@ -213,6 +219,7 @@ class TestManual(unittest.TestCase):
       loaded_manual = stem.manual.Manual.from_cache(tmp.name)
       self.assertEqual(manual, loaded_manual)
 
+  @test.require.module('sqlite3')
   def test_cached_manual(self):
     manual = _cached_manual()
 

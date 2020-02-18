@@ -99,6 +99,20 @@ def command(cmd):
   return needs(lambda: stem.util.system.is_available(cmd), '%s unavailable' % cmd)
 
 
+def module(module_name):
+  """
+  Skip test unless this module is available.
+  """
+
+  try:
+    import module_name
+    available = True
+  except ImportError:
+    available = False
+
+  return needs(lambda: available, '%s unavailable' % module_name)
+
+
 def version(req_version):
   """
   Skips the test unless we meet the required version.
