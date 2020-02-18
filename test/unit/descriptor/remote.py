@@ -12,6 +12,7 @@ import stem
 import stem.descriptor
 import stem.descriptor.remote
 import stem.util.str_tools
+import test.require
 
 from unittest.mock import patch, Mock, MagicMock
 
@@ -114,6 +115,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     reply = stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.ORPort('12.34.56.78', 1100)],
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     )
 
     self.assertEqual(1, len(list(reply)))
@@ -137,12 +139,14 @@ class TestDescriptorDownloader(unittest.TestCase):
         stem.descriptor.remote.their_server_descriptor(
           endpoints = [stem.ORPort('12.34.56.78', 1100)],
           validate = True,
+          skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
         ).run()
 
     with patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR, response_code_header = b'HTTP/1.0 500 Kaboom\r\n')):
       request = stem.descriptor.remote.their_server_descriptor(
         endpoints = [stem.ORPort('12.34.56.78', 1100)],
         validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
       )
 
       self.assertRaisesRegexp(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
@@ -156,6 +160,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     reply = stem.descriptor.remote.their_server_descriptor(
       endpoints = [stem.DirPort('12.34.56.78', 1100)],
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     )
 
     self.assertEqual(1, len(list(reply)))
@@ -177,6 +182,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.PLAINTEXT,
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     ))
 
     self.assertEqual(1, len(descriptors))
@@ -192,6 +198,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.GZIP,
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     ))
 
     self.assertEqual(1, len(descriptors))
@@ -285,6 +292,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       endpoints = [stem.DirPort('128.31.0.39', 9131)],
       compression = Compression.PLAINTEXT,
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     )
 
     self.assertEqual(stem.DirPort('128.31.0.39', 9131), query._pick_endpoint())
@@ -366,6 +374,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       endpoints = [stem.DirPort('128.31.0.39', 9131)],
       compression = Compression.PLAINTEXT,
       validate = True,
+      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     )
 
     # check that iterating over the query provides the descriptors each time

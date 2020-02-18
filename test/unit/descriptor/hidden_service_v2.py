@@ -250,7 +250,7 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     """
 
     with open(get_resource('hidden_service_duckduckgo'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True, skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE))
       self._assert_matches_duckduckgo(desc)
 
   def test_for_duckduckgo_without_validation(self):
@@ -268,7 +268,7 @@ class TestHiddenServiceDescriptorV2(unittest.TestCase):
     """
 
     with open(get_resource('hidden_service_facebook'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(descriptor_file, 'hidden-service-descriptor 1.0', validate = True, skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE))
 
     self.assertEqual('utjk4arxqg6s6zzo7n6cjnq6ot34udhr', desc.descriptor_id)
     self.assertEqual(2, desc.version)

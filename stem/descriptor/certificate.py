@@ -247,6 +247,9 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
   :param bytes signature: pre-calculated certificate signature
   :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: certificate signing key
+
+  :raises: **ImportError** if key is a cryptographic type and ed25519 support
+    is unavailable
   """
 
   def __init__(self, cert_type = None, expiration = None, key_type = None, key = None, extensions = None, signature = None, signing_key = None):
@@ -364,7 +367,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     :raises:
       * **ValueError** if signing key or descriptor are invalid
       * **TypeError** if descriptor type is unsupported
-      * **ImportError** if cryptography module or ed25519 support unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
     """
 
     import stem.descriptor.server_descriptor
@@ -373,7 +376,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
       from cryptography.exceptions import InvalidSignature
     except ImportError:
-      raise ImportError('Certificate validation requires the cryptography module and ed25519 support')
+      raise ImportError('Certificate validation requires cryptography 2.6 or later')
 
     if isinstance(descriptor, stem.descriptor.server_descriptor.RelayDescriptor):
       signed_content = hashlib.sha256(Ed25519CertificateV1._signed_content(descriptor)).digest()

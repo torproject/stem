@@ -170,7 +170,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('old_descriptor'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        'server-descriptor 1.0',
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      ))
 
     self.assertEqual('krypton', desc.nickname)
     self.assertEqual('3E2F63E2356F52318B536A12B6445373808A5D6C', desc.fingerprint)
@@ -219,7 +224,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('non-ascii_descriptor'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        'server-descriptor 1.0',
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      ))
 
     self.assertEqual('Coruscant', desc.nickname)
     self.assertEqual('0B9821545C48E496AEED9ECC0DB506C49FF8158D', desc.fingerprint)
@@ -307,7 +317,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True)).make_router_status_entry()
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      )).make_router_status_entry()
 
     self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3, type(desc))
     self.assertEqual('destiny', desc.nickname)
@@ -339,7 +353,11 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('server_descriptor_with_ed25519'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, validate = True))
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      ))
 
     family = set([
       '$379FB450010D17078B3766C2273303C358C3A442',
@@ -434,7 +452,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('cr_in_contact_line'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        'server-descriptor 1.0',
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      ))
 
     self.assertEqual('pogonip', desc.nickname)
     self.assertEqual('6DABD62BC65D4E6FE620293157FC76968DAB9C9B', desc.fingerprint)
@@ -456,7 +479,12 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     """
 
     with open(get_resource('negative_uptime'), 'rb') as descriptor_file:
-      desc = next(stem.descriptor.parse_file(descriptor_file, 'server-descriptor 1.0', validate = True))
+      desc = next(stem.descriptor.parse_file(
+        descriptor_file,
+        'server-descriptor 1.0',
+        validate = True,
+        skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
+      ))
 
     self.assertEqual('TipTor', desc.nickname)
     self.assertEqual('137962D4931DBF08A24E843288B8A155D6D2AEDD', desc.fingerprint)

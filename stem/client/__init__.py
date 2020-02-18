@@ -300,6 +300,8 @@ class Circuit(object):
   :var hashlib.sha1 backward_digest: digest for backward integrity check
   :var bytes forward_key: forward encryption key
   :var bytes backward_key: backward encryption key
+
+  :raises: **ImportError** if the cryptography module is unavailable
   """
 
   def __init__(self, relay, circ_id, kdf):

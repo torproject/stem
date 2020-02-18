@@ -91,7 +91,7 @@ def _pubkey_bytes(key):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
     from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
   except ImportError:
-    raise ImportError('Key normalization requires the cryptography module with ed25519 support')
+    raise ImportError('Key normalization requires cryptography 2.6 or later')
 
   if isinstance(key, (X25519PrivateKey, Ed25519PrivateKey)):
     return key.public_key().public_bytes(

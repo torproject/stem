@@ -214,7 +214,9 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
 
-    :raises: **ValueError** if the address, port, or keys are malformed
+    :raises:
+      * **ValueError** if the address, port, or keys are malformed
+      * **ImportError** if cryptography module with ed25519 support is unavailable
     """
 
     if not stem.util.connection.is_valid_port(port):
@@ -244,14 +246,16 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
 
-    :raises: **ValueError** if the address, port, or keys are malformed
+    :raises:
+      * **ValueError** if the address, port, or keys are malformed
+      * **ImportError** if cryptography module with ed25519 support is unavailable
     """
 
     try:
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
       from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
     except ImportError:
-      raise ImportError('Introduction point creation requires the cryptography module ed25519 support')
+      raise ImportError('Introduction point creation requires cryptography 2.6 or later')
 
     if expiration is None:
       expiration = datetime.datetime.utcnow() + datetime.timedelta(hours = stem.descriptor.certificate.DEFAULT_EXPIRATION_HOURS)
@@ -302,7 +306,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :returns: ntor :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
 
     :raises:
-      * **ImportError** if required the cryptography module is unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
@@ -315,7 +319,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :returns: :class:`~cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey`
 
     :raises:
-      * **ImportError** if required the cryptography module is unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
@@ -328,7 +332,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :returns: encryption :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
 
     :raises:
-      * **ImportError** if required the cryptography module is unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
@@ -341,7 +345,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     :returns: legacy :class:`~cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey`
 
     :raises:
-      * **ImportError** if required the cryptography module is unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
       * **EnvironmentError** if OpenSSL x25519 unsupported
     """
 
@@ -356,7 +360,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
     except ImportError:
-      raise ImportError('cryptography module unavailable')
+      raise ImportError('Key parsing requires cryptography 2.6 or later')
 
     if x25519:
       if not X25519_AVAILABLE:
@@ -507,8 +511,11 @@ def _encrypt_layer(plaintext, constant, revision_counter, subcredential, blinded
 
 
 def _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt):
-  from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-  from cryptography.hazmat.backends import default_backend
+  try:
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+  except ImportError:
+    raise ImportError('Layer encryption/decryption requires the cryptography module')
 
   kdf = hashlib.shake_256(blinded_key + subcredential + struct.pack('>Q', revision_counter) + salt + constant)
   keys = kdf.digest(S_KEY_LEN + S_IV_LEN + MAC_LEN)
@@ -964,13 +971,13 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
     :raises:
       * **ValueError** if parameters are malformed
-      * **ImportError** if cryptography is unavailable
+      * **ImportError** if cryptography module with ed25519 support is unavailable
     """
 
     try:
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     except ImportError:
-      raise ImportError('Hidden service descriptor creation requires cryptography version 2.6')
+      raise ImportError('Hidden service descriptor creation requires cryptography 2.6 or later')
 
     if blinding_nonce and len(blinding_nonce) != 32:
       raise ValueError('Blinding nonce must be 32 bytes, but was %i' % len(blinding_nonce))
@@ -1058,9 +1065,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     :returns: :class:`~stem.descriptor.hidden_service.InnerLayer` with our
       decrypted content
 
-    :raises:
-      * **ImportError** if required cryptography or sha3 module is unavailable
-      * **ValueError** if unable to decrypt or validation fails
+    :raises: **ValueError** if unable to decrypt or validation fails
     """
 
     if self._inner_layer is None:
@@ -1091,7 +1096,8 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
     :returns: **unicode** hidden service address
 
-    :raises: **ImportError** if sha3 unsupported
+    :raises: **ImportError** if key is a cryptographic type and ed25519 support
+      is unavailable
     """
 
     key = stem.util._pubkey_bytes(key)  # normalize key into bytes
@@ -1111,9 +1117,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
     :returns: **bytes** for the hidden service's public identity key
 
-    :raises:
-      * **ImportError** if sha3 unsupported
-      * **ValueError** if address malformed or checksum is invalid
+    :raises: **ValueError** if address malformed or checksum is invalid
     """
 
     if onion_address.endswith('.onion'):
@@ -1202,7 +1206,7 @@ class OuterLayer(Descriptor):
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
       from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
     except ImportError:
-      raise ImportError('Hidden service layer creation requires cryptography version 2.6')
+      raise ImportError('Hidden service layer creation requires cryptography 2.6 or later')
 
     if authorized_clients and 'auth-client' in attr:
       raise ValueError('Authorized clients cannot be specified through both attr and authorized_clients')
@@ -1336,7 +1340,11 @@ def _blinded_pubkey(identity_key, blinding_nonce):
 
 
 def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
-  from cryptography.hazmat.primitives import serialization
+  try:
+    from cryptography.hazmat.primitives import serialization
+  except ImportError:
+    raise ImportError('Key signing requires the cryptography module')
+
   from stem.util import ed25519
 
   identity_key_bytes = identity_key.private_bytes(
