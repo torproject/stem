@@ -6,8 +6,8 @@ Parsing for `Tor Ed25519 certificates
 <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, which are
 used to for a variety of purposes...
 
-  * validating the key used to sign server descriptors
-  * validating the key used to sign hidden service v3 descriptors
+  * validate the signing key of server descriptors
+  * validate the signing key of hidden service v3 descriptors
   * signing and encrypting hidden service v3 indroductory points
 
 .. versionadded:: 1.6.0
@@ -185,9 +185,7 @@ class Ed25519Certificate(object):
       if not decoded:
         raise TypeError('empty')
 
-      instance = Ed25519Certificate.unpack(decoded)
-      instance.encoded = content
-      return instance
+      return Ed25519Certificate.unpack(decoded)
     except (TypeError, binascii.Error) as exc:
       raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
@@ -236,7 +234,7 @@ class Ed25519Certificate(object):
 
 class Ed25519CertificateV1(Ed25519Certificate):
   """
-  Version 1 Ed25519 certificate, which are used for signing tor server
+  Version 1 Ed25519 certificate, which sign tor server and hidden service v3
   descriptors.
 
   :var stem.client.datatype.CertType type: certificate purpose
@@ -381,7 +379,21 @@ class Ed25519CertificateV1(Ed25519Certificate):
       signed_content = hashlib.sha256(Ed25519CertificateV1._signed_content(descriptor)).digest()
       signature = stem.util.str_tools._decode_b64(descriptor.ed25519_signature)
 
-      self._validate_server_desc_signing_key(descriptor)
+      # verify that we're created from this descriptor's signing key
+
+      if descriptor.ed25519_master_key:
+        signing_key = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'=')
+      else:
+        signing_key = self.signing_key()
+
+      if not signing_key:
+        raise ValueError('Server descriptor missing an ed25519 signing key')
+
+      try:
+        key = Ed25519PublicKey.from_public_bytes(signing_key)
+        key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.to_base64()))[:-ED25519_SIGNATURE_LENGTH])
+      except InvalidSignature:
+        raise ValueError('Ed25519KeyCertificate signing key is invalid (signature forged or corrupt)')
     elif isinstance(descriptor, stem.descriptor.hidden_service.HiddenServiceDescriptorV3):
       signed_content = Ed25519CertificateV1._signed_content(descriptor)
       signature = stem.util.str_tools._decode_b64(descriptor.signature)
@@ -418,21 +430,3 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Malformed descriptor missing signature line')
 
     return prefix + match.group(1)
-
-  def _validate_server_desc_signing_key(self, descriptor):
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
-    from cryptography.exceptions import InvalidSignature
-
-    if descriptor.ed25519_master_key:
-      signing_key = base64.b64decode(stem.util.str_tools._to_bytes(descriptor.ed25519_master_key) + b'=')
-    else:
-      signing_key = self.signing_key()
-
-    if not signing_key:
-      raise ValueError('Server descriptor missing an ed25519 signing key')
-
-    try:
-      key = Ed25519PublicKey.from_public_bytes(signing_key)
-      key.verify(self.signature, base64.b64decode(stem.util.str_tools._to_bytes(self.encoded))[:-ED25519_SIGNATURE_LENGTH])
-    except InvalidSignature:
-      raise ValueError('Ed25519KeyCertificate signing key is invalid (signature forged or corrupt)')

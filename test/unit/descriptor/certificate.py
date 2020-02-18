@@ -58,7 +58,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
-    self.assertEqual(stem.util.str_tools._to_unicode(cert_bytes), cert.encoded)
+    self.assertEqual(stem.util.str_tools._to_unicode(cert_bytes), cert.to_base64().replace('\n', ''))
     self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(1970, 1, 1, 0, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
@@ -82,7 +82,7 @@ class TestEd25519Certificate(unittest.TestCase):
 
     self.assertEqual(Ed25519CertificateV1, type(cert))
     self.assertEqual(1, cert.version)
-    self.assertEqual(ED25519_CERT, cert.encoded)
+    self.assertEqual(ED25519_CERT, cert.to_base64())
     self.assertEqual(CertType.ED25519_SIGNING, cert.type)
     self.assertEqual(datetime.datetime(2015, 8, 28, 17, 0), cert.expiration)
     self.assertEqual(1, cert.key_type)
@@ -109,8 +109,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     cert = Ed25519Certificate.from_base64(ED25519_CERT)
-    self.assertEqual(ED25519_CERT, cert.encoded)  # read base64 encoding (getting removed in stem 2.x)
-    self.assertEqual(ED25519_CERT, cert.to_base64())  # computed base64 encoding
+    self.assertEqual(ED25519_CERT, cert.to_base64())
 
   def test_non_base64(self):
     """

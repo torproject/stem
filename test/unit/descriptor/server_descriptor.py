@@ -355,7 +355,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertTrue(desc.certificate.key.startswith(b'\xa5\xb6\x1a\x80D\x0f'))
     self.assertTrue(desc.certificate.signature.startswith(b'\xc6\x8e\xd3\xae\x0b'))
     self.assertEqual(1, len(desc.certificate.extensions))
-    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.certificate.encoded)
+    self.assertTrue('bWPo2fIzo3uOywfoM' in desc.certificate.to_base64())
 
     extension = desc.certificate.extensions[0]
     self.assertEqual(ExtensionType.HAS_SIGNING_KEY, extension.type)
