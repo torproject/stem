@@ -206,88 +206,13 @@ class Version(object):
 
   def __gt__(self, other):
     """
-    Checks if this version meets the requirements for a given feature. We can
-    be compared to either a :class:`~stem.version.Version` or
-    :class:`~stem.version._VersionRequirements`.
+    Checks if this version meets the requirements for a given feature.
     """
-
-    if isinstance(other, _VersionRequirements):
-      for rule in other.rules:
-        if rule(self):
-          return True
-
-      return False
 
     return self._compare(other, lambda s, o: s > o)
 
   def __ge__(self, other):
-    if isinstance(other, _VersionRequirements):
-      for rule in other.rules:
-        if rule(self):
-          return True
-
-      return False
-
     return self._compare(other, lambda s, o: s >= o)
-
-
-class _VersionRequirements(object):
-  """
-  Series of version constraints that can be compared to. For instance, this
-  allows for comparisons like 'if I'm greater than version X in the 0.2.2
-  series, or greater than version Y in the 0.2.3 series'.
-
-  This is a logical 'or' of the series of rules.
-  """
-
-  def __init__(self):
-    self.rules = []
-
-  def greater_than(self, version, inclusive = True):
-    """
-    Adds a constraint that we're greater than the given version.
-
-    :param stem.version.Version version: version we're checking against
-    :param bool inclusive: if comparison is inclusive or not
-    """
-
-    if inclusive:
-      self.rules.append(lambda v: version <= v)
-    else:
-      self.rules.append(lambda v: version < v)
-
-  def less_than(self, version, inclusive = True):
-    """
-    Adds a constraint that we're less than the given version.
-
-    :param stem.version.Version version: version we're checking against
-    :param bool inclusive: if comparison is inclusive or not
-    """
-
-    if inclusive:
-      self.rules.append(lambda v: version >= v)
-    else:
-      self.rules.append(lambda v: version > v)
-
-  def in_range(self, from_version, to_version, from_inclusive = True, to_inclusive = False):
-    """
-    Adds constraint that we're within the range from one version to another.
-
-    :param stem.version.Version from_version: beginning of the comparison range
-    :param stem.version.Version to_version: end of the comparison range
-    :param bool from_inclusive: if comparison is inclusive with the starting version
-    :param bool to_inclusive: if comparison is inclusive with the ending version
-    """
-
-    def new_rule(v):
-      if from_inclusive and to_inclusive:
-        return from_version <= v <= to_version
-      elif from_inclusive:
-        return from_version <= v < to_version
-      else:
-        return from_version < v < to_version
-
-    self.rules.append(new_rule)
 
 
 Requirement = stem.util.enum.Enum(
