@@ -275,7 +275,7 @@ class BuildTimeoutSetEvent(Event):
     'CLOSE_MS': 'close_timeout',
     'CLOSE_RATE': 'close_rate',
   }
-  _VERSION_ADDED = stem.version.Requirement.EVENT_BUILDTIMEOUT_SET
+  _VERSION_ADDED = stem.version.Version('0.2.2.7-alpha')
 
   def _parse(self):
     # convert our integer and float parameters
@@ -412,7 +412,7 @@ class CircMinorEvent(Event):
     'OLD_PURPOSE': 'old_purpose',
     'OLD_HS_STATE': 'old_hs_state',
   }
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_MINOR
+  _VERSION_ADDED = stem.version.Version('0.2.3.11-alpha')
 
   def _parse(self):
     self.path = tuple(stem.control._parse_circ_path(self.path))
@@ -448,7 +448,7 @@ class ClientsSeenEvent(Event):
     'CountrySummary': 'locales',
     'IPVersions': 'ip_versions',
   }
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CLIENTS_SEEN
+  _VERSION_ADDED = stem.version.Version('0.2.1.10-alpha')
 
   def _parse(self):
     if self.start_time is not None:
@@ -507,7 +507,7 @@ class ConfChangedEvent(Event):
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CONF_CHANGED
+  _VERSION_ADDED = stem.version.Version('0.2.3.3-alpha')
 
   def _parse(self):
     self.changed = {}
@@ -538,7 +538,7 @@ class DescChangedEvent(Event):
   The DESCCHANGED event was introduced in tor version 0.1.2.2-alpha.
   """
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_DESCCHANGED
+  _VERSION_ADDED = stem.version.Version('0.1.2.2-alpha')
 
 
 class GuardEvent(Event):
@@ -560,7 +560,7 @@ class GuardEvent(Event):
   :var stem.GuardStatus status: status of the guard relay
   """
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_GUARD
+  _VERSION_ADDED = stem.version.Version('0.1.2.5-alpha')
   _POSITIONAL_ARGS = ('guard_type', 'endpoint', 'status')
 
   def _parse(self):
@@ -606,7 +606,7 @@ class HSDescEvent(Event):
   :var str index: computed index of the HSDir the descriptor was uploaded to or fetched from
   """
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC
+  _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
   _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
   _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica', 'HSDIR_INDEX': 'index'}
 
@@ -647,7 +647,7 @@ class HSDescContentEvent(Event):
   :var stem.descriptor.hidden_service.HiddenServiceDescriptorV2 descriptor: descriptor that was retrieved
   """
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_HS_DESC_CONTENT
+  _VERSION_ADDED = stem.version.Version('0.2.7.1-alpha')
   _POSITIONAL_ARGS = ('address', 'descriptor_id', 'directory')
 
   def _parse(self):
@@ -707,7 +707,7 @@ class NetworkStatusEvent(Event):
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Requirement.EVENT_NS
+  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
   def _parse(self):
     content = str(self).lstrip('NS\n').rstrip('\nOK')
@@ -731,7 +731,7 @@ class NetworkLivenessEvent(Event):
     statuses in the future)
   """
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_NETWORK_LIVENESS
+  _VERSION_ADDED = stem.version.Version('0.2.7.2-alpha')
   _POSITIONAL_ARGS = ('status',)
 
 
@@ -751,7 +751,7 @@ class NewConsensusEvent(Event):
   """
 
   _SKIP_PARSING = True
-  _VERSION_ADDED = stem.version.Requirement.EVENT_NEWCONSENSUS
+  _VERSION_ADDED = stem.version.Version('0.2.1.13-alpha')
 
   def _parse(self):
     self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
@@ -885,7 +885,7 @@ class SignalEvent(Event):
   """
 
   _POSITIONAL_ARGS = ('signal',)
-  _VERSION_ADDED = stem.version.Requirement.EVENT_SIGNAL
+  _VERSION_ADDED = stem.version.Version('0.2.3.1-alpha')
 
   def _parse(self):
     # log if we recieved an unrecognized signal
@@ -917,7 +917,7 @@ class StatusEvent(Event):
   """
 
   _POSITIONAL_ARGS = ('runlevel', 'action')
-  _VERSION_ADDED = stem.version.Requirement.EVENT_STATUS
+  _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
   def _parse(self):
     if self.type == 'STATUS_GENERAL':
@@ -1028,7 +1028,7 @@ class StreamBwEvent(Event):
   """
 
   _POSITIONAL_ARGS = ('id', 'written', 'read', 'time')
-  _VERSION_ADDED = stem.version.Requirement.EVENT_STREAM_BW
+  _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
 
   def _parse(self):
     if not tor_tools.is_valid_stream_id(self.id):
@@ -1061,7 +1061,7 @@ class TransportLaunchedEvent(Event):
   """
 
   _POSITIONAL_ARGS = ('type', 'name', 'address', 'port')
-  _VERSION_ADDED = stem.version.Requirement.EVENT_TRANSPORT_LAUNCHED
+  _VERSION_ADDED = stem.version.Version('0.2.5.0-alpha')
 
   def _parse(self):
     if self.type not in ('server', 'client'):
@@ -1103,7 +1103,7 @@ class ConnectionBandwidthEvent(Event):
     'WRITTEN': 'written',
   }
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CONN_BW
+  _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
   def _parse(self):
     if not self.id:
@@ -1162,7 +1162,7 @@ class CircuitBandwidthEvent(Event):
     'TIME': 'time',
   }
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CIRC_BW
+  _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
   def _parse(self):
     if not self.id:
@@ -1232,7 +1232,7 @@ class CellStatsEvent(Event):
     'OutboundTime': 'outbound_time',
   }
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_CELL_STATS
+  _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
   def _parse(self):
     if self.id and not tor_tools.is_valid_circuit_id(self.id):
@@ -1278,7 +1278,7 @@ class TokenBucketEmptyEvent(Event):
     'LAST': 'last_refill',
   }
 
-  _VERSION_ADDED = stem.version.Requirement.EVENT_TB_EMPTY
+  _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
   def _parse(self):
     if self.id and not tor_tools.is_valid_connection_id(self.id):

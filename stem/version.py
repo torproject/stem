@@ -26,32 +26,12 @@ easily parsed and compared, for instance...
 
   Enumerations for the version requirements of features.
 
-  ===================================== ===========
-  Requirement                           Description
-  ===================================== ===========
-  **DORMANT_MODE**                      **DORMANT** and **ACTIVE** :data:`~stem.Signal`
-  **EVENT_AUTHDIR_NEWDESCS**            AUTHDIR_NEWDESC events
-  **EVENT_BUILDTIMEOUT_SET**            BUILDTIMEOUT_SET events
-  **EVENT_CIRC_MINOR**                  CIRC_MINOR events
-  **EVENT_CLIENTS_SEEN**                CLIENTS_SEEN events
-  **EVENT_CONF_CHANGED**                CONF_CHANGED events
-  **EVENT_DESCCHANGED**                 DESCCHANGED events
-  **EVENT_GUARD**                       GUARD events
-  **EVENT_HS_DESC_CONTENT**             HS_DESC_CONTENT events
-  **EVENT_NETWORK_LIVENESS**            NETWORK_LIVENESS events
-  **EVENT_NEWCONSENSUS**                NEWCONSENSUS events
-  **EVENT_NS**                          NS events
-  **EVENT_SIGNAL**                      SIGNAL events
-  **EVENT_STATUS**                      STATUS_GENERAL, STATUS_CLIENT, and STATUS_SERVER events
-  **EVENT_STREAM_BW**                   STREAM_BW events
-  **EVENT_TRANSPORT_LAUNCHED**          TRANSPORT_LAUNCHED events
-  **EVENT_CONN_BW**                     CONN_BW events
-  **EVENT_CIRC_BW**                     CIRC_BW events
-  **EVENT_CELL_STATS**                  CELL_STATS events
-  **EVENT_TB_EMPTY**                    TB_EMPTY events
-  **EVENT_HS_DESC**                     HS_DESC events
-  **HSFETCH_V3**                        HSFETCH for version 3 hidden services
-  ===================================== ===========
+  ===================== ===========
+  Requirement           Description
+  ===================== ===========
+  **DORMANT_MODE**      **DORMANT** and **ACTIVE** :data:`~stem.Signal`
+  **HSFETCH_V3**        HSFETCH for version 3 hidden services
+  ===================== ===========
 """
 
 import functools
@@ -312,25 +292,5 @@ class _VersionRequirements(object):
 
 Requirement = stem.util.enum.Enum(
   ('DORMANT_MODE', Version('0.4.0.1-alpha')),
-  ('EVENT_AUTHDIR_NEWDESCS', Version('0.1.1.10-alpha')),
-  ('EVENT_BUILDTIMEOUT_SET', Version('0.2.2.7-alpha')),
-  ('EVENT_CIRC_MINOR', Version('0.2.3.11-alpha')),
-  ('EVENT_CLIENTS_SEEN', Version('0.2.1.10-alpha')),
-  ('EVENT_CONF_CHANGED', Version('0.2.3.3-alpha')),
-  ('EVENT_DESCCHANGED', Version('0.1.2.2-alpha')),
-  ('EVENT_GUARD', Version('0.1.2.5-alpha')),
-  ('EVENT_HS_DESC_CONTENT', Version('0.2.7.1-alpha')),
-  ('EVENT_NS', Version('0.1.2.3-alpha')),
-  ('EVENT_NETWORK_LIVENESS', Version('0.2.7.2-alpha')),
-  ('EVENT_NEWCONSENSUS', Version('0.2.1.13-alpha')),
-  ('EVENT_SIGNAL', Version('0.2.3.1-alpha')),
-  ('EVENT_STATUS', Version('0.1.2.3-alpha')),
-  ('EVENT_STREAM_BW', Version('0.1.2.8-beta')),
-  ('EVENT_TRANSPORT_LAUNCHED', Version('0.2.5.0-alpha')),
-  ('EVENT_CONN_BW', Version('0.2.5.2-alpha')),
-  ('EVENT_CIRC_BW', Version('0.2.5.2-alpha')),
-  ('EVENT_CELL_STATS', Version('0.2.5.2-alpha')),
-  ('EVENT_TB_EMPTY', Version('0.2.5.2-alpha')),
-  ('EVENT_HS_DESC', Version('0.2.5.2-alpha')),
   ('HSFETCH_V3', Version('0.4.1.1-alpha')),
 )
