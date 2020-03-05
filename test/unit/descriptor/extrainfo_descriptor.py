@@ -643,6 +643,23 @@ k0d2aofcVbHr4fPQOSST0LXDrhFl5Fqo5um296zpJGvRUeO6S44U/EfJAGShtqWw
         expect_invalid_attr(self, {keyword: entry}, stat_attr)
         expect_invalid_attr(self, {keyword: entry}, extra_attr, {})
 
+  def test_transport(self):
+    """
+    These lines are only applicable in raw bridge descriptors, which are
+    unavailable to the public. That said, misconfigured relays can occasionally
+    emit these.
+    """
+
+    desc = RelayExtraInfoDescriptor.create({'transport': 'obfs4 [2001:985:e77:5:fd34:f56b:c2d1:e98c]:10394 cert=dJ/a+vnP/WA,iat-mode=0'})
+
+    self.assertEqual({'obfs4': (
+      '[2001:985:e77:5:fd34:f56b:c2d1:e98c]',
+      10394,
+      ['cert=dJ/a+vnP/WA,iat-mode=0'],
+    )}, desc.transport)
+
+    expect_invalid_attr(self, {'transport': 'obfs4 invalid_address:123'}, 'transport', {})
+
   def test_padding_counts(self):
     """
     Check the 'hidserv-dir-onions-seen' lines.

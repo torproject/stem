@@ -286,7 +286,7 @@ def _parse_transport_line(descriptor, entries):
       name = value_comp[0]
       address, port_str = value_comp[1].rsplit(':', 1)
 
-      if not stem.util.connection.is_valid_ipv4_address(address) or \
+      if not stem.util.connection.is_valid_ipv4_address(address) and not \
              stem.util.connection.is_valid_ipv6_address(address, allow_brackets = True):
         raise ValueError('Transport line has a malformed address: transport %s' % value)
       elif not stem.util.connection.is_valid_port(port_str):
