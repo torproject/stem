@@ -951,8 +951,6 @@ class TestController(unittest.TestCase):
 
     with runner.get_tor_controller() as controller:
       self.assertTrue(controller.is_feature_enabled('VERBOSE_NAMES'))
-
-      self.assertTrue('VERBOSE_NAMES' in controller._enabled_features)
       self.assertRaises(stem.InvalidArguments, controller.enable_feature, ['NOT', 'A', 'FEATURE'])
 
       try:
@@ -1066,7 +1064,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
     with runner.get_tor_controller() as controller:
       # we only need one proxy port, so take the first
-      socks_listener = controller.get_socks_listeners()[0]
+      socks_listener = controller.get_listeners(Listener.SOCKS)[0]
 
       with test.network.Socks(socks_listener) as s:
         s.settimeout(30)
@@ -1090,7 +1088,7 @@ class TestController(unittest.TestCase):
     with runner.get_tor_controller() as controller:
       # use the first socks listener
 
-      socks_listener = controller.get_socks_listeners()[0]
+      socks_listener = controller.get_listeners(Listener.SOCKS)[0]
 
       with test.network.Socks(socks_listener) as s:
         s.settimeout(30)
@@ -1423,7 +1421,7 @@ class TestController(unittest.TestCase):
 
         try:
           circuit_id = controller.new_circuit(await_build = True)
-          socks_listener = controller.get_socks_listeners()[0]
+          socks_listener = controller.get_listeners(Listener.SOCKS)[0]
 
           with test.network.Socks(socks_listener) as s:
             s.settimeout(30)
