@@ -2,8 +2,6 @@
 Tests the stem.process functions with various use cases.
 """
 
-from __future__ import absolute_import
-
 import binascii
 import hashlib
 import os

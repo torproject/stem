@@ -70,8 +70,6 @@ Tor...
   send_formatting - Performs the formatting expected from sent messages.
 """
 
-from __future__ import absolute_import
-
 import re
 import socket
 import ssl

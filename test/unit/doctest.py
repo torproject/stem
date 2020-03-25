@@ -2,8 +2,6 @@
 Tests examples from our documentation.
 """
 
-from __future__ import absolute_import
-
 import doctest
 import os
 import unittest
