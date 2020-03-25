@@ -38,6 +38,8 @@ import stem.socket
 import stem.util
 import stem.util.str_tools
 
+from typing import Any, Iterator, Optional, Sequence, Tuple, Union
+
 __all__ = [
   'add_onion',
   'events',
@@ -54,7 +56,7 @@ __all__ = [
 KEY_ARG = re.compile('^(\\S+)=')
 
 
-def convert(response_type, message, **kwargs):
+def convert(response_type: str, message: 'stem.response.ControlMessage', **kwargs: Any) -> None:
   """
   Converts a :class:`~stem.response.ControlMessage` into a particular kind of
   tor response. This does an in-place conversion of the message from being a
@@ -140,7 +142,7 @@ class ControlMessage(object):
   """
 
   @staticmethod
-  def from_str(content, msg_type = None, normalize = False, **kwargs):
+  def from_str(content: str, msg_type: Optional[str] = None, normalize: bool = False, **kwargs: Any) -> 'stem.response.ControlMessage':
     """
     Provides a ControlMessage for the given content.
 
@@ -171,7 +173,7 @@ class ControlMessage(object):
 
     return msg
 
-  def __init__(self, parsed_content, raw_content, arrived_at = None):
+  def __init__(self, parsed_content: Sequence[Tuple[str, str, bytes]], raw_content: bytes, arrived_at: Optional[int] = None) -> None:
     if not parsed_content:
       raise ValueError("ControlMessages can't be empty")
 
@@ -182,7 +184,7 @@ class ControlMessage(object):
     self._str = None
     self._hash = stem.util._hash_attr(self, '_raw_content')
 
-  def is_ok(self):
+  def is_ok(self) -> bool:
     """
     Checks if any of our lines have a 250 response.
 
@@ -195,7 +197,7 @@ class ControlMessage(object):
 
     return False
 
-  def content(self, get_bytes = False):
+  def content(self, get_bytes: bool = False) -> Sequence[Tuple[str, str, bytes]]:
     """
     Provides the parsed message content. These are entries of the form...
 
@@ -234,7 +236,7 @@ class ControlMessage(object):
     else:
       return list(self._parsed_content)
 
-  def raw_content(self, get_bytes = False):
+  def raw_content(self, get_bytes: bytes = False) -> Union[str, bytes]:
     """
     Provides the unparsed content read from the control socket.
 
@@ -251,7 +253,7 @@ class ControlMessage(object):
     else:
       return self._raw_content
 
-  def __str__(self):
+  def __str__(self) -> str:
     """
     Content of the message, stripped of status code and divider protocol
     formatting.
@@ -262,7 +264,7 @@ class ControlMessage(object):
 
     return self._str
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator['stem.response.ControlLine']:
     """
     Provides :class:`~stem.response.ControlLine` instances for the content of
     the message. This is stripped of status codes and dividers, for instance...
@@ -290,14 +292,14 @@ class ControlMessage(object):
 
       yield ControlLine(content)
 
-  def __len__(self):
+  def __len__(self) -> int:
     """
     :returns: number of ControlLines
     """
 
     return len(self._parsed_content)
 
-  def __getitem__(self, index):
+  def __getitem__(self, index: int) -> 'stem.response.ControlLine':
     """
     :returns: :class:`~stem.response.ControlLine` at the index
     """
@@ -307,13 +309,13 @@ class ControlMessage(object):
 
     return ControlLine(content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, ControlMessage) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -327,14 +329,14 @@ class ControlLine(str):
   immutable). All methods are thread safe.
   """
 
-  def __new__(self, value):
+  def __new__(self, value: str) -> 'stem.response.ControlLine':
     return str.__new__(self, value)
 
-  def __init__(self, value):
+  def __init__(self, value: str) -> None:
     self._remainder = value
     self._remainder_lock = threading.RLock()
 
-  def remainder(self):
+  def remainder(self) -> str:
     """
     Provides our unparsed content. This is an empty string after we've popped
     all entries.
@@ -344,7 +346,7 @@ class ControlLine(str):
 
     return self._remainder
 
-  def is_empty(self):
+  def is_empty(self) -> bool:
     """
     Checks if we have further content to pop or not.
 
@@ -353,7 +355,7 @@ class ControlLine(str):
 
     return self._remainder == ''
 
-  def is_next_quoted(self, escaped = False):
+  def is_next_quoted(self, escaped: bool = False) -> bool:
     """
     Checks if our next entry is a quoted value or not.
 
@@ -365,7 +367,7 @@ class ControlLine(str):
     start_quote, end_quote = _get_quote_indices(self._remainder, escaped)
     return start_quote == 0 and end_quote != -1
 
-  def is_next_mapping(self, key = None, quoted = False, escaped = False):
+  def is_next_mapping(self, key: Optional[str] = None, quoted: bool = False, escaped: bool = False) -> bool:
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
 
@@ -393,7 +395,7 @@ class ControlLine(str):
     else:
       return False  # doesn't start with a key
 
-  def peek_key(self):
+  def peek_key(self) -> str:
     """
     Provides the key of the next entry, providing **None** if it isn't a
     key/value mapping.
@@ -409,7 +411,7 @@ class ControlLine(str):
     else:
       return None
 
-  def pop(self, quoted = False, escaped = False):
+  def pop(self, quoted: bool = False, escaped: bool = False) -> str:
     """
     Parses the next space separated entry, removing it and the space from our
     remaining content. Examples...
@@ -443,7 +445,7 @@ class ControlLine(str):
       self._remainder = remainder
       return next_entry
 
-  def pop_mapping(self, quoted = False, escaped = False, get_bytes = False):
+  def pop_mapping(self, quoted: bool = False, escaped: bool = False, get_bytes: bool = False) -> Tuple[str, str]:
     """
     Parses the next space separated entry as a KEY=VALUE mapping, removing it
     and the space from our remaining content.
@@ -480,13 +482,14 @@ class ControlLine(str):
       return (key, next_entry)
 
 
-def _parse_entry(line, quoted, escaped, get_bytes):
+def _parse_entry(line: str, quoted: bool, escaped: bool, get_bytes: bool) -> Tuple[Union[str, bytes], str]:
   """
   Parses the next entry from the given space separated content.
 
   :param str line: content to be parsed
   :param bool quoted: parses the next entry as a quoted value, removing the quotes
   :param bool escaped: unescapes the string
+  :param bool get_bytes: provides **bytes** for the entry rather than a **str**
 
   :returns: **tuple** of the form (entry, remainder)
 
@@ -540,7 +543,7 @@ def _parse_entry(line, quoted, escaped, get_bytes):
   return (next_entry, remainder.lstrip())
 
 
-def _get_quote_indices(line, escaped):
+def _get_quote_indices(line: str, escaped: bool) -> Tuple[int, int]:
   """
   Provides the indices of the next two quotes in the given content.
 
@@ -576,7 +579,7 @@ class SingleLineResponse(ControlMessage):
   :var str message: content of the line
   """
 
-  def is_ok(self, strict = False):
+  def is_ok(self, strict: bool = False) -> bool:
     """
     Checks if the response code is "250". If strict is **True** then this
     checks if the response is "250 OK"
@@ -593,7 +596,7 @@ class SingleLineResponse(ControlMessage):
 
     return self.content()[0][0] == '250'
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     content = self.content()
 
     if len(content) > 1:

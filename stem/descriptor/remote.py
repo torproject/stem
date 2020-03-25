@@ -101,6 +101,7 @@ import stem.util.tor_tools
 
 from stem.descriptor import Compression
 from stem.util import log, str_tools
+from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -121,7 +122,7 @@ SINGLETON_DOWNLOADER = None
 DIR_PORT_BLACKLIST = ('tor26', 'Serge')
 
 
-def get_instance():
+def get_instance() -> 'stem.descriptor.remote.DescriptorDownloader':
   """
   Provides the singleton :class:`~stem.descriptor.remote.DescriptorDownloader`
   used for this module's shorthand functions.
@@ -139,7 +140,7 @@ def get_instance():
   return SINGLETON_DOWNLOADER
 
 
-def their_server_descriptor(**query_args):
+def their_server_descriptor(**query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Provides the server descriptor of the relay we're downloading from.
 
@@ -154,7 +155,7 @@ def their_server_descriptor(**query_args):
   return get_instance().their_server_descriptor(**query_args)
 
 
-def get_server_descriptors(fingerprints = None, **query_args):
+def get_server_descriptors(fingerprints: Optional[Union[str, Sequence[str]]] = None, **query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_server_descriptors`
@@ -166,7 +167,7 @@ def get_server_descriptors(fingerprints = None, **query_args):
   return get_instance().get_server_descriptors(fingerprints, **query_args)
 
 
-def get_extrainfo_descriptors(fingerprints = None, **query_args):
+def get_extrainfo_descriptors(fingerprints: Optional[Union[str, Sequence[str]]] = None, **query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_extrainfo_descriptors`
@@ -178,7 +179,7 @@ def get_extrainfo_descriptors(fingerprints = None, **query_args):
   return get_instance().get_extrainfo_descriptors(fingerprints, **query_args)
 
 
-def get_microdescriptors(hashes, **query_args):
+def get_microdescriptors(hashes: Optional[Union[str, Sequence[str]]], **query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors`
@@ -190,7 +191,7 @@ def get_microdescriptors(hashes, **query_args):
   return get_instance().get_microdescriptors(hashes, **query_args)
 
 
-def get_consensus(authority_v3ident = None, microdescriptor = False, **query_args):
+def get_consensus(authority_v3ident: Optional[str] = None, microdescriptor: bool = False, **query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_consensus`
@@ -202,7 +203,7 @@ def get_consensus(authority_v3ident = None, microdescriptor = False, **query_arg
   return get_instance().get_consensus(authority_v3ident, microdescriptor, **query_args)
 
 
-def get_bandwidth_file(**query_args):
+def get_bandwidth_file(**query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_bandwidth_file`
@@ -214,7 +215,7 @@ def get_bandwidth_file(**query_args):
   return get_instance().get_bandwidth_file(**query_args)
 
 
-def get_detached_signatures(**query_args):
+def get_detached_signatures(**query_args: Any) -> 'stem.descriptor.remote.Query':
   """
   Shorthand for
   :func:`~stem.descriptor.remote.DescriptorDownloader.get_detached_signatures`
@@ -370,7 +371,7 @@ class Query(object):
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource, descriptor_type = None, endpoints = None, compression = (Compression.GZIP,), retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence['stem.Endpoint']] = None, compression: Sequence['stem.descriptor.Compression'] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: 'stem.descriptor.DocumentHandler' = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
@@ -433,7 +434,7 @@ class Query(object):
     if block:
       self.run(True)
 
-  def start(self):
+  def start(self) -> None:
     """
     Starts downloading the scriptors if we haven't started already.
     """
@@ -449,7 +450,7 @@ class Query(object):
         self._downloader_thread.setDaemon(True)
         self._downloader_thread.start()
 
-  def run(self, suppress = False):
+  def run(self, suppress: bool = False) -> Sequence['stem.descriptor.Descriptor']:
     """
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
@@ -469,7 +470,7 @@ class Query(object):
 
     return list(self._run(suppress))
 
-  def _run(self, suppress):
+  def _run(self, suppress: bool) -> Iterator['stem.descriptor.Descriptor']:
     with self._downloader_thread_lock:
       self.start()
       self._downloader_thread.join()
@@ -505,11 +506,11 @@ class Query(object):
 
           raise self.error
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator['stem.descriptor.Descriptor']:
     for desc in self._run(True):
       yield desc
 
-  def _pick_endpoint(self, use_authority = False):
+  def _pick_endpoint(self, use_authority: bool = False) -> 'stem.Endpoint':
     """
     Provides an endpoint to query. If we have multiple endpoints then one
     is picked at random.
@@ -527,7 +528,7 @@ class Query(object):
     else:
       return random.choice(self.endpoints)
 
-  def _download_descriptors(self, retries, timeout):
+  def _download_descriptors(self, retries: int, timeout: Optional[float]) -> None:
     try:
       self.start_time = time.time()
       endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
@@ -572,7 +573,7 @@ class DescriptorDownloader(object):
     :class:`~stem.descriptor.remote.Query` constructor
   """
 
-  def __init__(self, use_mirrors = False, **default_args):
+  def __init__(self, use_mirrors: bool = False, **default_args: Any) -> None:
     self._default_args = default_args
 
     self._endpoints = None
@@ -585,7 +586,7 @@ class DescriptorDownloader(object):
       except Exception as exc:
         log.debug('Unable to retrieve directory mirrors: %s' % exc)
 
-  def use_directory_mirrors(self):
+  def use_directory_mirrors(self) -> 'stem.descriptor.networkstatus.NetworkStatusDocumentV3':
     """
     Downloads the present consensus and configures ourselves to use directory
     mirrors, in addition to authorities.
@@ -611,7 +612,7 @@ class DescriptorDownloader(object):
 
     return consensus
 
-  def their_server_descriptor(self, **query_args):
+  def their_server_descriptor(self, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the server descriptor of the relay we're downloading from.
 
@@ -625,7 +626,7 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/server/authority', **query_args)
 
-  def get_server_descriptors(self, fingerprints = None, **query_args):
+  def get_server_descriptors(self, fingerprints: Optional[Union[str, Sequence[str]]] = None, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the server descriptors with the given fingerprints. If no
     fingerprints are provided then this returns all descriptors known
@@ -655,7 +656,7 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  def get_extrainfo_descriptors(self, fingerprints = None, **query_args):
+  def get_extrainfo_descriptors(self, fingerprints: Optional[Union[str, Sequence[str]]] = None, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the extrainfo descriptors with the given fingerprints. If no
     fingerprints are provided then this returns all descriptors in the present
@@ -685,7 +686,7 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  def get_microdescriptors(self, hashes, **query_args):
+  def get_microdescriptors(self, hashes: Optional[Union[str, Sequence[str]]], **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the microdescriptors with the given hashes. To get these see the
     **microdescriptor_digest** attribute of
@@ -731,7 +732,7 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/micro/d/%s' % '-'.join(hashes), **query_args)
 
-  def get_consensus(self, authority_v3ident = None, microdescriptor = False, **query_args):
+  def get_consensus(self, authority_v3ident: Optional[str] = None, microdescriptor: bool = False, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the present router status entries.
 
@@ -775,7 +776,7 @@ class DescriptorDownloader(object):
 
     return consensus_query
 
-  def get_vote(self, authority, **query_args):
+  def get_vote(self, authority: 'stem.directory.Authority', **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the present vote for a given directory authority.
 
@@ -794,13 +795,13 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  def get_key_certificates(self, authority_v3idents = None, **query_args):
+  def get_key_certificates(self, authority_v3idents: Optional[Union[str, Sequence[str]]] = None, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the key certificates for authorities with the given fingerprints.
     If no fingerprints are provided then this returns all present key
     certificates.
 
-    :param str authority_v3idents: fingerprint or list of fingerprints of the
+    :param str,list authority_v3idents: fingerprint or list of fingerprints of the
       authority keys, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
       for the values.
@@ -827,7 +828,7 @@ class DescriptorDownloader(object):
 
     return self.query(resource, **query_args)
 
-  def get_bandwidth_file(self, **query_args):
+  def get_bandwidth_file(self, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the bandwidth authority heuristics used to make the next
     consensus.
@@ -843,7 +844,7 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/status-vote/next/bandwidth', **query_args)
 
-  def get_detached_signatures(self, **query_args):
+  def get_detached_signatures(self, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the detached signatures that will be used to make the next
     consensus. Please note that **these are only available during minutes 55-60
@@ -896,7 +897,7 @@ class DescriptorDownloader(object):
 
     return self.query('/tor/status-vote/next/consensus-signatures', **query_args)
 
-  def query(self, resource, **query_args):
+  def query(self, resource: str, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Issues a request for the given resource.
 
@@ -923,7 +924,7 @@ class DescriptorDownloader(object):
     return Query(resource, **args)
 
 
-def _download_from_orport(endpoint, compression, resource):
+def _download_from_orport(endpoint: 'stem.ORPort', compression: Sequence['stem.Compression'], resource: str) -> Tuple[bytes, Dict[str, str]]:
   """
   Downloads descriptors from the given orport. Payload is just like an http
   response (headers and all)...
@@ -981,7 +982,7 @@ def _download_from_orport(endpoint, compression, resource):
       return _decompress(body_data, headers.get('Content-Encoding')), headers
 
 
-def _download_from_dirport(url, compression, timeout):
+def _download_from_dirport(url: str, compression: Sequence['stem.descriptor.Compression'], timeout: Optional[float]) -> Tuple[bytes, Dict[str, str]]:
   """
   Downloads descriptors from the given url.
 
@@ -1016,7 +1017,7 @@ def _download_from_dirport(url, compression, timeout):
   return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
 
 
-def _decompress(data, encoding):
+def _decompress(data: bytes, encoding: str) -> bytes:
   """
   Decompresses descriptor data.
 
@@ -1029,6 +1030,8 @@ def _decompress(data, encoding):
 
   :param bytes data: data we received
   :param str encoding: 'Content-Encoding' header of the response
+
+  :returns: **bytes** with the decompressed data
 
   :raises:
     * **ValueError** if encoding is unrecognized
@@ -1045,7 +1048,7 @@ def _decompress(data, encoding):
   raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
 
 
-def _guess_descriptor_type(resource):
+def _guess_descriptor_type(resource: str) -> str:
   # Attempts to determine the descriptor type based on the resource url. This
   # raises a ValueError if the resource isn't recognized.
 

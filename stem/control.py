@@ -255,7 +255,9 @@ import stem.descriptor.router_status_entry
 import stem.descriptor.server_descriptor
 import stem.exit_policy
 import stem.response
+import stem.response.add_onion
 import stem.response.events
+import stem.response.protocolinfo
 import stem.socket
 import stem.util
 import stem.util.conf
@@ -268,6 +270,8 @@ import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import log
+from types import TracebackType
+from typing import Any, Callable, Dict, Iterator, Mapping, Optional, Sequence, Tuple, Type, Union
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -447,15 +451,15 @@ class CreateHiddenServiceOutput(collections.namedtuple('CreateHiddenServiceOutpu
   """
 
 
-def with_default(yields = False):
+def with_default(yields: bool = False) -> Callable:
   """
   Provides a decorator to support having a default value. This should be
   treated as private.
   """
 
-  def decorator(func):
-    def get_default(func, args, kwargs):
-      arg_names = inspect.getargspec(func).args[1:]  # drop 'self'
+  def decorator(func: Callable) -> Callable:
+    def get_default(func: Callable, args: Any, kwargs: Any) -> Any:
+      arg_names = inspect.getfullargspec(func).args[1:]  # drop 'self'
       default_position = arg_names.index('default') if 'default' in arg_names else None
 
       if default_position is not None and default_position < len(args):
@@ -465,7 +469,7 @@ def with_default(yields = False):
 
     if not yields:
       @functools.wraps(func)
-      def wrapped(self, *args, **kwargs):
+      def wrapped(self, *args: Any, **kwargs: Any) -> Any:
         try:
           return func(self, *args, **kwargs)
         except:
@@ -477,7 +481,7 @@ def with_default(yields = False):
             return default
     else:
       @functools.wraps(func)
-      def wrapped(self, *args, **kwargs):
+      def wrapped(self, *args: Any, **kwargs: Any) -> Any:
         try:
           for val in func(self, *args, **kwargs):
             yield val
@@ -496,7 +500,7 @@ def with_default(yields = False):
   return decorator
 
 
-def event_description(event):
+def event_description(event: str) -> str:
   """
   Provides a description for Tor events.
 
@@ -538,7 +542,7 @@ class BaseController(object):
   socket as though it hasn't yet been authenticated.
   """
 
-  def __init__(self, control_socket, is_authenticated = False):
+  def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
     self._socket = control_socket
     self._msg_lock = threading.RLock()
 
@@ -576,7 +580,7 @@ class BaseController(object):
     if is_authenticated:
       self._post_authentication()
 
-  def msg(self, message):
+  def msg(self, message: str) -> stem.response.ControlMessage:
     """
     Sends a message to our control socket and provides back its reply.
 
@@ -659,7 +663,7 @@ class BaseController(object):
         self.close()
         raise
 
-  def is_alive(self):
+  def is_alive(self) -> bool:
     """
     Checks if our socket is currently connected. This is a pass-through for our
     socket's :func:`~stem.socket.BaseSocket.is_alive` method.
@@ -669,7 +673,7 @@ class BaseController(object):
 
     return self._socket.is_alive()
 
-  def is_localhost(self):
+  def is_localhost(self) -> bool:
     """
     Returns if the connection is for the local system or not.
 
@@ -680,7 +684,7 @@ class BaseController(object):
 
     return self._socket.is_localhost()
 
-  def connection_time(self):
+  def connection_time(self) -> float:
     """
     Provides the unix timestamp for when our socket was either connected or
     disconnected. That is to say, the time we connected if we're currently
@@ -694,7 +698,7 @@ class BaseController(object):
 
     return self._socket.connection_time()
 
-  def is_authenticated(self):
+  def is_authenticated(self) -> bool:
     """
     Checks if our socket is both connected and authenticated.
 
@@ -704,7 +708,7 @@ class BaseController(object):
 
     return self._is_authenticated if self.is_alive() else False
 
-  def connect(self):
+  def connect(self) -> None:
     """
     Reconnects our control socket. This is a pass-through for our socket's
     :func:`~stem.socket.ControlSocket.connect` method.
@@ -714,7 +718,7 @@ class BaseController(object):
 
     self._socket.connect()
 
-  def close(self):
+  def close(self) -> None:
     """
     Closes our socket connection. This is a pass-through for our socket's
     :func:`~stem.socket.BaseSocket.close` method.
@@ -733,7 +737,7 @@ class BaseController(object):
       if t.is_alive() and threading.current_thread() != t:
         t.join()
 
-  def get_socket(self):
+  def get_socket(self) -> stem.socket.ControlSocket:
     """
     Provides the socket used to speak with the tor process. Communicating with
     the socket directly isn't advised since it may confuse this controller.
@@ -743,7 +747,7 @@ class BaseController(object):
 
     return self._socket
 
-  def get_latest_heartbeat(self):
+  def get_latest_heartbeat(self) -> float:
     """
     Provides the unix timestamp for when we last heard from tor. This is zero
     if we've never received a message.
@@ -753,7 +757,7 @@ class BaseController(object):
 
     return self._last_heartbeat
 
-  def add_status_listener(self, callback, spawn = True):
+  def add_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None], spawn: bool = True) -> None:
     """
     Notifies a given function when the state of our socket changes. Functions
     are expected to be of the form...
@@ -783,7 +787,7 @@ class BaseController(object):
     with self._status_listeners_lock:
       self._status_listeners.append((callback, spawn))
 
-  def remove_status_listener(self, callback):
+  def remove_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None]) -> bool:
     """
     Stops listener from being notified of further events.
 
@@ -805,13 +809,13 @@ class BaseController(object):
       self._status_listeners = new_listeners
       return is_changed
 
-  def __enter__(self):
+  def __enter__(self) -> 'stem.control.BaseController':
     return self
 
-  def __exit__(self, exit_type, value, traceback):
+  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
     self.close()
 
-  def _handle_event(self, event_message):
+  def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
     """
     Callback to be overwritten by subclasses for event listening. This is
     notified whenever we receive an event from the control socket.
@@ -822,13 +826,13 @@ class BaseController(object):
 
     pass
 
-  def _connect(self):
+  def _connect(self) -> None:
     self._launch_threads()
     self._notify_status_listeners(State.INIT)
     self._socket_connect()
     self._is_authenticated = False
 
-  def _close(self):
+  def _close(self) -> None:
     # Our is_alive() state is now false. Our reader thread should already be
     # awake from recv() raising a closure exception. Wake up the event thread
     # too so it can end.
@@ -846,12 +850,12 @@ class BaseController(object):
 
     self._socket_close()
 
-  def _post_authentication(self):
+  def _post_authentication(self) -> None:
     # actions to be taken after we have a newly authenticated connection
 
     self._is_authenticated = True
 
-  def _notify_status_listeners(self, state):
+  def _notify_status_listeners(self, state: 'stem.control.State') -> None:
     """
     Informs our status listeners that a state change occurred.
 
@@ -895,7 +899,7 @@ class BaseController(object):
           else:
             listener(self, state, change_timestamp)
 
-  def _launch_threads(self):
+  def _launch_threads(self) -> None:
     """
     Initializes daemon threads. Threads can't be reused so we need to recreate
     them if we're restarted.
@@ -915,7 +919,7 @@ class BaseController(object):
         self._event_thread.setDaemon(True)
         self._event_thread.start()
 
-  def _reader_loop(self):
+  def _reader_loop(self) -> None:
     """
     Continually pulls from the control socket, directing the messages into
     queues based on their type. Controller messages come in two varieties...
@@ -944,7 +948,7 @@ class BaseController(object):
 
         self._reply_queue.put(exc)
 
-  def _event_loop(self):
+  def _event_loop(self) -> None:
     """
     Continually pulls messages from the _event_queue and sends them to our
     handle_event callback. This is done via its own thread so subclasses with a
@@ -982,7 +986,7 @@ class Controller(BaseController):
   """
 
   @staticmethod
-  def from_port(address = '127.0.0.1', port = 'default'):
+  def from_port(address: str = '127.0.0.1', port: int = 'default') -> 'stem.control.Controller':
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
@@ -1016,7 +1020,7 @@ class Controller(BaseController):
     return Controller(control_port)
 
   @staticmethod
-  def from_socket_file(path = '/var/run/tor/control'):
+  def from_socket_file(path: str = '/var/run/tor/control') -> 'stem.control.Controller':
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
 
@@ -1030,7 +1034,7 @@ class Controller(BaseController):
     control_socket = stem.socket.ControlSocketFile(path)
     return Controller(control_socket)
 
-  def __init__(self, control_socket, is_authenticated = False):
+  def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
     self._is_caching_enabled = True
     self._request_cache = {}
     self._last_newnym = 0.0
@@ -1048,14 +1052,14 @@ class Controller(BaseController):
 
     super(Controller, self).__init__(control_socket, is_authenticated)
 
-    def _sighup_listener(event):
+    def _sighup_listener(event: stem.response.events.Event) -> None:
       if event.signal == Signal.RELOAD:
         self.clear_cache()
         self._notify_status_listeners(State.RESET)
 
     self.add_event_listener(_sighup_listener, EventType.SIGNAL)
 
-    def _confchanged_listener(event):
+    def _confchanged_listener(event: stem.response.events.Event) -> None:
       if self.is_caching_enabled():
         to_cache_changed = dict((k.lower(), v) for k, v in event.changed.items())
         to_cache_unset = dict((k.lower(), []) for k in event.unset)  # [] represents None value in cache
@@ -1070,7 +1074,7 @@ class Controller(BaseController):
 
     self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)
 
-    def _address_changed_listener(event):
+    def _address_changed_listener(event: stem.response.events.Event) -> None:
       if event.action in ('EXTERNAL_ADDRESS', 'DNS_USELESS'):
         self._set_cache({'exit_policy': None})
         self._set_cache({'address': None}, 'getinfo')
@@ -1078,11 +1082,11 @@ class Controller(BaseController):
 
     self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER)
 
-  def close(self):
+  def close(self) -> None:
     self.clear_cache()
     super(Controller, self).close()
 
-  def authenticate(self, *args, **kwargs):
+  def authenticate(self, *args: Any, **kwargs: Any) -> None:
     """
     A convenience method to authenticate the controller. This is just a
     pass-through to :func:`stem.connection.authenticate`.
@@ -1091,7 +1095,7 @@ class Controller(BaseController):
     import stem.connection
     stem.connection.authenticate(self, *args, **kwargs)
 
-  def reconnect(self, *args, **kwargs):
+  def reconnect(self, *args: Any, **kwargs: Any) -> None:
     """
     Reconnects and authenticates to our control socket.
 
@@ -1108,7 +1112,7 @@ class Controller(BaseController):
       self.authenticate(*args, **kwargs)
 
   @with_default()
-  def get_info(self, params, default = UNDEFINED, get_bytes = False):
+  def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
     """
     get_info(params, default = UNDEFINED, get_bytes = False)
 
@@ -1232,7 +1236,7 @@ class Controller(BaseController):
       raise
 
   @with_default()
-  def get_version(self, default = UNDEFINED):
+  def get_version(self, default: Any = UNDEFINED) -> stem.version.Version:
     """
     get_version(default = UNDEFINED)
 
@@ -1261,7 +1265,7 @@ class Controller(BaseController):
     return version
 
   @with_default()
-  def get_exit_policy(self, default = UNDEFINED):
+  def get_exit_policy(self, default: Any = UNDEFINED) -> stem.exit_policy.ExitPolicy:
     """
     get_exit_policy(default = UNDEFINED)
 
@@ -1293,7 +1297,7 @@ class Controller(BaseController):
     return policy
 
   @with_default()
-  def get_ports(self, listener_type, default = UNDEFINED):
+  def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
     """
     get_ports(listener_type, default = UNDEFINED)
 
@@ -1315,7 +1319,7 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    def is_localhost(address):
+    def is_localhost(address: str) -> bool:
       if stem.util.connection.is_valid_ipv4_address(address):
         return address == '0.0.0.0' or address.startswith('127.')
       elif stem.util.connection.is_valid_ipv6_address(address):
@@ -1330,7 +1334,7 @@ class Controller(BaseController):
     return [port for (addr, port) in self.get_listeners(listener_type) if is_localhost(addr)]
 
   @with_default()
-  def get_listeners(self, listener_type, default = UNDEFINED):
+  def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
     """
     get_listeners(listener_type, default = UNDEFINED)
 
@@ -1436,7 +1440,7 @@ class Controller(BaseController):
     return listeners
 
   @with_default()
-  def get_accounting_stats(self, default = UNDEFINED):
+  def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
     """
     get_accounting_stats(default = UNDEFINED)
 
@@ -1480,7 +1484,7 @@ class Controller(BaseController):
     )
 
   @with_default()
-  def get_protocolinfo(self, default = UNDEFINED):
+  def get_protocolinfo(self, default: Any = UNDEFINED) -> stem.response.protocolinfo.ProtocolInfoResponse:
     """
     get_protocolinfo(default = UNDEFINED)
 
@@ -1503,7 +1507,7 @@ class Controller(BaseController):
     return stem.connection.get_protocolinfo(self)
 
   @with_default()
-  def get_user(self, default = UNDEFINED):
+  def get_user(self, default: Any = UNDEFINED) -> str:
     """
     get_user(default = UNDEFINED)
 
@@ -1538,7 +1542,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's user" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_pid(self, default = UNDEFINED):
+  def get_pid(self, default: Any = UNDEFINED) -> int:
     """
     get_pid(default = UNDEFINED)
 
@@ -1594,7 +1598,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_start_time(self, default = UNDEFINED):
+  def get_start_time(self, default: Any = UNDEFINED) -> float:
     """
     get_start_time(default = UNDEFINED)
 
@@ -1644,7 +1648,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve when tor began" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_uptime(self, default = UNDEFINED):
+  def get_uptime(self, default: Any = UNDEFINED) -> float:
     """
     get_uptime(default = UNDEFINED)
 
@@ -1662,7 +1666,7 @@ class Controller(BaseController):
 
     return time.time() - self.get_start_time()
 
-  def is_user_traffic_allowed(self):
+  def is_user_traffic_allowed(self) -> bool:
     """
     Checks if we're likely to service direct user traffic. This essentially
     boils down to...
@@ -1704,7 +1708,7 @@ class Controller(BaseController):
     return UserTrafficAllowed(inbound_allowed, outbound_allowed)
 
   @with_default()
-  def get_microdescriptor(self, relay = None, default = UNDEFINED):
+  def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
     """
     get_microdescriptor(relay = None, default = UNDEFINED)
 
@@ -1762,7 +1766,7 @@ class Controller(BaseController):
     return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
   @with_default(yields = True)
-  def get_microdescriptors(self, default = UNDEFINED):
+  def get_microdescriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
     """
     get_microdescriptors(default = UNDEFINED)
 
@@ -1793,7 +1797,7 @@ class Controller(BaseController):
       yield desc
 
   @with_default()
-  def get_server_descriptor(self, relay = None, default = UNDEFINED):
+  def get_server_descriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
     """
     get_server_descriptor(relay = None, default = UNDEFINED)
 
@@ -1856,7 +1860,7 @@ class Controller(BaseController):
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
-  def get_server_descriptors(self, default = UNDEFINED):
+  def get_server_descriptors(self, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
     """
     get_server_descriptors(default = UNDEFINED)
 
@@ -1892,7 +1896,7 @@ class Controller(BaseController):
       yield desc
 
   @with_default()
-  def get_network_status(self, relay = None, default = UNDEFINED):
+  def get_network_status(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.router_status_entry.RouterStatusEntryV3:
     """
     get_network_status(relay = None, default = UNDEFINED)
 
@@ -1951,7 +1955,7 @@ class Controller(BaseController):
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
   @with_default(yields = True)
-  def get_network_statuses(self, default = UNDEFINED):
+  def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
     """
     get_network_statuses(default = UNDEFINED)
 
@@ -1988,7 +1992,7 @@ class Controller(BaseController):
       yield desc
 
   @with_default()
-  def get_hidden_service_descriptor(self, address, default = UNDEFINED, servers = None, await_result = True, timeout = None):
+  def get_hidden_service_descriptor(self, address: str, default: Any = UNDEFINED, servers: Optional[Sequence[str]] = None, await_result: bool = True, timeout: Optional[float] = None) -> stem.descriptor.hidden_service.HiddenServiceDescriptorV2:
     """
     get_hidden_service_descriptor(address, default = UNDEFINED, servers = None, await_result = True)
 
@@ -2036,10 +2040,10 @@ class Controller(BaseController):
     start_time = time.time()
 
     if await_result:
-      def hs_desc_listener(event):
+      def hs_desc_listener(event: stem.response.events.Event) -> None:
         hs_desc_queue.put(event)
 
-      def hs_desc_content_listener(event):
+      def hs_desc_content_listener(event: stem.response.events.Event) -> None:
         hs_desc_content_queue.put(event)
 
       self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
@@ -2084,7 +2088,7 @@ class Controller(BaseController):
       if hs_desc_content_listener:
         self.remove_event_listener(hs_desc_content_listener)
 
-  def get_conf(self, param, default = UNDEFINED, multiple = False):
+  def get_conf(self, param: str, default: Any = UNDEFINED, multiple: bool = False) -> Union[str, Sequence[str]]:
     """
     get_conf(param, default = UNDEFINED, multiple = False)
 
@@ -2133,7 +2137,7 @@ class Controller(BaseController):
     entries = self.get_conf_map(param, default, multiple)
     return _case_insensitive_lookup(entries, param, default)
 
-  def get_conf_map(self, params, default = UNDEFINED, multiple = True):
+  def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
     """
     get_conf_map(params, default = UNDEFINED, multiple = True)
 
@@ -2251,7 +2255,7 @@ class Controller(BaseController):
       else:
         raise
 
-  def _get_conf_dict_to_response(self, config_dict, default, multiple):
+  def _get_conf_dict_to_response(self, config_dict: Mapping[str, Sequence[str]], default: Any, multiple: bool) -> Dict[str, Union[str, Sequence[str]]]:
     """
     Translates a dictionary of 'config key => [value1, value2...]' into the
     return value of :func:`~stem.control.Controller.get_conf_map`, taking into
@@ -2273,7 +2277,7 @@ class Controller(BaseController):
     return return_dict
 
   @with_default()
-  def is_set(self, param, default = UNDEFINED):
+  def is_set(self, param: str, default: Any = UNDEFINED) -> bool:
     """
     is_set(param, default = UNDEFINED)
 
@@ -2293,7 +2297,7 @@ class Controller(BaseController):
 
     return param in self._get_custom_options()
 
-  def _get_custom_options(self):
+  def _get_custom_options(self) -> Dict[str, str]:
     result = self._get_cache('get_custom_options')
 
     if not result:
@@ -2320,7 +2324,7 @@ class Controller(BaseController):
 
     return result
 
-  def set_conf(self, param, value):
+  def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
     """
     Changes the value of a tor configuration option. Our value can be any of
     the following...
@@ -2342,7 +2346,7 @@ class Controller(BaseController):
 
     self.set_options({param: value}, False)
 
-  def reset_conf(self, *params):
+  def reset_conf(self, *params: str) -> None:
     """
     Reverts one or more parameters to their default values.
 
@@ -2357,7 +2361,7 @@ class Controller(BaseController):
 
     self.set_options(dict([(entry, None) for entry in params]), True)
 
-  def set_options(self, params, reset = False):
+  def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
     """
     Changes multiple tor configuration options via either a SETCONF or
     RESETCONF query. Both behave identically unless our value is None, in which
@@ -2439,7 +2443,7 @@ class Controller(BaseController):
         raise stem.ProtocolError('Returned unexpected status code: %s' % response.code)
 
   @with_default()
-  def get_hidden_service_conf(self, default = UNDEFINED):
+  def get_hidden_service_conf(self, default: Any = UNDEFINED) -> Dict[str, Any]:
     """
     get_hidden_service_conf(default = UNDEFINED)
 
@@ -2534,7 +2538,7 @@ class Controller(BaseController):
     self._set_cache({'hidden_service_conf': service_dir_map})
     return service_dir_map
 
-  def set_hidden_service_conf(self, conf):
+  def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
     """
     Update all the configured hidden services from a dictionary having
     the same format as
@@ -2599,7 +2603,7 @@ class Controller(BaseController):
 
     self.set_options(hidden_service_options)
 
-  def create_hidden_service(self, path, port, target_address = None, target_port = None, auth_type = None, client_names = None):
+  def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.cotroller.CreateHiddenServiceOutput':
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
@@ -2717,7 +2721,7 @@ class Controller(BaseController):
       config = conf,
     )
 
-  def remove_hidden_service(self, path, port = None):
+  def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
     """
     Discontinues a given hidden service.
 
@@ -2759,7 +2763,7 @@ class Controller(BaseController):
     return True
 
   @with_default()
-  def list_ephemeral_hidden_services(self, default = UNDEFINED, our_services = True, detached = False):
+  def list_ephemeral_hidden_services(self, default: Any = UNDEFINED, our_services: bool = True, detached: bool = False) -> Sequence[str]:
     """
     list_ephemeral_hidden_services(default = UNDEFINED, our_services = True, detached = False)
 
@@ -2799,7 +2803,7 @@ class Controller(BaseController):
 
     return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
-  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, timeout = None, basic_auth = None, max_streams = None):
+  def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None) -> stem.response.add_onion.AddOnionResponse:
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2905,7 +2909,7 @@ class Controller(BaseController):
     start_time = time.time()
 
     if await_publication:
-      def hs_desc_listener(event):
+      def hs_desc_listener(event: stem.response.events.Event) -> None:
         hs_desc_queue.put(event)
 
       self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
@@ -2983,7 +2987,7 @@ class Controller(BaseController):
 
     return response
 
-  def remove_ephemeral_hidden_service(self, service_id):
+  def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
     """
     Discontinues a given hidden service that was created with
     :func:`~stem.control.Controller.create_ephemeral_hidden_service`.
@@ -3008,7 +3012,7 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
-  def add_event_listener(self, listener, *events):
+  def add_event_listener(self, listener: Callable[[stem.response.events.Event], None], *events: 'stem.control.EventType') -> None:
     """
     Directs further tor controller events to a given function. The function is
     expected to take a single argument, which is a
@@ -3066,7 +3070,7 @@ class Controller(BaseController):
       if failed_events:
         raise stem.ProtocolError('SETEVENTS rejected %s' % ', '.join(failed_events))
 
-  def remove_event_listener(self, listener):
+  def remove_event_listener(self, listener: Callable[[stem.response.events.Event], None]) -> None:
     """
     Stops a listener from being notified of further tor events.
 
@@ -3092,7 +3096,7 @@ class Controller(BaseController):
         if not response.is_ok():
           raise stem.ProtocolError('SETEVENTS received unexpected response\n%s' % response)
 
-  def _get_cache(self, param, namespace = None):
+  def _get_cache(self, param: str, namespace: Optional[str] = None) -> Any:
     """
     Queries our request cache for the given key.
 
@@ -3109,7 +3113,7 @@ class Controller(BaseController):
       cache_key = '%s.%s' % (namespace, param) if namespace else param
       return self._request_cache.get(cache_key, None)
 
-  def _get_cache_map(self, params, namespace = None):
+  def _get_cache_map(self, params: Sequence[str], namespace: Optional[str] = None) -> Dict[str, Any]:
     """
     Queries our request cache for multiple entries.
 
@@ -3131,7 +3135,7 @@ class Controller(BaseController):
 
       return cached_values
 
-  def _set_cache(self, params, namespace = None):
+  def _set_cache(self, params: Mapping[str, Any], namespace: Optional[str] = None) -> None:
     """
     Sets the given request cache entries. If the new cache value is **None**
     then it is removed from our cache.
@@ -3173,7 +3177,7 @@ class Controller(BaseController):
         else:
           self._request_cache[cache_key] = value
 
-  def _confchanged_cache_invalidation(self, params):
+  def _confchanged_cache_invalidation(self, params: Mapping[str, Any]) -> None:
     """
     Drops dependent portions of the cache when configuration changes.
 
@@ -3197,7 +3201,7 @@ class Controller(BaseController):
 
       self._set_cache({'exit_policy': None})  # numerous options can change our policy
 
-  def is_caching_enabled(self):
+  def is_caching_enabled(self) -> bool:
     """
     **True** if caching has been enabled, **False** otherwise.
 
@@ -3206,7 +3210,7 @@ class Controller(BaseController):
 
     return self._is_caching_enabled
 
-  def set_caching(self, enabled):
+  def set_caching(self, enabled: bool) -> None:
     """
     Enables or disables caching of information retrieved from tor.
 
@@ -3218,7 +3222,7 @@ class Controller(BaseController):
     if not self._is_caching_enabled:
       self.clear_cache()
 
-  def clear_cache(self):
+  def clear_cache(self) -> None:
     """
     Drops any cached results.
     """
@@ -3227,7 +3231,7 @@ class Controller(BaseController):
       self._request_cache = {}
       self._last_newnym = 0.0
 
-  def load_conf(self, configtext):
+  def load_conf(self, configtext: str) -> None:
     """
     Sends the configuration text to Tor and loads it as if it has been read from
     the torrc.
@@ -3247,7 +3251,7 @@ class Controller(BaseController):
     elif not response.is_ok():
       raise stem.ProtocolError('+LOADCONF Received unexpected response\n%s' % str(response))
 
-  def save_conf(self, force = False):
+  def save_conf(self, force: bool = False) -> None:
     """
     Saves the current configuration options into the active torrc file.
 
@@ -3273,7 +3277,7 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError('SAVECONF returned unexpected response code')
 
-  def is_feature_enabled(self, feature):
+  def is_feature_enabled(self, feature: str) -> bool:
     """
     Checks if a control connection feature is enabled. These features can be
     enabled using :func:`~stem.control.Controller.enable_feature`.
@@ -3290,7 +3294,7 @@ class Controller(BaseController):
 
     return feature in self._enabled_features
 
-  def enable_feature(self, features):
+  def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
     """
     Enables features that are disabled by default to maintain backward
     compatibility. Once enabled, a feature cannot be disabled and a new
@@ -3324,7 +3328,7 @@ class Controller(BaseController):
     self._enabled_features += [entry.upper() for entry in features]
 
   @with_default()
-  def get_circuit(self, circuit_id, default = UNDEFINED):
+  def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
     """
     get_circuit(circuit_id, default = UNDEFINED)
 
@@ -3349,7 +3353,7 @@ class Controller(BaseController):
     raise ValueError("Tor currently does not have a circuit with the id of '%s'" % circuit_id)
 
   @with_default()
-  def get_circuits(self, default = UNDEFINED):
+  def get_circuits(self, default: Any = UNDEFINED) -> Sequence[stem.response.events.CircuitEvent]:
     """
     get_circuits(default = UNDEFINED)
 
@@ -3372,7 +3376,7 @@ class Controller(BaseController):
 
     return circuits
 
-  def new_circuit(self, path = None, purpose = 'general', await_build = False, timeout = None):
+  def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Requests a new circuit. If the path isn't provided, one is automatically
     selected.
@@ -3380,7 +3384,7 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout argument.
 
-    :param list,str path: one or more relays to make a circuit through
+    :param str,list path: one or more relays to make a circuit through
     :param str purpose: 'general' or 'controller'
     :param bool await_build: blocks until the circuit is built if **True**
     :param float timeout: seconds to wait when **await_build** is **True**
@@ -3394,7 +3398,7 @@ class Controller(BaseController):
 
     return self.extend_circuit('0', path, purpose, await_build, timeout)
 
-  def extend_circuit(self, circuit_id = '0', path = None, purpose = 'general', await_build = False, timeout = None):
+  def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Either requests the creation of a new circuit or extends an existing one.
 
@@ -3418,7 +3422,7 @@ class Controller(BaseController):
        Added the timeout argument.
 
     :param str circuit_id: id of a circuit to be extended
-    :param list,str path: one or more relays to make a circuit through, this is
+    :param str,list path: one or more relays to make a circuit through, this is
       required if the circuit id is non-zero
     :param str purpose: 'general' or 'controller'
     :param bool await_build: blocks until the circuit is built if **True**
@@ -3442,7 +3446,7 @@ class Controller(BaseController):
     start_time = time.time()
 
     if await_build:
-      def circ_listener(event):
+      def circ_listener(event: stem.response.events.Event) -> None:
         circ_queue.put(event)
 
       self.add_event_listener(circ_listener, EventType.CIRC)
@@ -3489,7 +3493,7 @@ class Controller(BaseController):
       if circ_listener:
         self.remove_event_listener(circ_listener)
 
-  def repurpose_circuit(self, circuit_id, purpose):
+  def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
     """
     Changes a circuit's purpose. Currently, two purposes are recognized...
       * general
@@ -3510,7 +3514,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('SETCIRCUITPURPOSE returned unexpected response code: %s' % response.code)
 
-  def close_circuit(self, circuit_id, flag = ''):
+  def close_circuit(self, circuit_id: str, flag: str = '') -> None:
     """
     Closes the specified circuit.
 
@@ -3518,8 +3522,9 @@ class Controller(BaseController):
     :param str flag: optional value to modify closing, the only flag available
       is 'IfUnused' which will not close the circuit unless it is unused
 
-    :raises: :class:`stem.InvalidArguments` if the circuit is unknown
-    :raises: :class:`stem.InvalidRequest` if not enough information is provided
+    :raises:
+      * :class:`stem.InvalidArguments` if the circuit is unknown
+      * :class:`stem.InvalidRequest` if not enough information is provided
     """
 
     response = self.msg('CLOSECIRCUIT %s %s' % (circuit_id, flag))
@@ -3534,7 +3539,7 @@ class Controller(BaseController):
         raise stem.ProtocolError('CLOSECIRCUIT returned unexpected response code: %s' % response.code)
 
   @with_default()
-  def get_streams(self, default = UNDEFINED):
+  def get_streams(self, default: Any = UNDEFINED) -> Sequence[stem.response.events.StreamEvent]:
     """
     get_streams(default = UNDEFINED)
 
@@ -3558,7 +3563,7 @@ class Controller(BaseController):
 
     return streams
 
-  def attach_stream(self, stream_id, circuit_id, exiting_hop = None):
+  def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
     """
     Attaches a stream to a circuit.
 
@@ -3593,7 +3598,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('ATTACHSTREAM returned unexpected response code: %s' % response.code)
 
-  def close_stream(self, stream_id, reason = stem.RelayEndReason.MISC, flag = ''):
+  def close_stream(self, stream_id: str, reason: stem.RelayEndReason = stem.RelayEndReason.MISC, flag: str = '') -> None:
     """
     Closes the specified stream.
 
@@ -3622,7 +3627,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('CLOSESTREAM returned unexpected response code: %s' % response.code)
 
-  def signal(self, signal):
+  def signal(self, signal: stem.Signal) -> None:
     """
     Sends a signal to the Tor client.
 
@@ -3645,7 +3650,7 @@ class Controller(BaseController):
 
       raise stem.ProtocolError('SIGNAL response contained unrecognized status code: %s' % response.code)
 
-  def is_newnym_available(self):
+  def is_newnym_available(self) -> bool:
     """
     Indicates if tor would currently accept a NEWNYM signal. This can only
     account for signals sent via this controller.
@@ -3661,7 +3666,7 @@ class Controller(BaseController):
     else:
       return False
 
-  def get_newnym_wait(self):
+  def get_newnym_wait(self) -> float:
     """
     Provides the number of seconds until a NEWNYM signal would be respected.
     This can only account for signals sent via this controller.
@@ -3675,7 +3680,7 @@ class Controller(BaseController):
     return max(0.0, self._last_newnym + 10 - time.time())
 
   @with_default()
-  def get_effective_rate(self, default = UNDEFINED, burst = False):
+  def get_effective_rate(self, default: Any = UNDEFINED, burst: bool = False) -> int:
     """
     get_effective_rate(default = UNDEFINED, burst = False)
 
@@ -3714,7 +3719,7 @@ class Controller(BaseController):
 
     return value
 
-  def map_address(self, mapping):
+  def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
     """
     Map addresses to replacement addresses. Tor replaces subseqent connections
     to the original addresses with the replacement addresses.
@@ -3726,11 +3731,11 @@ class Controller(BaseController):
 
     :param dict mapping: mapping of original addresses to replacement addresses
 
+    :returns: **dict** with 'original -> replacement' address mappings
+
     :raises:
       * :class:`stem.InvalidRequest` if the addresses are malformed
       * :class:`stem.OperationFailed` if Tor couldn't fulfill the request
-
-    :returns: **dict** with 'original -> replacement' address mappings
     """
 
     mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in list(mapping.items())])
@@ -3739,7 +3744,7 @@ class Controller(BaseController):
 
     return response.entries
 
-  def drop_guards(self):
+  def drop_guards(self) -> None:
     """
     Drops our present guard nodes and picks a new set.
 
@@ -3750,7 +3755,7 @@ class Controller(BaseController):
 
     self.msg('DROPGUARDS')
 
-  def _post_authentication(self):
+  def _post_authentication(self) -> None:
     super(Controller, self)._post_authentication()
 
     # try to re-attach event listeners to the new instance
@@ -3788,7 +3793,7 @@ class Controller(BaseController):
       else:
         log.warn('We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)' % response)
 
-  def _handle_event(self, event_message):
+  def _handle_event(self, event_message: str) -> None:
     try:
       stem.response.convert('EVENT', event_message)
       event_type = event_message.type
@@ -3805,7 +3810,7 @@ class Controller(BaseController):
             except Exception as exc:
               log.warn('Event listener raised an uncaught exception (%s): %s' % (exc, event_message))
 
-  def _attach_listeners(self):
+  def _attach_listeners(self) -> Tuple[Sequence[str], Sequence[str]]:
     """
     Attempts to subscribe to the self._event_listeners events from tor. This is
     a no-op if we're not currently authenticated.
@@ -3849,7 +3854,7 @@ class Controller(BaseController):
     return (set_events, failed_events)
 
 
-def _parse_circ_path(path):
+def _parse_circ_path(path: str) -> Sequence[Tuple[str, str]]:
   """
   Parses a circuit path as a list of **(fingerprint, nickname)** tuples. Tor
   circuit paths are defined as being of the form...
@@ -3892,7 +3897,7 @@ def _parse_circ_path(path):
     return []
 
 
-def _parse_circ_entry(entry):
+def _parse_circ_entry(entry: str) -> Tuple[str, str]:
   """
   Parses a single relay's 'LongName' or 'ServerID'. See the
   :func:`~stem.control._parse_circ_path` function for more information.
@@ -3930,7 +3935,7 @@ def _parse_circ_entry(entry):
 
 
 @with_default()
-def _case_insensitive_lookup(entries, key, default = UNDEFINED):
+def _case_insensitive_lookup(entries: Union[Sequence[str], Mapping[str, Any]], key: str, default: Any = UNDEFINED) -> Any:
   """
   Makes a case insensitive lookup within a list or dictionary, providing the
   first matching entry that we come across.
@@ -3957,7 +3962,7 @@ def _case_insensitive_lookup(entries, key, default = UNDEFINED):
   raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 
 
-def _get_with_timeout(event_queue, timeout, start_time):
+def _get_with_timeout(event_queue: queue.Queue, timeout: float, start_time: float) -> Any:
   """
   Pulls an item from a queue with a given timeout.
   """

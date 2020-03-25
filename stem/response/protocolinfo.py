@@ -8,7 +8,6 @@ import stem.socket
 import stem.version
 import stem.util.str_tools
 
-from stem.connection import AuthMethod
 from stem.util import log
 
 
@@ -26,12 +25,14 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
   :var str cookie_path: path of tor's authentication cookie
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     #   250-PROTOCOLINFO 1
     #   250-AUTH METHODS=COOKIE COOKIEFILE="/home/atagar/.tor/control_auth_cookie"
     #   250-VERSION Tor="0.2.1.30"
     #   250 OK
+
+    from stem.connection import AuthMethod
 
     self.protocol_version = None
     self.tor_version = None

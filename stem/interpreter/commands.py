@@ -21,11 +21,12 @@ import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
+from typing import BinaryIO, Iterator, Sequence, Tuple
 
 MAX_EVENTS = 100
 
 
-def _get_fingerprint(arg, controller):
+def _get_fingerprint(arg: str, controller: 'stem.control.Controller') -> str:
   """
   Resolves user input into a relay fingerprint. This accepts...
 
@@ -90,7 +91,7 @@ def _get_fingerprint(arg, controller):
 
 
 @contextlib.contextmanager
-def redirect(stdout, stderr):
+def redirect(stdout: BinaryIO, stderr: BinaryIO) -> Iterator[None]:
   original = sys.stdout, sys.stderr
   sys.stdout, sys.stderr = stdout, stderr
 
@@ -106,7 +107,7 @@ class ControlInterpreter(code.InteractiveConsole):
   for special irc style subcommands.
   """
 
-  def __init__(self, controller):
+  def __init__(self, controller: 'stem.control.Controller') -> None:
     self._received_events = []
 
     code.InteractiveConsole.__init__(self, {
@@ -129,7 +130,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     handle_event_real = self._controller._handle_event
 
-    def handle_event_wrapper(event_message):
+    def handle_event_wrapper(event_message: 'stem.response.events.Event') -> None:
       handle_event_real(event_message)
       self._received_events.insert(0, event_message)
 
@@ -138,7 +139,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     self._controller._handle_event = handle_event_wrapper
 
-  def get_events(self, *event_types):
+  def get_events(self, *event_types: 'stem.control.EventType') -> Sequence['stem.response.events.Event']:
     events = list(self._received_events)
     event_types = list(map(str.upper, event_types))  # make filtering case insensitive
 
@@ -147,7 +148,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     return events
 
-  def do_help(self, arg):
+  def do_help(self, arg: str) -> str:
     """
     Performs the '/help' operation, giving usage information for the given
     argument or a general summary if there wasn't one.
@@ -155,7 +156,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     return stem.interpreter.help.response(self._controller, arg)
 
-  def do_events(self, arg):
+  def do_events(self, arg: str) -> str:
     """
     Performs the '/events' operation, dumping the events that we've received
     belonging to the given types. If no types are specified then this provides
@@ -173,7 +174,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     return '\n'.join([format(str(e), *STANDARD_OUTPUT) for e in self.get_events(*event_types)])
 
-  def do_info(self, arg):
+  def do_info(self, arg: str) -> str:
     """
     Performs the '/info' operation, looking up a relay by fingerprint, IP
     address, or nickname and printing its descriptor and consensus entries in a
@@ -271,7 +272,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     return '\n'.join(lines)
 
-  def do_python(self, arg):
+  def do_python(self, arg: str) -> str:
     """
     Performs the '/python' operation, toggling if we accept python commands or
     not.
@@ -295,12 +296,11 @@ class ControlInterpreter(code.InteractiveConsole):
     return format(response, *STANDARD_OUTPUT)
 
   @uses_settings
-  def run_command(self, command, config, print_response = False):
+  def run_command(self, command: str, config: 'stem.util.conf.Config', print_response: bool = False) -> Sequence[Tuple[str, int]]:
     """
     Runs the given command. Requests starting with a '/' are special commands
     to the interpreter, and anything else is sent to the control port.
 
-    :param stem.control.Controller controller: tor control connection
     :param str command: command to be processed
     :param bool print_response: prints the response to stdout if true
 

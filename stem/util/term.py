@@ -50,6 +50,8 @@ Utilities for working with the terminal.
 import stem.util.enum
 import stem.util.str_tools
 
+from typing import Optional, Union
+
 TERM_COLORS = ('BLACK', 'RED', 'GREEN', 'YELLOW', 'BLUE', 'MAGENTA', 'CYAN', 'WHITE')
 
 # DISABLE_COLOR_SUPPORT is *not* being vended to Stem users. This is likely to
@@ -70,7 +72,7 @@ CSI = '\x1B[%sm'
 RESET = CSI % '0'
 
 
-def encoding(*attrs):
+def encoding(*attrs: Union['stem.util.terminal.Color', 'stem.util.terminal.BgColor', 'stem.util.terminal.Attr']) -> Optional[str]:
   """
   Provides the ANSI escape sequence for these terminal color or attributes.
 
@@ -81,7 +83,7 @@ def encoding(*attrs):
     provide an ecoding for
 
   :returns: **str** of the ANSI escape sequence, **None** no attributes are
-    recognized
+    unrecognized
   """
 
   term_encodings = []
@@ -99,7 +101,7 @@ def encoding(*attrs):
     return CSI % ';'.join(term_encodings)
 
 
-def format(msg, *attr):
+def format(msg: str, *attr: Union['stem.util.terminal.Color', 'stem.util.terminal.BgColor', 'stem.util.terminal.Attr']) -> str:
   """
   Simple terminal text formatting using `ANSI escape sequences
   <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>`_.
@@ -118,7 +120,7 @@ def format(msg, *attr):
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like 'red' are fine)
 
-  :returns: **unicode** wrapped with ANSI escape encodings, starting with the given
+  :returns: **str** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
   """
 

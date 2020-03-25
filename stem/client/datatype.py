@@ -144,6 +144,8 @@ import stem.util
 import stem.util.connection
 import stem.util.enum
 
+from typing import Any, Tuple, Type, Union
+
 ZERO = b'\x00'
 HASH_LEN = 20
 KEY_LEN = 16
@@ -155,7 +157,7 @@ class _IntegerEnum(stem.util.enum.Enum):
   **UNKNOWN** value for integer values that lack a mapping.
   """
 
-  def __init__(self, *args):
+  def __init__(self, *args: Tuple[str, int]) -> None:
     self._enum_to_int = {}
     self._int_to_enum = {}
     parent_args = []
@@ -176,7 +178,7 @@ class _IntegerEnum(stem.util.enum.Enum):
     parent_args.append(('UNKNOWN', 'UNKNOWN'))
     super(_IntegerEnum, self).__init__(*parent_args)
 
-  def get(self, val):
+  def get(self, val: Union[int, str]) -> Tuple[str, int]:
     """
     Provides the (enum, int_value) tuple for a given value.
     """
@@ -246,7 +248,7 @@ CloseReason = _IntegerEnum(
 )
 
 
-def split(content, size):
+def split(content: bytes, size: int) -> Tuple[bytes, bytes]:
   """
   Simple split of bytes into two substrings.
 
@@ -270,7 +272,7 @@ class LinkProtocol(int):
     from a range that's determined by our link protocol.
   """
 
-  def __new__(cls, version):
+  def __new__(cls: Type['stem.client.datatype.LinkProtocol'], version: int) -> 'stem.client.datatype.LinkProtocol':
     if isinstance(version, LinkProtocol):
       return version  # already a LinkProtocol
 
@@ -284,14 +286,14 @@ class LinkProtocol(int):
 
     return protocol
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     # All LinkProtocol attributes can be derived from our version, so that's
     # all we need in our hash. Offsetting by our type so we don't hash conflict
     # with ints.
 
     return self.version * hash(str(type(self)))
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     if isinstance(other, int):
       return self.version == other
     elif isinstance(other, LinkProtocol):
@@ -299,10 +301,10 @@ class LinkProtocol(int):
     else:
       return False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
-  def __int__(self):
+  def __int__(self) -> int:
     return self.version
 
 
@@ -311,7 +313,7 @@ class Field(object):
   Packable and unpackable datatype.
   """
 
-  def pack(self):
+  def pack(self) -> bytes:
     """
     Encodes field into bytes.
 
@@ -323,7 +325,7 @@ class Field(object):
     raise NotImplementedError('Not yet available')
 
   @classmethod
-  def unpack(cls, packed):
+  def unpack(cls, packed: bytes) -> 'stem.client.datatype.Field':
     """
     Decodes bytes into a field of this type.
 
@@ -342,7 +344,7 @@ class Field(object):
     return unpacked
 
   @staticmethod
-  def pop(packed):
+  def pop(packed: bytes) -> Tuple[Any, bytes]:
     """
     Decodes bytes as this field type, providing it and the remainder.
 
@@ -355,10 +357,10 @@ class Field(object):
 
     raise NotImplementedError('Not yet available')
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Field) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -378,15 +380,15 @@ class Size(Field):
   ====================  ===========
   """
 
-  def __init__(self, name, size):
+  def __init__(self, name: str, size: int) -> None:
     self.name = name
     self.size = size
 
   @staticmethod
-  def pop(packed):
+  def pop(packed: bytes) -> Tuple[int, bytes]:
     raise NotImplementedError("Use our constant's unpack() and pop() instead")
 
-  def pack(self, content):
+  def pack(self, content: int) -> bytes:
     try:
       return content.to_bytes(self.size, 'big')
     except:
@@ -397,18 +399,18 @@ class Size(Field):
       else:
         raise
 
-  def unpack(self, packed):
+  def unpack(self, packed: bytes) -> int:
     if self.size != len(packed):
       raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
 
     return int.from_bytes(packed, 'big')
 
-  def pop(self, packed):
+  def pop(self, packed: bytes) -> Tuple[int, bytes]:
     to_unpack, remainder = split(packed, self.size)
 
     return self.unpack(to_unpack), remainder
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'name', 'size', cache = True)
 
 
@@ -422,7 +424,7 @@ class Address(Field):
   :var bytes value_bin: encoded address value
   """
 
-  def __init__(self, value, addr_type = None):
+  def __init__(self, value: str, addr_type: Union[int, 'stem.client.datatype.AddrType'] = None) -> None:
     if addr_type is None:
       if stem.util.connection.is_valid_ipv4_address(value):
         addr_type = AddrType.IPv4
@@ -461,7 +463,7 @@ class Address(Field):
       self.value = None
       self.value_bin = value
 
-  def pack(self):
+  def pack(self) -> bytes:
     cell = bytearray()
     cell += Size.CHAR.pack(self.type_int)
     cell += Size.CHAR.pack(len(self.value_bin))
@@ -469,7 +471,7 @@ class Address(Field):
     return bytes(cell)
 
   @staticmethod
-  def pop(content):
+  def pop(content) -> Tuple['stem.client.datatype.Address', bytes]:
     addr_type, content = Size.CHAR.pop(content)
     addr_length, content = Size.CHAR.pop(content)
 
@@ -480,7 +482,7 @@ class Address(Field):
 
     return Address(addr_value, addr_type), content
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'type_int', 'value_bin', cache = True)
 
 
@@ -493,11 +495,11 @@ class Certificate(Field):
   :var bytes value: certificate value
   """
 
-  def __init__(self, cert_type, value):
+  def __init__(self, cert_type: Union[int, 'stem.client.datatype.CertType'], value: bytes) -> None:
     self.type, self.type_int = CertType.get(cert_type)
     self.value = value
 
-  def pack(self):
+  def pack(self) -> bytes:
     cell = bytearray()
     cell += Size.CHAR.pack(self.type_int)
     cell += Size.SHORT.pack(len(self.value))
@@ -505,7 +507,7 @@ class Certificate(Field):
     return bytes(cell)
 
   @staticmethod
-  def pop(content):
+  def pop(content: bytes) -> Tuple['stem.client.datatype.Certificate', bytes]:
     cert_type, content = Size.CHAR.pop(content)
     cert_size, content = Size.SHORT.pop(content)
 
@@ -515,7 +517,7 @@ class Certificate(Field):
     cert_bytes, content = split(content, cert_size)
     return Certificate(cert_type, cert_bytes), content
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'type_int', 'value')
 
 
@@ -532,12 +534,12 @@ class LinkSpecifier(Field):
   :var bytes value: encoded link specification destination
   """
 
-  def __init__(self, link_type, value):
+  def __init__(self, link_type: int, value: bytes) -> None:
     self.type = link_type
     self.value = value
 
   @staticmethod
-  def pop(packed):
+  def pop(packed: bytes) -> Tuple['stem.client.datatype.LinkSpecifier', bytes]:
     # LSTYPE (Link specifier type)           [1 byte]
     # LSLEN  (Link specifier length)         [1 byte]
     # LSPEC  (Link specifier)                [LSLEN bytes]
@@ -561,7 +563,7 @@ class LinkSpecifier(Field):
     else:
       return LinkSpecifier(link_type, value), packed  # unrecognized type
 
-  def pack(self):
+  def pack(self) -> bytes:
     cell = bytearray()
     cell += Size.CHAR.pack(self.type)
     cell += Size.CHAR.pack(len(self.value))
@@ -579,14 +581,14 @@ class LinkByIPv4(LinkSpecifier):
   :var int port: relay ORPort
   """
 
-  def __init__(self, address, port):
+  def __init__(self, address: str, port: int) -> None:
     super(LinkByIPv4, self).__init__(0, _pack_ipv4_address(address) + Size.SHORT.pack(port))
 
     self.address = address
     self.port = port
 
   @staticmethod
-  def unpack(value):
+  def unpack(value: bytes) -> 'stem.client.datatype.LinkByIPv4':
     if len(value) != 6:
       raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
@@ -604,14 +606,14 @@ class LinkByIPv6(LinkSpecifier):
   :var int port: relay ORPort
   """
 
-  def __init__(self, address, port):
+  def __init__(self, address: str, port: int) -> None:
     super(LinkByIPv6, self).__init__(1, _pack_ipv6_address(address) + Size.SHORT.pack(port))
 
     self.address = address
     self.port = port
 
   @staticmethod
-  def unpack(value):
+  def unpack(value: bytes) -> 'stem.client.datatype.LinkByIPv6':
     if len(value) != 18:
       raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
 
@@ -628,7 +630,7 @@ class LinkByFingerprint(LinkSpecifier):
   :var str fingerprint: relay sha1 fingerprint
   """
 
-  def __init__(self, value):
+  def __init__(self, value: bytes) -> None:
     super(LinkByFingerprint, self).__init__(2, value)
 
     if len(value) != 20:
@@ -646,7 +648,7 @@ class LinkByEd25519(LinkSpecifier):
   :var str fingerprint: relay ed25519 fingerprint
   """
 
-  def __init__(self, value):
+  def __init__(self, value: bytes) -> None:
     super(LinkByEd25519, self).__init__(3, value)
 
     if len(value) != 32:
@@ -668,7 +670,7 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
   """
 
   @staticmethod
-  def from_value(key_material):
+  def from_value(key_material: bytes) -> 'stem.client.datatype.KDF':
     # Derived key material, as per...
     #
     #   K = H(K0 | [00]) | H(K0 | [01]) | H(K0 | [02]) | ...
@@ -689,19 +691,19 @@ class KDF(collections.namedtuple('KDF', ['key_hash', 'forward_digest', 'backward
     return KDF(key_hash, forward_digest, backward_digest, forward_key, backward_key)
 
 
-def _pack_ipv4_address(address):
+def _pack_ipv4_address(address: str) -> bytes:
   return b''.join([Size.CHAR.pack(int(v)) for v in address.split('.')])
 
 
-def _unpack_ipv4_address(value):
+def _unpack_ipv4_address(value: str) -> bytes:
   return '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
 
 
-def _pack_ipv6_address(address):
+def _pack_ipv6_address(address: str) -> bytes:
   return b''.join([Size.SHORT.pack(int(v, 16)) for v in address.split(':')])
 
 
-def _unpack_ipv6_address(value):
+def _unpack_ipv6_address(value: str) -> bytes:
   return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 

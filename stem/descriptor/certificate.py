@@ -64,6 +64,7 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.client.datatype import CertType, Field, Size, split
+from typing import Callable, Dict, Optional, Sequence, Tuple, Union
 
 ED25519_KEY_LENGTH = 32
 ED25519_HEADER_LENGTH = 40
@@ -88,7 +89,7 @@ class Ed25519Extension(Field):
   :var bytes data: data the extension concerns
   """
 
-  def __init__(self, ext_type, flag_val, data):
+  def __init__(self, ext_type: 'stem.descriptor.certificate.ExtensionType', flag_val: int, data: bytes) -> None:
     self.type = ext_type
     self.flags = []
     self.flag_int = flag_val if flag_val else 0
@@ -104,7 +105,7 @@ class Ed25519Extension(Field):
     if ext_type == ExtensionType.HAS_SIGNING_KEY and len(data) != 32:
       raise ValueError('Ed25519 HAS_SIGNING_KEY extension must be 32 bytes, but was %i.' % len(data))
 
-  def pack(self):
+  def pack(self) -> bytes:
     encoded = bytearray()
     encoded += Size.SHORT.pack(len(self.data))
     encoded += Size.CHAR.pack(self.type)
@@ -113,7 +114,7 @@ class Ed25519Extension(Field):
     return bytes(encoded)
 
   @staticmethod
-  def pop(content):
+  def pop(content: bytes) -> Tuple['stem.descriptor.certificate.Ed25519Extension', bytes]:
     if len(content) < 4:
       raise ValueError('Ed25519 extension is missing header fields')
 
@@ -127,7 +128,7 @@ class Ed25519Extension(Field):
 
     return Ed25519Extension(ext_type, flags, data), content
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'type', 'flag_int', 'data', cache = True)
 
 
@@ -138,11 +139,11 @@ class Ed25519Certificate(object):
   :var int version: certificate format version
   """
 
-  def __init__(self, version):
+  def __init__(self, version: int) -> None:
     self.version = version
 
   @staticmethod
-  def unpack(content):
+  def unpack(content: bytes) -> 'stem.descriptor.certificate.Ed25519Certificate':
     """
     Parses a byte encoded ED25519 certificate.
 
@@ -162,7 +163,7 @@ class Ed25519Certificate(object):
       raise ValueError('Ed25519 certificate is version %i. Parser presently only supports version 1.' % version)
 
   @staticmethod
-  def from_base64(content):
+  def from_base64(content: str) -> 'stem.descriptor.certificate.Ed25519Certificate':
     """
     Parses a base64 encoded ED25519 certificate.
 
@@ -189,7 +190,7 @@ class Ed25519Certificate(object):
     except (TypeError, binascii.Error) as exc:
       raise ValueError("Ed25519 certificate wasn't propoerly base64 encoded (%s):\n%s" % (exc, content))
 
-  def pack(self):
+  def pack(self) -> bytes:
     """
     Encoded byte representation of our certificate.
 
@@ -198,7 +199,7 @@ class Ed25519Certificate(object):
 
     raise NotImplementedError('Certificate encoding has not been implemented for %s' % type(self).__name__)
 
-  def to_base64(self, pem = False):
+  def to_base64(self, pem: bool = False) -> str:
     """
     Base64 encoded certificate data.
 
@@ -206,7 +207,7 @@ class Ed25519Certificate(object):
       <https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail>`_, for more
       information see `RFC 7468 <https://tools.ietf.org/html/rfc7468>`_
 
-    :returns: **unicode** for our encoded certificate representation
+    :returns: **str** for our encoded certificate representation
     """
 
     encoded = b'\n'.join(stem.util.str_tools._split_by_length(base64.b64encode(self.pack()), 64))
@@ -217,7 +218,7 @@ class Ed25519Certificate(object):
     return stem.util.str_tools._to_unicode(encoded)
 
   @staticmethod
-  def _from_descriptor(keyword, attribute):
+  def _from_descriptor(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
     def _parse(descriptor, entries):
       value, block_type, block_contents = entries[keyword][0]
 
@@ -228,7 +229,7 @@ class Ed25519Certificate(object):
 
     return _parse
 
-  def __str__(self):
+  def __str__(self) -> str:
     return self.to_base64(pem = True)
 
 
@@ -252,7 +253,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     is unavailable
   """
 
-  def __init__(self, cert_type = None, expiration = None, key_type = None, key = None, extensions = None, signature = None, signing_key = None):
+  def __init__(self, cert_type: Optional['stem.client.datatype.CertType'] = None, expiration: Optional[datetime.datetime] = None, key_type: Optional[int] = None, key: Optional[bytes] = None, extensions: Optional[Sequence['stem.descriptor.certificate.Ed25519Extension']] = None, signature: Optional[bytes] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None) -> None:
     super(Ed25519CertificateV1, self).__init__(1)
 
     if cert_type is None:
@@ -284,7 +285,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     elif self.type == CertType.UNKNOWN:
       raise ValueError('Ed25519 certificate type %i is unrecognized' % self.type_int)
 
-  def pack(self):
+  def pack(self) -> bytes:
     encoded = bytearray()
     encoded += Size.CHAR.pack(self.version)
     encoded += Size.CHAR.pack(self.type_int)
@@ -302,7 +303,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     return bytes(encoded)
 
   @staticmethod
-  def unpack(content):
+  def unpack(content: bytes) -> 'stem.descriptor.certificate.Ed25519CertificateV1':
     if len(content) < ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH:
       raise ValueError('Ed25519 certificate was %i bytes, but should be at least %i' % (len(content), ED25519_HEADER_LENGTH + ED25519_SIGNATURE_LENGTH))
 
@@ -329,7 +330,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return Ed25519CertificateV1(cert_type, datetime.datetime.utcfromtimestamp(expiration_hours * 3600), key_type, key, extensions, signature)
 
-  def is_expired(self):
+  def is_expired(self) -> bool:
     """
     Checks if this certificate is presently expired or not.
 
@@ -338,7 +339,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return datetime.datetime.now() > self.expiration
 
-  def signing_key(self):
+  def signing_key(self) -> bytes:
     """
     Provides this certificate's signing key.
 
@@ -354,7 +355,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
 
     return None
 
-  def validate(self, descriptor):
+  def validate(self, descriptor: Union['stem.descriptor.server_descriptor.RelayDescriptor', 'stem.descriptor.hidden_service.HiddenServiceDescriptorV3']) -> None:
     """
     Validate our descriptor content matches its ed25519 signature. Supported
     descriptor types include...
@@ -410,7 +411,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       raise ValueError('Descriptor Ed25519 certificate signature invalid (signature forged or corrupt)')
 
   @staticmethod
-  def _signed_content(descriptor):
+  def _signed_content(descriptor: Union['stem.descriptor.server_descriptor.RelayDescriptor', 'stem.descriptor.hidden_service.HiddenServiceDescriptorV3']) -> bytes:
     """
     Provides this descriptor's signing constant, appended with the portion of
     the descriptor that's signed.

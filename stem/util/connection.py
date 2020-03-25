@@ -65,6 +65,7 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log, str_tools
+from typing import Optional, Sequence, Union
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -157,7 +158,7 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   """
 
 
-def download(url, timeout = None, retries = None):
+def download(url: str, timeout: Optional[int] = None, retries: Optional[int] = None) -> bytes:
   """
   Download from the given url.
 
@@ -198,7 +199,7 @@ def download(url, timeout = None, retries = None):
       raise stem.DownloadFailed(url, exc, stacktrace)
 
 
-def get_connections(resolver = None, process_pid = None, process_name = None):
+def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, process_pid: Optional[int] = None, process_name: Optional[str] = None) -> Sequence['stem.util.connection.Connection']:
   """
   Retrieves a list of the current connections for a given process. This
   provides a list of :class:`~stem.util.connection.Connection`. Note that
@@ -239,7 +240,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   if not process_pid and not process_name:
     raise ValueError('You must provide a pid or process name to provide connections for')
 
-  def _log(msg):
+  def _log(msg: str) -> None:
     if LOG_CONNECTION_RESOLUTION:
       log.debug(msg)
 
@@ -288,7 +289,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   connections = []
   resolver_regex = re.compile(resolver_regex_str)
 
-  def _parse_address_str(addr_type, addr_str, line):
+  def _parse_address_str(addr_type: str, addr_str: str, line: str) -> str:
     addr, port = addr_str.rsplit(':', 1)
 
     if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr, allow_brackets = True):
@@ -334,7 +335,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   return connections
 
 
-def system_resolvers(system = None):
+def system_resolvers(system: Optional[str] = None) -> Sequence['stem.util.connection.Resolver']:
   """
   Provides the types of connection resolvers likely to be available on this platform.
 
@@ -383,7 +384,7 @@ def system_resolvers(system = None):
   return resolvers
 
 
-def port_usage(port):
+def port_usage(port: int) -> Optional[str]:
   """
   Provides the common use of a given port. For example, 'HTTP' for port 80 or
   'SSH' for 22.
@@ -429,7 +430,7 @@ def port_usage(port):
   return PORT_USES.get(port)
 
 
-def is_valid_ipv4_address(address):
+def is_valid_ipv4_address(address: str) -> bool:
   """
   Checks if a string is a valid IPv4 address.
 
@@ -458,7 +459,7 @@ def is_valid_ipv4_address(address):
   return True
 
 
-def is_valid_ipv6_address(address, allow_brackets = False):
+def is_valid_ipv6_address(address: str, allow_brackets: bool = False) -> bool:
   """
   Checks if a string is a valid IPv6 address.
 
@@ -513,7 +514,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   return True
 
 
-def is_valid_port(entry, allow_zero = False):
+def is_valid_port(entry: Union[str, int, Sequence[str], Sequence[int]], allow_zero: bool = False) -> bool:
   """
   Checks if a string or int is a valid port number.
 
@@ -545,7 +546,7 @@ def is_valid_port(entry, allow_zero = False):
     return False
 
 
-def is_private_address(address):
+def is_private_address(address: str) -> bool:
   """
   Checks if the IPv4 address is in a range belonging to the local network or
   loopback. These include:
@@ -581,7 +582,7 @@ def is_private_address(address):
   return False
 
 
-def address_to_int(address):
+def address_to_int(address: str) -> int:
   """
   Provides an integer representation of a IPv4 or IPv6 address that can be used
   for sorting.
@@ -599,7 +600,7 @@ def address_to_int(address):
   return int(_address_to_binary(address), 2)
 
 
-def expand_ipv6_address(address):
+def expand_ipv6_address(address: str) -> str:
   """
   Expands abbreviated IPv6 addresses to their full colon separated hex format.
   For instance...
@@ -660,7 +661,7 @@ def expand_ipv6_address(address):
   return address
 
 
-def get_mask_ipv4(bits):
+def get_mask_ipv4(bits: int) -> str:
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
 
@@ -686,7 +687,7 @@ def get_mask_ipv4(bits):
   return '.'.join([str(int(octet, 2)) for octet in octets])
 
 
-def get_mask_ipv6(bits):
+def get_mask_ipv6(bits: int) -> str:
   """
   Provides the IPv6 mask for a given number of bits, in the hex colon-delimited
   format.
@@ -713,7 +714,7 @@ def get_mask_ipv6(bits):
   return ':'.join(['%04x' % int(group, 2) for group in groupings]).upper()
 
 
-def _get_masked_bits(mask):
+def _get_masked_bits(mask: str) -> int:
   """
   Provides the number of bits that an IPv4 subnet mask represents. Note that
   not all masks can be represented by a bit count.
@@ -738,13 +739,15 @@ def _get_masked_bits(mask):
     raise ValueError('Unable to convert mask to a bit count: %s' % mask)
 
 
-def _get_binary(value, bits):
+def _get_binary(value: int, bits: int) -> str:
   """
   Provides the given value as a binary string, padded with zeros to the given
   number of bits.
 
   :param int value: value to be converted
   :param int bits: number of bits to pad to
+
+  :returns: **str** of this binary value
   """
 
   # http://www.daniweb.com/code/snippet216539.html
@@ -754,9 +757,11 @@ def _get_binary(value, bits):
 # TODO: In stem 2.x we should consider unifying this with
 # stem.client.datatype's _unpack_ipv4_address() and _unpack_ipv6_address().
 
-def _address_to_binary(address):
+def _address_to_binary(address: str) -> str:
   """
   Provides the binary value for an IPv4 or IPv6 address.
+
+  :param str address: address to convert
 
   :returns: **str** with the binary representation of this address
 

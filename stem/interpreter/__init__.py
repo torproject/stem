@@ -38,11 +38,11 @@ uses_settings = stem.util.conf.uses_settings('stem_interpreter', settings_path)
 
 
 @uses_settings
-def msg(message, config, **attr):
+def msg(message: str, config: 'stem.util.conf.Config', **attr: str) -> str:
   return config.get(message).format(**attr)
 
 
-def main():
+def main() -> None:
   try:
     import readline
   except ImportError:
@@ -135,7 +135,7 @@ def main():
         controller.msg(args.run_cmd)
 
         try:
-          raw_input()
+          input()
         except (KeyboardInterrupt, stem.SocketClosed):
           pass
       else:

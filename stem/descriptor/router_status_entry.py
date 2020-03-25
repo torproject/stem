@@ -27,6 +27,8 @@ import io
 import stem.exit_policy
 import stem.util.str_tools
 
+from typing import Any, BinaryIO, Dict, Iterator, Mapping, Optional, Sequence, Tuple, Type
+
 from stem.descriptor import (
   KEYWORD_LINE,
   Descriptor,
@@ -44,7 +46,7 @@ from stem.descriptor import (
 _parse_pr_line = _parse_protocol_line('pr', 'protocols')
 
 
-def _parse_file(document_file, validate, entry_class, entry_keyword = 'r', start_position = None, end_position = None, section_end_keywords = (), extra_args = ()):
+def _parse_file(document_file: BinaryIO, validate: bool, entry_class: Type['stem.descriptor.router_status_entry.RouterStatusEntry'], entry_keyword: str = 'r', start_position: int = None, end_position: int = None, section_end_keywords: Sequence[str] = (), extra_args: Sequence[str] = ()) -> Iterator['stem.descriptor.router_status_entry.RouterStatusEntry']:
   """
   Reads a range of the document_file containing some number of entry_class
   instances. We deliminate the entry_class entries by the keyword on their
@@ -111,7 +113,7 @@ def _parse_file(document_file, validate, entry_class, entry_keyword = 'r', start
       break
 
 
-def _parse_r_line(descriptor, entries):
+def _parse_r_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # Parses a RouterStatusEntry's 'r' line. They're very nearly identical for
   # all current entry types (v2, v3, and microdescriptor v3) with one little
   # wrinkle: only the microdescriptor flavor excludes a 'digest' field.
@@ -163,7 +165,7 @@ def _parse_r_line(descriptor, entries):
     raise ValueError("Publication time time wasn't parsable: r %s" % value)
 
 
-def _parse_a_line(descriptor, entries):
+def _parse_a_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "a" SP address ":" portlist
   # example: a [2001:888:2133:0:82:94:251:204]:9001
 
@@ -186,7 +188,7 @@ def _parse_a_line(descriptor, entries):
   descriptor.or_addresses = or_addresses
 
 
-def _parse_s_line(descriptor, entries):
+def _parse_s_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "s" Flags
   # example: s Named Running Stable Valid
 
@@ -201,7 +203,7 @@ def _parse_s_line(descriptor, entries):
       raise ValueError("%s had extra whitespace on its 's' line: s %s" % (descriptor._name(), value))
 
 
-def _parse_v_line(descriptor, entries):
+def _parse_v_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "v" version
   # example: v Tor 0.2.2.35
   #
@@ -219,7 +221,7 @@ def _parse_v_line(descriptor, entries):
       raise ValueError('%s has a malformed tor version (%s): v %s' % (descriptor._name(), exc, value))
 
 
-def _parse_w_line(descriptor, entries):
+def _parse_w_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "w" "Bandwidth=" INT ["Measured=" INT] ["Unmeasured=1"]
   # example: w Bandwidth=7980
 
@@ -266,7 +268,7 @@ def _parse_w_line(descriptor, entries):
   descriptor.unrecognized_bandwidth_entries = unrecognized_bandwidth_entries
 
 
-def _parse_p_line(descriptor, entries):
+def _parse_p_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "p" ("accept" / "reject") PortList
   #
   # examples:
@@ -282,7 +284,7 @@ def _parse_p_line(descriptor, entries):
     raise ValueError('%s exit policy is malformed (%s): p %s' % (descriptor._name(), exc, value))
 
 
-def _parse_id_line(descriptor, entries):
+def _parse_id_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "id" "ed25519" ed25519-identity
   #
   # examples:
@@ -305,7 +307,7 @@ def _parse_id_line(descriptor, entries):
       raise ValueError("'id' lines should contain both the key type and digest: id %s" % value)
 
 
-def _parse_m_line(descriptor, entries):
+def _parse_m_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "m" methods 1*(algorithm "=" digest)
   # example: m 8,9,10,11,12 sha256=g1vx9si329muxV3tquWIXXySNOIwRGMeAESKs/v4DWs
 
@@ -339,14 +341,14 @@ def _parse_m_line(descriptor, entries):
   descriptor.microdescriptor_hashes = all_hashes
 
 
-def _parse_microdescriptor_m_line(descriptor, entries):
+def _parse_microdescriptor_m_line(descriptor: 'stem.descriptor.Descriptor', entries):
   # "m" digest
   # example: m aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70
 
   descriptor.microdescriptor_digest = _value('m', entries)
 
 
-def _base64_to_hex(identity, check_if_fingerprint = True):
+def _base64_to_hex(identity: str, check_if_fingerprint: bool = True) -> str:
   """
   Decodes a base64 value to hex. For example...
 
@@ -420,7 +422,7 @@ class RouterStatusEntry(Descriptor):
   }
 
   @classmethod
-  def from_str(cls, content, **kwargs):
+  def from_str(cls: Type['stem.descriptor.router_status_entry.RouterStatusEntry'], content: str, **kwargs: Any) -> 'stem.descriptor.router_status_entry.RouterStatusEntry':
     # Router status entries don't have their own @type annotation, so to make
     # our subclass from_str() work we need to do the type inferencing ourself.
 
@@ -440,14 +442,14 @@ class RouterStatusEntry(Descriptor):
     else:
       raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
-  def __init__(self, content, validate = False, document = None):
+  def __init__(self, content: str, validate: bool = False, document: Optional['stem.descriptor.NetworkStatusDocument'] = None) -> None:
     """
     Parse a router descriptor in a network status document.
 
     :param str content: router descriptor content to be parsed
-    :param NetworkStatusDocument document: document this descriptor came from
     :param bool validate: checks the validity of the content if **True**, skips
       these checks otherwise
+    :param NetworkStatusDocument document: document this descriptor came from
 
     :raises: **ValueError** if the descriptor data is invalid
     """
@@ -472,21 +474,21 @@ class RouterStatusEntry(Descriptor):
     else:
       self._entries = entries
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     """
     Name for this descriptor type.
     """
 
     return 'Router status entries' if is_plural else 'Router status entry'
 
-  def _required_fields(self):
+  def _required_fields(self) -> Tuple[str]:
     """
     Provides lines that must appear in the descriptor.
     """
 
     return ()
 
-  def _single_fields(self):
+  def _single_fields(self) -> Tuple[str]:
     """
     Provides lines that can only appear in the descriptor once.
     """
@@ -512,18 +514,18 @@ class RouterStatusEntryV2(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.router_status_entry.RouterStatusEntryV2'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('r', '%s p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE %s %s 9001 0' % (_random_nickname(), _random_date(), _random_ipv4_address())),
     ))
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return 'Router status entries (v2)' if is_plural else 'Router status entry (v2)'
 
-  def _required_fields(self):
-    return ('r')
+  def _required_fields(self) -> Tuple[str]:
+    return ('r',)
 
-  def _single_fields(self):
+  def _single_fields(self) -> Tuple[str]:
     return ('r', 's', 'v')
 
 
@@ -603,19 +605,19 @@ class RouterStatusEntryV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.router_status_entry.RouterStatusEntryV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('r', '%s p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE %s %s 9001 0' % (_random_nickname(), _random_date(), _random_ipv4_address())),
       ('s', 'Fast Named Running Stable Valid'),
     ))
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return 'Router status entries (v3)' if is_plural else 'Router status entry (v3)'
 
-  def _required_fields(self):
+  def _required_fields(self) -> Tuple[str]:
     return ('r', 's')
 
-  def _single_fields(self):
+  def _single_fields(self) -> Tuple[str]:
     return ('r', 's', 'v', 'w', 'p', 'pr')
 
 
@@ -668,18 +670,18 @@ class RouterStatusEntryMicroV3(RouterStatusEntry):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.router_status_entry.RouterStatusEntryMicroV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('r', '%s ARIJF2zbqirB9IwsW0mQznccWww %s %s 9001 9030' % (_random_nickname(), _random_date(), _random_ipv4_address())),
       ('m', 'aiUklwBrua82obG5AsTX+iEpkjQA2+AQHxZ7GwMfY70'),
       ('s', 'Fast Guard HSDir Named Running Stable V2Dir Valid'),
     ))
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return 'Router status entries (micro v3)' if is_plural else 'Router status entry (micro v3)'
 
-  def _required_fields(self):
+  def _required_fields(self) -> Tuple[str]:
     return ('r', 's', 'm')
 
-  def _single_fields(self):
+  def _single_fields(self) -> Tuple[str]:
     return ('r', 's', 'v', 'w', 'm', 'pr')

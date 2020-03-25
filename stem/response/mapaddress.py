@@ -17,7 +17,7 @@ class MapAddressResponse(stem.response.ControlMessage):
     * :class:`stem.InvalidRequest` if the addresses provided were invalid
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     # 250-127.192.10.10=torproject.org
     # 250 1.2.3.4=tor.freehaven.net

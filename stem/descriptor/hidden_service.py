@@ -51,6 +51,7 @@ import stem.util.tor_tools
 
 from stem.client.datatype import CertType
 from stem.descriptor.certificate import ExtensionType, Ed25519Extension, Ed25519Certificate, Ed25519CertificateV1
+from typing import Any, BinaryIO, Callable, Dict, Iterator, Mapping, Optional, Sequence, Tuple, Type, Union
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -162,7 +163,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
   """
 
   @staticmethod
-  def parse(content):
+  def parse(content: str) -> 'stem.descriptor.hidden_service.IntroductionPointV3':
     """
     Parses an introduction point from its descriptor content.
 
@@ -200,7 +201,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, legacy_key, legacy_key_cert)
 
   @staticmethod
-  def create_for_address(address, port, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
+  def create_for_address(address: str, port: int, expiration: Optional[datetime.datetime] = None, onion_key: Optional[str] = None, enc_key: Optional[str] = None, auth_key: Optional[str] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None) -> 'stem.descriptor.hidden_service.IntroductionPointV3':
     """
     Simplified constructor for a single address/port link specifier.
 
@@ -232,7 +233,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return IntroductionPointV3.create_for_link_specifiers(link_specifiers, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None)
 
   @staticmethod
-  def create_for_link_specifiers(link_specifiers, expiration = None, onion_key = None, enc_key = None, auth_key = None, signing_key = None):
+  def create_for_link_specifiers(link_specifiers: Sequence['stem.client.datatype.LinkSpecifier'], expiration: Optional[datetime.datetime] = None, onion_key: Optional[str] = None, enc_key: Optional[str] = None, auth_key: Optional[str] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None) -> 'stem.descriptor.hidden_service.IntroductionPointV3':
     """
     Simplified constructor. For more sophisticated use cases you can use this
     as a template for how introduction points are properly created.
@@ -271,7 +272,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return IntroductionPointV3(link_specifiers, onion_key, auth_key_cert, enc_key, enc_key_cert, None, None)
 
-  def encode(self):
+  def encode(self) -> str:
     """
     Descriptor representation of this introduction point.
 
@@ -299,7 +300,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return '\n'.join(lines)
 
-  def onion_key(self):
+  def onion_key(self) -> 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey':
     """
     Provides our ntor introduction point public key.
 
@@ -312,7 +313,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return IntroductionPointV3._key_as(self.onion_key_raw, x25519 = True)
 
-  def auth_key(self):
+  def auth_key(self) -> 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey':
     """
     Provides our authentication certificate's public key.
 
@@ -325,7 +326,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return IntroductionPointV3._key_as(self.auth_key_cert.key, ed25519 = True)
 
-  def enc_key(self):
+  def enc_key(self) -> 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey':
     """
     Provides our encryption key.
 
@@ -338,7 +339,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return IntroductionPointV3._key_as(self.enc_key_raw, x25519 = True)
 
-  def legacy_key(self):
+  def legacy_key(self) -> 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey':
     """
     Provides our legacy introduction point public key.
 
@@ -352,7 +353,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     return IntroductionPointV3._key_as(self.legacy_key_raw, x25519 = True)
 
   @staticmethod
-  def _key_as(value, x25519 = False, ed25519 = False):
+  def _key_as(value: str, x25519: bool = False, ed25519: bool = False) -> Union['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey']:
     if value is None or (not x25519 and not ed25519):
       return value
 
@@ -375,7 +376,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
       return Ed25519PublicKey.from_public_bytes(value)
 
   @staticmethod
-  def _parse_link_specifiers(content):
+  def _parse_link_specifiers(content: str) -> 'stem.client.datatype.LinkSpecifier':
     try:
       content = base64.b64decode(content)
     except Exception as exc:
@@ -393,16 +394,16 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
 
     return link_specifiers
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     if not hasattr(self, '_hash'):
       self._hash = hash(self.encode())
 
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, IntroductionPointV3) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -417,22 +418,22 @@ class AuthorizedClient(object):
   :var str cookie: base64 encoded authentication cookie
   """
 
-  def __init__(self, id = None, iv = None, cookie = None):
+  def __init__(self, id: str = None, iv: str = None, cookie: str = None) -> None:
     self.id = stem.util.str_tools._to_unicode(id if id else base64.b64encode(os.urandom(8)).rstrip(b'='))
     self.iv = stem.util.str_tools._to_unicode(iv if iv else base64.b64encode(os.urandom(16)).rstrip(b'='))
     self.cookie = stem.util.str_tools._to_unicode(cookie if cookie else base64.b64encode(os.urandom(16)).rstrip(b'='))
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'id', 'iv', 'cookie', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, AuthorizedClient) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
-def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
+def _parse_file(descriptor_file: BinaryIO, desc_type: str = None, validate: bool = False, **kwargs: Any) -> Iterator['stem.descriptor.hidden_service.HiddenServiceDescriptor']:
   """
   Iterates over the hidden service descriptors in a file.
 
@@ -442,7 +443,7 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
     **True**, skips these checks otherwise
   :param dict kwargs: additional arguments for the descriptor constructor
 
-  :returns: iterator for :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
+  :returns: iterator for :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptor`
     instances in the file
 
   :raises:
@@ -472,7 +473,7 @@ def _parse_file(descriptor_file, desc_type = None, validate = False, **kwargs):
       break  # done parsing file
 
 
-def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, blinded_key):
+def _decrypt_layer(encrypted_block: bytes, constant: bytes, revision_counter: int, subcredential: bytes, blinded_key: bytes) -> str:
   if encrypted_block.startswith('-----BEGIN MESSAGE-----\n') and encrypted_block.endswith('\n-----END MESSAGE-----'):
     encrypted_block = encrypted_block[24:-22]
 
@@ -499,7 +500,7 @@ def _decrypt_layer(encrypted_block, constant, revision_counter, subcredential, b
   return stem.util.str_tools._to_unicode(plaintext)
 
 
-def _encrypt_layer(plaintext, constant, revision_counter, subcredential, blinded_key):
+def _encrypt_layer(plaintext: str, constant: bytes, revision_counter: int, subcredential: bytes, blinded_key: bytes) -> bytes:
   salt = os.urandom(16)
   cipher, mac_for = _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt)
 
@@ -510,7 +511,7 @@ def _encrypt_layer(plaintext, constant, revision_counter, subcredential, blinded
   return b'-----BEGIN MESSAGE-----\n%s\n-----END MESSAGE-----' % b'\n'.join(stem.util.str_tools._split_by_length(encoded, 64))
 
 
-def _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt):
+def _layer_cipher(constant: bytes, revision_counter: int, subcredential: bytes, blinded_key: bytes, salt: bytes) -> Tuple['cryptography.hazmat.primitives.ciphers.Cipher', Callable[[bytes], bytes]]:
   try:
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
@@ -530,7 +531,7 @@ def _layer_cipher(constant, revision_counter, subcredential, blinded_key, salt):
   return cipher, lambda ciphertext: hashlib.sha3_256(mac_prefix + ciphertext).digest()
 
 
-def _parse_protocol_versions_line(descriptor, entries):
+def _parse_protocol_versions_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value = _value('protocol-versions', entries)
 
   try:
@@ -545,7 +546,7 @@ def _parse_protocol_versions_line(descriptor, entries):
   descriptor.protocol_versions = versions
 
 
-def _parse_introduction_points_line(descriptor, entries):
+def _parse_introduction_points_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   _, block_type, block_contents = entries['introduction-points'][0]
 
   if not block_contents or block_type != 'MESSAGE':
@@ -559,7 +560,7 @@ def _parse_introduction_points_line(descriptor, entries):
     raise ValueError("'introduction-points' isn't base64 encoded content:\n%s" % block_contents)
 
 
-def _parse_v3_outer_clients(descriptor, entries):
+def _parse_v3_outer_clients(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "auth-client" client-id iv encrypted-cookie
 
   clients = {}
@@ -575,7 +576,7 @@ def _parse_v3_outer_clients(descriptor, entries):
   descriptor.clients = clients
 
 
-def _parse_v3_inner_formats(descriptor, entries):
+def _parse_v3_inner_formats(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value, formats = _value('create2-formats', entries), []
 
   for entry in value.split(' '):
@@ -587,7 +588,7 @@ def _parse_v3_inner_formats(descriptor, entries):
   descriptor.formats = formats
 
 
-def _parse_v3_introduction_points(descriptor, entries):
+def _parse_v3_introduction_points(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   if hasattr(descriptor, '_unparsed_introduction_points'):
     introduction_points = []
     remaining = descriptor._unparsed_introduction_points
@@ -687,7 +688,7 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.hidden_service.HiddenServiceDescriptorV2'], attr: Mapping[str, str] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('rendezvous-service-descriptor', 'y3olqqblqw2gbh6phimfuiroechjjafa'),
       ('version', '2'),
@@ -701,10 +702,10 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True):
+  def create(cls: Type['stem.descriptor.hidden_service.HiddenServiceDescriptorV2'], attr: Mapping[str, str] = None, exclude: Sequence[str] = (), validate: bool = True) -> 'stem.descriptor.hidden_service.HiddenServiceDescriptorV2':
     return cls(cls.content(attr, exclude), validate = validate, skip_crypto_validation = True)
 
-  def __init__(self, raw_contents, validate = False, skip_crypto_validation = False):
+  def __init__(self, raw_contents: str, validate: bool = False, skip_crypto_validation: bool = False) -> None:
     super(HiddenServiceDescriptorV2, self).__init__(raw_contents, lazy_load = not validate)
     entries = _descriptor_components(raw_contents, validate, non_ascii_fields = ('introduction-points'))
 
@@ -736,9 +737,11 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
       self._entries = entries
 
   @functools.lru_cache()
-  def introduction_points(self, authentication_cookie = None):
+  def introduction_points(self, authentication_cookie: Optional[str] = None) -> Sequence['stem.descriptor.hidden_service.IntroductionPointV2']:
     """
     Provided this service's introduction points.
+
+    :param str authentication_cookie: base64 encoded authentication cookie
 
     :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPointV2`
 
@@ -774,7 +777,7 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     return HiddenServiceDescriptorV2._parse_introduction_points(content)
 
   @staticmethod
-  def _decrypt_basic_auth(content, authentication_cookie):
+  def _decrypt_basic_auth(content: bytes, authentication_cookie: str) -> bytes:
     try:
       from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
       from cryptography.hazmat.backends import default_backend
@@ -821,7 +824,7 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     return content  # nope, unable to decrypt the content
 
   @staticmethod
-  def _decrypt_stealth_auth(content, authentication_cookie):
+  def _decrypt_stealth_auth(content: bytes, authentication_cookie: str) -> bytes:
     try:
       from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
       from cryptography.hazmat.backends import default_backend
@@ -836,7 +839,7 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     return decryptor.update(encrypted) + decryptor.finalize()
 
   @staticmethod
-  def _parse_introduction_points(content):
+  def _parse_introduction_points(content: bytes) -> Sequence['stem.descriptor.hidden_service.IntroductionPointV2']:
     """
     Provides the parsed list of IntroductionPointV2 for the unencrypted content.
     """
@@ -928,7 +931,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_nonce = None):
+  def content(cls: Type['stem.descriptor.hidden_service.HiddenServiceDescriptorV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), sign: bool = False, inner_layer: Optional['stem.descriptor.hidden_service.InnerLayer'] = None, outer_layer: Optional['stem.descriptor.hidden_service.OuterLayer'] = None, identity_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None, signing_cert: Optional['stem.descriptor.Ed25519CertificateV1'] = None, revision_counter: int = None, blinding_nonce: bytes = None) -> str:
     """
     Hidden service v3 descriptors consist of three parts:
 
@@ -1023,10 +1026,10 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, outer_layer = None, identity_key = None, signing_key = None, signing_cert = None, revision_counter = None, blinding_nonce = None):
+  def create(cls: Type['stem.descriptor.hidden_service.HiddenServiceDescriptorV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, sign: bool = False, inner_layer: Optional['stem.descriptor.hidden_service.InnerLayer'] = None, outer_layer: Optional['stem.descriptor.hidden_service.OuterLayer'] = None, identity_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None, signing_cert: Optional['stem.descriptor.Ed25519CertificateV1'] = None, revision_counter: int = None, blinding_nonce: bytes = None) -> 'stem.descriptor.hidden_service.HiddenServiceDescriptorV3':
     return cls(cls.content(attr, exclude, sign, inner_layer, outer_layer, identity_key, signing_key, signing_cert, revision_counter, blinding_nonce), validate = validate)
 
-  def __init__(self, raw_contents, validate = False):
+  def __init__(self, raw_contents: bytes, validate: bool = False) -> None:
     super(HiddenServiceDescriptorV3, self).__init__(raw_contents, lazy_load = not validate)
 
     self._inner_layer = None
@@ -1054,7 +1057,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     else:
       self._entries = entries
 
-  def decrypt(self, onion_address):
+  def decrypt(self, onion_address: str) -> 'stem.descriptor.hidden_service.InnerLayer':
     """
     Decrypt this descriptor. Hidden serice descriptors contain two encryption
     layers (:class:`~stem.descriptor.hidden_service.OuterLayer` and
@@ -1086,7 +1089,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     return self._inner_layer
 
   @staticmethod
-  def address_from_identity_key(key, suffix = True):
+  def address_from_identity_key(key: Union[bytes, 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey', 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'], suffix: bool = True) -> str:
     """
     Converts a hidden service identity key into its address. This accepts all
     key formats (private, public, or public bytes).
@@ -1094,7 +1097,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     :param Ed25519PublicKey,Ed25519PrivateKey,bytes key: hidden service identity key
     :param bool suffix: includes the '.onion' suffix if true, excluded otherwise
 
-    :returns: **unicode** hidden service address
+    :returns: **str** hidden service address
 
     :raises: **ImportError** if key is a cryptographic type and ed25519 support
       is unavailable
@@ -1109,7 +1112,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     return stem.util.str_tools._to_unicode(onion_address + b'.onion' if suffix else onion_address).lower()
 
   @staticmethod
-  def identity_key_from_address(onion_address):
+  def identity_key_from_address(onion_address: str) -> bool:
     """
     Converts a hidden service address into its public identity key.
 
@@ -1146,7 +1149,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     return pubkey
 
   @staticmethod
-  def _subcredential(identity_key, blinded_key):
+  def _subcredential(identity_key: bytes, blinded_key: bytes) -> bytes:
     # credential = H('credential' | public-identity-key)
     # subcredential = H('subcredential' | credential | blinded-public-key)
 
@@ -1186,11 +1189,11 @@ class OuterLayer(Descriptor):
   }
 
   @staticmethod
-  def _decrypt(encrypted, revision_counter, subcredential, blinded_key):
+  def _decrypt(encrypted: bytes, revision_counter: int, subcredential: bytes, blinded_key: bytes) -> 'stem.descriptor.hidden_service.OuterLayer':
     plaintext = _decrypt_layer(encrypted, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
     return OuterLayer(plaintext)
 
-  def _encrypt(self, revision_counter, subcredential, blinded_key):
+  def _encrypt(self, revision_counter: int, subcredential: bytes, blinded_key: bytes) -> bytes:
     # Spec mandated padding: "Before encryption the plaintext is padded with
     # NUL bytes to the nearest multiple of 10k bytes."
 
@@ -1201,7 +1204,7 @@ class OuterLayer(Descriptor):
     return _encrypt_layer(content, b'hsdir-superencrypted-data', revision_counter, subcredential, blinded_key)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, authorized_clients = None, subcredential = None, blinded_key = None):
+  def content(cls: Type['stem.descriptor.hidden_service.OuterLayer'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, sign: bool = False, inner_layer: Optional['stem.descriptor.hidden_service.InnerLayer'] = None, revision_counter: Optional[int] = None, authorized_clients: Optional[Sequence['stem.descriptor.hidden_service.AuthorizedClient']] = None, subcredential: bytes = None, blinded_key: bytes = None) -> str:
     try:
       from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
       from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
@@ -1235,10 +1238,10 @@ class OuterLayer(Descriptor):
     ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, inner_layer = None, revision_counter = None, authorized_clients = None, subcredential = None, blinded_key = None):
+  def create(cls: Type['stem.descriptor.hidden_service.OuterLayer'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, sign: bool = False, inner_layer: Optional['stem.descriptor.hidden_service.InnerLayer'] = None, revision_counter: int = None, authorized_clients: Optional[Sequence['stem.descriptor.hidden_service.AuthorizedClient']] = None, subcredential: bytes = None, blinded_key: bytes = None) -> 'stem.descriptor.hidden_service.OuterLayer':
     return cls(cls.content(attr, exclude, validate, sign, inner_layer, revision_counter, authorized_clients, subcredential, blinded_key), validate = validate)
 
-  def __init__(self, content, validate = False):
+  def __init__(self, content: bytes, validate: bool = False) -> None:
     content = stem.util.str_tools._to_bytes(content).rstrip(b'\x00')  # strip null byte padding
 
     super(OuterLayer, self).__init__(content, lazy_load = not validate)
@@ -1282,7 +1285,7 @@ class InnerLayer(Descriptor):
   }
 
   @staticmethod
-  def _decrypt(outer_layer, revision_counter, subcredential, blinded_key):
+  def _decrypt(outer_layer: 'stem.descriptor.hidden_service.OuterLayer', revision_counter: int, subcredential: bytes, blinded_key: bytes) -> bytes:
     plaintext = _decrypt_layer(outer_layer.encrypted, b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
     return InnerLayer(plaintext, validate = True, outer_layer = outer_layer)
 
@@ -1292,7 +1295,7 @@ class InnerLayer(Descriptor):
     return _encrypt_layer(self.get_bytes(), b'hsdir-encrypted-data', revision_counter, subcredential, blinded_key)
 
   @classmethod
-  def content(cls, attr = None, exclude = (), introduction_points = None):
+  def content(cls: Type['stem.descriptor.hidden_service.InnerLayer'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), introduction_points: Optional[Sequence['stem.descriptor.hidden_service.IntroductionPointV3']] = None) -> str:
     if introduction_points:
       suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
     else:
@@ -1303,10 +1306,10 @@ class InnerLayer(Descriptor):
     )) + stem.util.str_tools._to_bytes(suffix)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, introduction_points = None):
+  def create(cls: Type['stem.descriptor.hidden_service.InnerLayer'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, introduction_points: Optional[Sequence['stem.descriptor.hidden_service.IntroductionPointV3']] = None) -> 'stem.descriptor.hidden_service.InnerLayer':
     return cls(cls.content(attr, exclude, introduction_points), validate = validate)
 
-  def __init__(self, content, validate = False, outer_layer = None):
+  def __init__(self, content: bytes, validate: bool = False, outer_layer: Optional['stem.descriptor.hidden_service.OuterLayer'] = None) -> None:
     super(InnerLayer, self).__init__(content, lazy_load = not validate)
     self.outer = outer_layer
 
@@ -1331,7 +1334,7 @@ class InnerLayer(Descriptor):
       self._entries = entries
 
 
-def _blinded_pubkey(identity_key, blinding_nonce):
+def _blinded_pubkey(identity_key: bytes, blinding_nonce: bytes) -> bytes:
   from stem.util import ed25519
 
   mult = 2 ** (ed25519.b - 2) + sum(2 ** i * ed25519.bit(blinding_nonce, i) for i in range(3, ed25519.b - 2))
@@ -1339,7 +1342,7 @@ def _blinded_pubkey(identity_key, blinding_nonce):
   return ed25519.encodepoint(ed25519.scalarmult(P, mult))
 
 
-def _blinded_sign(msg, identity_key, blinded_key, blinding_nonce):
+def _blinded_sign(msg: bytes, identity_key: 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey', blinded_key: bytes, blinding_nonce: bytes) -> bytes:
   try:
     from cryptography.hazmat.primitives import serialization
   except ImportError:

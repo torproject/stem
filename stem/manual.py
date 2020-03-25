@@ -63,6 +63,8 @@ import stem.util.enum
 import stem.util.log
 import stem.util.system
 
+from typing import Any, Dict, Mapping, Optional, Sequence, TextIO, Tuple, Union
+
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_manual.sqlite')
@@ -103,13 +105,13 @@ class SchemaMismatch(IOError):
   :var tuple supported_schemas: schemas library supports
   """
 
-  def __init__(self, message, database_schema, library_schema):
+  def __init__(self, message: str, database_schema: int, supported_schemas: Tuple[int]) -> None:
     super(SchemaMismatch, self).__init__(message)
     self.database_schema = database_schema
-    self.library_schema = library_schema
+    self.supported_schemas = supported_schemas
 
 
-def query(query, *param):
+def query(query: str, *param: str) -> 'sqlite3.Cursor':
   """
   Performs the given query on our sqlite manual cache. This database should
   be treated as being read-only. File permissions generally enforce this, and
@@ -162,25 +164,25 @@ class ConfigOption(object):
   :var str description: longer manual description with details
   """
 
-  def __init__(self, name, category = Category.UNKNOWN, usage = '', summary = '', description = ''):
+  def __init__(self, name: str, category: 'stem.manual.Category' = Category.UNKNOWN, usage: str = '', summary: str = '', description: str = '') -> None:
     self.name = name
     self.category = category
     self.usage = usage
     self.summary = summary
     self.description = description
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'name', 'category', 'usage', 'summary', 'description', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, ConfigOption) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
 @functools.lru_cache()
-def _config(lowercase = True):
+def _config(lowercase: bool = True) -> Dict[str, Union[Sequence[str], str]]:
   """
   Provides a dictionary for our settings.cfg. This has a couple categories...
 
@@ -204,7 +206,7 @@ def _config(lowercase = True):
     return {}
 
 
-def _manual_differences(previous_manual, new_manual):
+def _manual_differences(previous_manual: 'stem.manual.Manual', new_manual: 'stem.manual.Manual') -> str:
   """
   Provides a description of how two manuals differ.
   """
@@ -249,7 +251,7 @@ def _manual_differences(previous_manual, new_manual):
   return '\n'.join(lines)
 
 
-def is_important(option):
+def is_important(option: str) -> bool:
   """
   Indicates if a configuration option of particularly common importance or not.
 
@@ -262,7 +264,7 @@ def is_important(option):
   return option.lower() in _config()['manual.important']
 
 
-def download_man_page(path = None, file_handle = None, url = GITWEB_MANUAL_URL, timeout = 20):
+def download_man_page(path: Optional[str] = None, file_handle: Optional[TextIO] = None, url: str = GITWEB_MANUAL_URL, timeout: int = 20) -> None:
   """
   Downloads tor's latest man page from `gitweb.torproject.org
   <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. This method is
@@ -347,7 +349,7 @@ class Manual(object):
   :var str stem_commit: stem commit to cache this manual information
   """
 
-  def __init__(self, name, synopsis, description, commandline_options, signals, files, config_options):
+  def __init__(self, name: str, synopsis: str, description: str, commandline_options: Mapping[str, str], signals: Mapping[str, str], files: Mapping[str, str], config_options: Mapping[str, str]) -> None:
     self.name = name
     self.synopsis = synopsis
     self.description = description
@@ -360,7 +362,7 @@ class Manual(object):
     self.schema = None
 
   @staticmethod
-  def from_cache(path = None):
+  def from_cache(path: Optional[str] = None) -> 'stem.manual.Manual':
     """
     Provides manual information cached with Stem. Unlike
     :func:`~stem.manual.Manual.from_man` and
@@ -424,7 +426,7 @@ class Manual(object):
       return manual
 
   @staticmethod
-  def from_man(man_path = 'tor'):
+  def from_man(man_path: str = 'tor') -> 'stem.manual.Manual':
     """
     Reads and parses a given man page.
 
@@ -467,7 +469,7 @@ class Manual(object):
     )
 
   @staticmethod
-  def from_remote(timeout = 60):
+  def from_remote(timeout: int = 60) -> 'stem.manual.Manual':
     """
     Reads and parses the latest tor man page `from gitweb.torproject.org
     <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. Note that
@@ -500,7 +502,7 @@ class Manual(object):
       download_man_page(file_handle = tmp, timeout = timeout)
       return Manual.from_man(tmp.name)
 
-  def save(self, path):
+  def save(self, path: str) -> None:
     """
     Persists the manual content to a given location.
 
@@ -549,17 +551,17 @@ class Manual(object):
 
     os.rename(tmp_path, path)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'name', 'synopsis', 'description', 'commandline_options', 'signals', 'files', 'config_options', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Manual) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
-def _get_categories(content):
+def _get_categories(content: str) -> Dict[str, str]:
   """
   The man page is headers followed by an indented section. First pass gets
   the mapping of category titles to their lines.
@@ -605,7 +607,7 @@ def _get_categories(content):
   return categories
 
 
-def _get_indented_descriptions(lines):
+def _get_indented_descriptions(lines: Sequence[str]) -> Dict[str, Sequence[str]]:
   """
   Parses the commandline argument and signal sections. These are options
   followed by an indented description. For example...
@@ -635,7 +637,7 @@ def _get_indented_descriptions(lines):
   return dict([(arg, ' '.join(desc_lines)) for arg, desc_lines in options.items() if desc_lines])
 
 
-def _add_config_options(config_options, category, lines):
+def _add_config_options(config_options: Mapping[str, 'stem.manual.ConfigOption'], category: str, lines: Sequence[str]) -> None:
   """
   Parses a section of tor configuration options. These have usage information,
   followed by an indented description. For instance...
@@ -653,7 +655,7 @@ def _add_config_options(config_options, category, lines):
         since that platform lacks getrlimit(). (Default: 1000)
   """
 
-  def add_option(title, description):
+  def add_option(title: str, description: str) -> None:
     if 'PER INSTANCE OPTIONS' in title:
       return  # skip, unfortunately amid the options
 
@@ -697,7 +699,7 @@ def _add_config_options(config_options, category, lines):
     add_option(last_title, description)
 
 
-def _join_lines(lines):
+def _join_lines(lines: Sequence[str]) -> str:
   """
   Simple join, except we want empty lines to still provide a newline.
   """

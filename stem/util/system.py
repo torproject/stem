@@ -82,6 +82,7 @@ import stem.util.str_tools
 
 from stem import UNDEFINED
 from stem.util import log
+from typing import Any, Callable, Iterator, Mapping, Optional, Sequence, TextIO, Union
 
 State = stem.util.enum.UppercaseEnum(
   'PENDING',
@@ -189,7 +190,7 @@ class CallError(OSError):
   :var str stderr: stderr of the process
   """
 
-  def __init__(self, msg, command, exit_status, runtime, stdout, stderr):
+  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: str, stderr: str) -> None:
     self.msg = msg
     self.command = command
     self.exit_status = exit_status
@@ -197,7 +198,7 @@ class CallError(OSError):
     self.stdout = stdout
     self.stderr = stderr
 
-  def __str__(self):
+  def __str__(self) -> str:
     return self.msg
 
 
@@ -210,7 +211,7 @@ class CallTimeoutError(CallError):
   :var float timeout: time we waited
   """
 
-  def __init__(self, msg, command, exit_status, runtime, stdout, stderr, timeout):
+  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: str, stderr: str, timeout: float) -> None:
     super(CallTimeoutError, self).__init__(msg, command, exit_status, runtime, stdout, stderr)
     self.timeout = timeout
 
@@ -231,7 +232,7 @@ class DaemonTask(object):
   :var exception error: exception raised by subprocess if it failed
   """
 
-  def __init__(self, runner, args = None, priority = 15, start = False):
+  def __init__(self, runner: Callable, args: Optional[Sequence[Any]] = None, priority: int = 15, start: bool = False) -> None:
     self.runner = runner
     self.args = args
     self.priority = priority
@@ -247,7 +248,7 @@ class DaemonTask(object):
     if start:
       self.run()
 
-  def run(self):
+  def run(self) -> None:
     """
     Invokes the task if it hasn't already been started. If it has this is a
     no-op.
@@ -259,7 +260,7 @@ class DaemonTask(object):
       self._process.start()
       self.status = State.RUNNING
 
-  def join(self):
+  def join(self) -> Any:
     """
     Provides the result of the daemon task. If still running this blocks until
     the task is completed.
@@ -292,7 +293,7 @@ class DaemonTask(object):
       raise RuntimeError('BUG: unexpected status from daemon task, %s' % self.status)
 
   @staticmethod
-  def _run_wrapper(conn, priority, runner, args):
+  def _run_wrapper(conn: 'multiprocessing.connection.Connection', priority: int, runner: Callable, args: Sequence[Any]) -> None:
     start_time = time.time()
     os.nice(priority)
 
@@ -305,7 +306,7 @@ class DaemonTask(object):
       conn.close()
 
 
-def is_windows():
+def is_windows() -> bool:
   """
   Checks if we are running on Windows.
 
@@ -315,7 +316,7 @@ def is_windows():
   return platform.system() == 'Windows'
 
 
-def is_mac():
+def is_mac() -> bool:
   """
   Checks if we are running on Mac OSX.
 
@@ -325,7 +326,7 @@ def is_mac():
   return platform.system() == 'Darwin'
 
 
-def is_gentoo():
+def is_gentoo() -> bool:
   """
   Checks if we're running on Gentoo.
 
@@ -335,7 +336,7 @@ def is_gentoo():
   return os.path.exists('/etc/gentoo-release')
 
 
-def is_slackware():
+def is_slackware() -> bool:
   """
   Checks if we are running on a Slackware system.
 
@@ -345,7 +346,7 @@ def is_slackware():
   return os.path.exists('/etc/slackware-version')
 
 
-def is_bsd():
+def is_bsd() -> bool:
   """
   Checks if we are within the BSD family of operating systems. This currently
   recognizes Macs, FreeBSD, and OpenBSD but may be expanded later.
@@ -356,7 +357,7 @@ def is_bsd():
   return platform.system() in ('Darwin', 'FreeBSD', 'OpenBSD', 'NetBSD')
 
 
-def is_available(command, cached=True):
+def is_available(command: str, cached: bool = True) -> bool:
   """
   Checks the current PATH to see if a command is available or not. If more
   than one command is present (for instance "ls -a | grep foo") then this
@@ -399,7 +400,7 @@ def is_available(command, cached=True):
   return cmd_exists
 
 
-def is_running(command):
+def is_running(command: Union[str, int, Sequence[str]]) -> bool:
   """
   Checks for if a process with a given name or pid is running.
 
@@ -461,7 +462,7 @@ def is_running(command):
   return None
 
 
-def size_of(obj, exclude = None):
+def size_of(obj: Any, exclude: Optional[Sequence[int]] = None) -> int:
   """
   Provides the `approximate memory usage of an object
   <https://code.activestate.com/recipes/577504/>`_. This can recurse tuples,
@@ -504,7 +505,7 @@ def size_of(obj, exclude = None):
   return size
 
 
-def name_by_pid(pid):
+def name_by_pid(pid: int) -> Optional[str]:
   """
   Attempts to determine the name a given process is running under (not
   including arguments). This uses...
@@ -547,7 +548,7 @@ def name_by_pid(pid):
   return process_name
 
 
-def pid_by_name(process_name, multiple = False):
+def pid_by_name(process_name: str, multiple: bool = False) -> Union[int, Sequence[int]]:
   """
   Attempts to determine the process id for a running process, using...
 
@@ -718,7 +719,7 @@ def pid_by_name(process_name, multiple = False):
   return [] if multiple else None
 
 
-def pid_by_port(port):
+def pid_by_port(port: int) -> Optional[int]:
   """
   Attempts to determine the process id for a process with the given port,
   using...
@@ -838,7 +839,7 @@ def pid_by_port(port):
   return None  # all queries failed
 
 
-def pid_by_open_file(path):
+def pid_by_open_file(path: str) -> Optional[int]:
   """
   Attempts to determine the process id for a process with the given open file,
   using...
@@ -876,7 +877,7 @@ def pid_by_open_file(path):
   return None  # all queries failed
 
 
-def pids_by_user(user):
+def pids_by_user(user: str) -> Optional[Sequence[int]]:
   """
   Provides processes owned by a given user.
 
@@ -908,7 +909,7 @@ def pids_by_user(user):
   return None
 
 
-def cwd(pid):
+def cwd(pid: int) -> Optional[str]:
   """
   Provides the working directory of the given process.
 
@@ -977,7 +978,7 @@ def cwd(pid):
   return None  # all queries failed
 
 
-def user(pid):
+def user(pid: int) -> Optional[str]:
   """
   Provides the user a process is running under.
 
@@ -1010,7 +1011,7 @@ def user(pid):
   return None
 
 
-def start_time(pid):
+def start_time(pid: str) -> Optional[float]:
   """
   Provides the unix timestamp when the given process started.
 
@@ -1041,7 +1042,7 @@ def start_time(pid):
   return None
 
 
-def tail(target, lines = None):
+def tail(target: Union[str, TextIO], lines: Optional[int] = None) -> Iterator[str]:
   """
   Provides lines of a file starting with the end. For instance,
   'tail -n 50 /tmp/my_log' could be done with...
@@ -1094,7 +1095,7 @@ def tail(target, lines = None):
     block_number -= 1
 
 
-def bsd_jail_id(pid):
+def bsd_jail_id(pid: int) -> int:
   """
   Gets the jail id for a process. These seem to only exist for FreeBSD (this
   style for jails does not exist on Linux, OSX, or OpenBSD).
@@ -1129,7 +1130,7 @@ def bsd_jail_id(pid):
   return 0
 
 
-def bsd_jail_path(jid):
+def bsd_jail_path(jid: int) -> Optional[str]:
   """
   Provides the path of the given FreeBSD jail.
 
@@ -1151,7 +1152,7 @@ def bsd_jail_path(jid):
   return None
 
 
-def is_tarfile(path):
+def is_tarfile(path: str) -> bool:
   """
   Returns if the path belongs to a tarfile or not.
 
@@ -1177,7 +1178,7 @@ def is_tarfile(path):
     return mimetypes.guess_type(path)[0] == 'application/x-tar'
 
 
-def expand_path(path, cwd = None):
+def expand_path(path: str, cwd: Optional[str] = None) -> str:
   """
   Provides an absolute path, expanding tildes with the user's home and
   appending a current working directory if the path was relative.
@@ -1222,7 +1223,7 @@ def expand_path(path, cwd = None):
   return relative_path
 
 
-def files_with_suffix(base_path, suffix):
+def files_with_suffix(base_path: str, suffix: str) -> Iterator[str]:
   """
   Iterates over files in a given directory, providing filenames with a certain
   suffix.
@@ -1245,7 +1246,7 @@ def files_with_suffix(base_path, suffix):
           yield os.path.join(root, filename)
 
 
-def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = None, cwd = None, env = None):
+def call(command: Union[str, Sequence[str]], default: Any = UNDEFINED, ignore_exit_status: bool = False, timeout: Optional[float] = None, cwd: Optional[str] = None, env: Optional[Mapping[str, str]] = None) -> Sequence[str]:
   """
   call(command, default = UNDEFINED, ignore_exit_status = False)
 
@@ -1346,7 +1347,7 @@ def call(command, default = UNDEFINED, ignore_exit_status = False, timeout = Non
       SYSTEM_CALL_TIME += time.time() - start_time
 
 
-def get_process_name():
+def get_process_name() -> str:
   """
   Provides the present name of our process.
 
@@ -1398,7 +1399,7 @@ def get_process_name():
   return _PROCESS_NAME
 
 
-def set_process_name(process_name):
+def set_process_name(process_name: str) -> None:
   """
   Renames our current process from "python <args>" to a custom name. This is
   best-effort, not necessarily working on all platforms.
@@ -1432,7 +1433,7 @@ def set_process_name(process_name):
     _set_proc_title(process_name)
 
 
-def _set_argv(process_name):
+def _set_argv(process_name: str) -> None:
   """
   Overwrites our argv in a similar fashion to how it's done in C with:
   strcpy(argv[0], 'new_name');
@@ -1462,7 +1463,7 @@ def _set_argv(process_name):
   _PROCESS_NAME = process_name
 
 
-def _set_prctl_name(process_name):
+def _set_prctl_name(process_name: str) -> None:
   """
   Sets the prctl name, which is used by top and killall. This appears to be
   Linux specific and has the max of 15 characters.
@@ -1477,7 +1478,7 @@ def _set_prctl_name(process_name):
   libc.prctl(PR_SET_NAME, ctypes.byref(name_buffer), 0, 0, 0)
 
 
-def _set_proc_title(process_name):
+def _set_proc_title(process_name: str) -> None:
   """
   BSD specific calls (should be compataible with both FreeBSD and OpenBSD:
   http://fxr.watson.org/fxr/source/gen/setproctitle.c?v=FREEBSD-LIBC

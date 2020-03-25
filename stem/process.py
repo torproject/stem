@@ -29,11 +29,13 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
+from typing import Any, Callable, Mapping, Optional, Sequence, Union
+
 NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
 
 
-def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, close_output = True, stdin = None):
+def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc_path: Optional[str] = None, completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True, stdin: Optional[str] = None) -> subprocess.Popen:
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -131,7 +133,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
       tor_process.stdin.close()
 
     if timeout:
-      def timeout_handler(signum, frame):
+      def timeout_handler(signum: int, frame: Any) -> None:
         raise OSError('reached a %i second timeout without success' % timeout)
 
       signal.signal(signal.SIGALRM, timeout_handler)
@@ -197,7 +199,7 @@ def launch_tor(tor_cmd = 'tor', args = None, torrc_path = None, completion_perce
         pass
 
 
-def launch_tor_with_config(config, tor_cmd = 'tor', completion_percent = 100, init_msg_handler = None, timeout = DEFAULT_INIT_TIMEOUT, take_ownership = False, close_output = True):
+def launch_tor_with_config(config: Mapping[str, Union[str, Sequence[str]]], tor_cmd: str = 'tor', completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True) -> subprocess.Popen:
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches

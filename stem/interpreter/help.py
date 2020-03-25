@@ -18,7 +18,7 @@ from stem.interpreter import (
 from stem.util.term import format
 
 
-def response(controller, arg):
+def response(controller: 'stem.control.Controller', arg: str) -> str:
   """
   Provides our /help response.
 
@@ -33,7 +33,7 @@ def response(controller, arg):
   return _response(controller, _normalize(arg))
 
 
-def _normalize(arg):
+def _normalize(arg) -> str:
   arg = arg.upper()
 
   # If there's multiple arguments then just take the first. This is
@@ -52,7 +52,7 @@ def _normalize(arg):
 
 @functools.lru_cache()
 @uses_settings
-def _response(controller, arg, config):
+def _response(controller: 'stem.control.Controller', arg: str, config: 'stem.util.conf.Config') -> str:
   if not arg:
     return _general_help()
 
@@ -126,7 +126,7 @@ def _response(controller, arg, config):
   return output.rstrip()
 
 
-def _general_help():
+def _general_help() -> str:
   lines = []
 
   for line in msg('help.general').splitlines():

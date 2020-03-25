@@ -65,6 +65,8 @@ import stem.util.str_tools
 import stem.util.tor_tools
 import stem.version
 
+from typing import Any, BinaryIO, Callable, Dict, Iterator, Mapping, Optional, Sequence, Type
+
 from stem.descriptor import (
   PGP_BLOCK_END,
   Descriptor,
@@ -293,7 +295,7 @@ class DocumentDigest(collections.namedtuple('DocumentDigest', ['flavor', 'algori
   """
 
 
-def _parse_file(document_file, document_type = None, validate = False, is_microdescriptor = False, document_handler = DocumentHandler.ENTRIES, **kwargs):
+def _parse_file(document_file: BinaryIO, document_type: Optional[Type['stem.descriptor.networkstatus.NetworkStatusDocument']] = None, validate: bool = False, is_microdescriptor: bool = False, document_handler: 'stem.descriptor.DocumentHandler' = DocumentHandler.ENTRIES, **kwargs: Any) -> 'stem.descriptor.networkstatus.NetworkStatusDocument':
   """
   Parses a network status and iterates over the RouterStatusEntry in it. The
   document that these instances reference have an empty 'routers' attribute to
@@ -372,7 +374,7 @@ def _parse_file(document_file, document_type = None, validate = False, is_microd
     raise ValueError('Unrecognized document_handler: %s' % document_handler)
 
 
-def _parse_file_key_certs(certificate_file, validate = False):
+def _parse_file_key_certs(certificate_file: BinaryIO, validate: bool = False) -> Iterator['stem.descriptor.networkstatus.KeyCertificate']:
   """
   Parses a file containing one or more authority key certificates.
 
@@ -401,7 +403,7 @@ def _parse_file_key_certs(certificate_file, validate = False):
       break  # done parsing file
 
 
-def _parse_file_detached_sigs(detached_signature_file, validate = False):
+def _parse_file_detached_sigs(detached_signature_file: BinaryIO, validate: bool = False) -> Iterator['stem.descriptor.networkstatus.DetachedSignature']:
   """
   Parses a file containing one or more detached signatures.
 
@@ -431,7 +433,7 @@ class NetworkStatusDocument(Descriptor):
   Common parent for network status documents.
   """
 
-  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> None:
     """
     Digest of this descriptor's content. These are referenced by...
 
@@ -458,8 +460,8 @@ class NetworkStatusDocument(Descriptor):
       raise NotImplementedError('Network status document digests are only available in sha1 and sha256, not %s' % hash_type)
 
 
-def _parse_version_line(keyword, attribute, expected_version):
-  def _parse(descriptor, entries):
+def _parse_version_line(keyword: str, attribute: str, expected_version: int) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
     value = _value(keyword, entries)
 
     if not value.isdigit():
@@ -473,7 +475,7 @@ def _parse_version_line(keyword, attribute, expected_version):
   return _parse
 
 
-def _parse_dir_source_line(descriptor, entries):
+def _parse_dir_source_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value = _value('dir-source', entries)
   dir_source_comp = value.split()
 
@@ -493,7 +495,7 @@ def _parse_dir_source_line(descriptor, entries):
   descriptor.dir_port = None if dir_source_comp[2] == '0' else int(dir_source_comp[2])
 
 
-def _parse_additional_digests(descriptor, entries):
+def _parse_additional_digests(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   digests = []
 
   for val in _values('additional-digest', entries):
@@ -507,7 +509,7 @@ def _parse_additional_digests(descriptor, entries):
   descriptor.additional_digests = digests
 
 
-def _parse_additional_signatures(descriptor, entries):
+def _parse_additional_signatures(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   signatures = []
 
   for val, block_type, block_contents in entries['additional-signature']:
@@ -598,7 +600,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.networkstatus.NetworkStatusDocumentV2'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('network-status-version', '2'),
       ('dir-source', '%s %s 80' % (_random_ipv4_address(), _random_ipv4_address())),
@@ -610,7 +612,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       ('directory-signature', 'moria2' + _random_crypto_blob('SIGNATURE')),
     ))
 
-  def __init__(self, raw_content, validate = False):
+  def __init__(self, raw_content: bytes, validate: bool = False) -> None:
     super(NetworkStatusDocumentV2, self).__init__(raw_content, lazy_load = not validate)
 
     # Splitting the document from the routers. Unlike v3 documents we're not
@@ -646,7 +648,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
     else:
       self._entries = entries
 
-  def _check_constraints(self, entries):
+  def _check_constraints(self, entries: Dict[str, Sequence[str]]) -> None:
     required_fields = [field for (field, is_mandatory) in NETWORK_STATUS_V2_FIELDS if is_mandatory]
     for keyword in required_fields:
       if keyword not in entries:
@@ -662,7 +664,7 @@ class NetworkStatusDocumentV2(NetworkStatusDocument):
       raise ValueError("Network status document (v2) are expected to start with a 'network-status-version' line:\n%s" % str(self))
 
 
-def _parse_header_network_status_version_line(descriptor, entries):
+def _parse_header_network_status_version_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "network-status-version" version
 
   value = _value('network-status-version', entries)
@@ -683,7 +685,7 @@ def _parse_header_network_status_version_line(descriptor, entries):
     raise ValueError("Expected a version 3 network status document, got version '%s' instead" % descriptor.version)
 
 
-def _parse_header_vote_status_line(descriptor, entries):
+def _parse_header_vote_status_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "vote-status" type
   #
   # The consensus-method and consensus-methods fields are optional since
@@ -700,7 +702,7 @@ def _parse_header_vote_status_line(descriptor, entries):
     raise ValueError("A network status document's vote-status line can only be 'consensus' or 'vote', got '%s' instead" % value)
 
 
-def _parse_header_consensus_methods_line(descriptor, entries):
+def _parse_header_consensus_methods_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "consensus-methods" IntegerList
 
   if descriptor._lazy_loading and descriptor.is_vote:
@@ -717,7 +719,7 @@ def _parse_header_consensus_methods_line(descriptor, entries):
   descriptor.consensus_methods = consensus_methods
 
 
-def _parse_header_consensus_method_line(descriptor, entries):
+def _parse_header_consensus_method_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "consensus-method" Integer
 
   if descriptor._lazy_loading and descriptor.is_consensus:
@@ -731,7 +733,7 @@ def _parse_header_consensus_method_line(descriptor, entries):
   descriptor.consensus_method = int(value)
 
 
-def _parse_header_voting_delay_line(descriptor, entries):
+def _parse_header_voting_delay_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "voting-delay" VoteSeconds DistSeconds
 
   value = _value('voting-delay', entries)
@@ -744,8 +746,8 @@ def _parse_header_voting_delay_line(descriptor, entries):
     raise ValueError("A network status document's 'voting-delay' line must be a pair of integer values, but was '%s'" % value)
 
 
-def _parse_versions_line(keyword, attribute):
-  def _parse(descriptor, entries):
+def _parse_versions_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
     value, entries = _value(keyword, entries), []
 
     for entry in value.split(','):
@@ -759,7 +761,7 @@ def _parse_versions_line(keyword, attribute):
   return _parse
 
 
-def _parse_header_flag_thresholds_line(descriptor, entries):
+def _parse_header_flag_thresholds_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "flag-thresholds" SP THRESHOLDS
 
   value, thresholds = _value('flag-thresholds', entries).strip(), {}
@@ -782,7 +784,7 @@ def _parse_header_flag_thresholds_line(descriptor, entries):
   descriptor.flag_thresholds = thresholds
 
 
-def _parse_header_parameters_line(descriptor, entries):
+def _parse_header_parameters_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "params" [Parameters]
   # Parameter ::= Keyword '=' Int32
   # Int32 ::= A decimal integer between -2147483648 and 2147483647.
@@ -798,7 +800,7 @@ def _parse_header_parameters_line(descriptor, entries):
     descriptor._check_params_constraints()
 
 
-def _parse_directory_footer_line(descriptor, entries):
+def _parse_directory_footer_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # nothing to parse, simply checking that we don't have a value
 
   value = _value('directory-footer', entries)
@@ -807,7 +809,7 @@ def _parse_directory_footer_line(descriptor, entries):
     raise ValueError("A network status document's 'directory-footer' line shouldn't have any content, got 'directory-footer %s'" % value)
 
 
-def _parse_footer_directory_signature_line(descriptor, entries):
+def _parse_footer_directory_signature_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   signatures = []
 
   for sig_value, block_type, block_contents in entries['directory-signature']:
@@ -828,7 +830,7 @@ def _parse_footer_directory_signature_line(descriptor, entries):
   descriptor.signatures = signatures
 
 
-def _parse_package_line(descriptor, entries):
+def _parse_package_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   package_versions = []
 
   for value, _, _ in entries['package']:
@@ -849,7 +851,7 @@ def _parse_package_line(descriptor, entries):
   descriptor.packages = package_versions
 
 
-def _parsed_shared_rand_commit(descriptor, entries):
+def _parsed_shared_rand_commit(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "shared-rand-commit" Version AlgName Identity Commit [Reveal]
 
   commitments = []
@@ -871,7 +873,7 @@ def _parsed_shared_rand_commit(descriptor, entries):
   descriptor.shared_randomness_commitments = commitments
 
 
-def _parse_shared_rand_previous_value(descriptor, entries):
+def _parse_shared_rand_previous_value(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "shared-rand-previous-value" NumReveals Value
 
   value = _value('shared-rand-previous-value', entries)
@@ -884,7 +886,7 @@ def _parse_shared_rand_previous_value(descriptor, entries):
     raise ValueError("A network status document's 'shared-rand-previous-value' line must be a pair of values, the first an integer but was '%s'" % value)
 
 
-def _parse_shared_rand_current_value(descriptor, entries):
+def _parse_shared_rand_current_value(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "shared-rand-current-value" NumReveals Value
 
   value = _value('shared-rand-current-value', entries)
@@ -897,7 +899,7 @@ def _parse_shared_rand_current_value(descriptor, entries):
     raise ValueError("A network status document's 'shared-rand-current-value' line must be a pair of values, the first an integer but was '%s'" % value)
 
 
-def _parse_bandwidth_file_headers(descriptor, entries):
+def _parse_bandwidth_file_headers(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "bandwidth-file-headers" KeyValues
   # KeyValues ::= "" | KeyValue | KeyValues SP KeyValue
   # KeyValue ::= Keyword '=' Value
@@ -912,7 +914,7 @@ def _parse_bandwidth_file_headers(descriptor, entries):
   descriptor.bandwidth_file_headers = results
 
 
-def _parse_bandwidth_file_digest(descriptor, entries):
+def _parse_bandwidth_file_digest(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "bandwidth-file-digest" 1*(SP algorithm "=" digest)
 
   value = _value('bandwidth-file-digest', entries)
@@ -1096,7 +1098,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), authorities = None, routers = None):
+  def content(cls: Type['stem.descriptor.networkstatus.NetworkStatusDocumentV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), authorities: Optional[Sequence['stem.descriptor.networkstatus.DirectoryAuthority']] = None, routers: Optional[Sequence['stem.descriptor.router_status_entry.RouterStatusEntryV3']] = None) -> str:
     attr = {} if attr is None else dict(attr)
     is_vote = attr.get('vote-status') == 'vote'
 
@@ -1168,10 +1170,10 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     return desc_content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, authorities = None, routers = None):
+  def create(cls: Type['stem.descriptor.NetworkStatusDocumentV3'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, authorities: Optional[Sequence['stem.directory.DirectoryAuthority']] = None, routers: Optional[Sequence['stem.descriptor.router_status_entry.RouterStatusEntryV3']] = None) -> 'stem.descriptor.NetworkStatusDocumentV3':
     return cls(cls.content(attr, exclude, authorities, routers), validate = validate)
 
-  def __init__(self, raw_content, validate = False, default_params = True):
+  def __init__(self, raw_content: str, validate: bool = False, default_params: bool = True) -> None:
     """
     Parse a v3 network status document.
 
@@ -1213,7 +1215,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     self.routers = dict((desc.fingerprint, desc) for desc in router_iter)
     self._footer(document_file, validate)
 
-  def type_annotation(self):
+  def type_annotation(self) -> 'stem.descriptor.TypeAnnotation':
     if isinstance(self, BridgeNetworkStatusDocument):
       return TypeAnnotation('bridge-network-status', 1, 0)
     elif not self.is_microdescriptor:
@@ -1225,7 +1227,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
       return TypeAnnotation('network-status-microdesc-consensus-3', 1, 0)
 
-  def is_valid(self):
+  def is_valid(self) -> bool:
     """
     Checks if the current time is between this document's **valid_after** and
     **valid_until** timestamps. To be valid means the information within this
@@ -1239,7 +1241,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     return self.valid_after < datetime.datetime.utcnow() < self.valid_until
 
-  def is_fresh(self):
+  def is_fresh(self) -> bool:
     """
     Checks if the current time is between this document's **valid_after** and
     **fresh_until** timestamps. To be fresh means this should be the latest
@@ -1253,7 +1255,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     return self.valid_after < datetime.datetime.utcnow() < self.fresh_until
 
-  def validate_signatures(self, key_certs):
+  def validate_signatures(self, key_certs: Sequence['stem.descriptor.networkstatus.KeyCertificates']) -> None:
     """
     Validates we're properly signed by the signing certificates.
 
@@ -1287,7 +1289,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     if valid_digests < required_digests:
       raise ValueError('Network Status Document has %i valid signatures out of %i total, needed %i' % (valid_digests, total_digests, required_digests))
 
-  def get_unrecognized_lines(self):
+  def get_unrecognized_lines(self) -> Sequence[str]:
     if self._lazy_loading:
       self._parse(self._header_entries, False, parser_for_line = self._HEADER_PARSER_FOR_LINE)
       self._parse(self._footer_entries, False, parser_for_line = self._FOOTER_PARSER_FOR_LINE)
@@ -1295,7 +1297,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     return super(NetworkStatusDocumentV3, self).get_unrecognized_lines()
 
-  def meets_consensus_method(self, method):
+  def meets_consensus_method(self, method: int) -> bool:
     """
     Checks if we meet the given consensus-method. This works for both votes and
     consensuses, checking our 'consensus-method' and 'consensus-methods'
@@ -1313,7 +1315,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     else:
       return False  # malformed document
 
-  def _header(self, document_file, validate):
+  def _header(self, document_file: BinaryIO, validate: bool) -> None:
     content = bytes.join(b'', _read_until_keywords((AUTH_START, ROUTERS_START, FOOTER_START), document_file))
     entries = _descriptor_components(content, validate)
     header_fields = [attr[0] for attr in HEADER_STATUS_DOCUMENT_FIELDS]
@@ -1347,7 +1349,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       self._header_entries = entries
       self._entries.update(entries)
 
-  def _footer(self, document_file, validate):
+  def _footer(self, document_file: BinaryIO, validate: bool) -> None:
     entries = _descriptor_components(document_file.read(), validate)
     footer_fields = [attr[0] for attr in FOOTER_STATUS_DOCUMENT_FIELDS]
 
@@ -1379,7 +1381,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
       self._footer_entries = entries
       self._entries.update(entries)
 
-  def _check_params_constraints(self):
+  def _check_params_constraints(self) -> None:
     """
     Checks that the params we know about are within their documented ranges.
     """
@@ -1398,7 +1400,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
         raise ValueError("'%s' value on the params line must be in the range of %i - %i, was %i" % (key, minimum, maximum, value))
 
 
-def _check_for_missing_and_disallowed_fields(document, entries, fields):
+def _check_for_missing_and_disallowed_fields(document: 'stem.descriptor.networkstatus.NetworkStatusDocumentV3', entries: Mapping[str, str], fields: Sequence[str]) -> None:
   """
   Checks that we have mandatory fields for our type, and that we don't have
   any fields exclusive to the other (ie, no vote-only fields appear in a
@@ -1431,7 +1433,7 @@ def _check_for_missing_and_disallowed_fields(document, entries, fields):
     raise ValueError("Network status document has fields that shouldn't appear in this document type or version: %s" % ', '.join(disallowed_fields))
 
 
-def _parse_int_mappings(keyword, value, validate):
+def _parse_int_mappings(keyword: str, value: str, validate: bool) -> Dict[str, int]:
   # Parse a series of 'key=value' entries, checking the following:
   # - values are integers
   # - keys are sorted in lexical order
@@ -1461,7 +1463,7 @@ def _parse_int_mappings(keyword, value, validate):
   return results
 
 
-def _parse_dirauth_source_line(descriptor, entries):
+def _parse_dirauth_source_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "dir-source" nickname identity address IP dirport orport
 
   value = _value('dir-source', entries)
@@ -1580,7 +1582,7 @@ class DirectoryAuthority(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = (), is_vote = False):
+  def content(cls: Type['stem.descriptor.networkstatus.DirectoryAuthority'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), is_vote: bool = False) -> str:
     attr = {} if attr is None else dict(attr)
 
     # include mandatory 'vote-digest' if a consensus
@@ -1599,10 +1601,10 @@ class DirectoryAuthority(Descriptor):
     return content
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, is_vote = False):
+  def create(cls: Type['stem.descriptor.networkstatus.DirectoryAuthority'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, is_vote: bool = False) -> 'stem.descriptor.networkstatus.DirectoryAuthority':
     return cls(cls.content(attr, exclude, is_vote), validate = validate, is_vote = is_vote)
 
-  def __init__(self, raw_content, validate = False, is_vote = False):
+  def __init__(self, raw_content: str, validate: bool = False, is_vote: bool = False) -> None:
     """
     Parse a directory authority entry in a v3 network status document.
 
@@ -1677,7 +1679,7 @@ class DirectoryAuthority(Descriptor):
       self._entries = entries
 
 
-def _parse_dir_address_line(descriptor, entries):
+def _parse_dir_address_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "dir-address" IPPort
 
   value = _value('dir-address', entries)
@@ -1752,7 +1754,7 @@ class KeyCertificate(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.networkstatus.KeyCertificate'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('dir-key-certificate-version', '3'),
       ('fingerprint', _random_fingerprint()),
@@ -1764,7 +1766,7 @@ class KeyCertificate(Descriptor):
       ('dir-key-certification', _random_crypto_blob('SIGNATURE')),
     ))
 
-  def __init__(self, raw_content, validate = False):
+  def __init__(self, raw_content: str, validate: str = False) -> None:
     super(KeyCertificate, self).__init__(raw_content, lazy_load = not validate)
     entries = _descriptor_components(raw_content, validate)
 
@@ -1805,7 +1807,7 @@ class DocumentSignature(object):
   :raises: **ValueError** if a validity check fails
   """
 
-  def __init__(self, method, identity, key_digest, signature, flavor = None, validate = False):
+  def __init__(self, method: str, identity: str, key_digest: str, signature: str, flavor: Optional[str] = None, validate: bool = False) -> None:
     # Checking that these attributes are valid. Technically the key
     # digest isn't a fingerprint, but it has the same characteristics.
 
@@ -1822,7 +1824,7 @@ class DocumentSignature(object):
     self.signature = signature
     self.flavor = flavor
 
-  def _compare(self, other, method):
+  def _compare(self, other: Any, method: Callable[[Any, Any], bool]) -> bool:
     if not isinstance(other, DocumentSignature):
       return False
 
@@ -1832,19 +1834,19 @@ class DocumentSignature(object):
 
     return method(True, True)  # we're equal
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return hash(str(self).strip())
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s == o)
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
-  def __lt__(self, other):
+  def __lt__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s < o)
 
-  def __le__(self, other):
+  def __le__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s <= o)
 
 
@@ -1898,7 +1900,7 @@ class DetachedSignature(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.networkstatus.DetachedSignature'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('consensus-digest', '6D3CC0EFA408F228410A4A8145E1B0BB0670E442'),
       ('valid-after', _random_date()),
@@ -1906,7 +1908,7 @@ class DetachedSignature(Descriptor):
       ('valid-until', _random_date()),
     ))
 
-  def __init__(self, raw_content, validate = False):
+  def __init__(self, raw_content: str, validate: bool = False) -> None:
     super(DetachedSignature, self).__init__(raw_content, lazy_load = not validate)
     entries = _descriptor_components(raw_content, validate)
 
@@ -1941,7 +1943,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
 
   TYPE_ANNOTATION_NAME = 'bridge-network-status'
 
-  def __init__(self, raw_content, validate = False):
+  def __init__(self, raw_content: str, validate: bool = False) -> None:
     super(BridgeNetworkStatusDocument, self).__init__(raw_content)
 
     self.published = None

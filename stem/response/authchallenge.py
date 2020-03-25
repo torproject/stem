@@ -17,7 +17,7 @@ class AuthChallengeResponse(stem.response.ControlMessage):
   :var str server_nonce: server nonce provided by tor
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     #   250 AUTHCHALLENGE SERVERHASH=680A73C9836C4F557314EA1C4EDE54C285DB9DC89C83627401AEF9D7D27A95D5 SERVERNONCE=F8EA4B1F2C8B40EF1AF68860171605B910E3BBCABADF6FC3DB1FA064F4690E85
 

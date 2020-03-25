@@ -16,7 +16,7 @@ class GetConfResponse(stem.response.ControlMessage):
     values (**list** of **str**)
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     # 250-CookieAuthentication=0
     # 250-ControlPort=9100

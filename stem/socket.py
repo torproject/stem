@@ -62,8 +62,7 @@ Tor...
     |- is_localhost - returns if the socket is for the local system or not
     |- connection_time - timestamp when socket last connected or disconnected
     |- connect - connects a new socket
-    |- close - shuts down the socket
-    +- __enter__ / __exit__ - manages socket connection
+    +- close - shuts down the socket
 
   send_message - Writes a message to a control socket.
   recv_message - Reads a ControlMessage from a control socket.
@@ -80,6 +79,8 @@ import stem.response
 import stem.util.str_tools
 
 from stem.util import log
+from types import TracebackType
+from typing import BinaryIO, Callable, Optional, Type
 
 MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
 ERROR_MSG = 'Error while receiving a control message (%s): %s'
@@ -94,7 +95,7 @@ class BaseSocket(object):
   Thread safe socket, providing common socket functionality.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     self._socket, self._socket_file = None, None
     self._is_alive = False
     self._connection_time = 0.0  # time when we last connected or disconnected
@@ -106,7 +107,7 @@ class BaseSocket(object):
     self._send_lock = threading.RLock()
     self._recv_lock = threading.RLock()
 
-  def is_alive(self):
+  def is_alive(self) -> bool:
     """
     Checks if the socket is known to be closed. We won't be aware if it is
     until we either use it or have explicitily shut it down.
@@ -125,7 +126,7 @@ class BaseSocket(object):
 
     return self._is_alive
 
-  def is_localhost(self):
+  def is_localhost(self) -> bool:
     """
     Returns if the connection is for the local system or not.
 
@@ -135,7 +136,7 @@ class BaseSocket(object):
 
     return False
 
-  def connection_time(self):
+  def connection_time(self) -> float:
     """
     Provides the unix timestamp for when our socket was either connected or
     disconnected. That is to say, the time we connected if we're currently
@@ -149,7 +150,7 @@ class BaseSocket(object):
 
     return self._connection_time
 
-  def connect(self):
+  def connect(self) -> None:
     """
     Connects to a new socket, closing our previous one if we're already
     attached.
@@ -181,7 +182,7 @@ class BaseSocket(object):
         except stem.SocketError:
           self._connect()  # single retry
 
-  def close(self):
+  def close(self) -> None:
     """
     Shuts down the socket. If it's already closed then this is a no-op.
     """
@@ -217,7 +218,7 @@ class BaseSocket(object):
       if is_change:
         self._close()
 
-  def _send(self, message, handler):
+  def _send(self, message: str, handler: Callable[[socket.socket, BinaryIO, str], None]) -> None:
     """
     Send message in a thread safe manner. Handler is expected to be of the form...
 
@@ -241,7 +242,7 @@ class BaseSocket(object):
 
         raise
 
-  def _recv(self, handler):
+  def _recv(self, handler: Callable[[socket.socket, BinaryIO], None]) -> bytes:
     """
     Receives a message in a thread safe manner. Handler is expected to be of the form...
 
@@ -283,7 +284,7 @@ class BaseSocket(object):
 
         raise
 
-  def _get_send_lock(self):
+  def _get_send_lock(self) -> threading.RLock:
     """
     The send lock is useful to classes that interact with us at a deep level
     because it's used to lock :func:`stem.socket.ControlSocket.connect` /
@@ -296,27 +297,27 @@ class BaseSocket(object):
 
     return self._send_lock
 
-  def __enter__(self):
+  def __enter__(self) -> 'stem.socket.BaseSocket':
     return self
 
-  def __exit__(self, exit_type, value, traceback):
+  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
     self.close()
 
-  def _connect(self):
+  def _connect(self) -> None:
     """
     Connection callback that can be overwritten by subclasses and wrappers.
     """
 
     pass
 
-  def _close(self):
+  def _close(self) -> None:
     """
     Disconnection callback that can be overwritten by subclasses and wrappers.
     """
 
     pass
 
-  def _make_socket(self):
+  def _make_socket(self) -> socket.socket:
     """
     Constructs and connects new socket. This is implemented by subclasses.
 
@@ -342,7 +343,7 @@ class RelaySocket(BaseSocket):
   :var int port: ORPort our socket connects to
   """
 
-  def __init__(self, address = '127.0.0.1', port = 9050, connect = True):
+  def __init__(self, address: str = '127.0.0.1', port: int = 9050, connect: bool = True) -> None:
     """
     RelaySocket constructor.
 
@@ -361,7 +362,7 @@ class RelaySocket(BaseSocket):
     if connect:
       self.connect()
 
-  def send(self, message):
+  def send(self, message: str) -> None:
     """
     Sends a message to the relay's ORPort.
 
@@ -374,7 +375,7 @@ class RelaySocket(BaseSocket):
 
     self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
 
-  def recv(self, timeout = None):
+  def recv(self, timeout: Optional[float] = None) -> bytes:
     """
     Receives a message from the relay.
 
@@ -388,7 +389,7 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    def wrapped_recv(s, sf):
+    def wrapped_recv(s: socket.socket, sf: BinaryIO) -> bytes:
       if timeout is None:
         return s.recv()
       else:
@@ -404,10 +405,10 @@ class RelaySocket(BaseSocket):
 
     return self._recv(wrapped_recv)
 
-  def is_localhost(self):
+  def is_localhost(self) -> bool:
     return self.address == '127.0.0.1'
 
-  def _make_socket(self):
+  def _make_socket(self) -> socket.socket:
     try:
       relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       relay_socket.connect((self.address, self.port))
@@ -426,10 +427,10 @@ class ControlSocket(BaseSocket):
   which are expected to implement the **_make_socket()** method.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     super(ControlSocket, self).__init__()
 
-  def send(self, message):
+  def send(self, message: str) -> None:
     """
     Formats and sends a message to the control socket. For more information see
     the :func:`~stem.socket.send_message` function.
@@ -443,7 +444,7 @@ class ControlSocket(BaseSocket):
 
     self._send(message, lambda s, sf, msg: send_message(sf, msg))
 
-  def recv(self):
+  def recv(self) -> stem.response.ControlMessage:
     """
     Receives a message from the control socket, blocking until we've received
     one. For more information see the :func:`~stem.socket.recv_message` function.
@@ -467,7 +468,7 @@ class ControlPort(ControlSocket):
   :var int port: ControlPort our socket connects to
   """
 
-  def __init__(self, address = '127.0.0.1', port = 9051, connect = True):
+  def __init__(self, address: str = '127.0.0.1', port: int = 9051, connect: bool = True) -> None:
     """
     ControlPort constructor.
 
@@ -486,10 +487,10 @@ class ControlPort(ControlSocket):
     if connect:
       self.connect()
 
-  def is_localhost(self):
+  def is_localhost(self) -> bool:
     return self.address == '127.0.0.1'
 
-  def _make_socket(self):
+  def _make_socket(self) -> socket.socket:
     try:
       control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       control_socket.connect((self.address, self.port))
@@ -506,7 +507,7 @@ class ControlSocketFile(ControlSocket):
   :var str path: filesystem path of the socket we connect to
   """
 
-  def __init__(self, path = '/var/run/tor/control', connect = True):
+  def __init__(self, path: str = '/var/run/tor/control', connect: bool = True) -> None:
     """
     ControlSocketFile constructor.
 
@@ -523,10 +524,10 @@ class ControlSocketFile(ControlSocket):
     if connect:
       self.connect()
 
-  def is_localhost(self):
+  def is_localhost(self) -> bool:
     return True
 
-  def _make_socket(self):
+  def _make_socket(self) -> socket.socket:
     try:
       control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
       control_socket.connect(self.path)
@@ -535,7 +536,7 @@ class ControlSocketFile(ControlSocket):
       raise stem.SocketError(exc)
 
 
-def send_message(control_file, message, raw = False):
+def send_message(control_file: BinaryIO, message: str, raw: bool = False) -> None:
   """
   Sends a message to the control socket, adding the expected formatting for
   single verses multi-line messages. Neither message type should contain an
@@ -578,7 +579,7 @@ def send_message(control_file, message, raw = False):
     log.trace('Sent to tor:%s%s' % (msg_div, log_message))
 
 
-def _write_to_socket(socket_file, message):
+def _write_to_socket(socket_file: BinaryIO, message: str) -> None:
   try:
     socket_file.write(stem.util.str_tools._to_bytes(message))
     socket_file.flush()
@@ -601,7 +602,7 @@ def _write_to_socket(socket_file, message):
     raise stem.SocketClosed('file has been closed')
 
 
-def recv_message(control_file, arrived_at = None):
+def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> stem.response.ControlMessage:
   """
   Pulls from a control socket until we either have a complete message or
   encounter a problem.
@@ -721,7 +722,7 @@ def recv_message(control_file, arrived_at = None):
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
-def send_formatting(message):
+def send_formatting(message: str) -> None:
   """
   Performs the formatting expected from sent control messages. For more
   information see the :func:`~stem.socket.send_message` function.
@@ -750,7 +751,7 @@ def send_formatting(message):
     return message + '\r\n'
 
 
-def _log_trace(response):
+def _log_trace(response: bytes) -> None:
   if not log.is_tracing():
     return
 

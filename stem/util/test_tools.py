@@ -42,6 +42,8 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.system
 
+from typing import Any, Callable, Iterator, Mapping, Optional, Sequence, Tuple, Type
+
 CONFIG = stem.util.conf.config_dict('test', {
   'pycodestyle.ignore': [],
   'pyflakes.ignore': [],
@@ -55,7 +57,7 @@ AsyncStatus = stem.util.enum.UppercaseEnum('PENDING', 'RUNNING', 'FINISHED')
 AsyncResult = collections.namedtuple('AsyncResult', 'type msg')
 
 
-def assert_equal(expected, actual, msg = None):
+def assert_equal(expected: Any, actual: Any, msg: Optional[str] = None) -> None:
   """
   Function form of a TestCase's assertEqual.
 
@@ -72,7 +74,7 @@ def assert_equal(expected, actual, msg = None):
     raise AssertionError("Expected '%s' but was '%s'" % (expected, actual) if msg is None else msg)
 
 
-def assert_in(expected, actual, msg = None):
+def assert_in(expected: Any, actual: Any, msg: Optional[str] = None) -> None:
   """
   Asserts that a given value is within this content.
 
@@ -89,7 +91,7 @@ def assert_in(expected, actual, msg = None):
     raise AssertionError("Expected '%s' to be within '%s'" % (expected, actual) if msg is None else msg)
 
 
-def skip(msg):
+def skip(msg: str) -> None:
   """
   Function form of a TestCase's skipTest.
 
@@ -100,10 +102,12 @@ def skip(msg):
   :raises: **unittest.case.SkipTest** for this reason
   """
 
+  # TODO: remove now that python 2.x is unsupported?
+
   raise unittest.case.SkipTest(msg)
 
 
-def asynchronous(func):
+def asynchronous(func: Callable) -> Callable:
   test = stem.util.test_tools.AsyncTest(func)
   ASYNC_TESTS[test.name] = test
   return test.method
@@ -131,7 +135,7 @@ class AsyncTest(object):
   .. versionadded:: 1.6.0
   """
 
-  def __init__(self, runner, args = None, threaded = False):
+  def __init__(self, runner: Callable, args: Optional[Any] = None, threaded: bool = False) -> None:
     self.name = '%s.%s' % (runner.__module__, runner.__name__)
 
     self._runner = runner
@@ -147,8 +151,8 @@ class AsyncTest(object):
     self._result = None
     self._status = AsyncStatus.PENDING
 
-  def run(self, *runner_args, **kwargs):
-    def _wrapper(conn, runner, args):
+  def run(self, *runner_args: Any, **kwargs: Any) -> None:
+    def _wrapper(conn: 'multiprocessing.connection.Connection', runner: Callable, args: Any) -> None:
       os.nice(12)
 
       try:
@@ -187,14 +191,14 @@ class AsyncTest(object):
         self._process.start()
         self._status = AsyncStatus.RUNNING
 
-  def pid(self):
+  def pid(self) -> int:
     with self._process_lock:
       return self._process.pid if (self._process and not self._threaded) else None
 
-  def join(self):
+  def join(self) -> None:
     self.result(None)
 
-  def result(self, test):
+  def result(self, test: 'unittest.TestCase') -> None:
     with self._process_lock:
       if self._status == AsyncStatus.PENDING:
         self.run()
@@ -231,18 +235,18 @@ class TimedTestRunner(unittest.TextTestRunner):
   .. versionadded:: 1.6.0
   """
 
-  def run(self, test):
+  def run(self, test: 'unittest.TestCase') -> None:
     for t in test._tests:
       original_type = type(t)
 
       class _TestWrapper(original_type):
-        def run(self, result = None):
+        def run(self, result: Optional[Any] = None) -> Any:
           start_time = time.time()
           result = super(type(self), self).run(result)
           TEST_RUNTIMES[self.id()] = time.time() - start_time
           return result
 
-        def assertRaisesWith(self, exc_type, exc_msg, func, *args, **kwargs):
+        def assertRaisesWith(self, exc_type: Type[Exception], exc_msg: str, func: Callable, *args: Any, **kwargs: Any) -> None:
           """
           Asserts the given invokation raises the expected excepiton. This is
           similar to unittest's assertRaises and assertRaisesRegexp, but checks
@@ -255,10 +259,10 @@ class TimedTestRunner(unittest.TextTestRunner):
 
           return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), func, *args, **kwargs)
 
-        def id(self):
+        def id(self) -> str:
           return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
 
-        def __str__(self):
+        def __str__(self) -> str:
           return '%s (%s.%s)' % (self._testMethodName, original_type.__module__, original_type.__name__)
 
       t.__class__ = _TestWrapper
@@ -266,7 +270,7 @@ class TimedTestRunner(unittest.TextTestRunner):
     return super(TimedTestRunner, self).run(test)
 
 
-def test_runtimes():
+def test_runtimes() -> Mapping[str, float]:
   """
   Provides the runtimes of tests executed through TimedTestRunners.
 
@@ -279,7 +283,7 @@ def test_runtimes():
   return dict(TEST_RUNTIMES)
 
 
-def clean_orphaned_pyc(paths):
+def clean_orphaned_pyc(paths: Sequence[str]) -> Sequence[str]:
   """
   Deletes any file with a \\*.pyc extention without a corresponding \\*.py. This
   helps to address a common gotcha when deleting python files...
@@ -324,7 +328,7 @@ def clean_orphaned_pyc(paths):
   return orphaned_pyc
 
 
-def is_pyflakes_available():
+def is_pyflakes_available() -> bool:
   """
   Checks if pyflakes is availalbe.
 
@@ -334,7 +338,7 @@ def is_pyflakes_available():
   return _module_exists('pyflakes.api') and _module_exists('pyflakes.reporter')
 
 
-def is_pycodestyle_available():
+def is_pycodestyle_available() -> bool:
   """
   Checks if pycodestyle is availalbe.
 
@@ -349,7 +353,7 @@ def is_pycodestyle_available():
   return hasattr(pycodestyle, 'BaseReport')
 
 
-def stylistic_issues(paths, check_newlines = False, check_exception_keyword = False, prefer_single_quotes = False):
+def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_exception_keyword: bool = False, prefer_single_quotes: bool = False) -> Mapping[str, 'stem.util.test_tools.Issue']:
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress pycodestyle issues by making a 'test'
@@ -425,7 +429,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     else:
       ignore_rules.append(rule)
 
-  def is_ignored(path, rule, code):
+  def is_ignored(path: str, rule: str, code: str) -> bool:
     for ignored_path, ignored_rule, ignored_code in ignore_for_file:
       if path.endswith(ignored_path) and ignored_rule == rule and code.strip().startswith(ignored_code):
         return True
@@ -440,7 +444,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
     import pycodestyle
 
     class StyleReport(pycodestyle.BaseReport):
-      def init_file(self, filename, lines, expected, line_offset):
+      def init_file(self, filename: str, lines: Sequence[str], expected: Tuple[str], line_offset: int) -> None:
         super(StyleReport, self).init_file(filename, lines, expected, line_offset)
 
         if not check_newlines and not check_exception_keyword and not prefer_single_quotes:
@@ -473,7 +477,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
 
               issues.setdefault(filename, []).append(Issue(index + 1, 'use single rather than double quotes', line))
 
-      def error(self, line_number, offset, text, check):
+      def error(self, line_number: int, offset: int, text: str, check: str) -> None:
         code = super(StyleReport, self).error(line_number, offset, text, check)
 
         if code:
@@ -488,7 +492,7 @@ def stylistic_issues(paths, check_newlines = False, check_exception_keyword = Fa
   return issues
 
 
-def pyflakes_issues(paths):
+def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issue']:
   """
   Performs static checks via pyflakes. False positives can be ignored via
   'pyflakes.ignore' entries in our 'test' config. For instance...
@@ -521,23 +525,23 @@ def pyflakes_issues(paths):
     import pyflakes.reporter
 
     class Reporter(pyflakes.reporter.Reporter):
-      def __init__(self):
+      def __init__(self) -> None:
         self._ignored_issues = {}
 
         for line in CONFIG['pyflakes.ignore']:
           path, issue = line.split('=>')
           self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
-      def unexpectedError(self, filename, msg):
+      def unexpectedError(self, filename: str, msg: str) -> None:
         self._register_issue(filename, None, msg, None)
 
-      def syntaxError(self, filename, msg, lineno, offset, text):
+      def syntaxError(self, filename: str, msg: str, lineno: int, offset: int, text: str) -> None:
         self._register_issue(filename, lineno, msg, text)
 
-      def flake(self, msg):
+      def flake(self, msg: str) -> None:
         self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args, None)
 
-      def _is_ignored(self, path, issue):
+      def _is_ignored(self, path: str, issue: str) -> bool:
         # Paths in pyflakes_ignore are relative, so we need to check to see if our
         # path ends with any of them.
 
@@ -556,7 +560,7 @@ def pyflakes_issues(paths):
 
         return False
 
-      def _register_issue(self, path, line_number, issue, line):
+      def _register_issue(self, path: str, line_number: int, issue: str, line: int) -> None:
         if not self._is_ignored(path, issue):
           if path and line_number and not line:
             line = linecache.getline(path, line_number).strip()
@@ -571,7 +575,7 @@ def pyflakes_issues(paths):
   return issues
 
 
-def _module_exists(module_name):
+def _module_exists(module_name: str) -> bool:
   """
   Checks if a module exists.
 
@@ -587,7 +591,7 @@ def _module_exists(module_name):
     return False
 
 
-def _python_files(paths):
+def _python_files(paths: Sequence[str]) -> Iterator[str]:
   for path in paths:
     for file_path in stem.util.system.files_with_suffix(path, '.py'):
       skip = False

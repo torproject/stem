@@ -67,6 +67,7 @@ Extra-info descriptors are available from a few sources...
   ===================== ===========
 """
 
+import datetime
 import functools
 import hashlib
 import re
@@ -74,6 +75,8 @@ import re
 import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
+
+from typing import Any, BinaryIO, Dict, Iterator, Mapping, Optional, Sequence, Tuple, Type, Union
 
 from stem.descriptor import (
   PGP_BLOCK_END,
@@ -163,7 +166,7 @@ _timestamp_re = re.compile('^(.*) \\(([0-9]+) s\\)( .*)?$')
 _locale_re = re.compile('^[a-zA-Z0-9\\?]{2}$')
 
 
-def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
+def _parse_file(descriptor_file: BinaryIO, is_bridge = False, validate = False, **kwargs: Any) -> Iterator['stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor']:
   """
   Iterates over the extra-info descriptors in a file.
 
@@ -204,7 +207,7 @@ def _parse_file(descriptor_file, is_bridge = False, validate = False, **kwargs):
       break  # done parsing file
 
 
-def _parse_timestamp_and_interval(keyword, content):
+def _parse_timestamp_and_interval(keyword: str, content: str) -> Tuple[datetime.datetime, int, str]:
   """
   Parses a 'YYYY-MM-DD HH:MM:SS (NSEC s) *' entry.
 
@@ -238,7 +241,7 @@ def _parse_timestamp_and_interval(keyword, content):
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
 
 
-def _parse_extra_info_line(descriptor, entries):
+def _parse_extra_info_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "extra-info" Nickname Fingerprint
 
   value = _value('extra-info', entries)
@@ -255,7 +258,7 @@ def _parse_extra_info_line(descriptor, entries):
   descriptor.fingerprint = extra_info_comp[1]
 
 
-def _parse_transport_line(descriptor, entries):
+def _parse_transport_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "transport" transportname address:port [arglist]
   # Everything after the transportname is scrubbed in published bridge
   # descriptors, so we'll never see it in practice.
@@ -301,7 +304,7 @@ def _parse_transport_line(descriptor, entries):
   descriptor.transport = transports
 
 
-def _parse_padding_counts_line(descriptor, entries):
+def _parse_padding_counts_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "padding-counts" YYYY-MM-DD HH:MM:SS (NSEC s) key=val key=val...
 
   value = _value('padding-counts', entries)
@@ -316,7 +319,7 @@ def _parse_padding_counts_line(descriptor, entries):
   setattr(descriptor, 'padding_counts', counts)
 
 
-def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr, descriptor, entries):
+def _parse_dirreq_line(keyword: str, recognized_counts_attr: str, unrecognized_counts_attr: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value = _value(keyword, entries)
 
   recognized_counts = {}
@@ -340,7 +343,7 @@ def _parse_dirreq_line(keyword, recognized_counts_attr, unrecognized_counts_attr
   setattr(descriptor, unrecognized_counts_attr, unrecognized_counts)
 
 
-def _parse_dirreq_share_line(keyword, attribute, descriptor, entries):
+def _parse_dirreq_share_line(keyword: str, attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value = _value(keyword, entries)
 
   if not value.endswith('%'):
@@ -353,7 +356,7 @@ def _parse_dirreq_share_line(keyword, attribute, descriptor, entries):
   setattr(descriptor, attribute, float(value[:-1]) / 100)
 
 
-def _parse_cell_line(keyword, attribute, descriptor, entries):
+def _parse_cell_line(keyword: str, attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" num,...,num
 
   value = _value(keyword, entries)
@@ -375,7 +378,7 @@ def _parse_cell_line(keyword, attribute, descriptor, entries):
     raise exc
 
 
-def _parse_timestamp_and_interval_line(keyword, end_attribute, interval_attribute, descriptor, entries):
+def _parse_timestamp_and_interval_line(keyword: str, end_attribute: str, interval_attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s)
 
   timestamp, interval, _ = _parse_timestamp_and_interval(keyword, _value(keyword, entries))
@@ -383,7 +386,7 @@ def _parse_timestamp_and_interval_line(keyword, end_attribute, interval_attribut
   setattr(descriptor, interval_attribute, interval)
 
 
-def _parse_conn_bi_direct_line(descriptor, entries):
+def _parse_conn_bi_direct_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "conn-bi-direct" YYYY-MM-DD HH:MM:SS (NSEC s) BELOW,READ,WRITE,BOTH
 
   value = _value('conn-bi-direct', entries)
@@ -401,7 +404,7 @@ def _parse_conn_bi_direct_line(descriptor, entries):
   descriptor.conn_bi_direct_both = int(stats[3])
 
 
-def _parse_history_line(keyword, end_attribute, interval_attribute, values_attribute, descriptor, entries):
+def _parse_history_line(keyword: str, end_attribute: str, interval_attribute: str, values_attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" YYYY-MM-DD HH:MM:SS (NSEC s) NUM,NUM,NUM,NUM,NUM...
 
   value = _value(keyword, entries)
@@ -419,7 +422,7 @@ def _parse_history_line(keyword, end_attribute, interval_attribute, values_attri
   setattr(descriptor, values_attribute, history_values)
 
 
-def _parse_port_count_line(keyword, attribute, descriptor, entries):
+def _parse_port_count_line(keyword: str, attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" port=N,port=N,...
 
   value, port_mappings = _value(keyword, entries), {}
@@ -434,7 +437,7 @@ def _parse_port_count_line(keyword, attribute, descriptor, entries):
   setattr(descriptor, attribute, port_mappings)
 
 
-def _parse_geoip_to_count_line(keyword, attribute, descriptor, entries):
+def _parse_geoip_to_count_line(keyword: str, attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" CC=N,CC=N,...
   #
   # The maxmind geoip (https://www.maxmind.com/app/iso3166) has numeric
@@ -454,7 +457,7 @@ def _parse_geoip_to_count_line(keyword, attribute, descriptor, entries):
   setattr(descriptor, attribute, locale_usage)
 
 
-def _parse_bridge_ip_versions_line(descriptor, entries):
+def _parse_bridge_ip_versions_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value, ip_versions = _value('bridge-ip-versions', entries), {}
 
   for protocol, count in _mappings_for('bridge-ip-versions', value, divider = ','):
@@ -466,7 +469,7 @@ def _parse_bridge_ip_versions_line(descriptor, entries):
   descriptor.ip_versions = ip_versions
 
 
-def _parse_bridge_ip_transports_line(descriptor, entries):
+def _parse_bridge_ip_transports_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   value, ip_transports = _value('bridge-ip-transports', entries), {}
 
   for protocol, count in _mappings_for('bridge-ip-transports', value, divider = ','):
@@ -478,7 +481,7 @@ def _parse_bridge_ip_transports_line(descriptor, entries):
   descriptor.ip_transports = ip_transports
 
 
-def _parse_hs_stats(keyword, stat_attribute, extra_attribute, descriptor, entries):
+def _parse_hs_stats(keyword: str, stat_attribute: str, extra_attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   # "<keyword>" num key=val key=val...
 
   value, stat, extra = _value(keyword, entries), None, {}
@@ -814,7 +817,7 @@ class ExtraInfoDescriptor(Descriptor):
     'bridge-ip-transports': _parse_bridge_ip_transports_line,
   }
 
-  def __init__(self, raw_contents, validate = False):
+  def __init__(self, raw_contents: str, validate: bool = False) -> None:
     """
     Extra-info descriptor constructor. By default this validates the
     descriptor's content as it's parsed. This validation can be disabled to
@@ -851,7 +854,7 @@ class ExtraInfoDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
     """
     Digest of this descriptor's content. These are referenced by...
 
@@ -876,13 +879,13 @@ class ExtraInfoDescriptor(Descriptor):
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ExtraInfoDescriptor subclass')
 
-  def _required_fields(self):
+  def _required_fields(self) -> Tuple[str]:
     return REQUIRED_FIELDS
 
-  def _first_keyword(self):
+  def _first_keyword(self) -> str:
     return 'extra-info'
 
-  def _last_keyword(self):
+  def _last_keyword(self) -> str:
     return 'router-signature'
 
 
@@ -917,7 +920,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = (), sign = False, signing_key = None):
+  def content(cls: Type['stem.descriptor.extrainfo.RelayExtraInfoDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), sign: bool = False, signing_key: Optional['stem.descriptor.SigningKey'] = None) -> str:
     base_header = (
       ('extra-info', '%s %s' % (_random_nickname(), _random_fingerprint())),
       ('published', _random_date()),
@@ -938,11 +941,11 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       ))
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True, sign = False, signing_key = None):
+  def create(cls: Type['stem.descriptor.extrainfo.RelayExtraInfoDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True, sign: bool = False, signing_key: Optional['stem.descriptor.SigningKey'] = None) -> 'stem.descriptor.extrainfo.RelayExtraInfoDescriptor':
     return cls(cls.content(attr, exclude, sign, signing_key), validate = validate)
 
   @functools.lru_cache()
-  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
     if hash_type == DigestHash.SHA1:
       # our digest is calculated from everything except our signature
 
@@ -986,7 +989,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
   })
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.extrainfo.BridgeExtraInfoDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('extra-info', 'ec2bridgereaac65a3 %s' % _random_fingerprint()),
       ('published', _random_date()),
@@ -994,7 +997,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
       ('router-digest', _random_fingerprint()),
     ))
 
-  def digest(self, hash_type = DigestHash.SHA1, encoding = DigestEncoding.HEX):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
     if hash_type == DigestHash.SHA1 and encoding == DigestEncoding.HEX:
       return self._digest
     elif hash_type == DigestHash.SHA256 and encoding == DigestEncoding.BASE64:
@@ -1002,7 +1005,7 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
     else:
       raise NotImplementedError('Bridge extrainfo digests are only available as sha1/hex and sha256/base64, not %s/%s' % (hash_type, encoding))
 
-  def _required_fields(self):
+  def _required_fields(self) -> Tuple[str]:
     excluded_fields = [
       'router-signature',
     ]
@@ -1013,5 +1016,5 @@ class BridgeExtraInfoDescriptor(ExtraInfoDescriptor):
 
     return tuple(included_fields + [f for f in REQUIRED_FIELDS if f not in excluded_fields])
 
-  def _last_keyword(self):
+  def _last_keyword(self) -> str:
     return None

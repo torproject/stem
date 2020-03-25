@@ -92,10 +92,10 @@ DEDUPLICATION_MESSAGE_IDS = set()
 
 
 class _NullHandler(logging.Handler):
-  def __init__(self):
+  def __init__(self) -> None:
     logging.Handler.__init__(self, level = logging.FATAL + 5)  # disable logging
 
-  def emit(self, record):
+  def emit(self, record: logging.LogRecord) -> None:
     pass
 
 
@@ -103,7 +103,7 @@ if not LOGGER.handlers:
   LOGGER.addHandler(_NullHandler())
 
 
-def get_logger():
+def get_logger() -> logging.Logger:
   """
   Provides the stem logger.
 
@@ -113,7 +113,7 @@ def get_logger():
   return LOGGER
 
 
-def logging_level(runlevel):
+def logging_level(runlevel: 'stem.util.log.Runlevel') -> int:
   """
   Translates a runlevel into the value expected by the logging module.
 
@@ -126,7 +126,7 @@ def logging_level(runlevel):
     return logging.FATAL + 5
 
 
-def is_tracing():
+def is_tracing() -> bool:
   """
   Checks if we're logging at the trace runlevel.
 
@@ -142,7 +142,7 @@ def is_tracing():
   return False
 
 
-def escape(message):
+def escape(message: str) -> str:
   """
   Escapes specific sequences for logging (newlines, tabs, carriage returns). If
   the input is **bytes** then this converts it to **unicode** under python 3.x.
@@ -160,7 +160,7 @@ def escape(message):
   return message
 
 
-def log(runlevel, message):
+def log(runlevel: 'stem.util.log.Runlevel', message: str) -> None:
   """
   Logs a message at the given runlevel.
 
@@ -172,7 +172,7 @@ def log(runlevel, message):
     LOGGER.log(LOG_VALUES[runlevel], message)
 
 
-def log_once(message_id, runlevel, message):
+def log_once(message_id: str, runlevel: 'stem.util.log.Runlevel', message: str) -> None:
   """
   Logs a message at the given runlevel. If a message with this ID has already
   been logged then this is a no-op.
@@ -193,43 +193,43 @@ def log_once(message_id, runlevel, message):
 # shorter aliases for logging at a runlevel
 
 
-def trace(message):
+def trace(message: str) -> None:
   log(Runlevel.TRACE, message)
 
 
-def debug(message):
+def debug(message: str) -> None:
   log(Runlevel.DEBUG, message)
 
 
-def info(message):
+def info(message: str) -> None:
   log(Runlevel.INFO, message)
 
 
-def notice(message):
+def notice(message: str) -> None:
   log(Runlevel.NOTICE, message)
 
 
-def warn(message):
+def warn(message: str) -> None:
   log(Runlevel.WARN, message)
 
 
-def error(message):
+def error(message: str) -> None:
   log(Runlevel.ERROR, message)
 
 
 class _StdoutLogger(logging.Handler):
-  def __init__(self, runlevel):
+  def __init__(self, runlevel: 'stem.util.log.Runlevel') -> None:
     logging.Handler.__init__(self, level = logging_level(runlevel))
 
     self.formatter = logging.Formatter(
       fmt = '%(asctime)s [%(levelname)s] %(message)s',
       datefmt = '%m/%d/%Y %H:%M:%S')
 
-  def emit(self, record):
+  def emit(self, record: logging.LogRecord) -> None:
     print(self.formatter.format(record))
 
 
-def log_to_stdout(runlevel):
+def log_to_stdout(runlevel: 'stem.util.log.Runlevel') -> None:
   """
   Logs further events to stdout.
 

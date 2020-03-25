@@ -4,6 +4,8 @@
 import stem.response
 import stem.socket
 
+from typing import Sequence
+
 
 class GetInfoResponse(stem.response.ControlMessage):
   """
@@ -12,7 +14,7 @@ class GetInfoResponse(stem.response.ControlMessage):
   :var dict entries: mapping between the queried options and their bytes values
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     # 250-version=0.2.3.11-alpha-dev (git-ef0bc7f8f26a917c)
     # 250+config-text=
@@ -66,7 +68,7 @@ class GetInfoResponse(stem.response.ControlMessage):
 
       self.entries[key] = value
 
-  def _assert_matches(self, params):
+  def _assert_matches(self, params: Sequence[str]) -> None:
     """
     Checks if we match a given set of parameters, and raise a ProtocolError if not.
 

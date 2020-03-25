@@ -8,10 +8,11 @@ Tab completion for our interpreter prompt.
 import functools
 
 from stem.interpreter import uses_settings
+from typing import Optional, Sequence
 
 
 @uses_settings
-def _get_commands(controller, config):
+def _get_commands(controller: 'stem.control.Controller', config: 'stem.util.conf.Config') -> Sequence[str]:
   """
   Provides commands recognized by tor.
   """
@@ -76,11 +77,11 @@ def _get_commands(controller, config):
 
 
 class Autocompleter(object):
-  def __init__(self, controller):
+  def __init__(self, controller: 'stem.control.Controller') -> None:
     self._commands = _get_commands(controller)
 
   @functools.lru_cache()
-  def matches(self, text):
+  def matches(self, text: str) -> Sequence[str]:
     """
     Provides autocompletion matches for the given text.
 
@@ -92,7 +93,7 @@ class Autocompleter(object):
     lowercase_text = text.lower()
     return [cmd for cmd in self._commands if cmd.lower().startswith(lowercase_text)]
 
-  def complete(self, text, state):
+  def complete(self, text: str, state: int) -> Optional[str]:
     """
     Provides case insensetive autocompletion options, acting as a functor for
     the readlines set_completer function.

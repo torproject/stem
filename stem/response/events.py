@@ -12,6 +12,7 @@ import stem.util
 import stem.version
 
 from stem.util import connection, log, str_tools, tor_tools
+from typing import Any, Dict, Sequence
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -40,7 +41,7 @@ class Event(stem.response.ControlMessage):
   _SKIP_PARSING = False    # skip parsing contents into our positional_args and keyword_args
   _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     if not str(self).strip():
       raise stem.ProtocolError('Received a blank tor event. Events must at the very least have a type.')
 
@@ -58,10 +59,10 @@ class Event(stem.response.ControlMessage):
 
     self._parse()
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'arrived_at', parent = stem.response.ControlMessage, cache = True)
 
-  def _parse_standard_attr(self):
+  def _parse_standard_attr(self) -> None:
     """
     Most events are of the form...
     650 *( positional_args ) *( key "=" value )
@@ -122,7 +123,7 @@ class Event(stem.response.ControlMessage):
     for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
 
-  def _iso_timestamp(self, timestamp):
+  def _iso_timestamp(self, timestamp: str) -> 'datetime.datetime':
     """
     Parses an iso timestamp (ISOTime2Frac in the control-spec).
 
@@ -142,10 +143,10 @@ class Event(stem.response.ControlMessage):
       raise stem.ProtocolError('Unable to parse timestamp (%s): %s' % (exc, self))
 
   # method overwritten by our subclasses for special handling that they do
-  def _parse(self):
+  def _parse(self) -> None:
     pass
 
-  def _log_if_unrecognized(self, attr, attr_enum):
+  def _log_if_unrecognized(self, attr: str, attr_enum: 'stem.util.enum.Enum') -> None:
     """
     Checks if an attribute exists in a given enumeration, logging a message if
     it isn't. Attributes can either be for a string or collection of strings
@@ -196,7 +197,7 @@ class AddrMapEvent(Event):
   }
   _OPTIONALLY_QUOTED = ('expiry')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.destination == '<error>':
       self.destination = None
 
@@ -234,7 +235,7 @@ class BandwidthEvent(Event):
 
   _POSITIONAL_ARGS = ('read', 'written')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if not self.read:
       raise stem.ProtocolError('BW event is missing its read value')
     elif not self.written:
@@ -277,7 +278,7 @@ class BuildTimeoutSetEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.2.7-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     # convert our integer and float parameters
 
     for param in ('total_times', 'timeout', 'xm', 'close_timeout'):
@@ -346,7 +347,7 @@ class CircuitEvent(Event):
     'SOCKS_PASSWORD': 'socks_password',
   }
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.path = tuple(stem.control._parse_circ_path(self.path))
     self.created = self._iso_timestamp(self.created)
 
@@ -363,7 +364,7 @@ class CircuitEvent(Event):
     self._log_if_unrecognized('reason', stem.CircClosureReason)
     self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
-  def _compare(self, other, method):
+  def _compare(self, other: Any, method: Any) -> bool:
     # sorting circuit events by their identifier
 
     if not isinstance(other, CircuitEvent):
@@ -374,10 +375,10 @@ class CircuitEvent(Event):
 
     return method(my_id, their_id) if my_id != their_id else method(hash(self), hash(other))
 
-  def __gt__(self, other):
+  def __gt__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s > o)
 
-  def __ge__(self, other):
+  def __ge__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s >= o)
 
 
@@ -414,7 +415,7 @@ class CircMinorEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.3.11-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.path = tuple(stem.control._parse_circ_path(self.path))
     self.created = self._iso_timestamp(self.created)
 
@@ -450,7 +451,7 @@ class ClientsSeenEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.1.10-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.start_time is not None:
       self.start_time = stem.util.str_tools._parse_timestamp(self.start_time)
 
@@ -509,7 +510,7 @@ class ConfChangedEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.2.3.3-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.changed = {}
     self.unset = []
 
@@ -563,7 +564,7 @@ class GuardEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.1.2.5-alpha')
   _POSITIONAL_ARGS = ('guard_type', 'endpoint', 'status')
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.endpoint_fingerprint = None
     self.endpoint_nickname = None
 
@@ -610,7 +611,7 @@ class HSDescEvent(Event):
   _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
   _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica', 'HSDIR_INDEX': 'index'}
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.directory_fingerprint = None
     self.directory_nickname = None
 
@@ -650,7 +651,7 @@ class HSDescContentEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.2.7.1-alpha')
   _POSITIONAL_ARGS = ('address', 'descriptor_id', 'directory')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.address == 'UNKNOWN':
       self.address = None
 
@@ -686,7 +687,7 @@ class LogEvent(Event):
 
   _SKIP_PARSING = True
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.runlevel = self.type
     self._log_if_unrecognized('runlevel', stem.Runlevel)
 
@@ -709,7 +710,7 @@ class NetworkStatusEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     content = str(self).lstrip('NS\n').rstrip('\nOK')
 
     self.descriptors = list(stem.descriptor.router_status_entry._parse_file(
@@ -753,11 +754,11 @@ class NewConsensusEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.2.1.13-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
     self._parsed = None
 
-  def entries(self):
+  def entries(self) -> Sequence['stem.descriptor.router_status_entry.RouterStatusEntryV3']:
     """
     Relay router status entries residing within this consensus.
 
@@ -791,7 +792,7 @@ class NewDescEvent(Event):
     new descriptors
   """
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.relays = tuple([stem.control._parse_circ_entry(entry) for entry in str(self).split()[1:]])
 
 
@@ -832,7 +833,7 @@ class ORConnEvent(Event):
     'ID': 'id',
   }
 
-  def _parse(self):
+  def _parse(self) -> None:
     self.endpoint_fingerprint = None
     self.endpoint_nickname = None
     self.endpoint_address = None
@@ -886,7 +887,7 @@ class SignalEvent(Event):
   _POSITIONAL_ARGS = ('signal',)
   _VERSION_ADDED = stem.version.Version('0.2.3.1-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     # log if we recieved an unrecognized signal
     expected_signals = (
       stem.Signal.RELOAD,
@@ -918,7 +919,7 @@ class StatusEvent(Event):
   _POSITIONAL_ARGS = ('runlevel', 'action')
   _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.type == 'STATUS_GENERAL':
       self.status_type = stem.StatusType.GENERAL
     elif self.type == 'STATUS_CLIENT':
@@ -970,7 +971,7 @@ class StreamEvent(Event):
     'PURPOSE': 'purpose',
   }
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.target is None:
       raise stem.ProtocolError("STREAM event didn't have a target: %s" % self)
     else:
@@ -1029,7 +1030,7 @@ class StreamBwEvent(Event):
   _POSITIONAL_ARGS = ('id', 'written', 'read', 'time')
   _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if not tor_tools.is_valid_stream_id(self.id):
       raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.written:
@@ -1062,7 +1063,7 @@ class TransportLaunchedEvent(Event):
   _POSITIONAL_ARGS = ('type', 'name', 'address', 'port')
   _VERSION_ADDED = stem.version.Version('0.2.5.0-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.type not in ('server', 'client'):
       raise stem.ProtocolError("Transport type should either be 'server' or 'client': %s" % self)
 
@@ -1104,7 +1105,7 @@ class ConnectionBandwidthEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if not self.id:
       raise stem.ProtocolError('CONN_BW event is missing its id')
     elif not self.conn_type:
@@ -1163,7 +1164,7 @@ class CircuitBandwidthEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if not self.id:
       raise stem.ProtocolError('CIRC_BW event is missing its id')
     elif not self.read:
@@ -1233,7 +1234,7 @@ class CellStatsEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.id and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif self.inbound_queue and not tor_tools.is_valid_circuit_id(self.inbound_queue):
@@ -1279,7 +1280,7 @@ class TokenBucketEmptyEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def _parse(self) -> None:
     if self.id and not tor_tools.is_valid_connection_id(self.id):
       raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.read.isdigit():
@@ -1296,7 +1297,7 @@ class TokenBucketEmptyEvent(Event):
     self._log_if_unrecognized('bucket', stem.TokenBucket)
 
 
-def _parse_cell_type_mapping(mapping):
+def _parse_cell_type_mapping(mapping: str) -> Dict[str, int]:
   """
   Parses a mapping of the form...
 

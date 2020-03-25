@@ -40,8 +40,10 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
+from typing import Iterator, Sequence
 
-def UppercaseEnum(*args):
+
+def UppercaseEnum(*args: str) -> 'stem.util.enum.Enum':
   """
   Provides an :class:`~stem.util.enum.Enum` instance where the values are
   identical to the keys. Since the keys are uppercase by convention this means
@@ -67,7 +69,7 @@ class Enum(object):
   Basic enumeration.
   """
 
-  def __init__(self, *args):
+  def __init__(self, *args: str) -> None:
     from stem.util.str_tools import _to_camel_case
 
     # ordered listings of our keys and values
@@ -88,7 +90,7 @@ class Enum(object):
     self._keys = tuple(keys)
     self._values = tuple(values)
 
-  def keys(self):
+  def keys(self) -> Sequence[str]:
     """
     Provides an ordered listing of the enumeration keys in this set.
 
@@ -97,7 +99,7 @@ class Enum(object):
 
     return list(self._keys)
 
-  def index_of(self, value):
+  def index_of(self, value: str) -> int:
     """
     Provides the index of the given value in the collection.
 
@@ -110,7 +112,7 @@ class Enum(object):
 
     return self._values.index(value)
 
-  def next(self, value):
+  def next(self, value: str) -> str:
     """
     Provides the next enumeration after the given value.
 
@@ -127,7 +129,7 @@ class Enum(object):
     next_index = (self._values.index(value) + 1) % len(self._values)
     return self._values[next_index]
 
-  def previous(self, value):
+  def previous(self, value: str) -> str:
     """
     Provides the previous enumeration before the given value.
 
@@ -144,7 +146,7 @@ class Enum(object):
     prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
 
-  def __getitem__(self, item):
+  def __getitem__(self, item: str) -> str:
     """
     Provides the values for the given key.
 
@@ -161,7 +163,7 @@ class Enum(object):
       keys = ', '.join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator[str]:
     """
     Provides an ordered listing of the enums in this set.
     """

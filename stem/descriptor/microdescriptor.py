@@ -69,6 +69,8 @@ import hashlib
 
 import stem.exit_policy
 
+from typing import Any, BinaryIO, Dict, Iterator, Mapping, Optional, Sequence, Type, Union
+
 from stem.descriptor import (
   Descriptor,
   DigestHash,
@@ -102,7 +104,7 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = False, **kwargs):
+def _parse_file(descriptor_file: BinaryIO, validate: bool = False, **kwargs: Any) -> Iterator['stem.descriptor.microdescriptor.Microdescriptor']:
   """
   Iterates over the microdescriptors in a file.
 
@@ -159,7 +161,7 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
       break  # done parsing descriptors
 
 
-def _parse_id_line(descriptor, entries):
+def _parse_id_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
   identities = {}
 
   for entry in _values('id', entries):
@@ -244,7 +246,7 @@ class Microdescriptor(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.microdescriptor.Microdescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
     return _descriptor_content(attr, exclude, (
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ))
@@ -260,7 +262,7 @@ class Microdescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self, hash_type = DigestHash.SHA256, encoding = DigestEncoding.BASE64):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA256, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.BASE64) -> Union[str, 'hashlib.HASH']:
     """
     Digest of this microdescriptor. These are referenced by...
 
@@ -285,7 +287,7 @@ class Microdescriptor(Descriptor):
       raise NotImplementedError('Microdescriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
   @functools.lru_cache()
-  def get_annotations(self):
+  def get_annotations(self) -> Dict[str, str]:
     """
     Provides content that appeared prior to the descriptor. If this comes from
     the cached-microdescs then this commonly contains content like...
@@ -308,7 +310,7 @@ class Microdescriptor(Descriptor):
 
     return annotation_dict
 
-  def get_annotation_lines(self):
+  def get_annotation_lines(self) -> Sequence[str]:
     """
     Provides the lines of content that appeared prior to the descriptor. This
     is the same as the
@@ -320,7 +322,7 @@ class Microdescriptor(Descriptor):
 
     return self._annotation_lines
 
-  def _check_constraints(self, entries):
+  def _check_constraints(self, entries: Dict[str, Sequence[str]]) -> None:
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
@@ -341,5 +343,5 @@ class Microdescriptor(Descriptor):
     if 'onion-key' != list(entries.keys())[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return 'microdescriptors' if is_plural else 'microdescriptor'

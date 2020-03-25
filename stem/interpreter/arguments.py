@@ -12,6 +12,8 @@ import os
 import stem.interpreter
 import stem.util.connection
 
+from typing import NamedTuple, Sequence
+
 DEFAULT_ARGS = {
   'control_address': '127.0.0.1',
   'control_port': 'default',
@@ -29,7 +31,7 @@ OPT = 'i:s:h'
 OPT_EXPANDED = ['interface=', 'socket=', 'tor=', 'run=', 'no-color', 'help']
 
 
-def parse(argv):
+def parse(argv: Sequence[str]) -> NamedTuple:
   """
   Parses our arguments, providing a named tuple with their values.
 
@@ -90,7 +92,7 @@ def parse(argv):
   return Args(**args)
 
 
-def get_help():
+def get_help() -> str:
   """
   Provides our --help usage information.
 

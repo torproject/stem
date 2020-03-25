@@ -71,6 +71,8 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
+from typing import Any, Iterator, Optional, Sequence, Union
+
 AddressType = stem.util.enum.Enum(('WILDCARD', 'Wildcard'), ('IPv4', 'IPv4'), ('IPv6', 'IPv6'))
 
 # Addresses aliased by the 'private' policy. From the tor man page...
@@ -89,7 +91,7 @@ PRIVATE_ADDRESSES = (
 )
 
 
-def _flag_private_rules(rules):
+def _flag_private_rules(rules: Sequence['ExitPolicyRule']) -> None:
   """
   Determine if part of our policy was expanded from the 'private' keyword. This
   doesn't differentiate if this actually came from the 'private' keyword or a
@@ -139,7 +141,7 @@ def _flag_private_rules(rules):
         last_rule._is_private = True
 
 
-def _flag_default_rules(rules):
+def _flag_default_rules(rules: Sequence['ExitPolicyRule']) -> None:
   """
   Determine if part of our policy ends with the defaultly appended suffix.
   """
@@ -162,7 +164,7 @@ class ExitPolicy(object):
     entries that make up this policy
   """
 
-  def __init__(self, *rules):
+  def __init__(self, *rules: Union[str, 'stem.exit_policy.ExitPolicyRule']) -> None:
     # sanity check the types
 
     for rule in rules:
@@ -196,7 +198,7 @@ class ExitPolicy(object):
     self._is_allowed_default = True
 
   @functools.lru_cache()
-  def can_exit_to(self, address = None, port = None, strict = False):
+  def can_exit_to(self, address: Optional[str] = None, port: Optional[int] = None, strict: bool = False) -> bool:
     """
     Checks if this policy allows exiting to a given destination or not. If the
     address or port is omitted then this will check if we're allowed to exit to
@@ -220,7 +222,7 @@ class ExitPolicy(object):
     return self._is_allowed_default
 
   @functools.lru_cache()
-  def is_exiting_allowed(self):
+  def is_exiting_allowed(self) -> bool:
     """
     Provides **True** if the policy allows exiting whatsoever, **False**
     otherwise.
@@ -242,7 +244,7 @@ class ExitPolicy(object):
     return self._is_allowed_default
 
   @functools.lru_cache()
-  def summary(self):
+  def summary(self) -> str:
     """
     Provides a short description of our policy chain, similar to a
     microdescriptor. This excludes entries that don't cover all IP
@@ -320,7 +322,7 @@ class ExitPolicy(object):
 
     return (label_prefix + ', '.join(display_ranges)).strip()
 
-  def has_private(self):
+  def has_private(self) -> bool:
     """
     Checks if we have any rules expanded from the 'private' keyword. Tor
     appends these by default to the start of the policy and includes a dynamic
@@ -338,7 +340,7 @@ class ExitPolicy(object):
 
     return False
 
-  def strip_private(self):
+  def strip_private(self) -> 'ExitPolicy':
     """
     Provides a copy of this policy without 'private' policy entries.
 
@@ -349,7 +351,7 @@ class ExitPolicy(object):
 
     return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_private()])
 
-  def has_default(self):
+  def has_default(self) -> bool:
     """
     Checks if we have the default policy suffix.
 
@@ -364,7 +366,7 @@ class ExitPolicy(object):
 
     return False
 
-  def strip_default(self):
+  def strip_default(self) -> 'ExitPolicy':
     """
     Provides a copy of this policy without the default policy suffix.
 
@@ -375,7 +377,7 @@ class ExitPolicy(object):
 
     return ExitPolicy(*[rule for rule in self._get_rules() if not rule.is_default()])
 
-  def _get_rules(self):
+  def _get_rules(self) -> Sequence['stem.exit_policy.ExitPolicyRule']:
     # Local reference to our input_rules so this can be lock free. Otherwise
     # another thread might unset our input_rules while processing them.
 
@@ -437,18 +439,18 @@ class ExitPolicy(object):
 
     return self._rules
 
-  def __len__(self):
+  def __len__(self) -> int:
     return len(self._get_rules())
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator['stem.exit_policy.ExitPolicyRule']:
     for rule in self._get_rules():
       yield rule
 
   @functools.lru_cache()
-  def __str__(self):
+  def __str__(self) -> str:
     return ', '.join([str(rule) for rule in self._get_rules()])
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     if self._hash is None:
       my_hash = 0
 
@@ -460,10 +462,10 @@ class ExitPolicy(object):
 
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, ExitPolicy) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -495,7 +497,7 @@ class MicroExitPolicy(ExitPolicy):
   :param str policy: policy string that describes this policy
   """
 
-  def __init__(self, policy):
+  def __init__(self, policy: str) -> None:
     # Microdescriptor policies are of the form...
     #
     #   MicrodescriptrPolicy ::= ("accept" / "reject") SP PortList NL
@@ -537,16 +539,16 @@ class MicroExitPolicy(ExitPolicy):
     super(MicroExitPolicy, self).__init__(*rules)
     self._is_allowed_default = not self.is_accept
 
-  def __str__(self):
+  def __str__(self) -> str:
     return self._policy
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return hash(str(self))
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, MicroExitPolicy) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -580,7 +582,7 @@ class ExitPolicyRule(object):
   :raises: **ValueError** if input isn't a valid tor exit policy rule
   """
 
-  def __init__(self, rule):
+  def __init__(self, rule: str) -> None:
     # policy ::= "accept[6]" exitpattern | "reject[6]" exitpattern
     # exitpattern ::= addrspec ":" portspec
 
@@ -634,7 +636,7 @@ class ExitPolicyRule(object):
     self._is_private = False
     self._is_default_suffix = False
 
-  def is_address_wildcard(self):
+  def is_address_wildcard(self) -> bool:
     """
     **True** if we'll match against **any** address, **False** otherwise.
 
@@ -646,7 +648,7 @@ class ExitPolicyRule(object):
 
     return self._address_type == _address_type_to_int(AddressType.WILDCARD)
 
-  def is_port_wildcard(self):
+  def is_port_wildcard(self) -> bool:
     """
     **True** if we'll match against any port, **False** otherwise.
 
@@ -655,7 +657,7 @@ class ExitPolicyRule(object):
 
     return self.min_port in (0, 1) and self.max_port == 65535
 
-  def is_match(self, address = None, port = None, strict = False):
+  def is_match(self, address: Optional[str] = None, port: Optional[int] = None, strict: bool = False) -> bool:
     """
     **True** if we match against the given destination, **False** otherwise. If
     the address or port is omitted then this will check if we're allowed to
@@ -726,7 +728,7 @@ class ExitPolicyRule(object):
     else:
       return True
 
-  def get_address_type(self):
+  def get_address_type(self) -> AddressType:
     """
     Provides the :data:`~stem.exit_policy.AddressType` for our policy.
 
@@ -735,7 +737,7 @@ class ExitPolicyRule(object):
 
     return _int_to_address_type(self._address_type)
 
-  def get_mask(self, cache = True):
+  def get_mask(self, cache: bool = True) -> str:
     """
     Provides the address represented by our mask. This is **None** if our
     address type is a wildcard.
@@ -765,7 +767,7 @@ class ExitPolicyRule(object):
 
     return self._mask
 
-  def get_masked_bits(self):
+  def get_masked_bits(self) -> int:
     """
     Provides the number of bits our subnet mask represents. This is **None** if
     our mask can't have a bit representation.
@@ -775,7 +777,7 @@ class ExitPolicyRule(object):
 
     return self._masked_bits
 
-  def is_private(self):
+  def is_private(self) -> bool:
     """
     Checks if this rule was expanded from the 'private' policy keyword.
 
@@ -786,7 +788,7 @@ class ExitPolicyRule(object):
 
     return self._is_private
 
-  def is_default(self):
+  def is_default(self) -> bool:
     """
     Checks if this rule belongs to the default exit policy suffix.
 
@@ -798,7 +800,7 @@ class ExitPolicyRule(object):
     return self._is_default_suffix
 
   @functools.lru_cache()
-  def __str__(self):
+  def __str__(self) -> str:
     """
     Provides the string representation of our policy. This does not
     necessarily match the rule that we were constructed from (due to things
@@ -842,18 +844,18 @@ class ExitPolicyRule(object):
     return label
 
   @functools.lru_cache()
-  def _get_mask_bin(self):
+  def _get_mask_bin(self) -> int:
     # provides an integer representation of our mask
 
     return int(stem.util.connection._address_to_binary(self.get_mask(False)), 2)
 
   @functools.lru_cache()
-  def _get_address_bin(self):
+  def _get_address_bin(self) -> int:
     # provides an integer representation of our address
 
     return stem.util.connection.address_to_int(self.address) & self._get_mask_bin()
 
-  def _apply_addrspec(self, rule, addrspec, is_ipv6_only):
+  def _apply_addrspec(self, rule: str, addrspec: str, is_ipv6_only: bool) -> None:
     # Parses the addrspec...
     # addrspec ::= "*" | ip4spec | ip6spec
 
@@ -924,7 +926,7 @@ class ExitPolicyRule(object):
     else:
       raise ValueError("'%s' isn't a wildcard, IPv4, or IPv6 address: %s" % (addrspec, rule))
 
-  def _apply_portspec(self, rule, portspec):
+  def _apply_portspec(self, rule: str, portspec: str) -> None:
     # Parses the portspec...
     # portspec ::= "*" | port | port "-" port
     # port ::= an integer between 1 and 65535, inclusive.
@@ -955,24 +957,24 @@ class ExitPolicyRule(object):
     else:
       raise ValueError("Port value isn't a wildcard, integer, or range: %s" % rule)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     if self._hash is None:
       self._hash = stem.util._hash_attr(self, 'is_accept', 'address', 'min_port', 'max_port') * 1024 + hash(self.get_mask(False))
 
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, ExitPolicyRule) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
-def _address_type_to_int(address_type):
+def _address_type_to_int(address_type: AddressType) -> int:
   return AddressType.index_of(address_type)
 
 
-def _int_to_address_type(address_type_int):
+def _int_to_address_type(address_type_int: int) -> AddressType:
   return list(AddressType)[address_type_int]
 
 
@@ -981,32 +983,32 @@ class MicroExitPolicyRule(ExitPolicyRule):
   Lighter weight ExitPolicyRule derivative for microdescriptors.
   """
 
-  def __init__(self, is_accept, min_port, max_port):
+  def __init__(self, is_accept: bool, min_port: int, max_port: int) -> None:
     self.is_accept = is_accept
     self.address = None  # wildcard address
     self.min_port = min_port
     self.max_port = max_port
     self._skip_rule = False
 
-  def is_address_wildcard(self):
+  def is_address_wildcard(self) -> bool:
     return True
 
-  def get_address_type(self):
+  def get_address_type(self) -> AddressType:
     return AddressType.WILDCARD
 
-  def get_mask(self, cache = True):
+  def get_mask(self, cache = True) -> str:
     return None
 
-  def get_masked_bits(self):
+  def get_masked_bits(self) -> int:
     return None
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'is_accept', 'min_port', 'max_port', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, MicroExitPolicyRule) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 

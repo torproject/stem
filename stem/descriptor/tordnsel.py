@@ -14,6 +14,8 @@ import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
+from typing import Any, BinaryIO, Dict, Iterator, Sequence
+
 from stem.descriptor import (
   Descriptor,
   _read_until_keywords,
@@ -21,7 +23,7 @@ from stem.descriptor import (
 )
 
 
-def _parse_file(tordnsel_file, validate = False, **kwargs):
+def _parse_file(tordnsel_file: BinaryIO, validate: bool = False, **kwargs: Any) -> Iterator['stem.descriptor.tordnsel.TorDNSEL']:
   """
   Iterates over a tordnsel file.
 
@@ -62,7 +64,7 @@ class TorDNSEL(Descriptor):
 
   TYPE_ANNOTATION_NAME = 'tordnsel'
 
-  def __init__(self, raw_contents, validate):
+  def __init__(self, raw_contents: str, validate: bool) -> None:
     super(TorDNSEL, self).__init__(raw_contents)
     raw_contents = stem.util.str_tools._to_unicode(raw_contents)
     entries = _descriptor_components(raw_contents, validate)
@@ -74,8 +76,7 @@ class TorDNSEL(Descriptor):
 
     self._parse(entries, validate)
 
-  def _parse(self, entries, validate):
-
+  def _parse(self, entries: Dict[str, Sequence[str]], validate: bool) -> None:
     for keyword, values in list(entries.items()):
       value, block_type, block_content = values[0]
 
