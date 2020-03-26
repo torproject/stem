@@ -26,7 +26,6 @@ import test.runner
 from stem import Flag, Signal
 from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
-from stem.version import Requirement
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.

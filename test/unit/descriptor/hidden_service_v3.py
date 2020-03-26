@@ -13,8 +13,6 @@ import stem.descriptor.hidden_service
 
 import test.require
 
-from unittest.mock import patch, Mock
-
 from stem.descriptor.hidden_service import (
   IntroductionPointV3,
   HiddenServiceDescriptorV3,

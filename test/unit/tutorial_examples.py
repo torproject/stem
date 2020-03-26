@@ -7,9 +7,6 @@ import itertools
 import os
 import unittest
 
-import stem.response
-import stem.descriptor.remote
-
 from unittest.mock import Mock, patch
 
 from stem.control import Controller

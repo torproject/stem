@@ -6,7 +6,6 @@ import datetime
 import unittest
 
 import stem.descriptor
-import test.require
 
 from stem.descriptor.networkstatus import KeyCertificate
 from test.unit.descriptor import get_resource

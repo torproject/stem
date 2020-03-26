@@ -2,7 +2,6 @@
 Unit tests for stem.client.Size.
 """
 
-import re
 import unittest
 
 from stem.client.datatype import Size

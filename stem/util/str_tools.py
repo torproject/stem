@@ -56,18 +56,6 @@ TIME_UNITS = (
 
 _timestamp_re = re.compile(r'(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})')
 
-def _to_bytes_impl(msg):
-  if isinstance(msg, str):
-    return codecs.latin_1_encode(msg, 'replace')[0]
-  else:
-    return msg
-
-def _to_unicode_impl(msg):
-  if msg is not None and not isinstance(msg, str):
-    return msg.decode('utf-8', 'replace')
-  else:
-    return msg
-
 
 def _to_bytes(msg):
   """
@@ -82,7 +70,10 @@ def _to_bytes(msg):
   :returns: ASCII bytes for string
   """
 
-  return _to_bytes_impl(msg)
+  if isinstance(msg, str):
+    return codecs.latin_1_encode(msg, 'replace')[0]
+  else:
+    return msg
 
 
 def _to_unicode(msg):
@@ -96,7 +87,10 @@ def _to_unicode(msg):
   :returns: unicode conversion
   """
 
-  return _to_unicode_impl(msg)
+  if msg is not None and not isinstance(msg, str):
+    return msg.decode('utf-8', 'replace')
+  else:
+    return msg
 
 
 def _decode_b64(msg):

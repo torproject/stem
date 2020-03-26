@@ -6,7 +6,6 @@ import unittest
 
 import stem.descriptor
 import stem.exit_policy
-import test.require
 
 from stem.descriptor.microdescriptor import Microdescriptor
 from test.unit.descriptor import get_resource

@@ -4,8 +4,6 @@ Unit tests for the DirectoryAuthority of stem.descriptor.networkstatus.
 
 import unittest
 
-import test.require
-
 from stem.descriptor.networkstatus import (
   DirectoryAuthority,
   KeyCertificate,

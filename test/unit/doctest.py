@@ -119,7 +119,6 @@ class TestDocumentation(unittest.TestCase):
           test_run = doctest.testfile(path, **args)
       elif path.endswith('/stem/manual.py'):
         try:
-          import sqlite3
           test_run = doctest.testfile(path, **args)
         except ImportError:
           pass  # manual module requires sqlite3

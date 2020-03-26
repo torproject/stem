@@ -7,7 +7,6 @@ import functools
 import unittest
 
 import stem.descriptor
-import test.require
 
 from stem.descriptor.extrainfo_descriptor import (
   RelayExtraInfoDescriptor,

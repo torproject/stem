@@ -64,8 +64,6 @@ exiting to a destination is permissible or not. For instance...
 """
 
 import functools
-import re
-import socket
 import zlib
 
 import stem.util

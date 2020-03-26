@@ -5,8 +5,6 @@ Unit tests for the NetworkStatusDocumentV2 of stem.descriptor.networkstatus.
 import datetime
 import unittest
 
-import test.require
-
 from stem.descriptor.networkstatus import NetworkStatusDocumentV2
 from test.unit.descriptor import get_resource
 

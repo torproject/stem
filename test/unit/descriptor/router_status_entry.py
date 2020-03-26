@@ -8,7 +8,6 @@ import functools
 import unittest
 
 import stem.descriptor
-import test.require
 
 from stem import Flag
 from stem.exit_policy import MicroExitPolicy

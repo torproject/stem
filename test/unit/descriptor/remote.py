@@ -3,7 +3,6 @@ Unit tests for stem.descriptor.remote.
 """
 
 import http.client
-import io
 import socket
 import time
 import unittest

@@ -766,7 +766,6 @@ class NewConsensusEvent(Event):
     :returns: **list** of :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
     """
 
-
     if self._parsed is None:
       self._parsed = list(stem.descriptor.router_status_entry._parse_file(
         io.BytesIO(str_tools._to_bytes(self.consensus_content)),
