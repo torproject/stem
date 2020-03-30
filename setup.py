@@ -66,7 +66,7 @@
 # * Contact package maintainers
 # * Announce the release (example: https://blog.torproject.org/blog/stem-release-11)
 
-import distutils.core
+import setuptools
 import os
 import sys
 import stem
@@ -126,8 +126,9 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 with open('MANIFEST.in', 'w') as manifest_file:
   manifest_file.write(MANIFEST)
 
+
 try:
-  distutils.core.setup(
+  setuptools.setup(
     name = 'stem-dry-run' if DRY_RUN else 'stem',
     version = stem.__version__,
     description = DRY_RUN_SUMMARY if DRY_RUN else SUMMARY,
@@ -136,7 +137,7 @@ try:
     author = stem.__author__,
     author_email = stem.__contact__,
     url = stem.__url__,
-    packages = ['stem', 'stem.client', 'stem.descriptor', 'stem.interpreter', 'stem.response', 'stem.util'],
+    packages = setuptools.find_packages(exclude=["test*"]),
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
     package_data = {
