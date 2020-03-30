@@ -153,8 +153,6 @@ try:
     ],
   )
 finally:
-  if os.path.exists('MANIFEST.in'):
-    os.remove('MANIFEST.in')
-
-  if os.path.exists('MANIFEST'):
-    os.remove('MANIFEST')
+  for filename in ['MANIFEST.in', 'MANIFEST']:
+    if os.path.exists(filename):
+      os.remove(filename)
