@@ -137,7 +137,7 @@ try:
     author = stem.__author__,
     author_email = stem.__contact__,
     url = stem.__url__,
-    packages = setuptools.find_packages(exclude=["test*"]),
+    packages = setuptools.find_packages(exclude=['test*']),
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
     package_data = {
