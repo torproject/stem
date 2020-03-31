@@ -1,6 +1,4 @@
-import json
 import os
-import re
 import unittest
 
 import test
@@ -18,29 +16,6 @@ class TestInstallation(unittest.TestCase):
         self.setup_contents = setup_file.read()
     else:
       self.skip_reason = '(only for git checkout)'
-
-  def test_installs_all_modules(self):
-    if self.skip_reason:
-      self.skipTest(self.skip_reason)
-
-    # Modules cited my our setup.py looks like...
-    #
-    #   packages = ['stem', 'stem.descriptor', 'stem.util'],
-
-    modules = json.loads(re.search('packages = (\\[.*\\])', self.setup_contents).group(1).replace("'", '"'))
-    module_paths = dict([(m, os.path.join(test.STEM_BASE, m.replace('.', os.path.sep))) for m in modules])
-
-    for module, path in module_paths.items():
-      if not os.path.exists(path):
-        self.fail("setup.py's module %s doesn't exist at %s" % (module, path))
-
-    for entry in os.walk(os.path.join(test.STEM_BASE, 'stem')):
-      directory = entry[0]
-
-      if directory.endswith('__pycache__'):
-        continue
-      elif directory not in module_paths.values():
-        self.fail("setup.py doesn't install %s" % directory)
 
   def test_installs_all_data_files(self):
     if self.skip_reason:
