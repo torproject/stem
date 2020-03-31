@@ -44,7 +44,7 @@ def _assert_has_all_files(path):
 
   for root, dirnames, filenames in os.walk(path):
     for filename in filenames:
-      if not filename.endswith('.pyc') and not filename.endswith('egg-info'):
+      if not filename.endswith('.pyc') and 'EGG-INFO' not in root:
         installed.add(os.path.join(root, filename)[len(path) + 1:])
 
   missing = expected.difference(installed)
