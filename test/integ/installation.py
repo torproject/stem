@@ -96,6 +96,9 @@ class TestInstallation(unittest.TestCase):
       if os.path.exists(BASE_INSTALL_PATH):
         shutil.rmtree(BASE_INSTALL_PATH)
 
+      if os.path.exists(DIST_PATH):
+        shutil.rmtree(DIST_PATH)
+
   @asynchronous
   def test_sdist(dependency_pid):
     """
@@ -114,9 +117,6 @@ class TestInstallation(unittest.TestCase):
     elif not os.path.exists(git_dir):
       raise unittest.case.SkipTest('(not a git checkout)')
 
-    if os.path.exists(DIST_PATH):
-      raise AssertionError("%s already exists, maybe you manually ran 'python setup.py sdist'?" % DIST_PATH)
-
     try:
       try:
         stem.util.system.call('%s setup.py sdist --dryrun' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)
@@ -127,7 +127,12 @@ class TestInstallation(unittest.TestCase):
 
       # tarball has a prefix 'stem-[verion]' directory so stipping that out
 
-      with tarfile.open(os.path.join(DIST_PATH, 'stem-dry-run-%s.tar.gz' % stem.__version__)) as dist_tar:
+      dist_content = glob.glob('%s/*' % DIST_PATH)
+
+      if len(dist_content) != 1:
+        raise AssertionError('We should only have a single file in our dist directory, but instead had: %s' % ', '.join(dist_content))
+
+      with tarfile.open(dist_content[0]) as dist_tar:
         tar_contents = ['/'.join(info.name.split('/')[1:]) for info in dist_tar.getmembers() if info.isfile()]
 
       issues = []
@@ -137,7 +142,7 @@ class TestInstallation(unittest.TestCase):
           issues.append('  * %s is missing from our release tarball' % path)
 
       for path in tar_contents:
-        if path not in git_contents and path not in ['MANIFEST.in', 'PKG-INFO']:
+        if path not in git_contents and path not in ['MANIFEST.in', 'PKG-INFO', 'setup.cfg'] and not path.startswith('stem_dry_run.egg-info'):
           issues.append("  * %s isn't expected in our release tarball" % path)
 
       if issues:
