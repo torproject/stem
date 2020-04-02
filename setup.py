@@ -68,8 +68,8 @@
 
 import setuptools
 import os
+import re
 import sys
-import stem
 
 if '--dryrun' in sys.argv:
   DRY_RUN = True
@@ -127,16 +127,36 @@ with open('MANIFEST.in', 'w') as manifest_file:
   manifest_file.write(MANIFEST)
 
 
+def get_module_info():
+  # reads the basic __stat__ strings from our module's init
+
+  STAT_REGEX = re.compile(r"^__(.+)__ = '(.+)'$")
+  result = {}
+  cwd = os.path.sep.join(__file__.split(os.path.sep)[:-1])
+
+  with open(os.path.join(cwd, 'stem', '__init__.py')) as init_file:
+    for line in init_file.readlines():
+      line_match = STAT_REGEX.match(line)
+
+      if line_match:
+        keyword, value = line_match.groups()
+        result[keyword] = value
+
+  return result
+
+
+module_info = get_module_info()
+
 try:
   setuptools.setup(
     name = 'stem-dry-run' if DRY_RUN else 'stem',
-    version = stem.__version__,
+    version = module_info['version'],
     description = DRY_RUN_SUMMARY if DRY_RUN else SUMMARY,
     long_description = DESCRIPTION,
-    license = stem.__license__,
-    author = stem.__author__,
-    author_email = stem.__contact__,
-    url = stem.__url__,
+    license = module_info['license'],
+    author = module_info['author'],
+    author_email = module_info['contact'],
+    url = module_info['url'],
     packages = setuptools.find_packages(exclude=['test*']),
     keywords = 'tor onion controller',
     scripts = ['tor-prompt'],
