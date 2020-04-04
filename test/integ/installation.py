@@ -6,6 +6,7 @@ import glob
 import os
 import platform
 import shutil
+import site
 import sys
 import tarfile
 import time
@@ -70,15 +71,32 @@ class TestInstallation(unittest.TestCase):
     install.
     """
 
+    # Some systems fail installation unless our PYTHONPATH cites the
+    # site-packages that will be created at this destination. Unfortunately
+    # this can vary so attempting to determine it from site.getsitepackages().
+    # For example...
+    #
+    #   /tmp/stem_test/lib/python3.7/site-packages/
+
+    site_packages = site.getsitepackages()
+
+    if site_packages and site_packages[0].count(os.path.sep) >= 3:
+      python_path = os.path.sep.join([BASE_INSTALL_PATH] + site_packages[0].split(os.path.sep)[-3:])
+
+      if not os.path.exists(python_path):
+        os.makedirs(python_path)
+    else:
+      python_path = ''
+
     try:
       try:
-        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE, env = {'PYTHONPATH': BASE_INSTALL_PATH})
+        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE, env = {'PYTHONPATH': python_path})
         stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
 
         if platform.python_implementation() == 'PyPy':
           site_packages_paths = glob.glob('%s/site-packages' % BASE_INSTALL_PATH)
         else:
-          site_packages_paths = glob.glob('%s/lib*/*/site-packages/*' % BASE_INSTALL_PATH)
+          site_packages_paths = glob.glob('%s/lib*/*/site-packages/stem-*' % BASE_INSTALL_PATH)
       except stem.util.system.CallError as exc:
         msg = ["Unable to install with '%s': %s" % (exc.command, exc.msg)]
 
