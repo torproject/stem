@@ -72,7 +72,7 @@ class TestInstallation(unittest.TestCase):
 
     try:
       try:
-        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE)
+        stem.util.system.call('%s setup.py install --prefix %s' % (PYTHON_EXE, BASE_INSTALL_PATH), timeout = 60, cwd = test.STEM_BASE, env = {'PYTHONPATH': BASE_INSTALL_PATH})
         stem.util.system.call('%s setup.py clean --all' % PYTHON_EXE, timeout = 60, cwd = test.STEM_BASE)  # tidy up the build directory
 
         if platform.python_implementation() == 'PyPy':
@@ -80,7 +80,7 @@ class TestInstallation(unittest.TestCase):
         else:
           site_packages_paths = glob.glob('%s/lib*/*/site-packages/*' % BASE_INSTALL_PATH)
       except stem.util.system.CallError as exc:
-        msg = ["Unable to install with 'python setup.py install': %s" % exc]
+        msg = ["Unable to install with '%s': %s" % (exc.command, exc.msg)]
 
         if exc.stdout:
           msg += [
