@@ -79,8 +79,26 @@ class TestInstallation(unittest.TestCase):
           site_packages_paths = glob.glob('%s/site-packages' % BASE_INSTALL_PATH)
         else:
           site_packages_paths = glob.glob('%s/lib*/*/site-packages/*' % BASE_INSTALL_PATH)
-      except Exception as exc:
-        raise AssertionError("Unable to install with 'python setup.py install': %s" % exc)
+      except stem.util.system.CallError as exc:
+        msg = ["Unable to install with 'python setup.py install': %s" % exc]
+
+        if exc.stdout:
+          msg += [
+            '-' * 40,
+            'stdout:',
+            '-' * 40,
+            exc.stdout.decode('utf-8'),
+          ]
+
+        if exc.stderr:
+          msg += [
+            '-' * 40,
+            'stderr:',
+            '-' * 40,
+            exc.stderr.decode('utf-8'),
+          ]
+
+        raise AssertionError('\n'.join(msg))
 
       if len(site_packages_paths) != 1:
         raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
