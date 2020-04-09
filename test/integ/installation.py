@@ -100,7 +100,10 @@ class TestInstallation(unittest.TestCase):
 
         raise AssertionError('\n'.join(msg))
 
-      if len(site_packages_paths) != 1:
+      if not site_packages_paths:
+        all_files = glob.glob('%s/**' % BASE_INSTALL_PATH, recursive = True)
+        raise AssertionError('Unable to find site-packages, files include:\n\n%s' % '\n'.join(all_files))
+      elif len(site_packages_paths) > 1:
         raise AssertionError('We should only have a single site-packages directory, but instead had: %s' % site_packages_paths)
 
       install_path = site_packages_paths[0]
