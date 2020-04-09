@@ -78,7 +78,7 @@ class TestInstallation(unittest.TestCase):
         if platform.python_implementation() == 'PyPy':
           site_packages_paths = glob.glob('%s/*/*/site-packages' % BASE_INSTALL_PATH)
         else:
-          site_packages_paths = glob.glob('%s/*/*/lib*/*/site-packages' % BASE_INSTALL_PATH)
+          site_packages_paths = glob.glob('%s/*/*/lib*/*/*-packages' % BASE_INSTALL_PATH)
       except stem.util.system.CallError as exc:
         msg = ["Unable to install with '%s': %s" % (exc.command, exc.msg)]
 
