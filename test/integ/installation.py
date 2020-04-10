@@ -19,9 +19,9 @@ import test
 from stem.util.test_tools import asynchronous
 
 BASE_INSTALL_PATH = '/tmp/stem_test'
-DIST_PATH = os.path.join(test.STEM_BASE, 'dist')
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
+SETUPTOOLS_LITTER = ('dist', 'stem.egg-info', 'stem_dry_run.egg-info')  # setuptools cruft its 'clean' command won't clean up
 
 
 def _assert_has_all_files(path):
@@ -117,8 +117,11 @@ class TestInstallation(unittest.TestCase):
       if os.path.exists(BASE_INSTALL_PATH):
         shutil.rmtree(BASE_INSTALL_PATH)
 
-      if os.path.exists(DIST_PATH):
-        shutil.rmtree(DIST_PATH)
+      for directory in SETUPTOOLS_LITTER:
+        path = os.path.join(test.STEM_BASE, directory)
+
+        if os.path.exists(path):
+          shutil.rmtree(path)
 
   @asynchronous
   def test_sdist(dependency_pid):
@@ -148,7 +151,7 @@ class TestInstallation(unittest.TestCase):
 
       # tarball has a prefix 'stem-[verion]' directory so stipping that out
 
-      dist_content = glob.glob('%s/*' % DIST_PATH)
+      dist_content = glob.glob('%s/*' % os.path.join(test.STEM_BASE, 'dist'))
 
       if len(dist_content) != 1:
         raise AssertionError('We should only have a single file in our dist directory, but instead had: %s' % ', '.join(dist_content))
@@ -169,5 +172,8 @@ class TestInstallation(unittest.TestCase):
       if issues:
         raise AssertionError(INSTALL_MISMATCH_MSG + '\n'.join(issues))
     finally:
-      if os.path.exists(DIST_PATH):
-        shutil.rmtree(DIST_PATH)
+      for directory in SETUPTOOLS_LITTER:
+        path = os.path.join(test.STEM_BASE, directory)
+
+        if os.path.exists(path):
+          shutil.rmtree(path)
