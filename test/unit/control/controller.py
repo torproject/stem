@@ -707,7 +707,7 @@ class TestControl(unittest.TestCase):
     with patch('time.time', Mock(return_value = TEST_TIMESTAMP)):
       with patch('stem.control.Controller.is_alive') as is_alive_mock:
         is_alive_mock.return_value = True
-        self.controller._launch_threads()
+        self.controller._create_loop_tasks()
 
         try:
           # Converting an event back into an uncast ControlMessage, then feeding it
