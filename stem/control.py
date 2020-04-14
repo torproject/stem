@@ -642,8 +642,7 @@ class BaseController(object):
           break
 
       try:
-        self._asyncio_loop.create_task(self._socket.send(message))
-
+        await self._socket.send(message)
         response = await self._reply_queue.get()
 
         # If the message we received back had an exception then re-raise it to the
