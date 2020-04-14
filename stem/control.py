@@ -546,6 +546,7 @@ class BaseController(object):
     self._socket = control_socket
 
     self._asyncio_loop = asyncio.get_event_loop()
+    self._asyncio_loop_tasks = []
 
     self._msg_lock = threading.RLock()
 
@@ -724,6 +725,9 @@ class BaseController(object):
 
     await self._socket.close()
 
+    for task in self._asyncio_loop_tasks:
+      task.cancel()
+
     # Join on any outstanding state change listeners. Closing is a state change
     # of its own, so if we have any listeners it's quite likely there's some
     # work in progress.
@@ -898,8 +902,8 @@ class BaseController(object):
     them if we're restarted.
     """
 
-    self._asyncio_loop.create_task(self._reader_loop())
-    self._asyncio_loop.create_task(self._event_loop())
+    for coroutine in (self._reader_loop(), self._event_loop()):
+      self._asyncio_loop_tasks.append(self._asyncio_loop.create_task(coroutine))
 
 
   async def _reader_loop(self) -> None:
