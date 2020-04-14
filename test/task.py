@@ -16,12 +16,14 @@
   |- CRYPTO_VERSION - checks our version of cryptography
   |- PYFLAKES_VERSION - checks our version of pyflakes
   |- PYCODESTYLE_VERSION - checks our version of pycodestyle
+  |- MYPY_VERSION - checks our version of mypy
   |- CLEAN_PYC - removes any *.pyc without a corresponding *.py
   |- REMOVE_TOR_DATA_DIR - removes our tor data directory
   |- IMPORT_TESTS - ensure all test modules have been imported
   |- UNUSED_TESTS - checks to see if any tests are missing from our settings
   |- PYFLAKES_TASK - static checks
-  +- PYCODESTYLE_TASK - style checks
+  |- PYCODESTYLE_TASK - style checks
+  +- MYPY_TASK - type checks
 """
 
 import importlib
@@ -60,12 +62,12 @@ SRC_PATHS = [os.path.join(test.STEM_BASE, path) for path in (
   'cache_fallback_directories.py',
   'setup.py',
   'tor-prompt',
-  os.path.join('docs', 'republish.py'),
   os.path.join('docs', 'roles.py'),
 )]
 
 PYFLAKES_UNAVAILABLE = 'Static error checking requires pyflakes version 0.7.3 or later. Please install it from ...\n  https://pypi.org/project/pyflakes/\n'
 PYCODESTYLE_UNAVAILABLE = 'Style checks require pycodestyle version 1.4.2 or later. Please install it from...\n  https://pypi.org/project/pycodestyle/\n'
+MYPY_UNAVAILABLE = 'Type checks require mypy. Please install it from...\n  http://mypy-lang.org/\n'
 
 
 def _check_stem_version():
@@ -324,6 +326,7 @@ PLATFORM_VERSION = Task('operating system', _check_platform_version)
 CRYPTO_VERSION = ModuleVersion('cryptography version', 'cryptography', lambda: test.require.CRYPTOGRAPHY_AVAILABLE)
 PYFLAKES_VERSION = ModuleVersion('pyflakes version', 'pyflakes')
 PYCODESTYLE_VERSION = ModuleVersion('pycodestyle version', ['pycodestyle', 'pep8'])
+MYPY_VERSION = ModuleVersion('mypy version', 'mypy.version')
 CLEAN_PYC = Task('checking for orphaned .pyc files', _clean_orphaned_pyc, (SRC_PATHS,), print_runtime = True)
 REMOVE_TOR_DATA_DIR = Task('emptying our tor data directory', _remove_tor_data_dir)
 IMPORT_TESTS = Task('importing test modules', _import_tests, print_runtime = True)
@@ -347,4 +350,12 @@ PYCODESTYLE_TASK = StaticCheckTask(
   args = (SRC_PATHS, True, True, True),
   is_available = stem.util.test_tools.is_pycodestyle_available(),
   unavailable_msg = PYCODESTYLE_UNAVAILABLE,
+)
+
+MYPY_TASK = StaticCheckTask(
+  'running mypy',
+  stem.util.test_tools.type_issues,
+  args = ([os.path.join(test.STEM_BASE, 'stem')],),
+  is_available = stem.util.test_tools.is_mypy_available(),
+  unavailable_msg = MYPY_UNAVAILABLE,
 )

@@ -217,12 +217,14 @@ def main():
     test.task.CRYPTO_VERSION,
     test.task.PYFLAKES_VERSION,
     test.task.PYCODESTYLE_VERSION,
+    test.task.MYPY_VERSION,
     test.task.CLEAN_PYC,
     test.task.UNUSED_TESTS,
     test.task.IMPORT_TESTS,
     test.task.REMOVE_TOR_DATA_DIR if args.run_integ else None,
     test.task.PYFLAKES_TASK if not args.specific_test else None,
     test.task.PYCODESTYLE_TASK if not args.specific_test else None,
+    test.task.MYPY_TASK if not args.specific_test else None,
   )
 
   # Test logging. If '--log-file' is provided we log to that location,
@@ -334,7 +336,7 @@ def main():
 
   static_check_issues = {}
 
-  for task in (test.task.PYFLAKES_TASK, test.task.PYCODESTYLE_TASK):
+  for task in (test.task.PYFLAKES_TASK, test.task.PYCODESTYLE_TASK, test.task.MYPY_TASK):
     if not task.is_available and task.unavailable_msg:
       println(task.unavailable_msg, ERROR)
     else:

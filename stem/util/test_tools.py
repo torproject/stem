@@ -23,9 +23,11 @@ to match just against the prefix or suffix. For instance...
 
   is_pyflakes_available - checks if pyflakes is available
   is_pycodestyle_available - checks if pycodestyle is available
+  is_mypy_available - checks if mypy is available
 
   pyflakes_issues - static checks for problems via pyflakes
   stylistic_issues - checks for PEP8 and other stylistic issues
+  type_issues - checks for type problems
 """
 
 import collections
@@ -47,6 +49,7 @@ from typing import Any, Callable, Iterator, Mapping, Optional, Sequence, Tuple, 
 CONFIG = stem.util.conf.config_dict('test', {
   'pycodestyle.ignore': [],
   'pyflakes.ignore': [],
+  'mypy.ignore': [],
   'exclude_paths': [],
 })
 
@@ -353,6 +356,16 @@ def is_pycodestyle_available() -> bool:
   return hasattr(pycodestyle, 'BaseReport')
 
 
+def is_mypy_available() -> bool:
+  """
+  Checks if mypy is available.
+
+  :returns: **True** if we can use mypy and **False** otherwise
+  """
+
+  return _module_exists('mypy.api')
+
+
 def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_exception_keyword: bool = False, prefer_single_quotes: bool = False) -> Mapping[str, 'stem.util.test_tools.Issue']:
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
@@ -541,27 +554,8 @@ def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.
       def flake(self, msg: str) -> None:
         self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args, None)
 
-      def _is_ignored(self, path: str, issue: str) -> bool:
-        # Paths in pyflakes_ignore are relative, so we need to check to see if our
-        # path ends with any of them.
-
-        for ignored_path, ignored_issues in self._ignored_issues.items():
-          if path.endswith(ignored_path):
-            if issue in ignored_issues:
-              return True
-
-            for prefix in [i[:1] for i in ignored_issues if i.endswith('*')]:
-              if issue.startswith(prefix):
-                return True
-
-            for suffix in [i[1:] for i in ignored_issues if i.startswith('*')]:
-              if issue.endswith(suffix):
-                return True
-
-        return False
-
-      def _register_issue(self, path: str, line_number: int, issue: str, line: int) -> None:
-        if not self._is_ignored(path, issue):
+      def _register_issue(self, path: str, line_number: int, issue: str, line: str) -> None:
+        if not _is_ignored(self._ignored_issues, path, issue):
           if path and line_number and not line:
             line = linecache.getline(path, line_number).strip()
 
@@ -571,6 +565,65 @@ def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.
 
     for path in _python_files(paths):
       pyflakes.api.checkPath(path, reporter)
+
+  return issues
+
+
+def type_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issue']:
+  """
+  Performs type checks via mypy. False positives can be ignored via
+  'mypy.ignore' entries in our 'test' config. For instance...
+
+  ::
+
+    mypy.ignore stem/util/system.py => Incompatible types in assignment*
+
+  :param list paths: paths to search for problems
+
+  :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
+  """
+
+  issues = {}
+
+  if is_mypy_available():
+    import mypy.api
+
+    ignored_issues = {}
+
+    for line in CONFIG['mypy.ignore']:
+      path, issue = line.split('=>')
+      ignored_issues.setdefault(path.strip(), []).append(issue.strip())
+
+    lines = mypy.api.run(paths)[0].splitlines()  # mypy returns (report, errors, exit_status)
+
+    for line in lines:
+      # example:
+      # stem/util/__init__.py:89: error: Incompatible return value type (got "Union[bytes, str]", expected "bytes")
+
+      if line.startswith('Found ') and line.endswith(' source files)'):
+        continue  # ex. "Found 1786 errors in 45 files (checked 49 source files)"
+      elif line.count(':') < 3:
+        raise ValueError('Failed to parse mypy line: %s' % line)
+
+      path, line_number, _, issue = line.split(':', 3)
+      issue = issue.strip()
+
+      if line_number.isdigit():
+        line_number = int(line_number)
+      else:
+        raise ValueError('Malformed line number on: %s' % line)
+
+      if _is_ignored(ignored_issues, path, issue):
+        continue
+
+      # skip getting code if there's too many reported issues
+
+      if len(lines) < 25:
+        line = linecache.getline(path, line_number).strip()
+      else:
+        line = ''
+
+      issues.setdefault(path, []).append(Issue(line_number, issue, line))
 
   return issues
 
@@ -603,3 +656,20 @@ def _python_files(paths: Sequence[str]) -> Iterator[str]:
 
       if not skip:
         yield file_path
+
+
+def _is_ignored(config: Mapping[str, Sequence[str]], path: str, issue: str) -> bool:
+  for ignored_path, ignored_issues in config.items():
+    if path.endswith(ignored_path):
+      if issue in ignored_issues:
+        return True
+
+      for prefix in [i[:1] for i in ignored_issues if i.endswith('*')]:
+        if issue.startswith(prefix):
+          return True
+
+      for suffix in [i[1:] for i in ignored_issues if i.startswith('*')]:
+        if issue.endswith(suffix):
+          return True
+
+  return False
