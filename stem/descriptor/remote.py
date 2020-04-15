@@ -101,7 +101,7 @@ import stem.util.tor_tools
 
 from stem.descriptor import Compression
 from stem.util import log, str_tools
-from typing import Any, Dict, Iterator, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -371,7 +371,7 @@ class Query(object):
     the same as running **query.run(True)** (default is **False**)
   """
 
-  def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence['stem.Endpoint']] = None, compression: Sequence['stem.descriptor.Compression'] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: 'stem.descriptor.DocumentHandler' = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
+  def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence[stem.Endpoint]] = None, compression: Union[stem.descriptor._Compression, Sequence[stem.descriptor._Compression]] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: stem.descriptor.DocumentHandler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
     if not resource.startswith('/'):
       raise ValueError("Resources should start with a '/': %s" % resource)
 
@@ -380,8 +380,10 @@ class Query(object):
       resource = resource[:-2]
     elif isinstance(compression, tuple):
       compression = list(compression)
-    elif not isinstance(compression, list):
+    elif isinstance(compression, stem.descriptor._Compression):
       compression = [compression]  # caller provided only a single option
+    else:
+      raise ValueError('Compression should be a list of stem.descriptor.Compression, was %s (%s)' % (compression, type(compression).__name__))
 
     if Compression.ZSTD in compression and not Compression.ZSTD.available:
       compression.remove(Compression.ZSTD)
@@ -411,21 +413,21 @@ class Query(object):
     self.retries = retries
     self.fall_back_to_authority = fall_back_to_authority
 
-    self.content = None
-    self.error = None
+    self.content = None  # type: Optional[bytes]
+    self.error = None  # type: Optional[BaseException]
     self.is_done = False
-    self.download_url = None
+    self.download_url = None  # type: Optional[str]
 
-    self.start_time = None
+    self.start_time = None  # type: Optional[float]
     self.timeout = timeout
-    self.runtime = None
+    self.runtime = None  # type: Optional[float]
 
     self.validate = validate
     self.document_handler = document_handler
-    self.reply_headers = None
+    self.reply_headers = None  # type: Optional[Dict[str, str]]
     self.kwargs = kwargs
 
-    self._downloader_thread = None
+    self._downloader_thread = None  # type: Optional[threading.Thread]
     self._downloader_thread_lock = threading.RLock()
 
     if start:
@@ -450,7 +452,7 @@ class Query(object):
         self._downloader_thread.setDaemon(True)
         self._downloader_thread.start()
 
-  def run(self, suppress: bool = False) -> Sequence['stem.descriptor.Descriptor']:
+  def run(self, suppress: bool = False) -> List['stem.descriptor.Descriptor']:
     """
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
@@ -470,7 +472,7 @@ class Query(object):
 
     return list(self._run(suppress))
 
-  def _run(self, suppress: bool) -> Iterator['stem.descriptor.Descriptor']:
+  def _run(self, suppress: bool) -> Iterator[stem.descriptor.Descriptor]:
     with self._downloader_thread_lock:
       self.start()
       self._downloader_thread.join()
@@ -506,11 +508,11 @@ class Query(object):
 
           raise self.error
 
-  def __iter__(self) -> Iterator['stem.descriptor.Descriptor']:
+  def __iter__(self) -> Iterator[stem.descriptor.Descriptor]:
     for desc in self._run(True):
       yield desc
 
-  def _pick_endpoint(self, use_authority: bool = False) -> 'stem.Endpoint':
+  def _pick_endpoint(self, use_authority: bool = False) -> stem.Endpoint:
     """
     Provides an endpoint to query. If we have multiple endpoints then one
     is picked at random.
@@ -576,7 +578,7 @@ class DescriptorDownloader(object):
   def __init__(self, use_mirrors: bool = False, **default_args: Any) -> None:
     self._default_args = default_args
 
-    self._endpoints = None
+    self._endpoints = None  # type: Optional[List[stem.DirPort]]
 
     if use_mirrors:
       try:
@@ -586,7 +588,7 @@ class DescriptorDownloader(object):
       except Exception as exc:
         log.debug('Unable to retrieve directory mirrors: %s' % exc)
 
-  def use_directory_mirrors(self) -> 'stem.descriptor.networkstatus.NetworkStatusDocumentV3':
+  def use_directory_mirrors(self) -> stem.descriptor.networkstatus.NetworkStatusDocumentV3:
     """
     Downloads the present consensus and configures ourselves to use directory
     mirrors, in addition to authorities.
@@ -610,7 +612,7 @@ class DescriptorDownloader(object):
 
     self._endpoints = list(new_endpoints)
 
-    return consensus
+    return consensus  # type: ignore
 
   def their_server_descriptor(self, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
@@ -776,7 +778,7 @@ class DescriptorDownloader(object):
 
     return consensus_query
 
-  def get_vote(self, authority: 'stem.directory.Authority', **query_args: Any) -> 'stem.descriptor.remote.Query':
+  def get_vote(self, authority: stem.directory.Authority, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
     Provides the present vote for a given directory authority.
 
@@ -924,7 +926,7 @@ class DescriptorDownloader(object):
     return Query(resource, **args)
 
 
-def _download_from_orport(endpoint: 'stem.ORPort', compression: Sequence['stem.Compression'], resource: str) -> Tuple[bytes, Dict[str, str]]:
+def _download_from_orport(endpoint: stem.ORPort, compression: Sequence[stem.descriptor._Compression], resource: str) -> Tuple[bytes, Dict[str, str]]:
   """
   Downloads descriptors from the given orport. Payload is just like an http
   response (headers and all)...
@@ -974,7 +976,7 @@ def _download_from_orport(endpoint: 'stem.ORPort', compression: Sequence['stem.C
 
       for line in str_tools._to_unicode(header_data).splitlines():
         if ': ' not in line:
-          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % line)
+          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % (line, header_data.decode('utf-8')))
 
         key, value = line.split(': ', 1)
         headers[key] = value
@@ -982,7 +984,7 @@ def _download_from_orport(endpoint: 'stem.ORPort', compression: Sequence['stem.C
       return _decompress(body_data, headers.get('Content-Encoding')), headers
 
 
-def _download_from_dirport(url: str, compression: Sequence['stem.descriptor.Compression'], timeout: Optional[float]) -> Tuple[bytes, Dict[str, str]]:
+def _download_from_dirport(url: str, compression: Sequence[stem.descriptor._Compression], timeout: Optional[float]) -> Tuple[bytes, Dict[str, str]]:
   """
   Downloads descriptors from the given url.
 
@@ -1011,8 +1013,8 @@ def _download_from_dirport(url: str, compression: Sequence['stem.descriptor.Comp
   except socket.timeout as exc:
     raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
   except:
-    exc, stacktrace = sys.exc_info()[1:3]
-    raise stem.DownloadFailed(url, exc, stacktrace)
+    exception, stacktrace = sys.exc_info()[1:3]
+    raise stem.DownloadFailed(url, exception, stacktrace)
 
   return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
 

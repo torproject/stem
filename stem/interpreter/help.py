@@ -7,6 +7,11 @@ Provides our /help responses.
 
 import functools
 
+import stem.control
+import stem.util.conf
+
+from stem.util.term import format
+
 from stem.interpreter import (
   STANDARD_OUTPUT,
   BOLD_OUTPUT,
@@ -15,10 +20,8 @@ from stem.interpreter import (
   uses_settings,
 )
 
-from stem.util.term import format
 
-
-def response(controller: 'stem.control.Controller', arg: str) -> str:
+def response(controller: stem.control.Controller, arg: str) -> str:
   """
   Provides our /help response.
 
@@ -33,7 +36,7 @@ def response(controller: 'stem.control.Controller', arg: str) -> str:
   return _response(controller, _normalize(arg))
 
 
-def _normalize(arg) -> str:
+def _normalize(arg: str) -> str:
   arg = arg.upper()
 
   # If there's multiple arguments then just take the first. This is
@@ -52,7 +55,7 @@ def _normalize(arg) -> str:
 
 @functools.lru_cache()
 @uses_settings
-def _response(controller: 'stem.control.Controller', arg: str, config: 'stem.util.conf.Config') -> str:
+def _response(controller: stem.control.Controller, arg: str, config: stem.util.conf.Config) -> str:
   if not arg:
     return _general_help()
 

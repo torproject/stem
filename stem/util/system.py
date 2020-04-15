@@ -82,7 +82,7 @@ import stem.util.str_tools
 
 from stem import UNDEFINED
 from stem.util import log
-from typing import Any, Callable, Iterator, Mapping, Optional, Sequence, TextIO, Union
+from typing import Any, BinaryIO, Callable, Collection, Dict, Iterator, List, Mapping, Optional, Sequence, Type, Union
 
 State = stem.util.enum.UppercaseEnum(
   'PENDING',
@@ -98,11 +98,11 @@ SIZE_RECURSES = {
   dict: lambda d: itertools.chain.from_iterable(d.items()),
   set: iter,
   frozenset: iter,
-}
+}  # type: Dict[Type, Callable]
 
 # Mapping of commands to if they're available or not.
 
-CMD_AVAILABLE_CACHE = {}
+CMD_AVAILABLE_CACHE = {}  # type: Dict[str, bool]
 
 # An incomplete listing of commands provided by the shell. Expand this as
 # needed. Some noteworthy things about shell commands...
@@ -186,11 +186,11 @@ class CallError(OSError):
   :var str command: command that was ran
   :var int exit_status: exit code of the process
   :var float runtime: time the command took to run
-  :var str stdout: stdout of the process
-  :var str stderr: stderr of the process
+  :var bytes stdout: stdout of the process
+  :var bytes stderr: stderr of the process
   """
 
-  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: str, stderr: str) -> None:
+  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: bytes, stderr: bytes) -> None:
     self.msg = msg
     self.command = command
     self.exit_status = exit_status
@@ -211,7 +211,7 @@ class CallTimeoutError(CallError):
   :var float timeout: time we waited
   """
 
-  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: str, stderr: str, timeout: float) -> None:
+  def __init__(self, msg: str, command: str, exit_status: int, runtime: float, stdout: bytes, stderr: bytes, timeout: float) -> None:
     super(CallTimeoutError, self).__init__(msg, command, exit_status, runtime, stdout, stderr)
     self.timeout = timeout
 
@@ -242,8 +242,8 @@ class DaemonTask(object):
     self.result = None
     self.error = None
 
-    self._process = None
-    self._pipe = None
+    self._process = None  # type: Optional[multiprocessing.Process]
+    self._pipe = None  # type: Optional[multiprocessing.connection.Connection]
 
     if start:
       self.run()
@@ -462,7 +462,7 @@ def is_running(command: Union[str, int, Sequence[str]]) -> bool:
   return None
 
 
-def size_of(obj: Any, exclude: Optional[Sequence[int]] = None) -> int:
+def size_of(obj: Any, exclude: Optional[Collection[int]] = None) -> int:
   """
   Provides the `approximate memory usage of an object
   <https://code.activestate.com/recipes/577504/>`_. This can recurse tuples,
@@ -486,9 +486,9 @@ def size_of(obj: Any, exclude: Optional[Sequence[int]] = None) -> int:
   if platform.python_implementation() == 'PyPy':
     raise NotImplementedError('PyPy does not implement sys.getsizeof()')
 
-  if exclude is None:
-    exclude = set()
-  elif id(obj) in exclude:
+  exclude = set(exclude) if exclude is not None else set()
+
+  if id(obj) in exclude:
     return 0
 
   try:
@@ -548,7 +548,7 @@ def name_by_pid(pid: int) -> Optional[str]:
   return process_name
 
 
-def pid_by_name(process_name: str, multiple: bool = False) -> Union[int, Sequence[int]]:
+def pid_by_name(process_name: str, multiple: bool = False) -> Union[int, List[int]]:
   """
   Attempts to determine the process id for a running process, using...
 
@@ -996,10 +996,8 @@ def user(pid: int) -> Optional[str]:
       import pwd  # only available on unix platforms
 
       uid = stem.util.proc.uid(pid)
-
-      if uid and uid.isdigit():
-        return pwd.getpwuid(int(uid)).pw_name
-    except:
+      return pwd.getpwuid(uid).pw_name
+    except ImportError:
       pass
 
   if is_available('ps'):
@@ -1042,7 +1040,7 @@ def start_time(pid: str) -> Optional[float]:
   return None
 
 
-def tail(target: Union[str, TextIO], lines: Optional[int] = None) -> Iterator[str]:
+def tail(target: Union[str, BinaryIO], lines: Optional[int] = None) -> Iterator[str]:
   """
   Provides lines of a file starting with the end. For instance,
   'tail -n 50 /tmp/my_log' could be done with...
@@ -1061,8 +1059,8 @@ def tail(target: Union[str, TextIO], lines: Optional[int] = None) -> Iterator[st
 
   if isinstance(target, str):
     with open(target, 'rb') as target_file:
-      for line in tail(target_file, lines):
-        yield line
+      for tail_line in tail(target_file, lines):
+        yield tail_line
 
       return
 
@@ -1299,7 +1297,7 @@ def call(command: Union[str, Sequence[str]], default: Any = UNDEFINED, ignore_ex
     if timeout:
       while process.poll() is None:
         if time.time() - start_time > timeout:
-          raise CallTimeoutError("Process didn't finish after %0.1f seconds" % timeout, ' '.join(command_list), None, timeout, '', '', timeout)
+          raise CallTimeoutError("Process didn't finish after %0.1f seconds" % timeout, ' '.join(command_list), None, timeout, b'', b'', timeout)
 
         time.sleep(0.001)
 
@@ -1313,11 +1311,11 @@ def call(command: Union[str, Sequence[str]], default: Any = UNDEFINED, ignore_ex
       trace_prefix = 'Received from system (%s)' % command
 
       if stdout and stderr:
-        log.trace(trace_prefix + ', stdout:\n%s\nstderr:\n%s' % (stdout, stderr))
+        log.trace(trace_prefix + ', stdout:\n%s\nstderr:\n%s' % (stdout.decode('utf-8'), stderr.decode('utf-8')))
       elif stdout:
-        log.trace(trace_prefix + ', stdout:\n%s' % stdout)
+        log.trace(trace_prefix + ', stdout:\n%s' % stdout.decode('utf-8'))
       elif stderr:
-        log.trace(trace_prefix + ', stderr:\n%s' % stderr)
+        log.trace(trace_prefix + ', stderr:\n%s' % stderr.decode('utf-8'))
 
     exit_status = process.poll()
 

@@ -162,8 +162,10 @@ import inspect
 import os
 import threading
 
+import stem.util.enum
+
 from stem.util import log
-from typing import Any, Callable, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Union
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
@@ -186,10 +188,10 @@ class _SyncListener(object):
         if interceptor_value:
           new_value = interceptor_value
 
-      self.config_dict[key] = new_value
+      self.config_dict[key] = new_value  # type: ignore
 
 
-def config_dict(handle: str, conf_mappings: Mapping[str, Any], handler: Optional[Callable[[str, Any], Any]] = None) -> Mapping[str, Any]:
+def config_dict(handle: str, conf_mappings: Dict[str, Any], handler: Optional[Callable[[str, Any], Any]] = None) -> Dict[str, Any]:
   """
   Makes a dictionary that stays synchronized with a configuration.
 
@@ -308,7 +310,7 @@ def parse_enum(key: str, value: str, enumeration: 'stem.util.enum.Enum') -> Any:
   return parse_enum_csv(key, value, enumeration, 1)[0]
 
 
-def parse_enum_csv(key: str, value: str, enumeration: 'stem.util.enum.Enum', count: Optional[Union[int, Sequence[int]]] = None) -> Sequence[Any]:
+def parse_enum_csv(key: str, value: str, enumeration: 'stem.util.enum.Enum', count: Optional[Union[int, Sequence[int]]] = None) -> List[Any]:
   """
   Parses a given value as being a comma separated listing of enumeration keys,
   returning the corresponding enumeration values. This is intended to be a
@@ -449,15 +451,15 @@ class Config(object):
   """
 
   def __init__(self) -> None:
-    self._path = None  # location we last loaded from or saved to
-    self._contents = collections.OrderedDict()  # configuration key/value pairs
-    self._listeners = []  # functors to be notified of config changes
+    self._path = None  # type: Optional[str] # location we last loaded from or saved to
+    self._contents = collections.OrderedDict()  # type: Dict[str, Any] # configuration key/value pairs
+    self._listeners = []  # type: List[Callable[['stem.util.conf.Config', str], Any]] # functors to be notified of config changes
 
     # used for accessing _contents
     self._contents_lock = threading.RLock()
 
     # keys that have been requested (used to provide unused config contents)
-    self._requested_keys = set()
+    self._requested_keys = set()  # type: Set[str]
 
     # flag to support lazy loading in uses_settings()
     self._settings_loaded = False
@@ -577,7 +579,7 @@ class Config(object):
       self._contents.clear()
       self._requested_keys = set()
 
-  def add_listener(self, listener: Callable[[str, Any], Any], backfill: bool = True) -> None:
+  def add_listener(self, listener: Callable[['stem.util.conf.Config', str], Any], backfill: bool = True) -> None:
     """
     Registers the function to be notified of configuration updates. Listeners
     are expected to be functors which accept (config, key).
@@ -600,7 +602,7 @@ class Config(object):
 
     self._listeners = []
 
-  def keys(self) -> Sequence[str]:
+  def keys(self) -> List[str]:
     """
     Provides all keys in the currently loaded configuration.
 
@@ -609,7 +611,7 @@ class Config(object):
 
     return list(self._contents.keys())
 
-  def unused_keys(self) -> Sequence[str]:
+  def unused_keys(self) -> Set[str]:
     """
     Provides the configuration keys that have never been provided to a caller
     via :func:`~stem.util.conf.config_dict` or the
@@ -740,7 +742,7 @@ class Config(object):
 
     return val
 
-  def get_value(self, key: str, default: Optional[Any] = None, multiple: bool = False) -> Union[str, Sequence[str]]:
+  def get_value(self, key: str, default: Optional[Any] = None, multiple: bool = False) -> Union[str, List[str]]:
     """
     This provides the current value associated with a given key.
 

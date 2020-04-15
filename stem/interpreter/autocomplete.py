@@ -7,12 +7,15 @@ Tab completion for our interpreter prompt.
 
 import functools
 
+import stem.control
+import stem.util.conf
+
 from stem.interpreter import uses_settings
-from typing import Optional, Sequence
+from typing import List, Optional
 
 
 @uses_settings
-def _get_commands(controller: 'stem.control.Controller', config: 'stem.util.conf.Config') -> Sequence[str]:
+def _get_commands(controller: stem.control.Controller, config: stem.util.conf.Config) -> List[str]:
   """
   Provides commands recognized by tor.
   """
@@ -77,11 +80,11 @@ def _get_commands(controller: 'stem.control.Controller', config: 'stem.util.conf
 
 
 class Autocompleter(object):
-  def __init__(self, controller: 'stem.control.Controller') -> None:
+  def __init__(self, controller: stem.control.Controller) -> None:
     self._commands = _get_commands(controller)
 
   @functools.lru_cache()
-  def matches(self, text: str) -> Sequence[str]:
+  def matches(self, text: str) -> List[str]:
     """
     Provides autocompletion matches for the given text.
 

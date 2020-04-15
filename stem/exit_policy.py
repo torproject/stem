@@ -71,7 +71,7 @@ import stem.util.connection
 import stem.util.enum
 import stem.util.str_tools
 
-from typing import Any, Iterator, Optional, Sequence, Union
+from typing import Any, Iterator, List, Optional, Sequence, Set, Union
 
 AddressType = stem.util.enum.Enum(('WILDCARD', 'Wildcard'), ('IPv4', 'IPv4'), ('IPv6', 'IPv6'))
 
@@ -167,6 +167,8 @@ class ExitPolicy(object):
   def __init__(self, *rules: Union[str, 'stem.exit_policy.ExitPolicyRule']) -> None:
     # sanity check the types
 
+    self._input_rules = None  # type: Optional[Union[bytes, Sequence[Union[str, bytes, stem.exit_policy.ExitPolicyRule]]]]
+
     for rule in rules:
       if not isinstance(rule, (bytes, str)) and not isinstance(rule, ExitPolicyRule):
         raise TypeError('Exit policy rules can only contain strings or ExitPolicyRules, got a %s (%s)' % (type(rule), rules))
@@ -183,13 +185,14 @@ class ExitPolicy(object):
         is_all_str = False
 
     if rules and is_all_str:
-      byte_rules = [stem.util.str_tools._to_bytes(r) for r in rules]
+      byte_rules = [stem.util.str_tools._to_bytes(r) for r in rules]  # type: ignore
       self._input_rules = zlib.compress(b','.join(byte_rules))
     else:
       self._input_rules = rules
 
-    self._rules = None
-    self._hash = None
+    self._policy_str = None  # type: Optional[str]
+    self._rules = None  # type: List[stem.exit_policy.ExitPolicyRule]
+    self._hash = None  # type: Optional[int]
 
     # Result when no rules apply. According to the spec policies default to 'is
     # allowed', but our microdescriptor policy subclass might want to change
@@ -228,7 +231,7 @@ class ExitPolicy(object):
     otherwise.
     """
 
-    rejected_ports = set()
+    rejected_ports = set()  # type: Set[int]
 
     for rule in self._get_rules():
       if rule.is_accept:
@@ -298,7 +301,8 @@ class ExitPolicy(object):
 
     # convert port list to a list of ranges (ie, ['1-3'] rather than [1, 2, 3])
     if display_ports:
-      display_ranges, temp_range = [], []
+      display_ranges = []
+      temp_range = []  # type: List[int]
       display_ports.sort()
       display_ports.append(None)  # ending item to include last range in loop
 
@@ -384,23 +388,28 @@ class ExitPolicy(object):
     input_rules = self._input_rules
 
     if self._rules is None and input_rules is not None:
-      rules = []
+      rules = []  # type: List[stem.exit_policy.ExitPolicyRule]
       is_all_accept, is_all_reject = True, True
+      decompressed_rules = None  # type: Optional[Sequence[Union[str, bytes, stem.exit_policy.ExitPolicyRule]]]
 
       if isinstance(input_rules, bytes):
         decompressed_rules = zlib.decompress(input_rules).split(b',')
       else:
         decompressed_rules = input_rules
 
-      for rule in decompressed_rules:
-        if isinstance(rule, bytes):
-          rule = stem.util.str_tools._to_unicode(rule)
+      for rule_val in decompressed_rules:
+        if isinstance(rule_val, bytes):
+          rule_val = stem.util.str_tools._to_unicode(rule_val)
 
-        if isinstance(rule, (bytes, str)):
-          if not rule.strip():
+        if isinstance(rule_val, str):
+          if not rule_val.strip():
             continue
 
-          rule = ExitPolicyRule(rule.strip())
+          rule = ExitPolicyRule(rule_val.strip())
+        elif isinstance(rule_val, stem.exit_policy.ExitPolicyRule):
+          rule = rule_val
+        else:
+          raise TypeError('BUG: unexpected type within decompressed policy: %s (%s)' % (stem.util.str_tools._to_unicode(rule_val), type(rule_val).__name__))
 
         if rule.is_accept:
           is_all_reject = False
@@ -446,9 +455,11 @@ class ExitPolicy(object):
     for rule in self._get_rules():
       yield rule
 
-  @functools.lru_cache()
   def __str__(self) -> str:
-    return ', '.join([str(rule) for rule in self._get_rules()])
+    if self._policy_str is None:
+      self._policy_str = ', '.join([str(rule) for rule in self._get_rules()])
+
+    return self._policy_str
 
   def __hash__(self) -> int:
     if self._hash is None:
@@ -505,7 +516,7 @@ class MicroExitPolicy(ExitPolicy):
     #   PortList ::= PortList "," PortOrRange
     #   PortOrRange ::= INT "-" INT / INT
 
-    self._policy = policy
+    policy_str = policy
 
     if policy.startswith('accept'):
       self.is_accept = True
@@ -517,7 +528,7 @@ class MicroExitPolicy(ExitPolicy):
     policy = policy[6:]
 
     if not policy.startswith(' '):
-      raise ValueError('A microdescriptor exit policy should have a space separating accept/reject from its port list: %s' % self._policy)
+      raise ValueError('A microdescriptor exit policy should have a space separating accept/reject from its port list: %s' % policy_str)
 
     policy = policy.lstrip()
 
@@ -538,9 +549,10 @@ class MicroExitPolicy(ExitPolicy):
 
     super(MicroExitPolicy, self).__init__(*rules)
     self._is_allowed_default = not self.is_accept
+    self._policy_str = policy_str
 
   def __str__(self) -> str:
-    return self._policy
+    return self._policy_str
 
   def __hash__(self) -> int:
     return hash(str(self))
@@ -606,17 +618,17 @@ class ExitPolicyRule(object):
     if ':' not in exitpattern or ']' in exitpattern.rsplit(':', 1)[1]:
       raise ValueError("An exitpattern must be of the form 'addrspec:portspec': %s" % rule)
 
-    self.address = None
-    self._address_type = None
-    self._masked_bits = None
-    self.min_port = self.max_port = None
-    self._hash = None
+    self.address = None  # type: Optional[str]
+    self._address_type = None  # type: Optional[stem.exit_policy.AddressType]
+    self._masked_bits = None  # type: Optional[int]
+    self.min_port = self.max_port = None  # type: Optional[int]
+    self._hash = None  # type: Optional[int]
 
     # Our mask in ip notation (ex. '255.255.255.0'). This is only set if we
     # either have a custom mask that can't be represented by a number of bits,
     # or the user has called mask(), lazily loading this.
 
-    self._mask = None
+    self._mask = None  # type: Optional[str]
 
     # Malformed exit policies are rejected, but there's an exception where it's
     # just skipped: when an accept6/reject6 rule has an IPv4 address...

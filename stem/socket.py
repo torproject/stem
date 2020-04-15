@@ -80,7 +80,7 @@ import stem.util.str_tools
 
 from stem.util import log
 from types import TracebackType
-from typing import BinaryIO, Callable, Optional, Type
+from typing import BinaryIO, Callable, List, Optional, Tuple, Type, Union, overload
 
 MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
 ERROR_MSG = 'Error while receiving a control message (%s): %s'
@@ -96,7 +96,8 @@ class BaseSocket(object):
   """
 
   def __init__(self) -> None:
-    self._socket, self._socket_file = None, None
+    self._socket = None  # type: Optional[Union[socket.socket, ssl.SSLSocket]]
+    self._socket_file = None  # type: Optional[BinaryIO]
     self._is_alive = False
     self._connection_time = 0.0  # time when we last connected or disconnected
 
@@ -218,7 +219,7 @@ class BaseSocket(object):
       if is_change:
         self._close()
 
-  def _send(self, message: str, handler: Callable[[socket.socket, BinaryIO, str], None]) -> None:
+  def _send(self, message: Union[bytes, str], handler: Callable[[Union[socket.socket, ssl.SSLSocket], BinaryIO, Union[bytes, str]], None]) -> None:
     """
     Send message in a thread safe manner. Handler is expected to be of the form...
 
@@ -242,7 +243,15 @@ class BaseSocket(object):
 
         raise
 
-  def _recv(self, handler: Callable[[socket.socket, BinaryIO], None]) -> bytes:
+  @overload
+  def _recv(self, handler: Callable[[ssl.SSLSocket, BinaryIO], bytes]) -> bytes:
+    ...
+
+  @overload
+  def _recv(self, handler: Callable[[socket.socket, BinaryIO], stem.response.ControlMessage]) -> stem.response.ControlMessage:
+    ...
+
+  def _recv(self, handler):
     """
     Receives a message in a thread safe manner. Handler is expected to be of the form...
 
@@ -317,7 +326,7 @@ class BaseSocket(object):
 
     pass
 
-  def _make_socket(self) -> socket.socket:
+  def _make_socket(self) -> Union[socket.socket, ssl.SSLSocket]:
     """
     Constructs and connects new socket. This is implemented by subclasses.
 
@@ -362,7 +371,7 @@ class RelaySocket(BaseSocket):
     if connect:
       self.connect()
 
-  def send(self, message: str) -> None:
+  def send(self, message: Union[str, bytes]) -> None:
     """
     Sends a message to the relay's ORPort.
 
@@ -389,26 +398,26 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    def wrapped_recv(s: socket.socket, sf: BinaryIO) -> bytes:
+    def wrapped_recv(s: ssl.SSLSocket, sf: BinaryIO) -> bytes:
       if timeout is None:
-        return s.recv()
+        return s.recv(1024)
       else:
-        s.setblocking(0)
+        s.setblocking(False)
         s.settimeout(timeout)
 
         try:
-          return s.recv()
+          return s.recv(1024)
         except (socket.timeout, ssl.SSLError, ssl.SSLWantReadError):
           return None
         finally:
-          s.setblocking(1)
+          s.setblocking(True)
 
     return self._recv(wrapped_recv)
 
   def is_localhost(self) -> bool:
     return self.address == '127.0.0.1'
 
-  def _make_socket(self) -> socket.socket:
+  def _make_socket(self) -> ssl.SSLSocket:
     try:
       relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
       relay_socket.connect((self.address, self.port))
@@ -430,7 +439,7 @@ class ControlSocket(BaseSocket):
   def __init__(self) -> None:
     super(ControlSocket, self).__init__()
 
-  def send(self, message: str) -> None:
+  def send(self, message: Union[bytes, str]) -> None:
     """
     Formats and sends a message to the control socket. For more information see
     the :func:`~stem.socket.send_message` function.
@@ -536,7 +545,7 @@ class ControlSocketFile(ControlSocket):
       raise stem.SocketError(exc)
 
 
-def send_message(control_file: BinaryIO, message: str, raw: bool = False) -> None:
+def send_message(control_file: BinaryIO, message: Union[bytes, str], raw: bool = False) -> None:
   """
   Sends a message to the control socket, adding the expected formatting for
   single verses multi-line messages. Neither message type should contain an
@@ -568,6 +577,8 @@ def send_message(control_file: BinaryIO, message: str, raw: bool = False) -> Non
     * :class:`stem.SocketClosed` if the socket is known to be shut down
   """
 
+  message = stem.util.str_tools._to_unicode(message)
+
   if not raw:
     message = send_formatting(message)
 
@@ -579,7 +590,7 @@ def send_message(control_file: BinaryIO, message: str, raw: bool = False) -> Non
     log.trace('Sent to tor:%s%s' % (msg_div, log_message))
 
 
-def _write_to_socket(socket_file: BinaryIO, message: str) -> None:
+def _write_to_socket(socket_file: BinaryIO, message: Union[str, bytes]) -> None:
   try:
     socket_file.write(stem.util.str_tools._to_bytes(message))
     socket_file.flush()
@@ -618,7 +629,9 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
       a complete message
   """
 
-  parsed_content, raw_content, first_line = None, None, True
+  parsed_content = []  # type: List[Tuple[str, str, bytes]]
+  raw_content = bytearray()
+  first_line = True
 
   while True:
     try:
@@ -649,10 +662,10 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
       log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
       raise stem.SocketClosed('Received empty socket content.')
     elif not MESSAGE_PREFIX.match(line):
-      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line)))
+      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line.decode('utf-8'))))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
     elif not line.endswith(b'\r\n'):
-      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line)))
+      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line.decode('utf-8'))))
       raise stem.ProtocolError('All lines should end with CRLF')
 
     status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
@@ -691,11 +704,11 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
           line = control_file.readline()
           raw_content += line
         except socket.error as exc:
-          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content)))))
+          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content).decode('utf-8')))))
           raise stem.SocketClosed(exc)
 
         if not line.endswith(b'\r\n'):
-          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(bytes(raw_content))))
+          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(bytes(raw_content).decode('utf-8'))))
           raise stem.ProtocolError('All lines should end with CRLF')
         elif line == b'.\r\n':
           break  # data block termination
@@ -722,7 +735,7 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
-def send_formatting(message: str) -> None:
+def send_formatting(message: str) -> str:
   """
   Performs the formatting expected from sent control messages. For more
   information see the :func:`~stem.socket.send_message` function.

@@ -4,7 +4,7 @@
 import stem.response
 import stem.socket
 
-from typing import Sequence
+from typing import Dict, Set
 
 
 class GetInfoResponse(stem.response.ControlMessage):
@@ -27,8 +27,8 @@ class GetInfoResponse(stem.response.ControlMessage):
     # .
     # 250 OK
 
-    self.entries = {}
-    remaining_lines = [content for (code, div, content) in self.content(get_bytes = True)]
+    self.entries = {}  # type: Dict[str, bytes]
+    remaining_lines = [content for (code, div, content) in self._content_bytes()]
 
     if not self.is_ok() or not remaining_lines.pop() == b'OK':
       unrecognized_keywords = []
@@ -51,11 +51,11 @@ class GetInfoResponse(stem.response.ControlMessage):
 
     while remaining_lines:
       try:
-        key, value = remaining_lines.pop(0).split(b'=', 1)
+        key_bytes, value = remaining_lines.pop(0).split(b'=', 1)
       except ValueError:
         raise stem.ProtocolError('GETINFO replies should only contain parameter=value mappings:\n%s' % self)
 
-      key = stem.util.str_tools._to_unicode(key)
+      key = stem.util.str_tools._to_unicode(key_bytes)
 
       # if the value is a multiline value then it *must* be of the form
       # '<key>=\n<value>'
@@ -68,7 +68,7 @@ class GetInfoResponse(stem.response.ControlMessage):
 
       self.entries[key] = value
 
-  def _assert_matches(self, params: Sequence[str]) -> None:
+  def _assert_matches(self, params: Set[str]) -> None:
     """
     Checks if we match a given set of parameters, and raise a ProtocolError if not.
 

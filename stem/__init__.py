@@ -567,7 +567,7 @@ __all__ = [
 ]
 
 # Constant that we use by default for our User-Agent when downloading descriptors
-stem.USER_AGENT = 'Stem/%s' % __version__
+USER_AGENT = 'Stem/%s' % __version__
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
@@ -612,7 +612,7 @@ class ORPort(Endpoint):
   :var list link_protocols: link protocol version we're willing to establish
   """
 
-  def __init__(self, address: str, port: int, link_protocols: Optional[Sequence[int]] = None) -> None:
+  def __init__(self, address: str, port: int, link_protocols: Optional[Sequence['stem.client.datatype.LinkProtocol']] = None) -> None:  # type: ignore
     super(ORPort, self).__init__(address, port)
     self.link_protocols = link_protocols
 
@@ -644,6 +644,8 @@ class OperationFailed(ControllerError):
     message
   """
 
+  # TODO: should the code be an int instead?
+
   def __init__(self, code: Optional[str] = None, message: Optional[str] = None) -> None:
     super(ControllerError, self).__init__(message)
     self.code = code
@@ -663,7 +665,7 @@ class CircuitExtensionFailed(UnsatisfiableRequest):
   :var stem.response.events.CircuitEvent circ: response notifying us of the failure
   """
 
-  def __init__(self, message: str, circ: Optional['stem.response.events.CircuitEvent'] = None) -> None:
+  def __init__(self, message: str, circ: Optional['stem.response.events.CircuitEvent'] = None) -> None:  # type: ignore
     super(CircuitExtensionFailed, self).__init__(message = message)
     self.circ = circ
 
@@ -775,7 +777,7 @@ class DownloadTimeout(DownloadFailed):
   .. versionadded:: 1.8.0
   """
 
-  def __init__(self, url: str, error: BaseException, stacktrace: Any, timeout: int):
+  def __init__(self, url: str, error: BaseException, stacktrace: Any, timeout: float):
     message = 'Failed to download from %s: %0.1f second timeout reached' % (url, timeout)
     super(DownloadTimeout, self).__init__(url, error, stacktrace, message)
 
@@ -919,7 +921,7 @@ StreamStatus = stem.util.enum.UppercaseEnum(
 )
 
 # StreamClosureReason is a superset of RelayEndReason
-StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + [
+StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + [  # type: ignore
   'END',
   'PRIVATE_ADDR',
 ]))

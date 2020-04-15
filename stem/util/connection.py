@@ -65,7 +65,7 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log, str_tools
-from typing import Optional, Sequence, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -158,15 +158,15 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   """
 
 
-def download(url: str, timeout: Optional[int] = None, retries: Optional[int] = None) -> bytes:
+def download(url: str, timeout: Optional[float] = None, retries: Optional[int] = None) -> bytes:
   """
   Download from the given url.
 
   .. versionadded:: 1.8.0
 
   :param str url: uncompressed url to download from
-  :param int timeout: timeout when connection becomes idle, no timeout applied
-    if **None**
+  :param float timeout: timeout when connection becomes idle, no timeout
+    applied if **None**
   :param int retires: maximum attempts to impose
 
   :returns: **bytes** content of the given url
@@ -186,17 +186,17 @@ def download(url: str, timeout: Optional[int] = None, retries: Optional[int] = N
   except socket.timeout as exc:
     raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
   except:
-    exc, stacktrace = sys.exc_info()[1:3]
+    exception, stacktrace = sys.exc_info()[1:3]
 
     if timeout is not None:
       timeout -= time.time() - start_time
 
     if retries > 0 and (timeout is None or timeout > 0):
-      log.debug('Failed to download from %s (%i retries remaining): %s' % (url, retries, exc))
+      log.debug('Failed to download from %s (%i retries remaining): %s' % (url, retries, exception))
       return download(url, timeout, retries - 1)
     else:
-      log.debug('Failed to download from %s: %s' % (url, exc))
-      raise stem.DownloadFailed(url, exc, stacktrace)
+      log.debug('Failed to download from %s: %s' % (url, exception))
+      raise stem.DownloadFailed(url, exception, stacktrace)
 
 
 def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, process_pid: Optional[int] = None, process_name: Optional[str] = None) -> Sequence['stem.util.connection.Connection']:
@@ -254,7 +254,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
       raise ValueError('Process pid was non-numeric: %s' % process_pid)
 
   if process_pid is None:
-    all_pids = stem.util.system.pid_by_name(process_name, True)
+    all_pids = stem.util.system.pid_by_name(process_name, True)  # type: List[int] # type: ignore
 
     if len(all_pids) == 0:
       if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
@@ -289,7 +289,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
   connections = []
   resolver_regex = re.compile(resolver_regex_str)
 
-  def _parse_address_str(addr_type: str, addr_str: str, line: str) -> str:
+  def _parse_address_str(addr_type: str, addr_str: str, line: str) -> Tuple[str, int]:
     addr, port = addr_str.rsplit(':', 1)
 
     if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr, allow_brackets = True):
@@ -524,8 +524,15 @@ def is_valid_port(entry: Union[str, int, Sequence[str], Sequence[int]], allow_ze
   :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
 
+  if isinstance(entry, (tuple, list)):
+    for port in entry:
+      if not is_valid_port(port, allow_zero):
+        return False
+
+    return True
+
   try:
-    value = int(entry)
+    value = int(entry)  # type: ignore
 
     if str(value) != str(entry):
       return False  # invalid leading char, e.g. space or zero
@@ -534,14 +541,7 @@ def is_valid_port(entry: Union[str, int, Sequence[str], Sequence[int]], allow_ze
     else:
       return value > 0 and value < 65536
   except TypeError:
-    if isinstance(entry, (tuple, list)):
-      for port in entry:
-        if not is_valid_port(port, allow_zero):
-          return False
-
-      return True
-    else:
-      return False
+    return False
   except ValueError:
     return False
 
@@ -620,6 +620,9 @@ def expand_ipv6_address(address: str) -> str:
 
   :raises: **ValueError** if the address can't be expanded due to being malformed
   """
+
+  if isinstance(address, bytes):
+    address = str_tools._to_unicode(address)
 
   if not is_valid_ipv6_address(address):
     raise ValueError("'%s' isn't a valid IPv6 address" % address)

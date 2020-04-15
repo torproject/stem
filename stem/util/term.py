@@ -72,14 +72,14 @@ CSI = '\x1B[%sm'
 RESET = CSI % '0'
 
 
-def encoding(*attrs: Union['stem.util.terminal.Color', 'stem.util.terminal.BgColor', 'stem.util.terminal.Attr']) -> Optional[str]:
+def encoding(*attrs: Union['stem.util.term.Color', 'stem.util.term.BgColor', 'stem.util.term.Attr']) -> Optional[str]:
   """
   Provides the ANSI escape sequence for these terminal color or attributes.
 
   .. versionadded:: 1.5.0
 
-  :param list attr: :data:`~stem.util.terminal.Color`,
-    :data:`~stem.util.terminal.BgColor`, or :data:`~stem.util.terminal.Attr` to
+  :param list attr: :data:`~stem.util.term.Color`,
+    :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` to
     provide an ecoding for
 
   :returns: **str** of the ANSI escape sequence, **None** no attributes are
@@ -99,9 +99,11 @@ def encoding(*attrs: Union['stem.util.terminal.Color', 'stem.util.terminal.BgCol
 
   if term_encodings:
     return CSI % ';'.join(term_encodings)
+  else:
+    return None
 
 
-def format(msg: str, *attr: Union['stem.util.terminal.Color', 'stem.util.terminal.BgColor', 'stem.util.terminal.Attr']) -> str:
+def format(msg: str, *attr: Union['stem.util.term.Color', 'stem.util.term.BgColor', 'stem.util.term.Attr']) -> str:
   """
   Simple terminal text formatting using `ANSI escape sequences
   <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>`_.
@@ -125,12 +127,12 @@ def format(msg: str, *attr: Union['stem.util.terminal.Color', 'stem.util.termina
   """
 
   msg = stem.util.str_tools._to_unicode(msg)
+  attr = list(attr)
 
   if DISABLE_COLOR_SUPPORT:
     return msg
 
   if Attr.LINES in attr:
-    attr = list(attr)
     attr.remove(Attr.LINES)
     lines = [format(line, *attr) for line in msg.split('\n')]
     return '\n'.join(lines)

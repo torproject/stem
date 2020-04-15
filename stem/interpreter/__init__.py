@@ -54,13 +54,13 @@ def main() -> None:
   import stem.interpreter.commands
 
   try:
-    args = stem.interpreter.arguments.parse(sys.argv[1:])
+    args = stem.interpreter.arguments.Arguments.parse(sys.argv[1:])
   except ValueError as exc:
     print(exc)
     sys.exit(1)
 
   if args.print_help:
-    print(stem.interpreter.arguments.get_help())
+    print(stem.interpreter.arguments.Arguments.get_help())
     sys.exit()
 
   if args.disable_color or not sys.stdout.isatty():
@@ -82,13 +82,11 @@ def main() -> None:
         if not args.run_cmd and not args.run_path:
           print(format(msg('msg.starting_tor'), *HEADER_OUTPUT))
 
-        control_port = '9051' if args.control_port == 'default' else str(args.control_port)
-
         try:
           stem.process.launch_tor_with_config(
             config = {
               'SocksPort': '0',
-              'ControlPort': control_port,
+              'ControlPort': '9051' if args.control_port is None else str(args.control_port),
               'CookieAuthentication': '1',
               'ExitPolicy': 'reject *:*',
             },
@@ -115,7 +113,7 @@ def main() -> None:
     control_port = control_port,
     control_socket = control_socket,
     password_prompt = True,
-  )
+  )  # type: stem.control.Controller
 
   if controller is None:
     sys.exit(1)
@@ -126,7 +124,7 @@ def main() -> None:
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
-        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))
+        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))  # type: ignore
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]

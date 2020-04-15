@@ -61,16 +61,17 @@ import stem.version
 
 from stem.descriptor.certificate import Ed25519Certificate
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from typing import Any, BinaryIO, Dict, Iterator, Optional, Mapping, Sequence, Tuple, Type, Union
+from typing import Any, BinaryIO, Iterator, Optional, Mapping, Sequence, Tuple, Type, Union
 
 from stem.descriptor import (
+  ENTRY_TYPE,
   PGP_BLOCK_END,
   Descriptor,
   DigestHash,
   DigestEncoding,
   create_signing_key,
   _descriptor_content,
-  _descriptor_components,
+  _descriptor_components_with_extra,
   _read_until_keywords,
   _bytes_for_block,
   _value,
@@ -214,14 +215,17 @@ def _parse_file(descriptor_file: BinaryIO, is_bridge: bool = False, validate: bo
       descriptor_text = bytes.join(b'', descriptor_content)
 
       if is_bridge:
-        yield BridgeDescriptor(descriptor_text, validate, **kwargs)
+        if kwargs:
+          raise ValueError('BUG: keyword arguments unused by bridge descriptors')
+
+        yield BridgeDescriptor(descriptor_text, validate)
       else:
         yield RelayDescriptor(descriptor_text, validate, **kwargs)
     else:
       break  # done parsing descriptors
 
 
-def _parse_router_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_router_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # "router" nickname address ORPort SocksPort DirPort
 
   value = _value('router', entries)
@@ -247,7 +251,7 @@ def _parse_router_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[s
   descriptor.dir_port = None if router_comp[4] == '0' else int(router_comp[4])
 
 
-def _parse_bandwidth_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_bandwidth_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # "bandwidth" bandwidth-avg bandwidth-burst bandwidth-observed
 
   value = _value('bandwidth', entries)
@@ -267,7 +271,7 @@ def _parse_bandwidth_line(descriptor: 'stem.descriptor.Descriptor', entries: Dic
   descriptor.observed_bandwidth = int(bandwidth_comp[2])
 
 
-def _parse_platform_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_platform_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # "platform" string
 
   _parse_bytes_line('platform', 'platform')(descriptor, entries)
@@ -293,7 +297,7 @@ def _parse_platform_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict
       pass
 
 
-def _parse_fingerprint_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_fingerprint_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # This is forty hex digits split into space separated groups of four.
   # Checking that we match this pattern.
 
@@ -310,7 +314,7 @@ def _parse_fingerprint_line(descriptor: 'stem.descriptor.Descriptor', entries: D
   descriptor.fingerprint = fingerprint
 
 
-def _parse_extrainfo_digest_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_extrainfo_digest_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   value = _value('extra-info-digest', entries)
   digest_comp = value.split(' ')
 
@@ -321,7 +325,7 @@ def _parse_extrainfo_digest_line(descriptor: 'stem.descriptor.Descriptor', entri
   descriptor.extra_info_sha256_digest = digest_comp[1] if len(digest_comp) >= 2 else None
 
 
-def _parse_hibernating_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_hibernating_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # "hibernating" 0|1 (in practice only set if one)
 
   value = _value('hibernating', entries)
@@ -332,7 +336,7 @@ def _parse_hibernating_line(descriptor: 'stem.descriptor.Descriptor', entries: D
   descriptor.hibernating = value == '1'
 
 
-def _parse_protocols_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_protocols_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   value = _value('protocols', entries)
   protocols_match = re.match('^Link (.*) Circuit (.*)$', value)
 
@@ -344,7 +348,7 @@ def _parse_protocols_line(descriptor: 'stem.descriptor.Descriptor', entries: Dic
   descriptor.circuit_protocols = circuit_versions.split(' ')
 
 
-def _parse_or_address_line(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_or_address_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   all_values = _values('or-address', entries)
   or_addresses = []
 
@@ -367,7 +371,7 @@ def _parse_or_address_line(descriptor: 'stem.descriptor.Descriptor', entries: Di
   descriptor.or_addresses = or_addresses
 
 
-def _parse_history_line(keyword: str, history_end_attribute: str, history_interval_attribute: str, history_values_attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_history_line(keyword: str, history_end_attribute: str, history_interval_attribute: str, history_values_attribute: str, descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   value = _value(keyword, entries)
   timestamp, interval, remainder = stem.descriptor.extrainfo_descriptor._parse_timestamp_and_interval(keyword, value)
 
@@ -384,7 +388,7 @@ def _parse_history_line(keyword: str, history_end_attribute: str, history_interv
   setattr(descriptor, history_values_attribute, history_values)
 
 
-def _parse_exit_policy(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_exit_policy(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   if hasattr(descriptor, '_unparsed_exit_policy'):
     if descriptor._unparsed_exit_policy and stem.util.str_tools._to_unicode(descriptor._unparsed_exit_policy[0]) == 'reject *:*':
       descriptor.exit_policy = REJECT_ALL_POLICY
@@ -577,7 +581,7 @@ class ServerDescriptor(Descriptor):
     'eventdns': _parse_eventdns_line,
   }
 
-  def __init__(self, raw_contents: str, validate: bool = False) -> None:
+  def __init__(self, raw_contents: bytes, validate: bool = False) -> None:
     """
     Server descriptor constructor, created from an individual relay's
     descriptor content (as provided by 'GETINFO desc/*', cached descriptors,
@@ -604,7 +608,7 @@ class ServerDescriptor(Descriptor):
     # influences the resulting exit policy, but for everything else the order
     # does not matter so breaking it into key / value pairs.
 
-    entries, self._unparsed_exit_policy = _descriptor_components(stem.util.str_tools._to_unicode(raw_contents), validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
+    entries, self._unparsed_exit_policy = _descriptor_components_with_extra(raw_contents, validate, extra_keywords = ('accept', 'reject'), non_ascii_fields = ('contact', 'platform'))
 
     if validate:
       self._parse(entries, validate)
@@ -622,7 +626,7 @@ class ServerDescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib._HASH']:  # type: ignore
     """
     Digest of this descriptor's content. These are referenced by...
 
@@ -642,7 +646,7 @@ class ServerDescriptor(Descriptor):
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the ServerDescriptor subclass')
 
-  def _check_constraints(self, entries: Dict[str, Sequence[str]]) -> None:
+  def _check_constraints(self, entries: ENTRY_TYPE) -> None:
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
@@ -680,16 +684,16 @@ class ServerDescriptor(Descriptor):
   # Constraints that the descriptor must meet to be valid. These can be None if
   # not applicable.
 
-  def _required_fields(self) -> Tuple[str]:
+  def _required_fields(self) -> Tuple[str, ...]:
     return REQUIRED_FIELDS
 
-  def _single_fields(self) -> Tuple[str]:
+  def _single_fields(self) -> Tuple[str, ...]:
     return REQUIRED_FIELDS + SINGLE_FIELDS
 
   def _first_keyword(self) -> str:
     return 'router'
 
-  def _last_keyword(self) -> str:
+  def _last_keyword(self) -> Optional[str]:
     return 'router-signature'
 
 
@@ -754,7 +758,7 @@ class RelayDescriptor(ServerDescriptor):
     'router-signature': _parse_router_signature_line,
   })
 
-  def __init__(self, raw_contents: str, validate: bool = False, skip_crypto_validation: bool = False) -> None:
+  def __init__(self, raw_contents: bytes, validate: bool = False, skip_crypto_validation: bool = False) -> None:
     super(RelayDescriptor, self).__init__(raw_contents, validate)
 
     if validate:
@@ -786,9 +790,8 @@ class RelayDescriptor(ServerDescriptor):
           pass  # cryptography module unavailable
 
   @classmethod
-  def content(cls: Type['stem.descriptor.server_descriptor.RelayDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), sign: bool = False, signing_key: Optional['stem.descriptor.SigningKey'] = None, exit_policy: Optional['stem.exit_policy.ExitPolicy'] = None) -> str:
-    if attr is None:
-      attr = {}
+  def content(cls: Type['stem.descriptor.server_descriptor.RelayDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), sign: bool = False, signing_key: Optional['stem.descriptor.SigningKey'] = None, exit_policy: Optional['stem.exit_policy.ExitPolicy'] = None) -> bytes:
+    attr = dict(attr) if attr else {}
 
     if exit_policy is None:
       exit_policy = REJECT_ALL_POLICY
@@ -798,7 +801,7 @@ class RelayDescriptor(ServerDescriptor):
       ('published', _random_date()),
       ('bandwidth', '153600 256000 104590'),
     ] + [
-      tuple(line.split(' ', 1)) for line in str(exit_policy).splitlines()
+      tuple(line.split(' ', 1)) for line in str(exit_policy).splitlines()  # type: ignore
     ] + [
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
       ('signing-key', _random_crypto_blob('RSA PUBLIC KEY')),
@@ -832,7 +835,7 @@ class RelayDescriptor(ServerDescriptor):
     return cls(cls.content(attr, exclude, sign, signing_key, exit_policy), validate = validate, skip_crypto_validation = not sign)
 
   @functools.lru_cache()
-  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib._HASH']:  # type: ignore
     """
     Provides the digest of our descriptor's content.
 
@@ -889,7 +892,7 @@ class RelayDescriptor(ServerDescriptor):
     if self.certificate:
       attr['id'] = 'ed25519 %s' % _truncated_b64encode(self.certificate.key)
 
-    return RouterStatusEntryV3.create(attr)
+    return RouterStatusEntryV3.create(attr)  # type: ignore
 
   @functools.lru_cache()
   def _onion_key_crosscert_digest(self) -> str:
@@ -906,7 +909,7 @@ class RelayDescriptor(ServerDescriptor):
     data = signing_key_digest + base64.b64decode(stem.util.str_tools._to_bytes(self.ed25519_master_key) + b'=')
     return stem.util.str_tools._to_unicode(binascii.hexlify(data).upper())
 
-  def _check_constraints(self, entries: Dict[str, Sequence[str]]) -> None:
+  def _check_constraints(self, entries: ENTRY_TYPE) -> None:
     super(RelayDescriptor, self)._check_constraints(entries)
 
     if self.certificate:
@@ -945,7 +948,7 @@ class BridgeDescriptor(ServerDescriptor):
   })
 
   @classmethod
-  def content(cls: Type['stem.descriptor.server_descriptor.BridgeDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
+  def content(cls: Type['stem.descriptor.server_descriptor.BridgeDescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> bytes:
     return _descriptor_content(attr, exclude, (
       ('router', '%s %s 9001 0 0' % (_random_nickname(), _random_ipv4_address())),
       ('router-digest', '006FD96BA35E7785A6A3B8B75FE2E2435A13BDB4'),
@@ -954,7 +957,7 @@ class BridgeDescriptor(ServerDescriptor):
       ('reject', '*:*'),
     ))
 
-  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib.HASH']:
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA1, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.HEX) -> Union[str, 'hashlib._HASH']:  # type: ignore
     if hash_type == DigestHash.SHA1 and encoding == DigestEncoding.HEX:
       return self._digest
     else:
@@ -1007,7 +1010,7 @@ class BridgeDescriptor(ServerDescriptor):
 
     return issues
 
-  def _required_fields(self) -> Tuple[str]:
+  def _required_fields(self) -> Tuple[str, ...]:
     # bridge required fields are the same as a relay descriptor, minus items
     # excluded according to the format page
 
@@ -1023,8 +1026,8 @@ class BridgeDescriptor(ServerDescriptor):
 
     return tuple(included_fields + [f for f in REQUIRED_FIELDS if f not in excluded_fields])
 
-  def _single_fields(self) -> str:
+  def _single_fields(self) -> Tuple[str, ...]:
     return self._required_fields() + SINGLE_FIELDS
 
-  def _last_keyword(self) -> str:
+  def _last_keyword(self) -> Optional[str]:
     return None

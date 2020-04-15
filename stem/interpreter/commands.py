@@ -21,12 +21,12 @@ import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
-from typing import BinaryIO, Iterator, Sequence, Tuple
+from typing import Iterator, List, TextIO
 
 MAX_EVENTS = 100
 
 
-def _get_fingerprint(arg: str, controller: 'stem.control.Controller') -> str:
+def _get_fingerprint(arg: str, controller: stem.control.Controller) -> str:
   """
   Resolves user input into a relay fingerprint. This accepts...
 
@@ -91,7 +91,7 @@ def _get_fingerprint(arg: str, controller: 'stem.control.Controller') -> str:
 
 
 @contextlib.contextmanager
-def redirect(stdout: BinaryIO, stderr: BinaryIO) -> Iterator[None]:
+def redirect(stdout: TextIO, stderr: TextIO) -> Iterator[None]:
   original = sys.stdout, sys.stderr
   sys.stdout, sys.stderr = stdout, stderr
 
@@ -107,8 +107,8 @@ class ControlInterpreter(code.InteractiveConsole):
   for special irc style subcommands.
   """
 
-  def __init__(self, controller: 'stem.control.Controller') -> None:
-    self._received_events = []
+  def __init__(self, controller: stem.control.Controller) -> None:
+    self._received_events = []  # type: List[stem.response.events.Event]
 
     code.InteractiveConsole.__init__(self, {
       'stem': stem,
@@ -130,18 +130,19 @@ class ControlInterpreter(code.InteractiveConsole):
 
     handle_event_real = self._controller._handle_event
 
-    def handle_event_wrapper(event_message: 'stem.response.events.Event') -> None:
+    def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
       handle_event_real(event_message)
-      self._received_events.insert(0, event_message)
+      self._received_events.insert(0, event_message)  # type: ignore
 
       if len(self._received_events) > MAX_EVENTS:
         self._received_events.pop()
 
-    self._controller._handle_event = handle_event_wrapper
+    # type check disabled due to https://github.com/python/mypy/issues/708
 
-  def get_events(self, *event_types: 'stem.control.EventType') -> Sequence['stem.response.events.Event']:
+    self._controller._handle_event = handle_event_wrapper  # type: ignore
+
+  def get_events(self, *event_types: stem.control.EventType) -> List[stem.response.events.Event]:
     events = list(self._received_events)
-    event_types = list(map(str.upper, event_types))  # make filtering case insensitive
 
     if event_types:
       events = [e for e in events if e.type in event_types]
@@ -296,7 +297,7 @@ class ControlInterpreter(code.InteractiveConsole):
     return format(response, *STANDARD_OUTPUT)
 
   @uses_settings
-  def run_command(self, command: str, config: 'stem.util.conf.Config', print_response: bool = False) -> Sequence[Tuple[str, int]]:
+  def run_command(self, command: str, config: stem.util.conf.Config, print_response: bool = False) -> str:
     """
     Runs the given command. Requests starting with a '/' are special commands
     to the interpreter, and anything else is sent to the control port.
@@ -304,8 +305,7 @@ class ControlInterpreter(code.InteractiveConsole):
     :param str command: command to be processed
     :param bool print_response: prints the response to stdout if true
 
-    :returns: **list** out output lines, each line being a list of
-      (msg, format) tuples
+    :returns: **str** output of the command
 
     :raises: **stem.SocketClosed** if the control connection has been severed
     """
@@ -363,7 +363,7 @@ class ControlInterpreter(code.InteractiveConsole):
           output = console_output.getvalue().strip()
         else:
           try:
-            output = format(self._controller.msg(command).raw_content().strip(), *STANDARD_OUTPUT)
+            output = format(str(self._controller.msg(command).raw_content()).strip(), *STANDARD_OUTPUT)
           except stem.ControllerError as exc:
             if isinstance(exc, stem.SocketClosed):
               raise

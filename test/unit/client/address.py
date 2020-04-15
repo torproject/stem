@@ -50,7 +50,7 @@ class TestAddress(unittest.TestCase):
     self.assertEqual(AddrType.UNKNOWN, addr.type)
     self.assertEqual(12, addr.type_int)
     self.assertEqual(None, addr.value)
-    self.assertEqual('hello', addr.value_bin)
+    self.assertEqual(b'hello', addr.value_bin)
 
   def test_packing(self):
     test_data = {

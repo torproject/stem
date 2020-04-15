@@ -44,7 +44,7 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.system
 
-from typing import Any, Callable, Iterator, Mapping, Optional, Sequence, Tuple, Type
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 CONFIG = stem.util.conf.config_dict('test', {
   'pycodestyle.ignore': [],
@@ -53,8 +53,8 @@ CONFIG = stem.util.conf.config_dict('test', {
   'exclude_paths': [],
 })
 
-TEST_RUNTIMES = {}
-ASYNC_TESTS = {}
+TEST_RUNTIMES: Dict[str, float] = {}
+ASYNC_TESTS: Dict[str, 'stem.util.test_tools.AsyncTest'] = {}
 
 AsyncStatus = stem.util.enum.UppercaseEnum('PENDING', 'RUNNING', 'FINISHED')
 AsyncResult = collections.namedtuple('AsyncResult', 'type msg')
@@ -147,11 +147,11 @@ class AsyncTest(object):
 
     self.method = lambda test: self.result(test)  # method that can be mixed into TestCases
 
-    self._process = None
-    self._process_pipe = None
+    self._process = None  # type: Optional[Union[threading.Thread, multiprocessing.Process]]
+    self._process_pipe = None  # type: Optional[multiprocessing.connection.Connection]
     self._process_lock = threading.RLock()
 
-    self._result = None
+    self._result = None  # type: Optional[stem.util.test_tools.AsyncResult]
     self._status = AsyncStatus.PENDING
 
   def run(self, *runner_args: Any, **kwargs: Any) -> None:
@@ -194,9 +194,9 @@ class AsyncTest(object):
         self._process.start()
         self._status = AsyncStatus.RUNNING
 
-  def pid(self) -> int:
+  def pid(self) -> Optional[int]:
     with self._process_lock:
-      return self._process.pid if (self._process and not self._threaded) else None
+      return getattr(self._process, 'pid', None)
 
   def join(self) -> None:
     self.result(None)
@@ -238,9 +238,9 @@ class TimedTestRunner(unittest.TextTestRunner):
   .. versionadded:: 1.6.0
   """
 
-  def run(self, test: 'unittest.TestCase') -> None:
-    for t in test._tests:
-      original_type = type(t)
+  def run(self, test: Union[unittest.TestCase, unittest.TestSuite]) -> unittest.TestResult:
+    for t in getattr(test, '_tests', ()):
+      original_type = type(t)  # type: Any
 
       class _TestWrapper(original_type):
         def run(self, result: Optional[Any] = None) -> Any:
@@ -273,7 +273,7 @@ class TimedTestRunner(unittest.TextTestRunner):
     return super(TimedTestRunner, self).run(test)
 
 
-def test_runtimes() -> Mapping[str, float]:
+def test_runtimes() -> Dict[str, float]:
   """
   Provides the runtimes of tests executed through TimedTestRunners.
 
@@ -286,7 +286,7 @@ def test_runtimes() -> Mapping[str, float]:
   return dict(TEST_RUNTIMES)
 
 
-def clean_orphaned_pyc(paths: Sequence[str]) -> Sequence[str]:
+def clean_orphaned_pyc(paths: Sequence[str]) -> List[str]:
   """
   Deletes any file with a \\*.pyc extention without a corresponding \\*.py. This
   helps to address a common gotcha when deleting python files...
@@ -302,7 +302,7 @@ def clean_orphaned_pyc(paths: Sequence[str]) -> Sequence[str]:
 
   :param list paths: paths to search for orphaned pyc files
 
-  :returns: list of absolute paths that were deleted
+  :returns: **list** of absolute paths that were deleted
   """
 
   orphaned_pyc = []
@@ -366,7 +366,7 @@ def is_mypy_available() -> bool:
   return _module_exists('mypy.api')
 
 
-def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_exception_keyword: bool = False, prefer_single_quotes: bool = False) -> Mapping[str, 'stem.util.test_tools.Issue']:
+def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_exception_keyword: bool = False, prefer_single_quotes: bool = False) -> Dict[str, List['stem.util.test_tools.Issue']]:
   """
   Checks for stylistic issues that are an issue according to the parts of PEP8
   we conform to. You can suppress pycodestyle issues by making a 'test'
@@ -424,7 +424,7 @@ def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_e
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
 
-  issues = {}
+  issues = {}  # type: Dict[str, List[stem.util.test_tools.Issue]]
 
   ignore_rules = []
   ignore_for_file = []
@@ -505,7 +505,7 @@ def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_e
   return issues
 
 
-def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issue']:
+def pyflakes_issues(paths: Sequence[str]) -> Dict[str, List['stem.util.test_tools.Issue']]:
   """
   Performs static checks via pyflakes. False positives can be ignored via
   'pyflakes.ignore' entries in our 'test' config. For instance...
@@ -531,7 +531,7 @@ def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
 
-  issues = {}
+  issues = {}  # type: Dict[str, List[stem.util.test_tools.Issue]]
 
   if is_pyflakes_available():
     import pyflakes.api
@@ -539,19 +539,19 @@ def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.
 
     class Reporter(pyflakes.reporter.Reporter):
       def __init__(self) -> None:
-        self._ignored_issues = {}
+        self._ignored_issues = {}  # type: Dict[str, List[str]]
 
         for line in CONFIG['pyflakes.ignore']:
           path, issue = line.split('=>')
           self._ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
-      def unexpectedError(self, filename: str, msg: str) -> None:
+      def unexpectedError(self, filename: str, msg: 'pyflakes.messages.Message') -> None:
         self._register_issue(filename, None, msg, None)
 
       def syntaxError(self, filename: str, msg: str, lineno: int, offset: int, text: str) -> None:
         self._register_issue(filename, lineno, msg, text)
 
-      def flake(self, msg: str) -> None:
+      def flake(self, msg: 'pyflakes.messages.Message') -> None:
         self._register_issue(msg.filename, msg.lineno, msg.message % msg.message_args, None)
 
       def _register_issue(self, path: str, line_number: int, issue: str, line: str) -> None:
@@ -569,7 +569,7 @@ def pyflakes_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.
   return issues
 
 
-def type_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issue']:
+def type_issues(args: Sequence[str]) -> Dict[str, List['stem.util.test_tools.Issue']]:
   """
   Performs type checks via mypy. False positives can be ignored via
   'mypy.ignore' entries in our 'test' config. For instance...
@@ -578,23 +578,25 @@ def type_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issu
 
     mypy.ignore stem/util/system.py => Incompatible types in assignment*
 
-  :param list paths: paths to search for problems
+  :param list args: mypy commmandline arguments
 
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
 
-  issues = {}
+  issues = {}  # type: Dict[str, List[stem.util.test_tools.Issue]]
 
   if is_mypy_available():
     import mypy.api
 
-    ignored_issues = {}
+    ignored_issues = {}  # type: Dict[str, List[str]]
 
     for line in CONFIG['mypy.ignore']:
       path, issue = line.split('=>')
       ignored_issues.setdefault(path.strip(), []).append(issue.strip())
 
-    lines = mypy.api.run(paths)[0].splitlines()  # mypy returns (report, errors, exit_status)
+    # mypy returns (report, errors, exit_status)
+
+    lines = mypy.api.run(args)[0].splitlines()  # type: ignore
 
     for line in lines:
       # example:
@@ -606,12 +608,12 @@ def type_issues(paths: Sequence[str]) -> Mapping[str, 'stem.util.test_tools.Issu
         raise ValueError('Failed to parse mypy line: %s' % line)
 
       path, line_number, _, issue = line.split(':', 3)
-      issue = issue.strip()
 
-      if line_number.isdigit():
-        line_number = int(line_number)
-      else:
+      if not line_number.isdigit():
         raise ValueError('Malformed line number on: %s' % line)
+
+      issue = issue.strip()
+      line_number = int(line_number)
 
       if _is_ignored(ignored_issues, path, issue):
         continue
@@ -660,16 +662,21 @@ def _python_files(paths: Sequence[str]) -> Iterator[str]:
 
 def _is_ignored(config: Mapping[str, Sequence[str]], path: str, issue: str) -> bool:
   for ignored_path, ignored_issues in config.items():
-    if path.endswith(ignored_path):
-      if issue in ignored_issues:
-        return True
-
-      for prefix in [i[:1] for i in ignored_issues if i.endswith('*')]:
-        if issue.startswith(prefix):
+    if ignored_path == '*' or path.endswith(ignored_path):
+      for ignored_issue in ignored_issues:
+        if issue == ignored_issue:
           return True
 
-      for suffix in [i[1:] for i in ignored_issues if i.startswith('*')]:
-        if issue.endswith(suffix):
-          return True
+        # TODO: try using glob module instead?
+
+        if ignored_issue.startswith('*') and ignored_issue.endswith('*'):
+          if ignored_issue[1:-1] in issue:
+            return True  # substring match
+        elif ignored_issue.startswith('*'):
+          if issue.endswith(ignored_issue[1:]):
+            return True  # prefix match
+        elif ignored_issue.endswith('*'):
+          if issue.startswith(ignored_issue[:-1]):
+            return True  # suffix match
 
   return False

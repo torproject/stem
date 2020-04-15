@@ -61,9 +61,10 @@ import stem.util
 import stem.util.conf
 import stem.util.enum
 import stem.util.log
+import stem.util.str_tools
 import stem.util.system
 
-from typing import Any, Dict, Mapping, Optional, Sequence, TextIO, Tuple, Union
+from typing import Any, Dict, IO, List, Mapping, Optional, Sequence, Tuple, Union
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
@@ -111,7 +112,7 @@ class SchemaMismatch(IOError):
     self.supported_schemas = supported_schemas
 
 
-def query(query: str, *param: str) -> 'sqlite3.Cursor':
+def query(query: str, *param: str) -> 'sqlite3.Cursor':  # type: ignore
   """
   Performs the given query on our sqlite manual cache. This database should
   be treated as being read-only. File permissions generally enforce this, and
@@ -182,7 +183,7 @@ class ConfigOption(object):
 
 
 @functools.lru_cache()
-def _config(lowercase: bool = True) -> Dict[str, Union[Sequence[str], str]]:
+def _config(lowercase: bool = True) -> Dict[str, Union[List[str], str]]:
   """
   Provides a dictionary for our settings.cfg. This has a couple categories...
 
@@ -264,7 +265,7 @@ def is_important(option: str) -> bool:
   return option.lower() in _config()['manual.important']
 
 
-def download_man_page(path: Optional[str] = None, file_handle: Optional[TextIO] = None, url: str = GITWEB_MANUAL_URL, timeout: int = 20) -> None:
+def download_man_page(path: Optional[str] = None, file_handle: Optional[IO[bytes]] = None, url: str = GITWEB_MANUAL_URL, timeout: int = 20) -> None:
   """
   Downloads tor's latest man page from `gitweb.torproject.org
   <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. This method is
@@ -303,7 +304,7 @@ def download_man_page(path: Optional[str] = None, file_handle: Optional[TextIO] 
       if not os.path.exists(manual_path):
         raise OSError('no man page was generated')
     except stem.util.system.CallError as exc:
-      raise IOError("Unable to run '%s': %s" % (exc.command, exc.stderr))
+      raise IOError("Unable to run '%s': %s" % (exc.command, stem.util.str_tools._to_unicode(exc.stderr)))
 
     if path:
       try:
@@ -349,7 +350,7 @@ class Manual(object):
   :var str stem_commit: stem commit to cache this manual information
   """
 
-  def __init__(self, name: str, synopsis: str, description: str, commandline_options: Mapping[str, str], signals: Mapping[str, str], files: Mapping[str, str], config_options: Mapping[str, str]) -> None:
+  def __init__(self, name: str, synopsis: str, description: str, commandline_options: Mapping[str, str], signals: Mapping[str, str], files: Mapping[str, str], config_options: Mapping[str, 'stem.manual.ConfigOption']) -> None:
     self.name = name
     self.synopsis = synopsis
     self.description = description
@@ -449,7 +450,8 @@ class Manual(object):
     except OSError as exc:
       raise IOError("Unable to run '%s': %s" % (man_cmd, exc))
 
-    categories, config_options = _get_categories(man_output), collections.OrderedDict()
+    categories = _get_categories(man_output)
+    config_options = collections.OrderedDict()  # type: collections.OrderedDict[str, stem.manual.ConfigOption]
 
     for category_header, category_enum in CATEGORY_SECTIONS.items():
       _add_config_options(config_options, category_enum, categories.get(category_header, []))
@@ -561,7 +563,7 @@ class Manual(object):
     return not self == other
 
 
-def _get_categories(content: str) -> Dict[str, str]:
+def _get_categories(content: Sequence[str]) -> Dict[str, List[str]]:
   """
   The man page is headers followed by an indented section. First pass gets
   the mapping of category titles to their lines.
@@ -576,7 +578,8 @@ def _get_categories(content: str) -> Dict[str, str]:
     content = content[:-1]
 
   categories = collections.OrderedDict()
-  category, lines = None, []
+  category = None
+  lines = []  # type: List[str]
 
   for line in content:
     # replace non-ascii characters
@@ -607,7 +610,7 @@ def _get_categories(content: str) -> Dict[str, str]:
   return categories
 
 
-def _get_indented_descriptions(lines: Sequence[str]) -> Dict[str, Sequence[str]]:
+def _get_indented_descriptions(lines: Sequence[str]) -> Dict[str, str]:
   """
   Parses the commandline argument and signal sections. These are options
   followed by an indented description. For example...
@@ -624,7 +627,8 @@ def _get_indented_descriptions(lines: Sequence[str]) -> Dict[str, Sequence[str]]
   ignoring those.
   """
 
-  options, last_arg = collections.OrderedDict(), None
+  options = collections.OrderedDict()  # type: collections.OrderedDict[str, List[str]]
+  last_arg = None
 
   for line in lines:
     if line == '    Note':
@@ -637,7 +641,7 @@ def _get_indented_descriptions(lines: Sequence[str]) -> Dict[str, Sequence[str]]
   return dict([(arg, ' '.join(desc_lines)) for arg, desc_lines in options.items() if desc_lines])
 
 
-def _add_config_options(config_options: Mapping[str, 'stem.manual.ConfigOption'], category: str, lines: Sequence[str]) -> None:
+def _add_config_options(config_options: Dict[str, 'stem.manual.ConfigOption'], category: str, lines: Sequence[str]) -> None:
   """
   Parses a section of tor configuration options. These have usage information,
   followed by an indented description. For instance...
@@ -655,7 +659,7 @@ def _add_config_options(config_options: Mapping[str, 'stem.manual.ConfigOption']
         since that platform lacks getrlimit(). (Default: 1000)
   """
 
-  def add_option(title: str, description: str) -> None:
+  def add_option(title: str, description: List[str]) -> None:
     if 'PER INSTANCE OPTIONS' in title:
       return  # skip, unfortunately amid the options
 
@@ -669,7 +673,7 @@ def _add_config_options(config_options: Mapping[str, 'stem.manual.ConfigOption']
         add_option(subtitle, description)
     else:
       name, usage = title.split(' ', 1) if ' ' in title else (title, '')
-      summary = _config().get('manual.summary.%s' % name.lower(), '')
+      summary = str(_config().get('manual.summary.%s' % name.lower(), ''))
       config_options[name] = ConfigOption(name, category, usage, summary, _join_lines(description).strip())
 
   # Remove the section's description by finding the sentence the section
@@ -681,7 +685,8 @@ def _add_config_options(config_options: Mapping[str, 'stem.manual.ConfigOption']
     lines = lines[max(end_indices):]  # trim to the description paragrah
     lines = lines[lines.index(''):]  # drop the paragraph
 
-  last_title, description = None, []
+  last_title = None
+  description = []  # type: List[str]
 
   for line in lines:
     if line and not line.startswith(' '):
@@ -704,7 +709,7 @@ def _join_lines(lines: Sequence[str]) -> str:
   Simple join, except we want empty lines to still provide a newline.
   """
 
-  result = []
+  result = []  # type: List[str]
 
   for line in lines:
     if not line:

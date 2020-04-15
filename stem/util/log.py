@@ -172,7 +172,7 @@ def log(runlevel: 'stem.util.log.Runlevel', message: str) -> None:
     LOGGER.log(LOG_VALUES[runlevel], message)
 
 
-def log_once(message_id: str, runlevel: 'stem.util.log.Runlevel', message: str) -> None:
+def log_once(message_id: str, runlevel: 'stem.util.log.Runlevel', message: str) -> bool:
   """
   Logs a message at the given runlevel. If a message with this ID has already
   been logged then this is a no-op.
@@ -189,6 +189,7 @@ def log_once(message_id: str, runlevel: 'stem.util.log.Runlevel', message: str) 
   else:
     DEDUPLICATION_MESSAGE_IDS.add(message_id)
     log(runlevel, message)
+    return True
 
 # shorter aliases for logging at a runlevel
 

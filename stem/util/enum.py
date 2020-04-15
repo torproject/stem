@@ -40,10 +40,10 @@ constructed as simple type listings...
     +- __iter__ - iterator over our enum keys
 """
 
-from typing import Iterator, Sequence
+from typing import Any, Iterator, List, Sequence, Tuple, Union
 
 
-def UppercaseEnum(*args: str) -> 'stem.util.enum.Enum':
+def UppercaseEnum(*args: str) -> 'Enum':
   """
   Provides an :class:`~stem.util.enum.Enum` instance where the values are
   identical to the keys. Since the keys are uppercase by convention this means
@@ -69,14 +69,15 @@ class Enum(object):
   Basic enumeration.
   """
 
-  def __init__(self, *args: str) -> None:
+  def __init__(self, *args: Union[str, Tuple[str, Any]]) -> None:
     from stem.util.str_tools import _to_camel_case
 
     # ordered listings of our keys and values
-    keys, values = [], []
+    keys = []  # type: List[str]
+    values = []  # type: List[Any]
 
     for entry in args:
-      if isinstance(entry, (bytes, str)):
+      if isinstance(entry, str):
         key, val = entry, _to_camel_case(entry)
       elif isinstance(entry, tuple) and len(entry) == 2:
         key, val = entry
@@ -99,11 +100,11 @@ class Enum(object):
 
     return list(self._keys)
 
-  def index_of(self, value: str) -> int:
+  def index_of(self, value: Any) -> int:
     """
     Provides the index of the given value in the collection.
 
-    :param str value: entry to be looked up
+    :param object value: entry to be looked up
 
     :returns: **int** index of the given entry
 
@@ -112,11 +113,11 @@ class Enum(object):
 
     return self._values.index(value)
 
-  def next(self, value: str) -> str:
+  def next(self, value: Any) -> Any:
     """
     Provides the next enumeration after the given value.
 
-    :param str value: enumeration for which to get the next entry
+    :param object value: enumeration for which to get the next entry
 
     :returns: enum value following the given entry
 
@@ -129,11 +130,11 @@ class Enum(object):
     next_index = (self._values.index(value) + 1) % len(self._values)
     return self._values[next_index]
 
-  def previous(self, value: str) -> str:
+  def previous(self, value: Any) -> Any:
     """
     Provides the previous enumeration before the given value.
 
-    :param str value: enumeration for which to get the previous entry
+    :param object value: enumeration for which to get the previous entry
 
     :returns: enum value proceeding the given entry
 
@@ -146,13 +147,13 @@ class Enum(object):
     prev_index = (self._values.index(value) - 1) % len(self._values)
     return self._values[prev_index]
 
-  def __getitem__(self, item: str) -> str:
+  def __getitem__(self, item: str) -> Any:
     """
     Provides the values for the given key.
 
-    :param str item: key to be looked up
+    :param str item: key to look up
 
-    :returns: **str** with the value for the given key
+    :returns: value for the given key
 
     :raises: **ValueError** if the key doesn't exist
     """
@@ -163,7 +164,7 @@ class Enum(object):
       keys = ', '.join(self.keys())
       raise ValueError("'%s' isn't among our enumeration keys, which includes: %s" % (item, keys))
 
-  def __iter__(self) -> Iterator[str]:
+  def __iter__(self) -> Iterator[Any]:
     """
     Provides an ordered listing of the enums in this set.
     """

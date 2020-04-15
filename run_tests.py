@@ -194,7 +194,7 @@ def main():
     test_config.load(os.environ['STEM_TEST_CONFIG'])
 
   try:
-    args = test.arguments.parse(sys.argv[1:])
+    args = test.arguments.Arguments.parse(sys.argv[1:])
     test.task.TOR_VERSION.args = (args.tor_path,)
     test.output.SUPPRESS_STDOUT = args.quiet
   except ValueError as exc:
@@ -202,7 +202,7 @@ def main():
     sys.exit(1)
 
   if args.print_help:
-    println(test.arguments.get_help())
+    println(test.arguments.Arguments.get_help())
     sys.exit()
   elif not args.run_unit and not args.run_integ:
     println('Nothing to run (for usage provide --help)\n')
@@ -383,7 +383,7 @@ def _print_static_issues(static_check_issues):
   if static_check_issues:
     println('STATIC CHECKS', STATUS)
 
-    for file_path in static_check_issues:
+    for file_path in sorted(static_check_issues):
       println('* %s' % file_path, STATUS)
 
       # Make a dict of line numbers to its issues. This is so we can both sort

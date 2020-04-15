@@ -21,9 +21,10 @@ import time
 
 import stem.util.str_tools
 
-from typing import Any, BinaryIO, Dict, Iterator, Mapping, Optional, Sequence, Type
+from typing import Any, BinaryIO, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type
 
 from stem.descriptor import (
+  ENTRY_TYPE,
   _mappings_for,
   Descriptor,
 )
@@ -168,11 +169,14 @@ def _parse_file(descriptor_file: BinaryIO, validate: bool = False, **kwargs: Any
     * **IOError** if the file can't be read
   """
 
-  yield BandwidthFile(descriptor_file.read(), validate, **kwargs)
+  if kwargs:
+    raise ValueError('BUG: keyword arguments unused by bandwidth files')
+
+  yield BandwidthFile(descriptor_file.read(), validate)
 
 
-def _parse_header(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
-  header = collections.OrderedDict()
+def _parse_header(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
+  header = collections.OrderedDict()  # type: collections.OrderedDict[str, str]
   content = io.BytesIO(descriptor.get_bytes())
 
   content.readline()  # skip the first line, which should be the timestamp
@@ -197,7 +201,7 @@ def _parse_header(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, S
       if key == 'version':
         version_index = index
     else:
-      raise ValueError("Header expected to be key=value pairs, but had '%s'" % line)
+      raise ValueError("Header expected to be key=value pairs, but had '%s'" % stem.util.str_tools._to_unicode(line))
 
     index += 1
 
@@ -216,16 +220,16 @@ def _parse_header(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, S
     raise ValueError("The 'version' header must be in the second position")
 
 
-def _parse_timestamp(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_timestamp(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   first_line = io.BytesIO(descriptor.get_bytes()).readline().strip()
 
   if first_line.isdigit():
     descriptor.timestamp = datetime.datetime.utcfromtimestamp(int(first_line))
   else:
-    raise ValueError("First line should be a unix timestamp, but was '%s'" % first_line)
+    raise ValueError("First line should be a unix timestamp, but was '%s'" % stem.util.str_tools._to_unicode(first_line))
 
 
-def _parse_body(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_body(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   # In version 1.0.0 the body is everything after the first line. Otherwise
   # it's everything after the header's divider.
 
@@ -239,13 +243,13 @@ def _parse_body(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Seq
 
   measurements = {}
 
-  for line in content.readlines():
-    line = stem.util.str_tools._to_unicode(line.strip())
+  for line_bytes in content.readlines():
+    line = stem.util.str_tools._to_unicode(line_bytes.strip())
     attr = dict(_mappings_for('measurement', line))
     fingerprint = attr.get('node_id', '').lstrip('$')  # bwauths prefix fingerprints with '$'
 
     if not fingerprint:
-      raise ValueError("Every meaurement must include 'node_id': %s" % line)
+      raise ValueError("Every meaurement must include 'node_id': %s" % stem.util.str_tools._to_unicode(line))
     elif fingerprint in measurements:
       raise ValueError('Relay %s is listed multiple times. It should only be present once.' % fingerprint)
 
@@ -298,12 +302,12 @@ class BandwidthFile(Descriptor):
     'timestamp': (None, _parse_timestamp),
     'header': ({}, _parse_header),
     'measurements': ({}, _parse_body),
-  }
+  }  # type: Dict[str, Tuple[Any, Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]]]
 
   ATTRIBUTES.update(dict([(k, (None, _parse_header)) for k in HEADER_ATTR.keys()]))
 
   @classmethod
-  def content(cls: Type['stem.descriptor.bandwidth_file.BandwidthFile'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> str:
+  def content(cls: Type['stem.descriptor.bandwidth_file.BandwidthFile'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> bytes:
     """
     Creates descriptor content with the given attributes. This descriptor type
     differs somewhat from others and treats our attr/exclude attributes as
@@ -328,7 +332,7 @@ class BandwidthFile(Descriptor):
 
     header = collections.OrderedDict(attr) if attr is not None else collections.OrderedDict()
     timestamp = header.pop('timestamp', str(int(time.time())))
-    content = header.pop('content', [])
+    content = header.pop('content', [])  # type: List[str] # type: ignore
     version = header.get('version', HEADER_DEFAULT.get('version'))
 
     lines = []
@@ -354,7 +358,7 @@ class BandwidthFile(Descriptor):
 
     return b'\n'.join(lines)
 
-  def __init__(self, raw_content: str, validate: bool = False) -> None:
+  def __init__(self, raw_content: bytes, validate: bool = False) -> None:
     super(BandwidthFile, self).__init__(raw_content, lazy_load = not validate)
 
     if validate:

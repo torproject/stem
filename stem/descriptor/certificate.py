@@ -64,7 +64,8 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.client.datatype import CertType, Field, Size, split
-from typing import Callable, Dict, Optional, Sequence, Tuple, Union
+from stem.descriptor import ENTRY_TYPE
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 ED25519_KEY_LENGTH = 32
 ED25519_HEADER_LENGTH = 40
@@ -218,7 +219,7 @@ class Ed25519Certificate(object):
     return stem.util.str_tools._to_unicode(encoded)
 
   @staticmethod
-  def _from_descriptor(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+  def _from_descriptor(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
     def _parse(descriptor, entries):
       value, block_type, block_contents = entries[keyword][0]
 
@@ -253,7 +254,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
     is unavailable
   """
 
-  def __init__(self, cert_type: Optional['stem.client.datatype.CertType'] = None, expiration: Optional[datetime.datetime] = None, key_type: Optional[int] = None, key: Optional[bytes] = None, extensions: Optional[Sequence['stem.descriptor.certificate.Ed25519Extension']] = None, signature: Optional[bytes] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None) -> None:
+  def __init__(self, cert_type: Optional['stem.client.datatype.CertType'] = None, expiration: Optional[datetime.datetime] = None, key_type: Optional[int] = None, key: Optional[bytes] = None, extensions: Optional[Sequence['stem.descriptor.certificate.Ed25519Extension']] = None, signature: Optional[bytes] = None, signing_key: Optional['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey'] = None) -> None:  # type: ignore
     super(Ed25519CertificateV1, self).__init__(1)
 
     if cert_type is None:
@@ -261,12 +262,15 @@ class Ed25519CertificateV1(Ed25519Certificate):
     elif key is None:
       raise ValueError('Certificate key is required')
 
+    self.type = None  # type: Optional[stem.client.datatype.CertType]
+    self.type_int = None  # type: Optional[int]
+
     self.type, self.type_int = CertType.get(cert_type)
-    self.expiration = expiration if expiration else datetime.datetime.utcnow() + datetime.timedelta(hours = DEFAULT_EXPIRATION_HOURS)
-    self.key_type = key_type if key_type else 1
-    self.key = stem.util._pubkey_bytes(key)
-    self.extensions = extensions if extensions else []
-    self.signature = signature
+    self.expiration = expiration if expiration else datetime.datetime.utcnow() + datetime.timedelta(hours = DEFAULT_EXPIRATION_HOURS)  # type: datetime.datetime
+    self.key_type = key_type if key_type else 1  # type: int
+    self.key = stem.util._pubkey_bytes(key)  # type: bytes
+    self.extensions = list(extensions) if extensions else []  # type: List[stem.descriptor.certificate.Ed25519Extension]
+    self.signature = signature  # type: Optional[bytes]
 
     if signing_key:
       calculated_sig = signing_key.sign(self.pack())

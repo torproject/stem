@@ -9,6 +9,7 @@ import stem.version
 import stem.util.str_tools
 
 from stem.util import log
+from typing import Tuple
 
 
 class ProtocolInfoResponse(stem.response.ControlMessage):
@@ -36,8 +37,8 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
 
     self.protocol_version = None
     self.tor_version = None
-    self.auth_methods = ()
-    self.unknown_auth_methods = ()
+    self.auth_methods = ()  # type: Tuple[stem.connection.AuthMethod, ...]
+    self.unknown_auth_methods = ()  # type: Tuple[str, ...]
     self.cookie_path = None
 
     auth_methods, unknown_auth_methods = [], []
@@ -107,7 +108,7 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         # parse optional COOKIEFILE mapping (quoted and can have escapes)
 
         if line.is_next_mapping('COOKIEFILE', True, True):
-          self.cookie_path = line.pop_mapping(True, True, get_bytes = True)[1].decode(sys.getfilesystemencoding())
+          self.cookie_path = line._pop_mapping_bytes(True, True)[1].decode(sys.getfilesystemencoding())
           self.cookie_path = stem.util.str_tools._to_unicode(self.cookie_path)  # normalize back to str
       elif line_type == 'VERSION':
         # Line format:

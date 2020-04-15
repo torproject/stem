@@ -72,9 +72,9 @@ def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
 
       if 'No such file or directory' in str(exc):
         if os.path.isabs(tor_cmd):
-          exc = "Unable to check tor's version. '%s' doesn't exist." % tor_cmd
+          raise IOError("Unable to check tor's version. '%s' doesn't exist." % tor_cmd)
         else:
-          exc = "Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd
+          raise IOError("Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd)
 
       raise IOError(exc)
 
@@ -132,13 +132,12 @@ class Version(object):
     version_parts = VERSION_PATTERN.match(version_str)
 
     if version_parts:
-      major, minor, micro, patch, status, extra_str, _ = version_parts.groups()
+      major, minor, micro, patch_str, status, extra_str, _ = version_parts.groups()
 
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
 
-      if patch:
-        patch = int(patch[1:])
+      patch = int(patch_str[1:]) if patch_str else None
 
       if status:
         status = status[1:]
@@ -166,7 +165,7 @@ class Version(object):
 
     return self.version_str
 
-  def _compare(self, other: Any, method: Callable[[Any, Any], bool]) -> Callable[[Any, Any], bool]:
+  def _compare(self, other: Any, method: Callable[[Any, Any], bool]) -> bool:
     """
     Compares version ordering according to the spec.
     """

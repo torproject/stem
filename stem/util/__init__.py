@@ -80,13 +80,15 @@ def datetime_to_unix(timestamp: 'datetime.datetime') -> float:
   return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
-def _pubkey_bytes(key: Union['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey']) -> bytes:
+def _pubkey_bytes(key: Union['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey']) -> bytes:  # type: ignore
   """
   Normalizes X25509 and ED25519 keys into their public key bytes.
   """
 
-  if isinstance(key, (bytes, str)):
+  if isinstance(key, bytes):
     return key
+  elif isinstance(key, str):
+    return key.encode('utf-8')
 
   try:
     from cryptography.hazmat.primitives import serialization

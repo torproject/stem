@@ -144,7 +144,7 @@ import stem.util
 import stem.util.connection
 import stem.util.enum
 
-from typing import Any, Tuple, Type, Union
+from typing import Any, Optional, Tuple, Union
 
 ZERO = b'\x00'
 HASH_LEN = 20
@@ -157,17 +157,17 @@ class _IntegerEnum(stem.util.enum.Enum):
   **UNKNOWN** value for integer values that lack a mapping.
   """
 
-  def __init__(self, *args: Tuple[str, int]) -> None:
+  def __init__(self, *args: Union[Tuple[str, int], Tuple[str, str, int]]) -> None:
     self._enum_to_int = {}
     self._int_to_enum = {}
     parent_args = []
 
     for entry in args:
       if len(entry) == 2:
-        enum, int_val = entry
+        enum, int_val = entry  # type: ignore
         str_val = enum
       elif len(entry) == 3:
-        enum, str_val, int_val = entry
+        enum, str_val, int_val = entry  # type: ignore
       else:
         raise ValueError('IntegerEnums can only be constructed with two or three value tuples: %s' % repr(entry))
 
@@ -272,19 +272,16 @@ class LinkProtocol(int):
     from a range that's determined by our link protocol.
   """
 
-  def __new__(cls: Type['stem.client.datatype.LinkProtocol'], version: int) -> 'stem.client.datatype.LinkProtocol':
-    if isinstance(version, LinkProtocol):
-      return version  # already a LinkProtocol
+  def __new__(self, version: int) -> 'stem.client.datatype.LinkProtocol':
+    return int.__new__(self, version)  # type: ignore
 
-    protocol = int.__new__(cls, version)
-    protocol.version = version
-    protocol.circ_id_size = Size.LONG if version > 3 else Size.SHORT
-    protocol.first_circ_id = 0x80000000 if version > 3 else 0x01
+  def __init__(self, version: int) -> None:
+    self.version = version
+    self.circ_id_size = Size.LONG if version > 3 else Size.SHORT
+    self.first_circ_id = 0x80000000 if version > 3 else 0x01
 
-    cell_header_size = protocol.circ_id_size.size + 1  # circuit id (2 or 4 bytes) + command (1 byte)
-    protocol.fixed_cell_length = cell_header_size + stem.client.cell.FIXED_PAYLOAD_LEN
-
-    return protocol
+    cell_header_size = self.circ_id_size.size + 1  # circuit id (2 or 4 bytes) + command (1 byte)
+    self.fixed_cell_length = cell_header_size + stem.client.cell.FIXED_PAYLOAD_LEN
 
   def __hash__(self) -> int:
     # All LinkProtocol attributes can be derived from our version, so that's
@@ -380,6 +377,11 @@ class Size(Field):
   ====================  ===========
   """
 
+  CHAR = None  # type: Optional[stem.client.datatype.Size]
+  SHORT = None  # type: Optional[stem.client.datatype.Size]
+  LONG = None  # type: Optional[stem.client.datatype.Size]
+  LONG_LONG = None  # type: Optional[stem.client.datatype.Size]
+
   def __init__(self, name: str, size: int) -> None:
     self.name = name
     self.size = size
@@ -388,7 +390,7 @@ class Size(Field):
   def pop(packed: bytes) -> Tuple[int, bytes]:
     raise NotImplementedError("Use our constant's unpack() and pop() instead")
 
-  def pack(self, content: int) -> bytes:
+  def pack(self, content: int) -> bytes:  # type: ignore
     try:
       return content.to_bytes(self.size, 'big')
     except:
@@ -399,13 +401,13 @@ class Size(Field):
       else:
         raise
 
-  def unpack(self, packed: bytes) -> int:
+  def unpack(self, packed: bytes) -> int:  # type: ignore
     if self.size != len(packed):
       raise ValueError('%s is the wrong size for a %s field' % (repr(packed), self.name))
 
     return int.from_bytes(packed, 'big')
 
-  def pop(self, packed: bytes) -> Tuple[int, bytes]:
+  def pop(self, packed: bytes) -> Tuple[int, bytes]:  # type: ignore
     to_unpack, remainder = split(packed, self.size)
 
     return self.unpack(to_unpack), remainder
@@ -420,48 +422,53 @@ class Address(Field):
 
   :var stem.client.AddrType type: address type
   :var int type_int: integer value of the address type
-  :var unicode value: address value
+  :var str value: address value
   :var bytes value_bin: encoded address value
   """
 
-  def __init__(self, value: str, addr_type: Union[int, 'stem.client.datatype.AddrType'] = None) -> None:
+  def __init__(self, value: Union[bytes, str], addr_type: Union[int, 'stem.client.datatype.AddrType'] = None) -> None:
     if addr_type is None:
-      if stem.util.connection.is_valid_ipv4_address(value):
+      if stem.util.connection.is_valid_ipv4_address(value):  # type: ignore
         addr_type = AddrType.IPv4
-      elif stem.util.connection.is_valid_ipv6_address(value):
+      elif stem.util.connection.is_valid_ipv6_address(value):  # type: ignore
         addr_type = AddrType.IPv6
       else:
-        raise ValueError("'%s' isn't an IPv4 or IPv6 address" % value)
+        raise ValueError("'%s' isn't an IPv4 or IPv6 address" % stem.util.str_tools._to_unicode(value))
+
+    value_bytes = stem.util.str_tools._to_bytes(value)
+
+    self.value = None  # type: Optional[str]
+    self.value_bin = None  # type: Optional[bytes]
 
     self.type, self.type_int = AddrType.get(addr_type)
 
     if self.type == AddrType.IPv4:
-      if stem.util.connection.is_valid_ipv4_address(value):
-        self.value = value
-        self.value_bin = b''.join([Size.CHAR.pack(int(v)) for v in value.split('.')])
+      if stem.util.connection.is_valid_ipv4_address(value_bytes):  # type: ignore
+        self.value = stem.util.str_tools._to_unicode(value_bytes)
+        self.value_bin = b''.join([Size.CHAR.pack(int(v)) for v in value_bytes.split(b'.')])
       else:
-        if len(value) != 4:
+        if len(value_bytes) != 4:
           raise ValueError('Packed IPv4 addresses should be four bytes, but was: %s' % repr(value))
 
-        self.value = _unpack_ipv4_address(value)
-        self.value_bin = value
+        self.value = _unpack_ipv4_address(value_bytes)
+        self.value_bin = value_bytes
     elif self.type == AddrType.IPv6:
-      if stem.util.connection.is_valid_ipv6_address(value):
-        self.value = stem.util.connection.expand_ipv6_address(value).lower()
+      if stem.util.connection.is_valid_ipv6_address(value_bytes):  # type: ignore
+        self.value = stem.util.connection.expand_ipv6_address(value_bytes).lower()  # type: ignore
         self.value_bin = b''.join([Size.SHORT.pack(int(v, 16)) for v in self.value.split(':')])
       else:
-        if len(value) != 16:
+        if len(value_bytes) != 16:
           raise ValueError('Packed IPv6 addresses should be sixteen bytes, but was: %s' % repr(value))
 
-        self.value = _unpack_ipv6_address(value)
-        self.value_bin = value
+        self.value = _unpack_ipv6_address(value_bytes)
+        self.value_bin = value_bytes
     else:
       # The spec doesn't really tell us what form to expect errors to be. For
       # now just leaving the value unset so we can fill it in later when we
       # know what would be most useful.
 
       self.value = None
-      self.value_bin = value
+      self.value_bin = value_bytes
 
   def pack(self) -> bytes:
     cell = bytearray()
@@ -471,7 +478,7 @@ class Address(Field):
     return bytes(cell)
 
   @staticmethod
-  def pop(content) -> Tuple['stem.client.datatype.Address', bytes]:
+  def pop(content: bytes) -> Tuple['stem.client.datatype.Address', bytes]:
     addr_type, content = Size.CHAR.pop(content)
     addr_length, content = Size.CHAR.pop(content)
 
@@ -590,7 +597,7 @@ class LinkByIPv4(LinkSpecifier):
   @staticmethod
   def unpack(value: bytes) -> 'stem.client.datatype.LinkByIPv4':
     if len(value) != 6:
-      raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+      raise ValueError('IPv4 link specifiers should be six bytes, but was %i instead: %s' % (len(value), stem.util.str_tools._to_unicode(binascii.hexlify(value))))
 
     addr, port = split(value, 4)
     return LinkByIPv4(_unpack_ipv4_address(addr), Size.SHORT.unpack(port))
@@ -615,7 +622,7 @@ class LinkByIPv6(LinkSpecifier):
   @staticmethod
   def unpack(value: bytes) -> 'stem.client.datatype.LinkByIPv6':
     if len(value) != 18:
-      raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+      raise ValueError('IPv6 link specifiers should be eighteen bytes, but was %i instead: %s' % (len(value), stem.util.str_tools._to_unicode(binascii.hexlify(value))))
 
     addr, port = split(value, 16)
     return LinkByIPv6(_unpack_ipv6_address(addr), Size.SHORT.unpack(port))
@@ -634,7 +641,7 @@ class LinkByFingerprint(LinkSpecifier):
     super(LinkByFingerprint, self).__init__(2, value)
 
     if len(value) != 20:
-      raise ValueError('Fingerprint link specifiers should be twenty bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+      raise ValueError('Fingerprint link specifiers should be twenty bytes, but was %i instead: %s' % (len(value), stem.util.str_tools._to_unicode(binascii.hexlify(value))))
 
     self.fingerprint = stem.util.str_tools._to_unicode(value)
 
@@ -652,7 +659,7 @@ class LinkByEd25519(LinkSpecifier):
     super(LinkByEd25519, self).__init__(3, value)
 
     if len(value) != 32:
-      raise ValueError('Fingerprint link specifiers should be thirty two bytes, but was %i instead: %s' % (len(value), binascii.hexlify(value)))
+      raise ValueError('Fingerprint link specifiers should be thirty two bytes, but was %i instead: %s' % (len(value), stem.util.str_tools._to_unicode(binascii.hexlify(value))))
 
     self.fingerprint = stem.util.str_tools._to_unicode(value)
 
@@ -695,7 +702,7 @@ def _pack_ipv4_address(address: str) -> bytes:
   return b''.join([Size.CHAR.pack(int(v)) for v in address.split('.')])
 
 
-def _unpack_ipv4_address(value: str) -> bytes:
+def _unpack_ipv4_address(value: bytes) -> str:
   return '.'.join([str(Size.CHAR.unpack(value[i:i + 1])) for i in range(4)])
 
 
@@ -703,7 +710,7 @@ def _pack_ipv6_address(address: str) -> bytes:
   return b''.join([Size.SHORT.pack(int(v, 16)) for v in address.split(':')])
 
 
-def _unpack_ipv6_address(value: str) -> bytes:
+def _unpack_ipv6_address(value: bytes) -> str:
   return ':'.join(['%04x' % Size.SHORT.unpack(value[i * 2:(i + 1) * 2]) for i in range(8)])
 
 

@@ -26,7 +26,7 @@ import sys
 import stem.util
 import stem.util.enum
 
-from typing import Sequence, Tuple, Union
+from typing import List, Sequence, Tuple, Union, overload
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
@@ -73,7 +73,7 @@ def _to_bytes(msg: Union[str, bytes]) -> bytes:
   """
 
   if isinstance(msg, str):
-    return codecs.latin_1_encode(msg, 'replace')[0]
+    return codecs.latin_1_encode(msg, 'replace')[0]  # type: ignore
   else:
     return msg
 
@@ -95,7 +95,7 @@ def _to_unicode(msg: Union[str, bytes]) -> str:
     return msg
 
 
-def _decode_b64(msg: Union[str, bytes]) -> str:
+def _decode_b64(msg: bytes) -> bytes:
   """
   Base64 decode, without padding concerns.
   """
@@ -103,7 +103,7 @@ def _decode_b64(msg: Union[str, bytes]) -> str:
   missing_padding = len(msg) % 4
   padding_chr = b'=' if isinstance(msg, bytes) else '='
 
-  return base64.b64decode(msg + padding_chr * missing_padding)
+  return base64.b64decode(msg + (padding_chr * missing_padding))
 
 
 def _to_int(msg: Union[str, bytes]) -> int:
@@ -150,7 +150,17 @@ def _to_camel_case(label: str, divider: str = '_', joiner: str = ' ') -> str:
   return joiner.join(words)
 
 
-def _split_by_length(msg: str, size: int) -> Sequence[str]:
+@overload
+def _split_by_length(msg: bytes, size: int) -> List[bytes]:
+  ...
+
+
+@overload
+def _split_by_length(msg: str, size: int) -> List[str]:
+  ...
+
+
+def _split_by_length(msg, size):
   """
   Splits a string into a list of strings up to the given size.
 
@@ -174,7 +184,7 @@ def _split_by_length(msg: str, size: int) -> Sequence[str]:
 Ending = stem.util.enum.Enum('ELLIPSE', 'HYPHEN')
 
 
-def crop(msg: str, size: int, min_word_length: int = 4, min_crop: int = 0, ending: 'stem.util.str_tools.Ending' = Ending.ELLIPSE, get_remainder: bool = False) -> str:
+def crop(msg: str, size: int, min_word_length: int = 4, min_crop: int = 0, ending: 'stem.util.str_tools.Ending' = Ending.ELLIPSE, get_remainder: bool = False) -> Union[str, Tuple[str, str]]:
   """
   Shortens a string to a given length.
 
@@ -381,7 +391,7 @@ def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
   for count_per_unit, _, _ in TIME_UNITS:
     if abs(seconds) >= count_per_unit:
       time_labels.append(_get_label(TIME_UNITS, seconds, 0, is_long))
-      seconds %= count_per_unit
+      seconds %= int(count_per_unit)
 
   return time_labels
 
@@ -413,7 +423,7 @@ def short_time_label(seconds: int) -> str:
 
   for amount, _, label in TIME_UNITS:
     count = int(seconds / amount)
-    seconds %= amount
+    seconds %= int(amount)
     time_comp[label.strip()] = count
 
   label = '%02i:%02i' % (time_comp['minute'], time_comp['second'])
@@ -471,7 +481,7 @@ def parse_short_time_label(label: str) -> int:
     raise ValueError('Non-numeric value in time entry: %s' % label)
 
 
-def _parse_timestamp(entry: str) -> 'datetime.datetime':
+def _parse_timestamp(entry: str) -> datetime.datetime:
   """
   Parses the date and time that in format like like...
 
@@ -535,7 +545,7 @@ def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 
-def _get_label(units: Tuple[int, str, str], count: int, decimal: int, is_long: bool, round: bool = False) -> str:
+def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int, is_long: bool, round: bool = False) -> str:
   """
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
@@ -580,3 +590,5 @@ def _get_label(units: Tuple[int, str, str], count: int, decimal: int, is_long: b
         return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label
+
+  raise ValueError('BUG: value should always be divisible by a unit (%s)' % str(units))

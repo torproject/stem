@@ -56,7 +56,7 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.util import log
-from typing import Any, Mapping, Optional, Sequence, Set, Tuple, Type
+from typing import Any, Mapping, Optional, Sequence, Set, Tuple
 
 try:
   # unavailable on windows (#19823)
@@ -233,7 +233,7 @@ def memory_usage(pid: int) -> Tuple[int, int]:
     raise exc
 
 
-def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[Any]:
+def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[str]:
   """
   Provides process specific information. See the :data:`~stem.util.proc.Stat`
   enum for valid options.
@@ -290,7 +290,7 @@ def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[Any]:
         results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
     elif stat_type == Stat.START_TIME:
       if pid == 0:
-        return system_start_time()
+        results.append(str(system_start_time()))
       else:
         # According to documentation, starttime is in field 21 and the unit is
         # jiffies (clock ticks). We divide it for clock ticks, then add the
@@ -452,7 +452,7 @@ def _inodes_for_sockets(pid: int) -> Set[bytes]:
   return inodes
 
 
-def _unpack_addr(addr: str) -> str:
+def _unpack_addr(addr: bytes) -> str:
   """
   Translates an address entry in the /proc/net/* contents to a human readable
   form (`reference <http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html>`_,
@@ -554,7 +554,7 @@ def _get_lines(file_path: str, line_prefixes: Sequence[str], parameter: str) -> 
     raise
 
 
-def _log_runtime(parameter: str, proc_location: str, start_time: int) -> None:
+def _log_runtime(parameter: str, proc_location: str, start_time: float) -> None:
   """
   Logs a message indicating a successful proc query.
 
@@ -567,7 +567,7 @@ def _log_runtime(parameter: str, proc_location: str, start_time: int) -> None:
   log.debug('proc call (%s): %s (runtime: %0.4f)' % (parameter, proc_location, runtime))
 
 
-def _log_failure(parameter: str, exc: Type[Exception]) -> None:
+def _log_failure(parameter: str, exc: BaseException) -> None:
   """
   Logs a message indicating that the proc query failed.
 

@@ -355,7 +355,7 @@ PYCODESTYLE_TASK = StaticCheckTask(
 MYPY_TASK = StaticCheckTask(
   'running mypy',
   stem.util.test_tools.type_issues,
-  args = ([os.path.join(test.STEM_BASE, 'stem')],),
+  args = (['--config-file', os.path.join(test.STEM_BASE, 'test', 'mypy.ini'), os.path.join(test.STEM_BASE, 'stem')],),
   is_available = stem.util.test_tools.is_mypy_available(),
   unavailable_msg = MYPY_UNAVAILABLE,
 )

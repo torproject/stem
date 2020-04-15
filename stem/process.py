@@ -29,7 +29,7 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
-from typing import Any, Callable, Mapping, Optional, Sequence, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
@@ -199,7 +199,7 @@ def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc
         pass
 
 
-def launch_tor_with_config(config: Mapping[str, Union[str, Sequence[str]]], tor_cmd: str = 'tor', completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True) -> subprocess.Popen:
+def launch_tor_with_config(config: Dict[str, Union[str, Sequence[str]]], tor_cmd: str = 'tor', completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True) -> subprocess.Popen:
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
@@ -260,7 +260,7 @@ def launch_tor_with_config(config: Mapping[str, Union[str, Sequence[str]]], tor_
         break
 
     if not has_stdout:
-      config['Log'].append('NOTICE stdout')
+      config['Log'] = list(config['Log']) + ['NOTICE stdout']
 
   config_str = ''
 

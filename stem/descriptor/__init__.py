@@ -108,6 +108,7 @@ import base64
 import codecs
 import collections
 import copy
+import hashlib
 import io
 import os
 import random
@@ -120,7 +121,7 @@ import stem.util.enum
 import stem.util.str_tools
 import stem.util.system
 
-from typing import Any, BinaryIO, Callable, Dict, Iterator, Mapping, Optional, Sequence, Tuple, Type
+from typing import Any, BinaryIO, Callable, Dict, IO, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 __all__ = [
   'bandwidth_file',
@@ -152,7 +153,7 @@ KEYWORD_LINE = re.compile('^([%s]+)(?:[%s]+(.*))?$' % (KEYWORD_CHAR, WHITESPACE)
 SPECIFIC_KEYWORD_LINE = '^(%%s)(?:[%s]+(.*))?$' % WHITESPACE
 PGP_BLOCK_START = re.compile('^-----BEGIN ([%s%s]+)-----$' % (KEYWORD_CHAR, WHITESPACE))
 PGP_BLOCK_END = '-----END %s-----'
-EMPTY_COLLECTION = ([], {}, set())
+EMPTY_COLLECTION = ([], {}, set())  # type: ignore
 
 DIGEST_TYPE_INFO = b'\x00\x01'
 DIGEST_PADDING = b'\xFF'
@@ -163,6 +164,8 @@ MIGJAoGBAJv5IIWQ+WDWYUdyA/0L8qbIkEVH/cwryZWoIaPAzINfrw1WfNZGtBmg
 skFtXhOHHqTRN4GPPrZsAIUOQGzQtGb66IQgT4tO/pj+P6QmSCCdTfhvGfgTCsC+
 WPi4Fl2qryzTb3QO5r5x7T8OsG2IBUET1bLQzmtbC560SYR49IvVAgMBAAE=
 """
+
+ENTRY_TYPE = Dict[str, List[Tuple[str, str, str]]]
 
 DigestHash = stem.util.enum.UppercaseEnum(
   'SHA1',
@@ -194,7 +197,7 @@ class _Compression(object):
   .. versionadded:: 1.8.0
   """
 
-  def __init__(self, name: str, module: Optional[str], encoding: str, extension: str, decompression_func: Callable[[Any, str], bytes]) -> None:
+  def __init__(self, name: str, module: Optional[str], encoding: str, extension: str, decompression_func: Callable[[Any, bytes], bytes]) -> None:
     if module is None:
       self._module = None
       self.available = True
@@ -256,7 +259,7 @@ class _Compression(object):
     return self._name
 
 
-def _zstd_decompress(module: Any, content: str) -> bytes:
+def _zstd_decompress(module: Any, content: bytes) -> bytes:
   output_buffer = io.BytesIO()
 
   with module.ZstdDecompressor().write_to(output_buffer) as decompressor:
@@ -304,7 +307,7 @@ class SigningKey(collections.namedtuple('SigningKey', ['private', 'public', 'pub
   """
 
 
-def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate: bool = False, document_handler: 'stem.descriptor.DocumentHandler' = DocumentHandler.ENTRIES, normalize_newlines: Optional[bool] = None, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
+def parse_file(descriptor_file: Union[str, BinaryIO, tarfile.TarFile, IO[bytes]], descriptor_type: str = None, validate: bool = False, document_handler: 'stem.descriptor.DocumentHandler' = DocumentHandler.ENTRIES, normalize_newlines: Optional[bool] = None, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
   """
   Simple function to read the descriptor contents from a file, providing an
   iterator for its :class:`~stem.descriptor.__init__.Descriptor` contents.
@@ -372,7 +375,7 @@ def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate:
 
   # Delegate to a helper if this is a path or tarfile.
 
-  handler = None
+  handler = None  # type: Callable
 
   if isinstance(descriptor_file, (bytes, str)):
     if stem.util.system.is_tarfile(descriptor_file):
@@ -388,7 +391,7 @@ def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate:
 
     return
 
-  if not descriptor_file.seekable():
+  if not descriptor_file.seekable():  # type: ignore
     raise IOError(UNSEEKABLE_MSG)
 
   # The tor descriptor specifications do not provide a reliable method for
@@ -397,19 +400,19 @@ def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate:
   # by an annotation on their first line...
   # https://trac.torproject.org/5651
 
-  initial_position = descriptor_file.tell()
-  first_line = stem.util.str_tools._to_unicode(descriptor_file.readline().strip())
+  initial_position = descriptor_file.tell()  # type: ignore
+  first_line = stem.util.str_tools._to_unicode(descriptor_file.readline().strip())  # type: ignore
   metrics_header_match = re.match('^@type (\\S+) (\\d+).(\\d+)$', first_line)
 
   if not metrics_header_match:
-    descriptor_file.seek(initial_position)
+    descriptor_file.seek(initial_position)  # type: ignore
 
   descriptor_path = getattr(descriptor_file, 'name', None)
-  filename = '<undefined>' if descriptor_path is None else os.path.basename(descriptor_file.name)
+  filename = '<undefined>' if descriptor_path is None else os.path.basename(descriptor_file.name)  # type: str # type: ignore
 
   def parse(descriptor_file: BinaryIO) -> Iterator['stem.descriptor.Descriptor']:
     if normalize_newlines:
-      descriptor_file = NewlineNormalizer(descriptor_file)
+      descriptor_file = NewlineNormalizer(descriptor_file)  # type: ignore
 
     if descriptor_type is not None:
       descriptor_type_match = re.match('^(\\S+) (\\d+).(\\d+)$', descriptor_type)
@@ -428,7 +431,7 @@ def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate:
       # Cached descriptor handling. These contain multiple descriptors per file.
 
       if normalize_newlines is None and stem.util.system.is_windows():
-        descriptor_file = NewlineNormalizer(descriptor_file)
+        descriptor_file = NewlineNormalizer(descriptor_file)  # type: ignore
 
       if filename == 'cached-descriptors' or filename == 'cached-descriptors.new':
         return stem.descriptor.server_descriptor._parse_file(descriptor_file, validate = validate, **kwargs)
@@ -441,29 +444,29 @@ def parse_file(descriptor_file: BinaryIO, descriptor_type: str = None, validate:
       elif filename == 'cached-microdesc-consensus':
         return stem.descriptor.networkstatus._parse_file(descriptor_file, is_microdescriptor = True, validate = validate, document_handler = document_handler, **kwargs)
       else:
-        raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, first_line))
+        raise TypeError("Unable to determine the descriptor's type. filename: '%s', first line: '%s'" % (filename, stem.util.str_tools._to_unicode(first_line)))
 
-  for desc in parse(descriptor_file):
+  for desc in parse(descriptor_file):  # type: ignore
     if descriptor_path is not None:
       desc._set_path(os.path.abspath(descriptor_path))
 
     yield desc
 
 
-def _parse_file_for_path(descriptor_file: BinaryIO, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
+def _parse_file_for_path(descriptor_file: str, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
   with open(descriptor_file, 'rb') as desc_file:
     for desc in parse_file(desc_file, *args, **kwargs):
       yield desc
 
 
-def _parse_file_for_tar_path(descriptor_file: BinaryIO, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
+def _parse_file_for_tar_path(descriptor_file: str, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
   with tarfile.open(descriptor_file) as tar_file:
     for desc in parse_file(tar_file, *args, **kwargs):
       desc._set_path(os.path.abspath(descriptor_file))
       yield desc
 
 
-def _parse_file_for_tarfile(descriptor_file: BinaryIO, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
+def _parse_file_for_tarfile(descriptor_file: tarfile.TarFile, *args: Any, **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
   for tar_entry in descriptor_file:
     if tar_entry.isfile():
       entry = descriptor_file.extractfile(tar_entry)
@@ -479,9 +482,13 @@ def _parse_file_for_tarfile(descriptor_file: BinaryIO, *args: Any, **kwargs: Any
         entry.close()
 
 
-def _parse_metrics_file(descriptor_type: Type['stem.descriptor.Descriptor'], major_version: int, minor_version: int, descriptor_file: BinaryIO, validate: bool, document_handler: 'stem.descriptor.DocumentHandler', **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
+def _parse_metrics_file(descriptor_type: str, major_version: int, minor_version: int, descriptor_file: BinaryIO, validate: bool, document_handler: 'stem.descriptor.DocumentHandler', **kwargs: Any) -> Iterator['stem.descriptor.Descriptor']:
   # Parses descriptor files from metrics, yielding individual descriptors. This
   # throws a TypeError if the descriptor_type or version isn't recognized.
+
+  desc = None  # type: Optional[Any]
+  desc_type = None  # type: Optional[Type[stem.descriptor.Descriptor]]
+  document_type = None  # type: Optional[Type]
 
   if descriptor_type == stem.descriptor.server_descriptor.RelayDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
     for desc in stem.descriptor.server_descriptor._parse_file(descriptor_file, is_bridge = False, validate = validate, **kwargs):
@@ -507,7 +514,7 @@ def _parse_metrics_file(descriptor_type: Type['stem.descriptor.Descriptor'], maj
     for desc in stem.descriptor.networkstatus._parse_file(descriptor_file, document_type, validate = validate, document_handler = document_handler, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.networkstatus.KeyCertificate.TYPE_ANNOTATION_NAME and major_version == 1:
-    for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate, **kwargs):
+    for desc in stem.descriptor.networkstatus._parse_file_key_certs(descriptor_file, validate = validate):
       yield desc
   elif descriptor_type in ('network-status-consensus-3', 'network-status-vote-3') and major_version == 1:
     document_type = stem.descriptor.networkstatus.NetworkStatusDocumentV3
@@ -549,7 +556,7 @@ def _parse_metrics_file(descriptor_type: Type['stem.descriptor.Descriptor'], maj
     raise TypeError("Unrecognized metrics descriptor format. type: '%s', version: '%i.%i'" % (descriptor_type, major_version, minor_version))
 
 
-def _descriptor_content(attr: Mapping[str, str] = None, exclude: Sequence[str] = (), header_template: Sequence[str] = (), footer_template: Sequence[str] = ()) -> bytes:
+def _descriptor_content(attr: Mapping[str, str] = None, exclude: Sequence[str] = (), header_template: Sequence[Tuple[str, Optional[str]]] = (), footer_template: Sequence[Tuple[str, Optional[str]]] = ()) -> bytes:
   """
   Constructs a minimal descriptor with the given attributes. The content we
   provide back is of the form...
@@ -586,8 +593,9 @@ def _descriptor_content(attr: Mapping[str, str] = None, exclude: Sequence[str] =
   :returns: bytes with the requested descriptor content
   """
 
-  header_content, footer_content = [], []
-  attr = {} if attr is None else collections.OrderedDict(attr)  # shallow copy since we're destructive
+  header_content = []  # type: List[str]
+  footer_content = []  # type: List[str]
+  attr = {} if attr is None else collections.OrderedDict(attr)  # type: Dict[str, str] # shallow copy since we're destructive
 
   for content, template in ((header_content, header_template),
                             (footer_content, footer_template)):
@@ -621,28 +629,28 @@ def _descriptor_content(attr: Mapping[str, str] = None, exclude: Sequence[str] =
   return stem.util.str_tools._to_bytes('\n'.join(header_content + remainder + footer_content))
 
 
-def _value(line: str, entries: Dict[str, Sequence[str]]) -> str:
+def _value(line: str, entries: ENTRY_TYPE) -> str:
   return entries[line][0][0]
 
 
-def _values(line: str, entries: Dict[str, Sequence[str]]) -> Sequence[str]:
+def _values(line: str, entries: ENTRY_TYPE) -> Sequence[str]:
   return [entry[0] for entry in entries[line]]
 
 
-def _parse_simple_line(keyword: str, attribute: str, func: Callable[[str], str] = None) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_simple_line(keyword: str, attribute: str, func: Optional[Callable[[str], Any]] = None) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     value = _value(keyword, entries)
     setattr(descriptor, attribute, func(value) if func else value)
 
   return _parse
 
 
-def _parse_if_present(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+def _parse_if_present(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
   return lambda descriptor, entries: setattr(descriptor, attribute, keyword in entries)
 
 
-def _parse_bytes_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_bytes_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     line_match = re.search(stem.util.str_tools._to_bytes('^(opt )?%s(?:[%s]+(.*))?$' % (keyword, WHITESPACE)), descriptor.get_bytes(), re.MULTILINE)
     result = None
 
@@ -655,8 +663,8 @@ def _parse_bytes_line(keyword: str, attribute: str) -> Callable[['stem.descripto
   return _parse
 
 
-def _parse_int_line(keyword: str, attribute: str, allow_negative: bool = True) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_int_line(keyword: str, attribute: str, allow_negative: bool = True) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     value = _value(keyword, entries)
 
     try:
@@ -672,10 +680,10 @@ def _parse_int_line(keyword: str, attribute: str, allow_negative: bool = True) -
   return _parse
 
 
-def _parse_timestamp_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+def _parse_timestamp_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
   # "<keyword>" YYYY-MM-DD HH:MM:SS
 
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     value = _value(keyword, entries)
 
     try:
@@ -686,10 +694,10 @@ def _parse_timestamp_line(keyword: str, attribute: str) -> Callable[['stem.descr
   return _parse
 
 
-def _parse_forty_character_hex(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
+def _parse_forty_character_hex(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
   # format of fingerprints, sha1 digests, etc
 
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     value = _value(keyword, entries)
 
     if not stem.util.tor_tools.is_hex_digits(value, 40):
@@ -700,15 +708,15 @@ def _parse_forty_character_hex(keyword: str, attribute: str) -> Callable[['stem.
   return _parse
 
 
-def _parse_protocol_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_protocol_line(keyword: str, attribute: str) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     # parses 'protocol' entries like: Cons=1-2 Desc=1-2 DirCache=1 HSDir=1
 
     value = _value(keyword, entries)
     protocols = collections.OrderedDict()
 
     for k, v in _mappings_for(keyword, value):
-      versions = []
+      versions = []  # type: List[int]
 
       if not v:
         continue
@@ -731,8 +739,8 @@ def _parse_protocol_line(keyword: str, attribute: str) -> Callable[['stem.descri
   return _parse
 
 
-def _parse_key_block(keyword: str, attribute: str, expected_block_type: str, value_attribute: Optional[str] = None) -> Callable[['stem.descriptor.Descriptor', Dict[str, Sequence[str]]], None]:
-  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: Dict[str, Sequence[str]]) -> None:
+def _parse_key_block(keyword: str, attribute: str, expected_block_type: str, value_attribute: Optional[str] = None) -> Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]:
+  def _parse(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
     value, block_type, block_contents = entries[keyword][0]
 
     if not block_contents or block_type != expected_block_type:
@@ -788,7 +796,7 @@ def _copy(default: Any) -> Any:
     return copy.copy(default)
 
 
-def _encode_digest(hash_value: bytes, encoding: 'stem.descriptor.DigestEncoding') -> str:
+def _encode_digest(hash_value: 'hashlib._HASH', encoding: 'stem.descriptor.DigestEncoding') -> Union[str, 'hashlib._HASH']:  # type: ignore
   """
   Encodes a hash value with the given HashEncoding.
   """
@@ -810,21 +818,21 @@ class Descriptor(object):
   Common parent for all types of descriptors.
   """
 
-  ATTRIBUTES = {}  # mapping of 'attribute' => (default_value, parsing_function)
-  PARSER_FOR_LINE = {}  # line keyword to its associated parsing function
-  TYPE_ANNOTATION_NAME = None
+  ATTRIBUTES = {}  # type: Dict[str, Tuple[Any, Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]]] # mapping of 'attribute' => (default_value, parsing_function)
+  PARSER_FOR_LINE = {}  # type: Dict[str,  Callable[['stem.descriptor.Descriptor', ENTRY_TYPE], None]] # line keyword to its associated parsing function
+  TYPE_ANNOTATION_NAME = None  # type: Optional[str]
 
-  def __init__(self, contents, lazy_load = False):
-    self._path = None
-    self._archive_path = None
+  def __init__(self, contents: bytes, lazy_load: bool = False) -> None:
+    self._path = None  # type: Optional[str]
+    self._archive_path = None  # type: Optional[str]
     self._raw_contents = contents
     self._lazy_loading = lazy_load
-    self._entries = {}
-    self._hash = None
-    self._unrecognized_lines = []
+    self._entries = {}  # type: ENTRY_TYPE
+    self._hash = None  # type: Optional[int]
+    self._unrecognized_lines = []  # type: List[str]
 
   @classmethod
-  def from_str(cls, content, **kwargs):
+  def from_str(cls, content: str, **kwargs: Any) -> Union['stem.descriptor.Descriptor', List['stem.descriptor.Descriptor']]:
     """
     Provides a :class:`~stem.descriptor.__init__.Descriptor` for the given content.
 
@@ -873,7 +881,7 @@ class Descriptor(object):
       raise ValueError("Descriptor.from_str() expected a single descriptor, but had %i instead. Please include 'multiple = True' if you want a list of results instead." % len(results))
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls, attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> bytes:
     """
     Creates descriptor content with the given attributes. Mandatory fields are
     filled with dummy information unless data is supplied. This doesn't yet
@@ -885,7 +893,7 @@ class Descriptor(object):
     :param list exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
 
-    :returns: **str** with the content of a descriptor
+    :returns: **bytes** with the content of a descriptor
 
     :raises:
       * **ImportError** if cryptography is unavailable and sign is True
@@ -895,7 +903,7 @@ class Descriptor(object):
     raise NotImplementedError("The create and content methods haven't been implemented for %s" % cls.__name__)
 
   @classmethod
-  def create(cls, attr = None, exclude = (), validate = True):
+  def create(cls, attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), validate: bool = True) -> 'stem.descriptor.Descriptor':
     """
     Creates a descriptor with the given attributes. Mandatory fields are filled
     with dummy information unless data is supplied. This doesn't yet create a
@@ -917,9 +925,9 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
-    return cls(cls.content(attr, exclude), validate = validate)
+    return cls(cls.content(attr, exclude), validate = validate)  # type: ignore
 
-  def type_annotation(self):
+  def type_annotation(self) -> 'stem.descriptor.TypeAnnotation':
     """
     Provides the `Tor metrics annotation
     <https://metrics.torproject.org/collector.html#relay-descriptors>`_ of this
@@ -941,7 +949,7 @@ class Descriptor(object):
     else:
       raise NotImplementedError('%s does not have a @type annotation' % type(self).__name__)
 
-  def get_path(self):
+  def get_path(self) -> str:
     """
     Provides the absolute path that we loaded this descriptor from.
 
@@ -950,7 +958,7 @@ class Descriptor(object):
 
     return self._path
 
-  def get_archive_path(self):
+  def get_archive_path(self) -> str:
     """
     If this descriptor came from an archive then provides its path within the
     archive. This is only set if the descriptor was read by
@@ -962,7 +970,7 @@ class Descriptor(object):
 
     return self._archive_path
 
-  def get_bytes(self):
+  def get_bytes(self) -> bytes:
     """
     Provides the ASCII **bytes** of the descriptor. This only differs from
     **str()** if you're running python 3.x, in which case **str()** provides a
@@ -973,7 +981,7 @@ class Descriptor(object):
 
     return stem.util.str_tools._to_bytes(self._raw_contents)
 
-  def get_unrecognized_lines(self):
+  def get_unrecognized_lines(self) -> List[str]:
     """
     Provides a list of lines that were either ignored or had data that we did
     not know how to process. This is most common due to new descriptor fields
@@ -989,7 +997,7 @@ class Descriptor(object):
 
     return list(self._unrecognized_lines)
 
-  def _parse(self, entries, validate, parser_for_line = None):
+  def _parse(self, entries: ENTRY_TYPE, validate: bool, parser_for_line: Optional[Dict[str, Callable]] = None) -> None:
     """
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
@@ -1020,16 +1028,16 @@ class Descriptor(object):
         if validate:
           raise
 
-  def _set_path(self, path):
+  def _set_path(self, path: str) -> None:
     self._path = path
 
-  def _set_archive_path(self, path):
+  def _set_archive_path(self, path: str) -> None:
     self._archive_path = path
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return str(type(self))
 
-  def _digest_for_signature(self, signing_key, signature):
+  def _digest_for_signature(self, signing_key: str, signature: str) -> str:
     """
     Provides the signed digest we should have given this key and signature.
 
@@ -1091,12 +1099,14 @@ class Descriptor(object):
     digest_hex = codecs.encode(decrypted_bytes[seperator_index + 1:], 'hex_codec')
     return stem.util.str_tools._to_unicode(digest_hex.upper())
 
-  def _content_range(self, start = None, end = None):
+  def _content_range(self, start: Optional[Union[str, bytes]] = None, end: Optional[Union[str, bytes]] = None) -> bytes:
     """
     Provides the descriptor content inclusively between two substrings.
 
     :param bytes start: start of the content range to get
     :param bytes end: end of the content range to get
+
+    :returns: **bytes** within the given range
 
     :raises: ValueError if either the start or end substring are not within our content
     """
@@ -1108,24 +1118,24 @@ class Descriptor(object):
       start_index = content.find(stem.util.str_tools._to_bytes(start))
 
       if start_index == -1:
-        raise ValueError("'%s' is not present within our descriptor content" % start)
+        raise ValueError("'%s' is not present within our descriptor content" % stem.util.str_tools._to_unicode(start))
 
     if end is not None:
       end_index = content.find(stem.util.str_tools._to_bytes(end), start_index)
 
       if end_index == -1:
-        raise ValueError("'%s' is not present within our descriptor content" % end)
+        raise ValueError("'%s' is not present within our descriptor content" % stem.util.str_tools._to_unicode(end))
 
       end_index += len(end)  # make the ending index inclusive
 
     return content[start_index:end_index]
 
-  def __getattr__(self, name):
+  def __getattr__(self, name: str) -> Any:
     # We can't use standard hasattr() since it calls this function, recursing.
     # Doing so works since it stops recursing after several dozen iterations
     # (not sure why), but horrible in terms of performance.
 
-    def has_attr(attr):
+    def has_attr(attr: str) -> bool:
       try:
         super(Descriptor, self).__getattribute__(attr)
         return True
@@ -1156,31 +1166,31 @@ class Descriptor(object):
 
     return super(Descriptor, self).__getattribute__(name)
 
-  def __str__(self):
+  def __str__(self) -> str:
     return stem.util.str_tools._to_unicode(self._raw_contents)
 
-  def _compare(self, other, method):
+  def _compare(self, other: Any, method: Callable[[Any, Any], bool]) -> bool:
     if type(self) != type(other):
       return False
 
     return method(str(self).strip(), str(other).strip())
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     if self._hash is None:
       self._hash = hash(str(self).strip())
 
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s == o)
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
-  def __lt__(self, other):
+  def __lt__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s < o)
 
-  def __le__(self, other):
+  def __le__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s <= o)
 
 
@@ -1189,27 +1199,31 @@ class NewlineNormalizer(object):
   File wrapper that normalizes CRLF line endings.
   """
 
-  def __init__(self, wrapped_file):
+  def __init__(self, wrapped_file: BinaryIO) -> None:
     self._wrapped_file = wrapped_file
     self.name = getattr(wrapped_file, 'name', None)
 
-  def read(self, *args):
+  def read(self, *args: Any) -> bytes:
     return self._wrapped_file.read(*args).replace(b'\r\n', b'\n')
 
-  def readline(self, *args):
+  def readline(self, *args: Any) -> bytes:
     return self._wrapped_file.readline(*args).replace(b'\r\n', b'\n')
 
-  def readlines(self, *args):
+  def readlines(self, *args: Any) -> List[bytes]:
     return [line.rstrip(b'\r') for line in self._wrapped_file.readlines(*args)]
 
-  def seek(self, *args):
+  def seek(self, *args: Any) -> int:
     return self._wrapped_file.seek(*args)
 
-  def tell(self, *args):
+  def tell(self, *args: Any) -> int:
     return self._wrapped_file.tell(*args)
 
 
-def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_first = False, skip = False, end_position = None, include_ending_keyword = False):
+def _read_until_keywords(keywords: Union[str, Sequence[str]], descriptor_file: BinaryIO, inclusive: bool = False, ignore_first: bool = False, skip: bool = False, end_position: Optional[int] = None) -> List[bytes]:
+  return _read_until_keywords_with_ending_keyword(keywords, descriptor_file, inclusive, ignore_first, skip, end_position, include_ending_keyword = False)  # type: ignore
+
+
+def _read_until_keywords_with_ending_keyword(keywords: Union[str, Sequence[str]], descriptor_file: BinaryIO, inclusive: bool = False, ignore_first: bool = False, skip: bool = False, end_position: Optional[int] = None, include_ending_keyword: bool = False) -> Tuple[List[bytes], str]:
   """
   Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
@@ -1228,7 +1242,7 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
     **True**
   """
 
-  content = None if skip else []
+  content = None if skip else []  # type: Optional[List[bytes]]
   ending_keyword = None
 
   if isinstance(keywords, (bytes, str)):
@@ -1270,10 +1284,10 @@ def _read_until_keywords(keywords, descriptor_file, inclusive = False, ignore_fi
   if include_ending_keyword:
     return (content, ending_keyword)
   else:
-    return content
+    return content  # type: ignore
 
 
-def _bytes_for_block(content):
+def _bytes_for_block(content: str) -> bytes:
   """
   Provides the base64 decoded content of a pgp-style block.
 
@@ -1291,7 +1305,7 @@ def _bytes_for_block(content):
   return base64.b64decode(stem.util.str_tools._to_bytes(content))
 
 
-def _get_pseudo_pgp_block(remaining_contents):
+def _get_pseudo_pgp_block(remaining_contents: List[str]) -> Tuple[str, str]:
   """
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
   so, pops it off and provides it back to the caller.
@@ -1311,7 +1325,7 @@ def _get_pseudo_pgp_block(remaining_contents):
 
   if block_match:
     block_type = block_match.groups()[0]
-    block_lines = []
+    block_lines = []  # type: List[str]
     end_line = PGP_BLOCK_END % block_type
 
     while True:
@@ -1327,7 +1341,7 @@ def _get_pseudo_pgp_block(remaining_contents):
     return None
 
 
-def create_signing_key(private_key = None):
+def create_signing_key(private_key: Optional['cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey'] = None) -> 'stem.descriptor.SigningKey':  # type: ignore
   """
   Serializes a signing key if we have one. Otherwise this creates a new signing
   key we can use to create descriptors.
@@ -1363,11 +1377,11 @@ def create_signing_key(private_key = None):
     #
     #   https://github.com/pyca/cryptography/issues/3713
 
-    def no_op(*args, **kwargs):
+    def no_op(*args: Any, **kwargs: Any) -> int:
       return 1
 
-    private_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op
-    private_key._backend.openssl_assert = no_op
+    private_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op  # type: ignore
+    private_key._backend.openssl_assert = no_op  # type: ignore
 
   public_key = private_key.public_key()
   public_digest = b'\n' + public_key.public_bytes(
@@ -1378,7 +1392,7 @@ def create_signing_key(private_key = None):
   return SigningKey(private_key, public_key, public_digest)
 
 
-def _append_router_signature(content, private_key):
+def _append_router_signature(content: bytes, private_key: 'cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey') -> bytes:  # type: ignore
   """
   Appends a router signature to a server or extrainfo descriptor.
 
@@ -1399,23 +1413,23 @@ def _append_router_signature(content, private_key):
   return content + b'\n'.join([b'-----BEGIN SIGNATURE-----'] + stem.util.str_tools._split_by_length(signature, 64) + [b'-----END SIGNATURE-----\n'])
 
 
-def _random_nickname():
+def _random_nickname() -> str:
   return ('Unnamed%i' % random.randint(0, 100000000000000))[:19]
 
 
-def _random_fingerprint():
+def _random_fingerprint() -> str:
   return ('%040x' % random.randrange(16 ** 40)).upper()
 
 
-def _random_ipv4_address():
+def _random_ipv4_address() -> str:
   return '%i.%i.%i.%i' % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 
-def _random_date():
+def _random_date() -> str:
   return '%i-%02i-%02i %02i:%02i:%02i' % (random.randint(2000, 2015), random.randint(1, 12), random.randint(1, 20), random.randint(0, 23), random.randint(0, 59), random.randint(0, 59))
 
 
-def _random_crypto_blob(block_type = None):
+def _random_crypto_blob(block_type: Optional[str] = None) -> str:
   """
   Provides a random string that can be used for crypto blocks.
   """
@@ -1429,7 +1443,11 @@ def _random_crypto_blob(block_type = None):
     return crypto_blob
 
 
-def _descriptor_components(raw_contents, validate, extra_keywords = (), non_ascii_fields = ()):
+def _descriptor_components(raw_contents: bytes, validate: bool, non_ascii_fields: Sequence[str] = ()) -> ENTRY_TYPE:
+  return _descriptor_components_with_extra(raw_contents, validate, (), non_ascii_fields)  # type: ignore
+
+
+def _descriptor_components_with_extra(raw_contents: bytes, validate: bool, extra_keywords: Sequence[str] = (), non_ascii_fields: Sequence[str] = ()) -> Tuple[ENTRY_TYPE, List[str]]:
   """
   Initial breakup of the server descriptor contents to make parsing easier.
 
@@ -1443,7 +1461,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
   entries because this influences the resulting exit policy, but for everything
   else in server descriptors the order does not matter.
 
-  :param str raw_contents: descriptor content provided by the relay
+  :param bytes raw_contents: descriptor content provided by the relay
   :param bool validate: checks the validity of the descriptor's content if
     True, skips these checks otherwise
   :param list extra_keywords: entity keywords to put into a separate listing
@@ -1456,12 +1474,9 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
     value tuple, the second being a list of those entries.
   """
 
-  if isinstance(raw_contents, bytes):
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
-
-  entries = collections.OrderedDict()
+  entries = collections.OrderedDict()  # type: ENTRY_TYPE
   extra_entries = []  # entries with a keyword in extra_keywords
-  remaining_lines = raw_contents.split('\n')
+  remaining_lines = stem.util.str_tools._to_unicode(raw_contents).split('\n')
 
   while remaining_lines:
     line = remaining_lines.pop(0)
@@ -1525,7 +1540,7 @@ def _descriptor_components(raw_contents, validate, extra_keywords = (), non_asci
   if extra_keywords:
     return entries, extra_entries
   else:
-    return entries
+    return entries  # type: ignore
 
 
 # importing at the end to avoid circular dependencies on our Descriptor class

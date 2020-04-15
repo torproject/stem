@@ -4,6 +4,8 @@
 import stem.response
 import stem.socket
 
+from typing import Dict, List
+
 
 class GetConfResponse(stem.response.ControlMessage):
   """
@@ -23,7 +25,7 @@ class GetConfResponse(stem.response.ControlMessage):
     # 250-DataDirectory=/home/neena/.tor
     # 250 DirPort
 
-    self.entries = {}
+    self.entries = {}  # type: Dict[str, List[str]]
     remaining_lines = list(self)
 
     if self.content() == [('250', ' ', 'OK')]:
