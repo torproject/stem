@@ -1509,7 +1509,7 @@ class Controller(BaseController):
     return await stem.connection.get_protocolinfo(self)
 
   @with_default()
-  def get_user(self, default: Any = UNDEFINED) -> str:
+  async def get_user(self, default: Any = UNDEFINED) -> str:
     """
     get_user(default = UNDEFINED)
 
@@ -1529,10 +1529,10 @@ class Controller(BaseController):
     if user:
       return user
 
-    user = self.get_info('process/user', None)
+    user = await self.get_info('process/user', None)
 
     if not user and self.is_localhost():
-      pid = self.get_pid(None)
+      pid = await self.get_pid(None)
 
       if pid:
         user = stem.util.system.user(pid)
@@ -1544,7 +1544,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's user" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_pid(self, default: Any = UNDEFINED) -> int:
+  async def get_pid(self, default: Any = UNDEFINED) -> int:
     """
     get_pid(default = UNDEFINED)
 
@@ -1567,13 +1567,13 @@ class Controller(BaseController):
     if pid:
       return pid
 
-    getinfo_pid = self.get_info('process/pid', None)
+    getinfo_pid = await self.get_info('process/pid', None)
 
     if getinfo_pid and getinfo_pid.isdigit():
       pid = int(getinfo_pid)
 
     if not pid and self.is_localhost():
-      pid_file_path = self._get_conf_single('PidFile', None)
+      pid_file_path = await self._get_conf_single('PidFile', None)
 
       if pid_file_path is not None:
         with open(pid_file_path) as pid_file:
