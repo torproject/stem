@@ -1440,7 +1440,7 @@ class Controller(BaseController):
     return listeners
 
   @with_default()
-  def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
+  async def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
     """
     get_accounting_stats(default = UNDEFINED)
 
@@ -1457,14 +1457,16 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    if self.get_info('accounting/enabled') != '1':
+    if await self.get_info('accounting/enabled') != '1':
       raise stem.ControllerError("Accounting isn't enabled")
 
     retrieved = time.time()
-    status = self.get_info('accounting/hibernating')
-    interval_end = self.get_info('accounting/interval-end')
-    used = self.get_info('accounting/bytes')
-    left = self.get_info('accounting/bytes-left')
+    status, interval_end, used, left = await asyncio.gather(
+      self.get_info('accounting/hibernating'),
+      self.get_info('accounting/interval-end'),
+      self.get_info('accounting/bytes'),
+      self.get_info('accounting/bytes-left'),
+    )
 
     interval_end = stem.util.str_tools._parse_timestamp(interval_end)
     used_read, used_written = [int(val) for val in used.split(' ', 1)]
