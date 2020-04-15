@@ -1600,7 +1600,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_start_time(self, default: Any = UNDEFINED) -> float:
+  async def get_start_time(self, default: Any = UNDEFINED) -> float:
     """
     get_start_time(default = UNDEFINED)
 
@@ -1621,7 +1621,7 @@ class Controller(BaseController):
     if start_time:
       return start_time
 
-    uptime = self.get_info('uptime', None)
+    uptime = await self.get_info('uptime', None)
 
     if uptime:
       if not uptime.isdigit():
@@ -1636,7 +1636,7 @@ class Controller(BaseController):
       if not self.is_localhost():
         raise ValueError('Unable to determine the uptime when tor is not running locally')
 
-      pid = self.get_pid(None)
+      pid = await self.get_pid(None)
 
       if not pid:
         raise ValueError('Unable to determine the pid of the tor process')
