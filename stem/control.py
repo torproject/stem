@@ -1299,7 +1299,7 @@ class Controller(BaseController):
     return policy
 
   @with_default()
-  def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
+  async def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
     """
     get_ports(listener_type, default = UNDEFINED)
 
@@ -1332,10 +1332,10 @@ class Controller(BaseController):
         log.info("Request for %s ports got an address that's neither IPv4 or IPv6: %s" % (listener_type, address))
         return False
 
-    return [port for (addr, port) in self.get_listeners(listener_type) if is_localhost(addr)]
+    return [port for (addr, port) in (await self.get_listeners(listener_type)) if is_localhost(addr)]
 
   @with_default()
-  def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
+  async def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
     """
     get_listeners(listener_type, default = UNDEFINED)
 
@@ -1366,7 +1366,7 @@ class Controller(BaseController):
       query = 'net/listeners/%s' % str(listener_type).lower()
 
       try:
-        for listener in self.get_info(query).split():
+        for listener in (await self.get_info(query)).split():
           if not (listener.startswith('"') and listener.endswith('"')):
             raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
           elif ':' not in listener:
@@ -1415,7 +1415,7 @@ class Controller(BaseController):
 
         port_value = self._get_conf_single(port_option).split()[0]
 
-        for listener in self.get_conf(listener_option, multiple = True):
+        for listener in (await self.get_conf(listener_option, multiple = True)):
           if ':' in listener:
             addr, port = listener.rsplit(':', 1)
 
