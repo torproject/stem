@@ -1115,7 +1115,7 @@ class Controller(BaseController):
       await self.authenticate(*args, **kwargs)
 
   @with_default()
-  def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
+  async def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
     """
     get_info(params, default = UNDEFINED, get_bytes = False)
 
@@ -1192,8 +1192,8 @@ class Controller(BaseController):
         return list(reply.values())[0]
 
     try:
-      response = stem.response._convert_to_getinfo(self.msg('GETINFO %s' % ' '.join(param_set)))
-      response._assert_matches(param_set)
+      response = stem.response._convert_to_getinfo(await self.msg('GETINFO %s' % ' '.join(params)))
+      response._assert_matches(params)
 
       # usually we want unicode values under python 3.x
 
