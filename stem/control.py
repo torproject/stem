@@ -1650,7 +1650,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve when tor began" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_uptime(self, default: Any = UNDEFINED) -> float:
+  async def get_uptime(self, default: Any = UNDEFINED) -> float:
     """
     get_uptime(default = UNDEFINED)
 
@@ -1666,7 +1666,7 @@ class Controller(BaseController):
       was provided
     """
 
-    return time.time() - self.get_start_time()
+    return time.time() - (await self.get_start_time())
 
   def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
     """
