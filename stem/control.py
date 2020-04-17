@@ -1875,7 +1875,7 @@ class Controller(BaseController):
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
-  def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
+  async def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
     """
     get_server_descriptors(default = UNDEFINED)
 
@@ -1902,7 +1902,7 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/8248
 
-    desc_content = self.get_info('desc/all-recent', get_bytes = True)
+    desc_content = await self.get_info('desc/all-recent', get_bytes = True)
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
