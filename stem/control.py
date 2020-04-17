@@ -1970,7 +1970,7 @@ class Controller(BaseController):
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
   @with_default(yields = True)
-  def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
+  async def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
     """
     get_network_statuses(default = UNDEFINED)
 
@@ -1992,7 +1992,7 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/8248
 
-    desc_content = self.get_info('ns/all', get_bytes = True)
+    desc_content = await self.get_info('ns/all', get_bytes = True)
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
