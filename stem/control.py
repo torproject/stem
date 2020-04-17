@@ -1683,7 +1683,7 @@ class Controller(BaseController):
 
     return time.time() - (await self.get_start_time())
 
-  def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
+  async def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
     """
     Checks if we're likely to service direct user traffic. This essentially
     boils down to...
@@ -1711,15 +1711,15 @@ class Controller(BaseController):
 
     inbound_allowed, outbound_allowed = False, False
 
-    if self.get_conf('BridgeRelay', None) == '1':
+    if (await self.get_conf('BridgeRelay', None)) == '1':
       inbound_allowed = True
 
-    if self.get_conf('ORPort', None):
+    if await self.get_conf('ORPort', None):
       if not inbound_allowed:
-        consensus_entry = self.get_network_status(default = None)
+        consensus_entry = await self.get_network_status(default = None)
         inbound_allowed = consensus_entry and 'Guard' in consensus_entry.flags
 
-      exit_policy = self.get_exit_policy(None)
+      exit_policy = await self.get_exit_policy(None)
       outbound_allowed = exit_policy and exit_policy.is_exiting_allowed()
 
     return UserTrafficAllowed(inbound_allowed, outbound_allowed)
