@@ -3077,7 +3077,7 @@ class Controller(BaseController):
         for event_type in events:
           event_type = stem.response.events.EVENT_TYPE_TO_CLASS.get(event_type)
 
-          if event_type and (self.get_version() < event_type._VERSION_ADDED):
+          if event_type and (await self.get_version() < event_type._VERSION_ADDED):
             raise stem.InvalidRequest('552', '%s event requires Tor version %s or later' % (event_type, event_type._VERSION_ADDED))
 
       for event_type in events:
