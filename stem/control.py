@@ -1725,7 +1725,7 @@ class Controller(BaseController):
     return UserTrafficAllowed(inbound_allowed, outbound_allowed)
 
   @with_default()
-  def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
+  async def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
     """
     get_microdescriptor(relay = None, default = UNDEFINED)
 
@@ -1758,7 +1758,7 @@ class Controller(BaseController):
 
     if relay is None:
       try:
-        relay = self.get_info('fingerprint')
+        relay = await self.get_info('fingerprint')
       except stem.ControllerError as exc:
         raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
@@ -1770,7 +1770,7 @@ class Controller(BaseController):
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
     try:
-      desc_content = self.get_info(query, get_bytes = True)
+      desc_content = await self.get_info(query, get_bytes = True)
     except stem.InvalidArguments as exc:
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
