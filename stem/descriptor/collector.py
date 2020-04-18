@@ -326,7 +326,7 @@ class File(object):
     if os.path.exists(path):
       with open(path) as prior_file:
         expected_hash = binascii.hexlify(base64.b64decode(self.sha256))
-        actual_hash = hashlib.sha256(prior_file.read()).hexdigest()
+        actual_hash = hashlib.sha256(prior_file.read().encode('utf-8')).hexdigest().encode('utf-8')
 
         if expected_hash == actual_hash:
           return path  # nothing to do, we already have the file
