@@ -2355,7 +2355,7 @@ class Controller(BaseController):
 
     return result
 
-  def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
+  async def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
     """
     Changes the value of a tor configuration option. Our value can be any of
     the following...
@@ -2375,9 +2375,9 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
 
-    self.set_options({param: value}, False)
+    await self.set_options({param: value}, False)
 
-  def reset_conf(self, *params: str) -> None:
+  async def reset_conf(self, *params: str) -> None:
     """
     Reverts one or more parameters to their default values.
 
@@ -2390,7 +2390,7 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
 
-    self.set_options(dict([(entry, None) for entry in params]), True)
+    await self.set_options(dict([(entry, None) for entry in params]), True)
 
   async def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
     """
