@@ -2567,7 +2567,7 @@ class Controller(BaseController):
     self._set_cache({'hidden_service_conf': service_dir_map})
     return service_dir_map
 
-  def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
+  async def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
     """
     Update all the configured hidden services from a dictionary having
     the same format as
@@ -2605,7 +2605,7 @@ class Controller(BaseController):
     # so we drop existing values. Otherwise calling SETCONF is a no-op.
 
     if not conf:
-      self.reset_conf('HiddenServiceDir')
+      await self.reset_conf('HiddenServiceDir')
       return
 
     # Convert conf dictionary into a list of ordered config tuples
@@ -2630,7 +2630,7 @@ class Controller(BaseController):
         else:
           hidden_service_options.append((k, str(v)))
 
-    self.set_options(hidden_service_options)
+    await self.set_options(hidden_service_options)
 
   def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
     """
