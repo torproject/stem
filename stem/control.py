@@ -3537,7 +3537,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('SETCIRCUITPURPOSE returned unexpected response code: %s' % response.code)
 
-  def close_circuit(self, circuit_id: str, flag: str = '') -> None:
+  async def close_circuit(self, circuit_id: str, flag: str = '') -> None:
     """
     Closes the specified circuit.
 
@@ -3550,7 +3550,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidRequest` if not enough information is provided
     """
 
-    response = stem.response._convert_to_single_line(self.msg('CLOSECIRCUIT %s %s' % (circuit_id, flag)))
+    response = stem.response._convert_to_single_line(await self.msg('CLOSECIRCUIT %s %s' % (circuit_id, flag)))
 
     if not response.is_ok():
       if response.code in ('512', '552'):
