@@ -3646,7 +3646,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('CLOSESTREAM returned unexpected response code: %s' % response.code)
 
-  def signal(self, signal: stem.Signal) -> None:
+  async def signal(self, signal: stem.Signal) -> None:
     """
     Sends a signal to the Tor client.
 
@@ -3657,7 +3657,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if signal provided wasn't recognized
     """
 
-    response = stem.response._convert_to_single_line(self.msg('SIGNAL %s' % signal))
+    response = stem.response._convert_to_single_line(await self.msg('SIGNAL %s' % signal))
 
     if response.is_ok():
       if signal == stem.Signal.NEWNYM:
