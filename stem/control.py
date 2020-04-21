@@ -3802,7 +3802,7 @@ class Controller(BaseController):
         # connection, we can stop having it check for us via our pid.
 
         try:
-          self.reset_conf('__OwningControllerProcess')
+          await self.reset_conf('__OwningControllerProcess')
         except stem.ControllerError as exc:
           log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % exc)
       else:
