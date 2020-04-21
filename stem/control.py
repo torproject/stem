@@ -2632,7 +2632,7 @@ class Controller(BaseController):
 
     await self.set_options(hidden_service_options)
 
-  def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
+  async def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
@@ -2677,7 +2677,7 @@ class Controller(BaseController):
     target_address = target_address if target_address else '127.0.0.1'
     target_port = port if target_port is None else int(target_port)
 
-    conf = self.get_hidden_service_conf()
+    conf = await self.get_hidden_service_conf()
 
     if path in conf and (port, target_address, target_port) in conf[path]['HiddenServicePort']:
       return None
@@ -2699,7 +2699,7 @@ class Controller(BaseController):
       if 'HiddenServiceAuthorizeClient' in conf[path] or 'RendPostPeriod' in conf[path]:
         conf[path]['HiddenServiceVersion'] = '2'
 
-    self.set_hidden_service_conf(conf)
+    await self.set_hidden_service_conf(conf)
 
     hostname, hostname_for_client = None, {}
 
@@ -2707,7 +2707,7 @@ class Controller(BaseController):
       hostname_path = os.path.join(path, 'hostname')
 
       if not os.path.isabs(hostname_path):
-        cwd = stem.util.system.cwd(self.get_pid(None))
+        cwd = stem.util.system.cwd(await self.get_pid(None))
 
         if cwd:
           hostname_path = stem.util.system.expand_path(hostname_path, cwd)
@@ -2721,7 +2721,7 @@ class Controller(BaseController):
           if wait_time >= 3:
             break
           else:
-            time.sleep(0.05)
+            await asyncio.sleep(0.05)
 
         try:
           with open(hostname_path) as hostname_file:
