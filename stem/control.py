@@ -3320,7 +3320,7 @@ class Controller(BaseController):
 
     return feature in self._enabled_features
 
-  def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
+  async def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
     """
     Enables features that are disabled by default to maintain backward
     compatibility. Once enabled, a feature cannot be disabled and a new
@@ -3337,7 +3337,7 @@ class Controller(BaseController):
     if isinstance(features, (bytes, str)):
       features = [features]
 
-    response = stem.response._convert_to_single_line(self.msg('USEFEATURE %s' % ' '.join(features)))
+    response = stem.response._convert_to_single_line(await self.msg('USEFEATURE %s' % ' '.join(features)))
 
     if not response.is_ok():
       if response.code == '552':
