@@ -3259,7 +3259,7 @@ class Controller(BaseController):
       self._request_cache = {}
       self._last_newnym = 0.0
 
-  def load_conf(self, configtext: str) -> None:
+  async def load_conf(self, configtext: str) -> None:
     """
     Sends the configuration text to Tor and loads it as if it has been read from
     the torrc.
@@ -3269,7 +3269,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    response = stem.response._convert_to_single_line(self.msg('LOADCONF\n%s' % configtext))
+    response = stem.response._convert_to_single_line(async self.msg('LOADCONF\n%s' % configtext))
 
     if response.code in ('552', '553'):
       if response.code == '552' and response.message.startswith('Invalid config file: Failed to parse/validate config: Unknown option'):
@@ -3278,7 +3278,7 @@ class Controller(BaseController):
     elif not response.is_ok():
       raise stem.ProtocolError('+LOADCONF Received unexpected response\n%s' % str(response))
 
-  def save_conf(self, force: bool = False) -> None:
+  async def save_conf(self, force: bool = False) -> None:
     """
     Saves the current configuration options into the active torrc file.
 
@@ -3294,7 +3294,7 @@ class Controller(BaseController):
         the configuration file
     """
 
-    response = stem.response._convert_to_single_line(self.msg('SAVECONF FORCE' if force else 'SAVECONF'))
+    response = stem.response._convert_to_single_line(await self.msg('SAVECONF FORCE' if force else 'SAVECONF'))
 
     if response.is_ok():
       pass
