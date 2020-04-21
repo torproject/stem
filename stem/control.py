@@ -3584,7 +3584,7 @@ class Controller(BaseController):
 
     return streams
 
-  def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
+  async def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
     """
     Attaches a stream to a circuit.
 
@@ -3606,7 +3606,7 @@ class Controller(BaseController):
     if exiting_hop:
       query += ' HOP=%s' % exiting_hop
 
-    response = stem.response._convert_to_single_line(self.msg(query))
+    response = stem.response._convert_to_single_line(await self.msg(query))
 
     if not response.is_ok():
       if response.code == '552':
