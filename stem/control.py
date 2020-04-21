@@ -2750,7 +2750,7 @@ class Controller(BaseController):
       config = conf,
     )
 
-  def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
+  async def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
     """
     Discontinues a given hidden service.
 
@@ -2769,7 +2769,7 @@ class Controller(BaseController):
       raise ValueError("%s isn't a valid port number" % port)
 
     port = int(port) if port else None
-    conf = self.get_hidden_service_conf()
+    conf = await self.get_hidden_service_conf()
 
     if path not in conf:
       return False
@@ -2788,7 +2788,7 @@ class Controller(BaseController):
       if not conf[path]['HiddenServicePort']:
         del conf[path]  # no ports left
 
-    self.set_hidden_service_conf(conf)
+    await self.set_hidden_service_conf(conf)
     return True
 
   @with_default()
