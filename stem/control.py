@@ -3016,7 +3016,7 @@ class Controller(BaseController):
 
     return response
 
-  def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
+  async def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
     """
     Discontinues a given hidden service that was created with
     :func:`~stem.control.Controller.create_ephemeral_hidden_service`.
@@ -3031,7 +3031,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    response = stem.response._convert_to_single_line(self.msg('DEL_ONION %s' % service_id))
+    response = stem.response._convert_to_single_line(await self.msg('DEL_ONION %s' % service_id))
 
     if response.is_ok():
       return True
