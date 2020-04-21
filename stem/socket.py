@@ -588,7 +588,9 @@ async def recv_message(reader: asyncio.StreamReader, arrived_at: Optional[float]
 
   while True:
     try:
-      line = await reader.readline()
+      line = reader.readline()
+      if asyncio.iscoroutine(line):
+        line = await line
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'

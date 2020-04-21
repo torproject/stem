@@ -3353,7 +3353,7 @@ class Controller(BaseController):
     self._enabled_features += [entry.upper() for entry in features]
 
   @with_default()
-  def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
+  async def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
     """
     get_circuit(circuit_id, default = UNDEFINED)
 
@@ -3371,14 +3371,14 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    for circ in self.get_circuits():
+    for circ in await self.get_circuits():
       if circ.id == circuit_id:
         return circ
 
     raise ValueError("Tor currently does not have a circuit with the id of '%s'" % circuit_id)
 
   @with_default()
-  def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
+  async def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
     """
     get_circuits(default = UNDEFINED)
 
@@ -3392,10 +3392,10 @@ class Controller(BaseController):
     """
 
     circuits = []  # type: List[stem.response.events.CircuitEvent]
-    response = self.get_info('circuit-status')
+    response = await self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.response._convert_to_event(stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
+      circ_message = stem.response._convert_to_event(await stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
       circuits.append(circ_message)  # type: ignore
 
     return circuits
