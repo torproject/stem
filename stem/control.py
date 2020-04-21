@@ -3760,7 +3760,7 @@ class Controller(BaseController):
     response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
     return stem.response._convert_to_mapaddress(response).entries
 
-  def drop_guards(self) -> None:
+  await def drop_guards(self) -> None:
     """
     Drops our present guard nodes and picks a new set.
 
@@ -3769,7 +3769,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
     """
 
-    self.msg('DROPGUARDS')
+    await self.msg('DROPGUARDS')
 
   async def _post_authentication(self) -> None:
     await super(Controller, self)._post_authentication()
