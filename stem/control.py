@@ -3400,7 +3400,7 @@ class Controller(BaseController):
 
     return circuits
 
-  def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+  async def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Requests a new circuit. If the path isn't provided, one is automatically
     selected.
@@ -3420,9 +3420,9 @@ class Controller(BaseController):
       * :class:`stem.Timeout` if **timeout** was reached
     """
 
-    return self.extend_circuit('0', path, purpose, await_build, timeout)
+    return await self.extend_circuit('0', path, purpose, await_build, timeout)
 
-  def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+  async def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Either requests the creation of a new circuit or extends an existing one.
 
@@ -3466,15 +3466,15 @@ class Controller(BaseController):
     # to build. This is icky, but we can't reliably do this via polling since
     # we then can't get the failure if it can't be created.
 
-    circ_queue = queue.Queue()  # type: queue.Queue[stem.response.events.Event]
+    circ_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.events.Event]
     circ_listener = None
     start_time = time.time()
 
     if await_build:
-      def circ_listener(event: stem.response.events.Event) -> None:
-        circ_queue.put(event)
+      async def circ_listener(event: stem.response.events.Event) -> None:
+        await circ_queue.put(event)
 
-      self.add_event_listener(circ_listener, EventType.CIRC)
+      await self.add_event_listener(circ_listener, EventType.CIRC)
 
     try:
       args = [str(circuit_id)]
@@ -3488,7 +3488,7 @@ class Controller(BaseController):
       if purpose:
         args.append('purpose=%s' % purpose)
 
-      response = stem.response._convert_to_single_line(self.msg('EXTENDCIRCUIT %s' % ' '.join(args)))
+      response = stem.response._convert_to_single_line(await self.msg('EXTENDCIRCUIT %s' % ' '.join(args)))
 
       if response.code in ('512', '552'):
         raise stem.InvalidRequest(response.code, response.message)
@@ -3502,7 +3502,7 @@ class Controller(BaseController):
 
       if await_build:
         while True:
-          circ = _get_with_timeout(circ_queue, timeout, start_time)
+          circ = await _get_with_timeout(circ_queue, timeout, start_time)
 
           if circ.id == new_circuit:
             if circ.status == CircStatus.BUILT:
@@ -3515,7 +3515,7 @@ class Controller(BaseController):
       return new_circuit
     finally:
       if circ_listener:
-        self.remove_event_listener(circ_listener)
+        await self.remove_event_listener(circ_listener)
 
   def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
     """
