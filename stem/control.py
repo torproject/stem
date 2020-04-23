@@ -3903,6 +3903,9 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
   def msg(self, message: str) -> stem.response.ControlMessage:
     return self._execute_async_method('msg', message)
 
+  def is_authenticated(self) -> bool:
+    return self._async_controller.is_authenticated()
+
   def connect(self) -> None:
     self._execute_async_method('connect')
 
@@ -3912,6 +3915,15 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
     if self._asyncio_thread.is_alive():
       self._asyncio_thread.join()
     self._asyncio_loop.close()
+
+  def get_latest_heartbeat(self) -> float:
+    return self._async_controller.get_latest_heartbeat()
+
+  def add_status_listener(self, callback: Callable[['stem.control.BaseController', 'stem.control.State', float], None], spawn: bool = True) -> None:
+    self._async_controller.add_status_listener(callback, spawn)
+
+  def remove_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None]) -> bool:
+    self._async_controller.remove_status_listener(callback)
 
   def __enter__(self) -> 'stem.control.Controller':
     return self
