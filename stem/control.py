@@ -3900,6 +3900,17 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
       self._asyncio_loop,
     ).result()
 
+  def _execute_async_generator_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
+    async def convert_async_generator(generator):
+      return iter([d async for d in generator])
+
+    return asyncio.run_coroutine_threadsafe(
+      convert_async_generator(
+        getattr(self._async_controller, method_name)(*args, **kwargs),
+      ),
+      self._asyncio_loop,
+    ).result()
+
   def msg(self, message: str) -> stem.response.ControlMessage:
     return self._execute_async_method('msg', message)
 
@@ -3908,6 +3919,9 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
 
   def connect(self) -> None:
     self._execute_async_method('connect')
+
+  def reconnect(self, *args: Any, **kwargs: Any) -> None:
+    self._execute_async_method('reconnect', *args, **kwargs)
 
   def close(self) -> None:
     self._execute_async_method('close')
@@ -3924,6 +3938,177 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
 
   def remove_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None]) -> bool:
     self._async_controller.remove_status_listener(callback)
+
+  def authenticate(self, *args: Any, **kwargs: Any) -> None:
+    self._execute_async_method('authenticate', *args, **kwargs)
+
+  def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
+    return self._execute_async_method('get_info', params, default, get_bytes)
+
+  def get_version(self, default: Any = UNDEFINED) -> stem.version.Version:
+    return self._execute_async_method('get_version', default)
+
+  def get_exit_policy(self, default: Any = UNDEFINED) -> stem.exit_policy.ExitPolicy:
+    return self._execute_async_method('get_exit_policy', default)
+
+  def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
+    return self._execute_async_method('get_ports', listener_type, default)
+
+  def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
+    return self._execute_async_method('get_listeners', listener_type, default)
+
+  def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
+    return self._execute_async_method('get_accounting_stats', default)
+
+  def get_protocolinfo(self, default: Any = UNDEFINED) -> stem.response.protocolinfo.ProtocolInfoResponse:
+    return self._execute_async_method('get_protocolinfo', default)
+
+  def get_user(self, default: Any = UNDEFINED) -> str:
+    return self._execute_async_method('get_user', default)
+
+  def get_pid(self, default: Any = UNDEFINED) -> int:
+    return self._execute_async_method('get_pid', default)
+
+  def get_start_time(self, default: Any = UNDEFINED) -> float:
+    return self._execute_async_method('get_start_time', default)
+
+  def get_uptime(self, default: Any = UNDEFINED) -> float:
+    return self._execute_async_method('get_uptime', default)
+
+  def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
+    return self._execute_async_method('is_user_traffic_allowed')
+
+  def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
+    return self._execute_async_method('get_microdescriptor', relay, default)
+
+  def get_microdescriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
+    return self._execute_async_generator_method('get_microdescriptors', default)
+
+  def get_server_descriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
+    return self._execute_async_method('get_server_descriptor', relay, default)
+
+  def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
+    return self._execute_async_generator_method('get_server_descriptors', default)
+
+  def get_network_status(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.router_status_entry.RouterStatusEntryV3:
+    return self._execute_async_method('get_network_status', relay, default)
+
+  def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
+    return self._execute_async_generator_method('get_network_statuses', default)
+
+  def get_hidden_service_descriptor(self, address: str, default: Any = UNDEFINED, servers: Optional[Sequence[str]] = None, await_result: bool = True, timeout: Optional[float] = None) -> stem.descriptor.hidden_service.HiddenServiceDescriptorV2:
+    return self._execute_async_method('get_hidden_service_descriptor', address, default, servers, await_result, timeout)
+
+  def get_conf(self, param: str, default: Any = UNDEFINED, multiple: bool = False) -> Union[str, Sequence[str]]:
+    return self._execute_async_method('get_conf', param, default, multiple)
+
+  def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
+    return self._execute_async_method('get_conf_map', params, default, multiple)
+
+  def is_set(self, param: str, default: Any = UNDEFINED) -> bool:
+    return self._execute_async_method('is_set', param, default)
+
+  def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
+    self._execute_async_method('set_conf', param, value)
+
+  def reset_conf(self, *params: str) -> None:
+    self._execute_async_method('reset_conf', *params)
+
+  def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
+    self._execute_async_method('set_options', params, reset)
+
+  def get_hidden_service_conf(self, default: Any = UNDEFINED) -> Dict[str, Any]:
+    return self._execute_async_method('get_hidden_service_conf', default)
+
+  def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
+    self._execute_async_method('set_hidden_service_conf', conf)
+
+  def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
+    return self._execute_async_method('create_hidden_service', path, port, target_address, target_port, auth_type, client_names)
+
+  def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
+    return self._execute_async_method('remove_hidden_service', path, port)
+
+  def list_ephemeral_hidden_services(self, default: Any = UNDEFINED, our_services: bool = True, detached: bool = False) -> Sequence[str]:
+    return self._execute_async_method('list_ephemeral_hidden_services', default, our_services, detached)
+
+  def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None) -> stem.response.add_onion.AddOnionResponse:
+    return self._execute_async_method('create_ephemeral_hidden_service', ports, key_type, key_content, discard_key, detached, await_publication, timeout, basic_auth, max_streams)
+
+  def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
+    return self._execute_async_method('remove_ephemeral_hidden_service', service_id)
+
+  def add_event_listener(self, listener: Callable[[stem.response.events.Event], None], *events: 'stem.control.EventType') -> None:
+    self._execute_async_method('add_event_listener', listener, *events)
+
+  def remove_event_listener(self, listener: Callable[[stem.response.events.Event], None]) -> None:
+    self._execute_async_method('remove_event_listener', listener)
+
+  def is_caching_enabled(self) -> bool:
+    return self._async_controller.is_caching_enabled()
+
+  def set_caching(self, enabled: bool) -> None:
+    self._async_controller.set_caching(enabled)
+
+  def clear_cache(self) -> None:
+    self._async_controller.clear_cache()
+
+  def load_conf(self, configtext: str) -> None:
+    self._execute_async_method('load_conf', configtext)
+
+  def save_conf(self, force: bool = False) -> None:
+    return self._execute_async_method('save_conf', force)
+
+  def is_feature_enabled(self, feature: str) -> bool:
+    return self._async_controller.is_feature_enabled(feature)
+
+  def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
+    self._async_controller.enable_feature(features)
+
+  def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
+    return self._execute_async_method('get_circuit', circuit_id, default)
+
+  def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
+    return self._execute_async_method('get_circuits', default)
+
+  def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+    return self._execute_async_method('new_circuit', path, purpose, await_build, timeout)
+
+  def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+    return self._execute_async_method('extend_circuit', circuit_id, path, purpose, await_build, timeout)
+
+  def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
+    self._execute_async_method('repurpose_circuit', circuit_id, purpose)
+
+  def close_circuit(self, circuit_id: str, flag: str = '') -> None:
+    self._execute_async_method('close_circuit', circuit_id, flag)
+
+  def get_streams(self, default: Any = UNDEFINED) -> List[stem.response.events.StreamEvent]:
+    return self._execute_async_method('get_streams', default)
+
+  def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
+    self._execute_async_method('attach_stream', stream_id, circuit_id, exiting_hop)
+
+  def close_stream(self, stream_id: str, reason: stem.RelayEndReason = stem.RelayEndReason.MISC, flag: str = '') -> None:
+    self._execute_async_method('close_stream', stream_id, reason, flag)
+
+  def signal(self, signal: stem.Signal) -> None:
+    self._execute_async_method('signal', signal)
+
+  def is_newnym_available(self) -> bool:
+    return self._async_controller.is_newnym_available()
+
+  def get_newnym_wait(self) -> float:
+    return self._async_controller.get_newnym_wait()
+
+  def get_effective_rate(self, default: Any = UNDEFINED, burst: bool = False) -> int:
+    return self._execute_async_method('get_effective_rate', default, burst)
+
+  def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
+    return self._execute_async_method('map_address', mapping)
+
+  def drop_guards(self) -> None:
+    self._execute_async_method('drop_guards')
 
   def __enter__(self) -> 'stem.control.Controller':
     return self
