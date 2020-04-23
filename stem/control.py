@@ -1048,7 +1048,7 @@ class _ControllerClassMethodMixin:
     return cls(control_socket)
 
 
-class AsyncController(BaseController):
+class AsyncController(_ControllerClassMethodMixin, BaseController):
   """
   Connection with Tor's control socket. This is built on top of the
   BaseController and provides a more user friendly API for library users.
