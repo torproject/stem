@@ -589,6 +589,16 @@ class _BaseControllerSocketMixin:
 
     return self._socket.connection_time()
 
+  def get_socket(self):
+    """
+    Provides the socket used to speak with the tor process. Communicating with
+    the socket directly isn't advised since it may confuse this controller.
+
+    :returns: :class:`~stem.socket.ControlSocket` we're communicating with
+    """
+
+    return self._socket
+
 
 class BaseController(_BaseControllerSocketMixin):
   """
@@ -767,16 +777,6 @@ class BaseController(_BaseControllerSocketMixin):
     for t in self._state_change_threads:
       if t.is_alive() and threading.current_thread() != t:
         t.join()
-
-  def get_socket(self) -> stem.socket.ControlSocket:
-    """
-    Provides the socket used to speak with the tor process. Communicating with
-    the socket directly isn't advised since it may confuse this controller.
-
-    :returns: :class:`~stem.socket.ControlSocket` we're communicating with
-    """
-
-    return self._socket
 
   def get_latest_heartbeat(self) -> float:
     """
