@@ -1426,7 +1426,7 @@ class AsyncController(BaseController):
           Listener.CONTROL: 'ControlListenAddress',
         }[listener_type]
 
-        port_value = self._get_conf_single(port_option).split()[0]
+        port_value = (await self._get_conf_single(port_option)).split()[0]
 
         for listener in (await self.get_conf(listener_option, multiple = True)):
           if ':' in listener:
