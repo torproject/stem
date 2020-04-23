@@ -3884,6 +3884,18 @@ class AsyncController(_ControllerClassMethodMixin, BaseController):
 
 
 class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
+  @classmethod
+  def from_port(cls: Type, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
+    instance = super().from_port(address, port)
+    instance.connect()
+    return instance
+
+  @classmethod
+  def from_socket_file(cls: Type, path: str = '/var/run/tor/control') -> 'stem.control.Controller':
+    instance = super().from_socket_file(path)
+    instance.connect()
+    return instance
+
   def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False) -> None:
     self._asyncio_loop = asyncio.get_event_loop()
 
