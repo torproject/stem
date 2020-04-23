@@ -1077,8 +1077,6 @@ class AsyncController(_ControllerClassMethodMixin, BaseController):
         self.clear_cache()
         self._notify_status_listeners(State.RESET)
 
-    self._asyncio_loop.create_task(self.add_event_listener(_sighup_listener, EventType.SIGNAL))
-
     def _confchanged_listener(event: stem.response.events.ConfChangedEvent) -> None:
       if self.is_caching_enabled():
         to_cache_changed = dict((k.lower(), v) for k, v in event.changed.items())
@@ -1092,15 +1090,20 @@ class AsyncController(_ControllerClassMethodMixin, BaseController):
 
         self._confchanged_cache_invalidation(to_cache)
 
-    self._asyncio_loop.create_task(self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED))
-
     def _address_changed_listener(event: stem.response.events.StatusEvent) -> None:
       if event.action in ('EXTERNAL_ADDRESS', 'DNS_USELESS'):
         self._set_cache({'exit_policy': None})
         self._set_cache({'address': None}, 'getinfo')
         self._last_address_exc = None
 
-    self._asyncio_loop.create_task(self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER))
+    async def _add_event_listeners():
+      await asyncio.gather(
+        self.add_event_listener(_sighup_listener, EventType.SIGNAL),
+        self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED),
+        self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER),
+      )
+
+    self._asyncio_loop.create_task(_add_event_listeners())
 
   async def close(self) -> None:
     self.clear_cache()
