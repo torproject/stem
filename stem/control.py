@@ -553,7 +553,44 @@ def event_description(event: str) -> str:
   return EVENT_DESCRIPTIONS.get(event.lower())
 
 
-class BaseController(object):
+class _BaseControllerSocketMixin:
+  def is_alive(self) -> bool:
+    """
+    Checks if our socket is currently connected. This is a pass-through for our
+    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
+
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    """
+
+    return self._socket.is_alive()
+
+  def is_localhost(self) -> bool:
+    """
+    Returns if the connection is for the local system or not.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    """
+
+    return self._socket.is_localhost()
+
+  def connection_time(self) -> float:
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're currently
+    connected and the time we disconnected if we're not connected.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._socket.connection_time()
+
+
+class BaseController(_BaseControllerSocketMixin):
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
@@ -688,41 +725,6 @@ class BaseController(object):
 
           await self.close()
           raise
-
-  def is_alive(self) -> bool:
-    """
-    Checks if our socket is currently connected. This is a pass-through for our
-    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
-
-    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
-    """
-
-    return self._socket.is_alive()
-
-  def is_localhost(self) -> bool:
-    """
-    Returns if the connection is for the local system or not.
-
-    .. versionadded:: 1.3.0
-
-    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
-    """
-
-    return self._socket.is_localhost()
-
-  def connection_time(self) -> float:
-    """
-    Provides the unix timestamp for when our socket was either connected or
-    disconnected. That is to say, the time we connected if we're currently
-    connected and the time we disconnected if we're not connected.
-
-    .. versionadded:: 1.3.0
-
-    :returns: **float** for when we last connected or disconnected, zero if
-      we've never connected
-    """
-
-    return self._socket.connection_time()
 
   def is_authenticated(self) -> bool:
     """
