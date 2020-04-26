@@ -3908,8 +3908,14 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
     self._asyncio_thread.setDaemon(True)
     self._asyncio_thread.start()
 
-    self._async_controller = AsyncController(control_socket, is_authenticated)
+    self._async_controller = self._init_async_controller(control_socket, is_authenticated)
     self._socket = self._async_controller._socket
+
+  def _init_async_controller(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool) -> 'stem.control.AsyncController':
+    async def init_async_controller():
+      return AsyncController(control_socket, is_authenticated)
+
+    return asyncio.run_coroutine_threadsafe(init_async_controller(), self._asyncio_loop).result()
 
   def _execute_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
     return asyncio.run_coroutine_threadsafe(
