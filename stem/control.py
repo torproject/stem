@@ -3901,7 +3901,10 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
   def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False) -> None:
     self._asyncio_loop = asyncio.new_event_loop()
 
-    self._asyncio_thread = threading.Thread(target=self._asyncio_loop.run_forever, name='asyncio')
+    self._asyncio_thread = threading.Thread(
+      target=self._asyncio_loop.run_forever,
+      name='async_controller',
+    )
     self._asyncio_thread.setDaemon(True)
     self._asyncio_thread.start()
 
