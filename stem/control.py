@@ -3834,10 +3834,9 @@ class AsyncController(_ControllerClassMethodMixin, BaseController):
         if listener_type == event_type:
           for listener in event_listeners:
             try:
-              if asyncio.iscoroutinefunction(listener):
-                await listener(event_message)
-              else:
-                listener(event_message)
+              potential_coroutine = listener(event_message)
+              if asyncio.iscoroutine(potential_coroutine):
+                await potential_coroutine
             except Exception as exc:
               log.warn('Event listener raised an uncaught exception (%s): %s' % (exc, event))
 
