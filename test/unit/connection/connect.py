@@ -11,6 +11,8 @@ import stem.socket
 
 from unittest.mock import Mock, patch
 
+from test.unit.util.asynchronous import coro_func_raising_exc, coro_func_returning_value
+
 
 class TestConnect(unittest.TestCase):
   @patch('sys.stdout', new_callable = io.StringIO)
@@ -85,6 +87,7 @@ class TestConnect(unittest.TestCase):
 
   @patch('stem.connection.authenticate')
   def test_auth_success(self, authenticate_mock):
+    authenticate_mock.side_effect = coro_func_returning_value(None)
     control_socket = Mock()
 
     stem.connection._connect_auth(control_socket, None, False, None, None)
@@ -99,7 +102,7 @@ class TestConnect(unittest.TestCase):
   def test_auth_success_with_password_prompt(self, authenticate_mock, getpass_mock):
     control_socket = Mock()
 
-    def authenticate_mock_func(controller, password, *args):
+    async def authenticate_mock_func(controller, password, *args):
       if password is None:
         raise stem.connection.MissingPassword('no password')
       elif password == 'my_password':
@@ -117,25 +120,25 @@ class TestConnect(unittest.TestCase):
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.connection.authenticate')
   def test_auth_failure(self, authenticate_mock, stdout_mock):
-    control_socket = stem.socket.ControlPort(connect = False)
+    control_socket = stem.socket.ControlPort()
 
-    authenticate_mock.side_effect = stem.connection.IncorrectSocketType('unable to connect to socket')
+    authenticate_mock.side_effect = coro_func_raising_exc(stem.connection.IncorrectSocketType('unable to connect to socket'))
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Please check in your torrc that 9051 is the ControlPort.')
 
-    control_socket = stem.socket.ControlSocketFile(connect = False)
+    control_socket = stem.socket.ControlSocketFile()
 
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Are you sure the interface you specified belongs to')
 
-    authenticate_mock.side_effect = stem.connection.UnrecognizedAuthMethods('unable to connect', ['telepathy'])
+    authenticate_mock.side_effect = coro_func_raising_exc(stem.connection.UnrecognizedAuthMethods('unable to connect', ['telepathy']))
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Tor is using a type of authentication we do not recognize...\n\n  telepathy')
 
-    authenticate_mock.side_effect = stem.connection.IncorrectPassword('password rejected')
+    authenticate_mock.side_effect = coro_func_raising_exc(stem.connection.IncorrectPassword('password rejected'))
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Incorrect password')
 
-    authenticate_mock.side_effect = stem.connection.UnreadableCookieFile('permission denied', '/tmp/my_cookie', False)
+    authenticate_mock.side_effect = coro_func_raising_exc(stem.connection.UnreadableCookieFile('permission denied', '/tmp/my_cookie', False))
     self._assert_authenticate_fails_with(control_socket, stdout_mock, "We were unable to read tor's authentication cookie...\n\n  Path: /tmp/my_cookie\n  Issue: permission denied")
 
-    authenticate_mock.side_effect = stem.connection.OpenAuthRejected('crazy failure')
+    authenticate_mock.side_effect = coro_func_raising_exc(stem.connection.OpenAuthRejected('crazy failure'))
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Unable to authenticate: crazy failure')
 
   def _assert_authenticate_fails_with(self, control_socket, stdout_mock, msg):
