@@ -127,11 +127,13 @@ fine-grained control over the authentication process. For instance...
   ============== ===========
 """
 
+import asyncio
 import binascii
 import getpass
 import hashlib
 import hmac
 import os
+import threading
 
 import stem.control
 import stem.response
@@ -316,8 +318,23 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
   :returns: authenticated control connection, the type based on the controller argument
   """
 
+  if controller:
+    loop = controller._asyncio_loop
+    asyncio_thread = None
+  else:
+    loop = asyncio.new_event_loop()
+    asyncio_thread = threading.Thread(target=loop.run_forever, name='async_auth')
+    asyncio_thread.setDaemon(True)
+    asyncio_thread.start()
+
+  def run_coroutine(coroutine):
+    asyncio.run_coroutine_threadsafe(coroutine, loop).result()
+
+  def close_control_socket():
+    run_coroutine(control_socket.close())
+
   try:
-    authenticate(control_socket, password, chroot_path)
+    run_coroutine(authenticate(control_socket, password, chroot_path))
 
     if controller is None:
       return control_socket
@@ -329,41 +346,47 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
     else:
       print(CONNECT_MESSAGES['wrong_socket_type'])
 
-    control_socket.close()
+    close_control_socket()
     return None
   except UnrecognizedAuthMethods as exc:
     print(CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods)))
-    control_socket.close()
+    close_control_socket()
     return None
   except IncorrectPassword:
     print(CONNECT_MESSAGES['incorrect_password'])
-    control_socket.close()
+    close_control_socket()
     return None
   except MissingPassword:
     if password is not None:
-      control_socket.close()
+      close_control_socket()
       raise ValueError(CONNECT_MESSAGES['missing_password_bug'])
 
     if password_prompt:
       try:
         password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
       except KeyboardInterrupt:
-        control_socket.close()
+        close_control_socket()
         return None
 
       return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
     else:
       print(CONNECT_MESSAGES['needs_password'])
-      control_socket.close()
+      close_control_socket()
       return None
   except UnreadableCookieFile as exc:
     print(CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc)))
-    control_socket.close()
+    close_control_socket()
     return None
   except AuthenticationFailure as exc:
     print(CONNECT_MESSAGES['general_auth_failure'].format(error = exc))
-    control_socket.close()
+    close_control_socket()
     return None
+  finally:
+    if asyncio_thread:
+      loop.call_soon_threadsafe(loop.stop)
+      if asyncio_thread.is_alive():
+        asyncio_thread.join()
+      loop.close()
 
 
 async def authenticate(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], password: Optional[str] = None, chroot_path: Optional[str] = None, protocolinfo_response: Optional[stem.response.protocolinfo.ProtocolInfoResponse] = None) -> None:
