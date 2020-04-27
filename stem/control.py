@@ -3905,6 +3905,21 @@ class AsyncController(_ControllerClassMethodMixin, BaseController):
     return (set_events, failed_events)
 
 
+class _AsyncControllerThread(threading.Thread):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, *kwargs)
+    self.loop = asyncio.new_event_loop()
+    self.setDaemon(True)
+
+  def run(self):
+    self.loop.run_forever()
+
+  def join(self, timeout = None):
+    self.loop.call_soon_threadsafe(self.loop.stop)
+    super().join(timeout)
+    self.loop.close()
+
+
 class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
   @classmethod
   def from_port(cls: Type, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
@@ -3919,14 +3934,9 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
     return instance
 
   def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False) -> None:
-    self._asyncio_loop = asyncio.new_event_loop()
-
-    self._asyncio_thread = threading.Thread(
-      target=self._asyncio_loop.run_forever,
-      name='async_controller',
-    )
-    self._asyncio_thread.setDaemon(True)
-    self._asyncio_thread.start()
+    self._async_controller_thread = _AsyncControllerThread()
+    self._async_controller_thread.start()
+    self._asyncio_loop = self._async_controller_thread.loop
 
     self._async_controller = self._init_async_controller(control_socket, is_authenticated)
     self._socket = self._async_controller._socket
@@ -3968,10 +3978,8 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
 
   def close(self) -> None:
     self._execute_async_method('close')
-    self._asyncio_loop.call_soon_threadsafe(self._asyncio_loop.stop)
-    if self._asyncio_thread.is_alive():
-      self._asyncio_thread.join()
-    self._asyncio_loop.close()
+    if self._async_controller_thread.is_alive():
+      self._async_controller_thread.join()
 
   def get_latest_heartbeat(self) -> float:
     return self._async_controller.get_latest_heartbeat()
