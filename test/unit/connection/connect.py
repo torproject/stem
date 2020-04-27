@@ -1,7 +1,7 @@
 """
 Unit tests for the stem.connection.connect function.
 """
-
+import contextlib
 import io
 import unittest
 
@@ -47,8 +47,11 @@ class TestConnect(unittest.TestCase):
   @patch('os.path.exists', Mock(return_value = False))
   @patch('stem.connection._connect_auth', Mock())
   def test_getting_a_control_port(self, port_mock):
+    port_connect_mock = port_mock.return_value.connect
+    port_connect_mock.side_effect = coro_func_returning_value(None)
     stem.connection.connect()
     port_mock.assert_called_once_with('127.0.0.1', 9051)
+    port_connect_mock.assert_called_once()
     port_mock.reset_mock()
 
     stem.connection.connect(control_port = ('255.0.0.10', 80), control_socket = None)
@@ -58,8 +61,11 @@ class TestConnect(unittest.TestCase):
   @patch('os.path.exists', Mock(return_value = True))
   @patch('stem.connection._connect_auth', Mock())
   def test_getting_a_control_socket(self, socket_mock):
+    socket_connect_mock = socket_mock.return_value.connect
+    socket_connect_mock.side_effect = coro_func_returning_value(None)
     stem.connection.connect()
     socket_mock.assert_called_once_with('/var/run/tor/control')
+    socket_connect_mock.assert_called_once()
     socket_mock.reset_mock()
 
     stem.connection.connect(control_port = None, control_socket = '/tmp/my_socket')
@@ -90,11 +96,12 @@ class TestConnect(unittest.TestCase):
     authenticate_mock.side_effect = coro_func_returning_value(None)
     control_socket = Mock()
 
-    stem.connection._connect_auth(control_socket, None, False, None, None)
-    authenticate_mock.assert_called_with(control_socket, None, None)
-    authenticate_mock.reset_mock()
+    with self._get_thread() as thread:
+      stem.connection._connect_auth(control_socket, None, False, None, None, thread)
+      authenticate_mock.assert_called_with(control_socket, None, None)
+      authenticate_mock.reset_mock()
 
-    stem.connection._connect_auth(control_socket, 's3krit!!!', False, '/my/chroot', None)
+      stem.connection._connect_auth(control_socket, 's3krit!!!', False, '/my/chroot', None, thread)
     authenticate_mock.assert_called_with(control_socket, 's3krit!!!', '/my/chroot')
 
   @patch('getpass.getpass')
@@ -113,7 +120,8 @@ class TestConnect(unittest.TestCase):
     authenticate_mock.side_effect = authenticate_mock_func
     getpass_mock.return_value = 'my_password'
 
-    stem.connection._connect_auth(control_socket, None, True, None, None)
+    with self._get_thread() as thread:
+      stem.connection._connect_auth(control_socket, None, True, None, None, thread)
     authenticate_mock.assert_any_call(control_socket, None, None)
     authenticate_mock.assert_any_call(control_socket, 'my_password', None)
 
@@ -142,7 +150,8 @@ class TestConnect(unittest.TestCase):
     self._assert_authenticate_fails_with(control_socket, stdout_mock, 'Unable to authenticate: crazy failure')
 
   def _assert_authenticate_fails_with(self, control_socket, stdout_mock, msg):
-    result = stem.connection._connect_auth(control_socket, None, False, None, None)
+    with self._get_thread() as thread:
+      result = stem.connection._connect_auth(control_socket, None, False, None, None, thread)
 
     if result is not None:
       self.fail()  # _connect_auth() was successful
@@ -152,3 +161,11 @@ class TestConnect(unittest.TestCase):
 
     if msg not in stdout_output:
       self.fail("Expected...\n\n%s\n\n... which couldn't be found in...\n\n%s" % (msg, stdout_output))
+
+  @contextlib.contextmanager
+  def _get_thread(self):
+    thread = stem.control._AsyncControllerThread()
+    thread.start()
+    yield thread
+    if thread.is_alive():
+      thread.join()
