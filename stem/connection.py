@@ -370,7 +370,7 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
         close_control_socket()
         return None
 
-      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
+      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller, async_controller_thread)
     else:
       print(CONNECT_MESSAGES['needs_password'])
       close_control_socket()
