@@ -3933,9 +3933,13 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
     instance.connect()
     return instance
 
-  def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False) -> None:
-    self._async_controller_thread = _AsyncControllerThread()
-    self._async_controller_thread.start()
+  def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False, started_async_controller_thread: Optional['threading.Thread'] = None) -> None:
+  def __init__(self, control_socket, is_authenticated = False, started_async_controller_thread = None):
+    if started_async_controller_thread:
+      self._async_controller_thread = started_async_controller_thread
+    else:
+      self._async_controller_thread = _AsyncControllerThread()
+      self._async_controller_thread.start()
     self._asyncio_loop = self._async_controller_thread.loop
 
     self._async_controller = self._init_async_controller(control_socket, is_authenticated)
