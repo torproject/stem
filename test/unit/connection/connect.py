@@ -11,7 +11,7 @@ import stem.socket
 
 from unittest.mock import Mock, patch
 
-from test.unit.util.asynchronous import coro_func_raising_exc, coro_func_returning_value
+from test.unit.async_util import coro_func_raising_exc, coro_func_returning_value
 
 
 class TestConnect(unittest.TestCase):
