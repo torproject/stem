@@ -133,7 +133,6 @@ import getpass
 import hashlib
 import hmac
 import os
-import threading
 
 import stem.control
 import stem.response
