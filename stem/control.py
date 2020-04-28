@@ -3946,10 +3946,15 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin):
     self._socket = self._async_controller._socket
 
   def _init_async_controller(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool) -> 'stem.control.AsyncController':
-    async def init_async_controller():
-      return AsyncController(control_socket, is_authenticated)
+    # The asynchronous controller should be initialized in the thread where its
+    # methods will be executed.
+    if self._async_controller_thread != threading.current_thread():
+      async def init_async_controller() -> 'stem.control.AsyncController':
+        return AsyncController(control_socket, is_authenticated)
 
-    return asyncio.run_coroutine_threadsafe(init_async_controller(), self._asyncio_loop).result()
+      return asyncio.run_coroutine_threadsafe(init_async_controller(), self._asyncio_loop).result()
+
+    return AsyncController(control_socket, is_authenticated)
 
   def _execute_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
     return asyncio.run_coroutine_threadsafe(

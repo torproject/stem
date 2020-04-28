@@ -133,6 +133,7 @@ import getpass
 import hashlib
 import hmac
 import os
+import threading
 
 import stem.control
 import stem.response
@@ -253,6 +254,31 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
 
   # TODO: change this function's API so we can provide a concrete type
 
+  if controller is None or not issubclass(controller, stem.control.Controller):
+    raise ValueError('Controller should be a stem.control.BaseController subclass.')
+
+  async_controller_thread = stem.control._AsyncControllerThread()
+  async_controller_thread.start()
+
+  connect_coroutine = _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
+  try:
+    connection = asyncio.run_coroutine_threadsafe(connect_coroutine, async_controller_thread.loop).result()
+    if connection is None and async_controller_thread.is_alive():
+      async_controller_thread.join()
+    return connection
+  except:
+    if async_controller_thread.is_alive():
+      async_controller_thread.join()
+    raise
+
+
+async def connect_async(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.AsyncController):
+  if controller and not issubclass(controller, stem.control.BaseController):
+    raise ValueError('The provided controller should be a stem.control.BaseController subclass.')
+  return await _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
+
+
+async def _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller):
   if control_port is None and control_socket is None:
     raise ValueError('Neither a control port nor control socket were provided. Nothing to connect to.')
   elif control_port:
@@ -266,17 +292,11 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   control_connection = None  # type: Optional[stem.socket.ControlSocket]
   error_msg = ''
 
-  async_controller_thread = stem.control._AsyncControllerThread()
-  async_controller_thread.start()
-
-  def connect_socket(socket):
-    asyncio.run_coroutine_threadsafe(socket.connect(), async_controller_thread.loop).result()
-
   if control_socket:
     if os.path.exists(control_socket):
       try:
         control_connection = stem.socket.ControlSocketFile(control_socket)
-        connect_socket(control_connection)
+        await control_connection.connect()
       except stem.SocketError as exc:
         error_msg = CONNECT_MESSAGES['unable_to_use_socket'].format(path = control_socket, error = exc)
     else:
@@ -290,7 +310,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
         control_connection = _connection_for_default_port(address)
       else:
         control_connection = stem.socket.ControlPort(address, int(port))
-      connect_socket(control_connection)
+      await control_connection.connect()
     except stem.SocketError as exc:
       error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
 
@@ -304,14 +324,12 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
       error_msg = CONNECT_MESSAGES['no_control_port'] if is_tor_running else CONNECT_MESSAGES['tor_isnt_running']
 
     print(error_msg)
-    if async_controller_thread.is_alive():
-      async_controller_thread.join()
     return None
 
-  return _connect_auth(control_connection, password, password_prompt, chroot_path, controller, async_controller_thread)
+  return await _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
 
 
-def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[stem.control.BaseController]], async_controller_thread: 'threading.Thread') -> Any:
+async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[stem.control.BaseController]]) -> Any:
   """
   Helper for the connect_* functions that authenticates the socket and
   constructs the controller.
@@ -327,61 +345,55 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
   :returns: authenticated control connection, the type based on the controller argument
   """
 
-  def run_coroutine(coroutine):
-    asyncio.run_coroutine_threadsafe(coroutine, async_controller_thread.loop).result()
-
-  def close_control_socket():
-    run_coroutine(control_socket.close())
-    if async_controller_thread.is_alive():
-      async_controller_thread.join()
-
   try:
-    run_coroutine(authenticate(control_socket, password, chroot_path))
+    await authenticate(control_socket, password, chroot_path)
 
     if controller is None:
       return control_socket
-    else:
-      return controller(control_socket, is_authenticated = True, started_async_controller_thread = async_controller_thread)
+    elif issubclass(controller, stem.control.BaseController):
+      return controller(control_socket, is_authenticated = True)
+    elif issubclass(controller, stem.control.Controller):
+      return controller(control_socket, is_authenticated = True, started_async_controller_thread = threading.current_thread())
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):
       print(CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.port))
     else:
       print(CONNECT_MESSAGES['wrong_socket_type'])
 
-    close_control_socket()
+    await control_socket.close()
     return None
   except UnrecognizedAuthMethods as exc:
     print(CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods)))
-    close_control_socket()
+    await control_socket.close()
     return None
   except IncorrectPassword:
     print(CONNECT_MESSAGES['incorrect_password'])
-    close_control_socket()
+    await control_socket.close()
     return None
   except MissingPassword:
     if password is not None:
-      close_control_socket()
+      await control_socket.close()
       raise ValueError(CONNECT_MESSAGES['missing_password_bug'])
 
     if password_prompt:
       try:
         password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
       except KeyboardInterrupt:
-        close_control_socket()
+        await control_socket.close()
         return None
 
-      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller, async_controller_thread)
+      return await _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
     else:
       print(CONNECT_MESSAGES['needs_password'])
-      close_control_socket()
+      await control_socket.close()
       return None
   except UnreadableCookieFile as exc:
     print(CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc)))
-    close_control_socket()
+    await control_socket.close()
     return None
   except AuthenticationFailure as exc:
     print(CONNECT_MESSAGES['general_auth_failure'].format(error = exc))
-    close_control_socket()
+    await control_socket.close()
     return None
 
 
