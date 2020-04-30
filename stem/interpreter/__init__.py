@@ -124,7 +124,10 @@ def main() -> None:
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
-        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))  # type: ignore
+        async def handle_event(event_message):
+          print(format(str(event_message), *STANDARD_OUTPUT))
+
+        controller._async_controller._handle_event = handle_event
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]
