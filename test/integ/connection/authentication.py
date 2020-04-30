@@ -12,7 +12,7 @@ import stem.version
 import test
 import test.require
 import test.runner
-from test.async_util import async_test
+from stem.util.test_tools import async_test
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.

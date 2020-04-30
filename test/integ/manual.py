@@ -14,7 +14,7 @@ import test
 import test.runner
 
 from stem.manual import Category
-from test.async_util import async_test
+from stem.util.test_tools import async_test
 
 EXPECTED_CATEGORIES = set([
   'NAME',

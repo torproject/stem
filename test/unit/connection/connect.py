@@ -11,7 +11,7 @@ import stem.socket
 
 from unittest.mock import Mock, patch
 
-from test.async_util import (
+from stem.util.test_tools import (
   async_test,
   coro_func_raising_exc,
   coro_func_returning_value,

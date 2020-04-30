@@ -9,7 +9,7 @@ import stem.socket
 import stem.version
 import test.require
 import test.runner
-from test.async_util import async_test
+from stem.util.test_tools import async_test
 
 
 class TestControlMessage(unittest.TestCase):

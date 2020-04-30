@@ -10,7 +10,7 @@ import test.require
 import test.runner
 
 from stem.util import proc
-from test.async_util import async_test
+from stem.util.test_tools import async_test
 
 
 class TestProc(unittest.TestCase):

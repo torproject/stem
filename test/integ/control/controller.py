@@ -23,11 +23,11 @@ import test
 import test.network
 import test.require
 import test.runner
-from test.async_util import async_test
 
 from stem import Flag, Signal
 from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
+from stem.util.test_tools import async_test
 
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.

@@ -26,8 +26,7 @@ import test.require
 from contextlib import contextmanager
 from unittest.mock import patch, Mock
 
-from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
-from test.async_util import async_test
+from stem.util.test_tools import async_test, asynchronous, assert_equal, assert_in, skip
 
 BASIC_RELAY_TORRC = """\
 SocksPort 9089

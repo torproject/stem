@@ -21,7 +21,7 @@ from stem import ControllerError, DescriptorUnavailable, InvalidArguments, Inval
 from stem.control import MALFORMED_EVENTS, _parse_circ_path, Listener, Controller, EventType
 from stem.response import ControlMessage
 from stem.exit_policy import ExitPolicy
-from test.async_util import (
+from stem.util.test_tools import (
   async_test,
   coro_func_raising_exc,
   coro_func_returning_value,
