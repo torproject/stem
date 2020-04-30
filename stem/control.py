@@ -554,6 +554,8 @@ def event_description(event: str) -> str:
 
 
 class _MsgLock:
+  __slots__ = ('_r_lock', '_async_lock')
+
   def __init__(self):
     self._r_lock = threading.RLock()
     self._async_lock = asyncio.Lock()
