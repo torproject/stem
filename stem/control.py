@@ -891,8 +891,6 @@ class BaseController(_BaseControllerSocketMixin):
     self._event_notice.set()
     self._is_authenticated = False
 
-    # joins on our threads if it's safe to do so
-
     self._notify_status_listeners(State.CLOSED)
 
     await self._socket_close()
