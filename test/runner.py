@@ -32,6 +32,7 @@ about the tor test instance they're running against.
     +- get_tor_command - provides the command used to start tor
 """
 
+import asyncio
 import logging
 import os
 import shutil
@@ -86,8 +87,8 @@ class TorInaccessable(Exception):
   'Raised when information is needed from tor but the instance we have is inaccessible'
 
 
-def exercise_controller(test_case, controller):
-  """
+async def exercise_controller(test_case, controller):
+  """with await test.runner.get_runner().get_tor_socket
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
   query. Controller can be either a :class:`stem.socket.ControlSocket` or
   :class:`stem.control.BaseController`.
@@ -100,10 +101,12 @@ def exercise_controller(test_case, controller):
   torrc_path = runner.get_torrc_path()
 
   if isinstance(controller, stem.socket.ControlSocket):
-    controller.send('GETINFO config-file')
-    config_file_response = controller.recv()
+    await controller.send('GETINFO config-file')
+    config_file_response = await controller.recv()
   else:
     config_file_response = controller.msg('GETINFO config-file')
+    if asyncio.iscoroutine(config_file_response):
+      config_file_response = await config_file_response
 
   test_case.assertEqual('config-file=%s\nOK' % torrc_path, str(config_file_response))
 
@@ -134,8 +137,8 @@ class _MockChrootFile(object):
     self.wrapped_file = wrapped_file
     self.strip_text = strip_text
 
-  def readline(self):
-    return self.wrapped_file.readline().replace(self.strip_text, '')
+  async def readline(self):
+    return (await self.wrapped_file.readline()).replace(self.strip_text, '')
 
 
 class Runner(object):
@@ -252,13 +255,15 @@ class Runner(object):
           self._original_recv_message = stem.socket.recv_message
           self._chroot_path = data_dir_path
 
-          def _chroot_recv_message(control_file):
-            return self._original_recv_message(_MockChrootFile(control_file, data_dir_path))
+          async def _chroot_recv_message(control_file):
+            return await self._original_recv_message(_MockChrootFile(control_file, data_dir_path))
 
           stem.socket.recv_message = _chroot_recv_message
 
         if self.is_accessible():
-          self._owner_controller = self.get_tor_controller(True)
+          self._owner_controller = stem.control.Controller(self._get_unconnected_socket(), False)
+          self._owner_controller.connect()
+          self._authenticate_controller(self._owner_controller)
 
         if test.Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)  # revert our cwd back to normal
@@ -440,7 +445,17 @@ class Runner(object):
     tor_process = self._get('_tor_process')
     return tor_process.pid
 
-  def get_tor_socket(self, authenticate = True):
+  def _get_unconnected_socket(self):
+    if Torrc.PORT in self._custom_opts:
+      control_socket = stem.socket.ControlPort(port = CONTROL_PORT)
+    elif Torrc.SOCKET in self._custom_opts:
+      control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
+    else:
+      raise TorInaccessable('Unable to connect to tor')
+
+    return control_socket
+
+  async def get_tor_socket(self, authenticate = True):
     """
     Provides a socket connected to our tor test instance.
 
@@ -451,19 +466,18 @@ class Runner(object):
     :raises: :class:`test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    if Torrc.PORT in self._custom_opts:
-      control_socket = stem.socket.ControlPort(port = CONTROL_PORT)
-    elif Torrc.SOCKET in self._custom_opts:
-      control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
-    else:
-      raise TorInaccessable('Unable to connect to tor')
+    control_socket = self._get_unconnected_socket()
+    await control_socket.connect()
 
     if authenticate:
-      stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
+      await stem.connection.authenticate(control_socket, CONTROL_PASSWORD, self.get_chroot())
 
     return control_socket
 
-  def get_tor_controller(self, authenticate = True):
+  def _authenticate_controller(self, controller):
+    controller.authenticate(password=CONTROL_PASSWORD, chroot_path=self.get_chroot())
+
+  async def get_tor_controller(self, authenticate = True):
     """
     Provides a controller connected to our tor test instance.
 
@@ -474,11 +488,19 @@ class Runner(object):
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    control_socket = self.get_tor_socket(False)
-    controller = stem.control.Controller(control_socket)
+    async_controller_thread = stem.control._AsyncControllerThread()
+    async_controller_thread.start()
+
+    try:
+      control_socket = asyncio.run_coroutine_threadsafe(self.get_tor_socket(False), async_controller_thread.loop).result()
+      controller = stem.control.Controller(control_socket, started_async_controller_thread = async_controller_thread)
+    except Exception:
+      if async_controller_thread.is_alive():
+        async_controller_thread.join()
+      raise
 
     if authenticate:
-      controller.authenticate(password = CONTROL_PASSWORD, chroot_path = self.get_chroot())
+      self._authenticate_controller(controller)
 
     return controller
 

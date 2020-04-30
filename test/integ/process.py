@@ -27,6 +27,7 @@ from contextlib import contextmanager
 from unittest.mock import patch, Mock
 
 from stem.util.test_tools import asynchronous, assert_equal, assert_in, skip
+from test.async_util import async_test
 
 BASIC_RELAY_TORRC = """\
 SocksPort 9089
@@ -97,9 +98,9 @@ class TestProcess(unittest.TestCase):
     global TOR_CMD
     TOR_CMD = args.tor_cmd
 
-    for func, async_test in stem.util.test_tools.ASYNC_TESTS.items():
+    for func, asynchronous_test in stem.util.test_tools.ASYNC_TESTS.items():
       if func.startswith('test.integ.process.'):
-        async_test.run(TOR_CMD)
+        asynchronous_test.run(TOR_CMD)
 
   @asynchronous
   def test_version_argument(tor_cmd):
@@ -407,7 +408,8 @@ class TestProcess(unittest.TestCase):
         raise AssertionError('Launching tor with the default timeout should be successful')
 
   @asynchronous
-  def test_launch_tor_with_config_via_file(tor_cmd):
+  @async_test
+  async def test_launch_tor_with_config_via_file(tor_cmd):
     """
     Exercises launch_tor_with_config when we write a torrc to disk.
     """
@@ -432,23 +434,24 @@ class TestProcess(unittest.TestCase):
           )
 
         control_socket = stem.socket.ControlPort(port = int(control_port))
-        stem.connection.authenticate(control_socket)
+        await stem.connection.authenticate(control_socket)
 
         # exercises the socket
-        control_socket.send('GETCONF ControlPort')
-        getconf_response = control_socket.recv()
+        await control_socket.send('GETCONF ControlPort')
+        getconf_response = await control_socket.recv()
 
         assert_equal('ControlPort=%s' % control_port, str(getconf_response))
       finally:
         if control_socket:
-          control_socket.close()
+          await control_socket.close()
 
         if tor_process:
           tor_process.kill()
           tor_process.wait()
 
   @asynchronous
-  def test_launch_tor_with_config_via_stdin(tor_cmd):
+  @async_test
+  async def test_launch_tor_with_config_via_stdin(tor_cmd):
     """
     Exercises launch_tor_with_config when we provide our torrc via stdin.
     """
@@ -469,16 +472,16 @@ class TestProcess(unittest.TestCase):
         )
 
         control_socket = stem.socket.ControlPort(port = int(control_port))
-        stem.connection.authenticate(control_socket)
+        await stem.connection.authenticate(control_socket)
 
         # exercises the socket
-        control_socket.send('GETCONF ControlPort')
-        getconf_response = control_socket.recv()
+        await control_socket.send('GETCONF ControlPort')
+        getconf_response = await control_socket.recv()
 
         assert_equal('ControlPort=%s' % control_port, str(getconf_response))
       finally:
         if control_socket:
-          control_socket.close()
+          await control_socket.close()
 
         if tor_process:
           tor_process.kill()

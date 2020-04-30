@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 from stem.response import ControlMessage
 from stem.util import log
-from test.unit.async_util import (
+from test.async_util import (
   async_test,
   coro_func_raising_exc,
   coro_func_returning_value,

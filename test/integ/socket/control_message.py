@@ -9,11 +9,13 @@ import stem.socket
 import stem.version
 import test.require
 import test.runner
+from test.async_util import async_test
 
 
 class TestControlMessage(unittest.TestCase):
   @test.require.controller
-  def test_unestablished_socket(self):
+  @async_test
+  async def test_unestablished_socket(self):
     """
     Checks message parsing when we have a valid but unauthenticated socket.
     """
@@ -22,10 +24,10 @@ class TestControlMessage(unittest.TestCase):
     # PROTOCOLINFO then tor will give an 'Authentication required.' message and
     # hang up.
 
-    control_socket = test.runner.get_runner().get_tor_socket(False)
-    control_socket.send('GETINFO version')
+    control_socket = await test.runner.get_runner().get_tor_socket(False)
+    await control_socket.send('GETINFO version')
 
-    auth_required_response = control_socket.recv()
+    auth_required_response = await control_socket.recv()
     self.assertEqual('Authentication required.', str(auth_required_response))
     self.assertEqual(['Authentication required.'], list(auth_required_response))
     self.assertEqual('514 Authentication required.\r\n', auth_required_response.raw_content())
@@ -35,54 +37,64 @@ class TestControlMessage(unittest.TestCase):
     # checked in more depth by the ControlSocket integ tests.
 
     self.assertTrue(control_socket.is_alive())
-    self.assertRaises(stem.SocketClosed, control_socket.recv)
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.recv()
     self.assertFalse(control_socket.is_alive())
 
     # Additional socket usage should fail, and pulling more responses will fail
     # with more closed exceptions.
 
-    self.assertRaises(stem.SocketError, control_socket.send, 'GETINFO version')
-    self.assertRaises(stem.SocketClosed, control_socket.recv)
-    self.assertRaises(stem.SocketClosed, control_socket.recv)
-    self.assertRaises(stem.SocketClosed, control_socket.recv)
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.send('GETINFO version')
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.recv()
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.recv()
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.recv()
 
     # The socket connection is already broken so calling close shouldn't have
     # an impact.
 
-    control_socket.close()
-    self.assertRaises(stem.SocketClosed, control_socket.send, 'GETINFO version')
-    self.assertRaises(stem.SocketClosed, control_socket.recv)
+    await control_socket.close()
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.send('GETINFO version')
+    with self.assertRaises(stem.SocketClosed):
+      await control_socket.recv()
 
   @test.require.controller
-  def test_invalid_command(self):
+  @async_test
+  async def test_invalid_command(self):
     """
     Parses the response for a command which doesn't exist.
     """
 
-    with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send('blarg')
-      unrecognized_command_response = control_socket.recv()
+    async with await test.runner.get_runner().get_tor_socket() as control_socket:
+      await control_socket.send('blarg')
+      unrecognized_command_response = await control_socket.recv()
       self.assertEqual('Unrecognized command "blarg"', str(unrecognized_command_response))
       self.assertEqual(['Unrecognized command "blarg"'], list(unrecognized_command_response))
       self.assertEqual('510 Unrecognized command "blarg"\r\n', unrecognized_command_response.raw_content())
       self.assertEqual([('510', ' ', 'Unrecognized command "blarg"')], unrecognized_command_response.content())
 
   @test.require.controller
-  def test_invalid_getinfo(self):
+  @async_test
+  async def test_invalid_getinfo(self):
     """
     Parses the response for a GETINFO query which doesn't exist.
     """
 
-    with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send('GETINFO blarg')
-      unrecognized_key_response = control_socket.recv()
+    async with await test.runner.get_runner().get_tor_socket() as control_socket:
+      await control_socket.send('GETINFO blarg')
+      unrecognized_key_response = await control_socket.recv()
       self.assertEqual('Unrecognized key "blarg"', str(unrecognized_key_response))
       self.assertEqual(['Unrecognized key "blarg"'], list(unrecognized_key_response))
       self.assertEqual('552 Unrecognized key "blarg"\r\n', unrecognized_key_response.raw_content())
       self.assertEqual([('552', ' ', 'Unrecognized key "blarg"')], unrecognized_key_response.content())
 
   @test.require.controller
-  def test_getinfo_config_file(self):
+  @async_test
+  async def test_getinfo_config_file(self):
     """
     Parses the 'GETINFO config-file' response.
     """
@@ -90,16 +102,17 @@ class TestControlMessage(unittest.TestCase):
     runner = test.runner.get_runner()
     torrc_dst = runner.get_torrc_path()
 
-    with runner.get_tor_socket() as control_socket:
-      control_socket.send('GETINFO config-file')
-      config_file_response = control_socket.recv()
+    async with await runner.get_tor_socket() as control_socket:
+      await control_socket.send('GETINFO config-file')
+      config_file_response = await control_socket.recv()
       self.assertEqual('config-file=%s\nOK' % torrc_dst, str(config_file_response))
       self.assertEqual(['config-file=%s' % torrc_dst, 'OK'], list(config_file_response))
       self.assertEqual('250-config-file=%s\r\n250 OK\r\n' % torrc_dst, config_file_response.raw_content())
       self.assertEqual([('250', '-', 'config-file=%s' % torrc_dst), ('250', ' ', 'OK')], config_file_response.content())
 
   @test.require.controller
-  def test_getinfo_config_text(self):
+  @async_test
+  async def test_getinfo_config_text(self):
     """
     Parses the 'GETINFO config-text' response.
     """
@@ -120,9 +133,9 @@ class TestControlMessage(unittest.TestCase):
       if line and not line.startswith('#'):
         torrc_contents.append(line)
 
-    with runner.get_tor_socket() as control_socket:
-      control_socket.send('GETINFO config-text')
-      config_text_response = control_socket.recv()
+    async with await runner.get_tor_socket() as control_socket:
+      await control_socket.send('GETINFO config-text')
+      config_text_response = await control_socket.recv()
 
       # the response should contain two entries, the first being a data response
       self.assertEqual(2, len(list(config_text_response)))
@@ -140,14 +153,15 @@ class TestControlMessage(unittest.TestCase):
         self.assertTrue('%s' % torrc_entry in config_text_response.content()[0][2])
 
   @test.require.controller
-  def test_setconf_event(self):
+  @async_test
+  async def test_setconf_event(self):
     """
     Issues 'SETEVENTS CONF_CHANGED' and parses an events.
     """
 
-    with test.runner.get_runner().get_tor_socket() as control_socket:
-      control_socket.send('SETEVENTS CONF_CHANGED')
-      setevents_response = control_socket.recv()
+    async with await test.runner.get_runner().get_tor_socket() as control_socket:
+      await control_socket.send('SETEVENTS CONF_CHANGED')
+      setevents_response = await control_socket.recv()
       self.assertEqual('OK', str(setevents_response))
       self.assertEqual(['OK'], list(setevents_response))
       self.assertEqual('250 OK\r\n', setevents_response.raw_content())
@@ -156,9 +170,9 @@ class TestControlMessage(unittest.TestCase):
       # We'll receive both a CONF_CHANGED event and 'OK' response for the
       # SETCONF, but not necessarily in any specific order.
 
-      control_socket.send('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
-      msg1 = control_socket.recv()
-      msg2 = control_socket.recv()
+      await control_socket.send('SETCONF NodeFamily=FD4CC275C5AA4D27A487C6CA29097900F85E2C33')
+      msg1 = await control_socket.recv()
+      msg2 = await control_socket.recv()
 
       if msg1.content()[0][0] == '650':
         conf_changed_event, setconf_response = msg1, msg2

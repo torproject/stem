@@ -12,6 +12,7 @@ import stem.version
 import test
 import test.require
 import test.runner
+from test.async_util import async_test
 
 # Responses given by tor for various authentication failures. These may change
 # in the future and if they do then this test should be updated.
@@ -98,31 +99,34 @@ def _get_auth_failure_message(auth_type):
 
 class TestAuthenticate(unittest.TestCase):
   @test.require.controller
-  def test_authenticate_general_socket(self):
+  @async_test
+  async def test_authenticate_general_socket(self):
     """
     Tests that the authenticate function can authenticate to our socket.
     """
 
     runner = test.runner.get_runner()
 
-    with runner.get_tor_socket(False) as control_socket:
-      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
-      test.runner.exercise_controller(self, control_socket)
+    async with await runner.get_tor_socket(False) as control_socket:
+      await stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
+      await test.runner.exercise_controller(self, control_socket)
 
   @test.require.controller
-  def test_authenticate_general_controller(self):
+  @async_test
+  async def test_authenticate_general_controller(self):
     """
     Tests that the authenticate function can authenticate via a Controller.
     """
 
     runner = test.runner.get_runner()
 
-    with runner.get_tor_controller(False) as controller:
-      stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
-      test.runner.exercise_controller(self, controller)
+    with await runner.get_tor_controller(False) as controller:
+      await stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
+      await test.runner.exercise_controller(self, controller)
 
   @test.require.controller
-  def test_authenticate_general_example(self):
+  @async_test
+  async def test_authenticate_general_example(self):
     """
     Tests the authenticate function with something like its pydoc example.
     """
@@ -139,8 +143,8 @@ class TestAuthenticate(unittest.TestCase):
 
     try:
       # this authenticate call should work for everything but password-only auth
-      stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
-      test.runner.exercise_controller(self, control_socket)
+      await stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
+      await test.runner.exercise_controller(self, control_socket)
     except stem.connection.IncorrectSocketType:
       self.fail()
     except stem.connection.MissingPassword:
@@ -148,17 +152,18 @@ class TestAuthenticate(unittest.TestCase):
       controller_password = test.runner.CONTROL_PASSWORD
 
       try:
-        stem.connection.authenticate_password(control_socket, controller_password)
-        test.runner.exercise_controller(self, control_socket)
+        await stem.connection.authenticate_password(control_socket, controller_password)
+        await test.runner.exercise_controller(self, control_socket)
       except stem.connection.PasswordAuthFailed:
         self.fail()
     except stem.connection.AuthenticationFailure:
       self.fail()
     finally:
-      control_socket.close()
+      await control_socket.close()
 
   @test.require.controller
-  def test_authenticate_general_password(self):
+  @async_test
+  async def test_authenticate_general_password(self):
     """
     Tests the authenticate function's password argument.
     """
@@ -172,28 +177,31 @@ class TestAuthenticate(unittest.TestCase):
     is_password_only = test.runner.Torrc.PASSWORD in tor_options and test.runner.Torrc.COOKIE not in tor_options
 
     # tests without a password
-    with runner.get_tor_socket(False) as control_socket:
+    async with await runner.get_tor_socket(False) as control_socket:
       if is_password_only:
-        self.assertRaises(stem.connection.MissingPassword, stem.connection.authenticate, control_socket)
+        with self.assertRaises(stem.connection.MissingPassword):
+          await stem.connection.authenticate(control_socket)
       else:
-        stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
-        test.runner.exercise_controller(self, control_socket)
+        await stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot())
+        await test.runner.exercise_controller(self, control_socket)
 
     # tests with the incorrect password
-    with runner.get_tor_socket(False) as control_socket:
+    async with await runner.get_tor_socket(False) as control_socket:
       if is_password_only:
-        self.assertRaises(stem.connection.IncorrectPassword, stem.connection.authenticate, control_socket, 'blarg')
+        with self.assertRaises(stem.connection.IncorrectPassword):
+          await stem.connection.authenticate(control_socket, 'blarg')
       else:
-        stem.connection.authenticate(control_socket, 'blarg', runner.get_chroot())
-        test.runner.exercise_controller(self, control_socket)
+        await stem.connection.authenticate(control_socket, 'blarg', runner.get_chroot())
+        await test.runner.exercise_controller(self, control_socket)
 
     # tests with the right password
-    with runner.get_tor_socket(False) as control_socket:
-      stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
-      test.runner.exercise_controller(self, control_socket)
+    async with await runner.get_tor_socket(False) as control_socket:
+      await stem.connection.authenticate(control_socket, test.runner.CONTROL_PASSWORD, runner.get_chroot())
+      await test.runner.exercise_controller(self, control_socket)
 
   @test.require.controller
-  def test_authenticate_general_cookie(self):
+  @async_test
+  async def test_authenticate_general_cookie(self):
     """
     Tests the authenticate function with only cookie authentication methods.
     This manipulates our PROTOCOLINFO response to test each method
@@ -205,7 +213,7 @@ class TestAuthenticate(unittest.TestCase):
     is_cookie_only = test.runner.Torrc.COOKIE in tor_options and test.runner.Torrc.PASSWORD not in tor_options
 
     # test both cookie authentication mechanisms
-    with runner.get_tor_socket(False) as control_socket:
+    async with await runner.get_tor_socket(False) as control_socket:
       if is_cookie_only:
         for method in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
           protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
@@ -215,10 +223,11 @@ class TestAuthenticate(unittest.TestCase):
             # both independently
 
             protocolinfo_response.auth_methods = (method, )
-            stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot(), protocolinfo_response = protocolinfo_response)
+            await stem.connection.authenticate(control_socket, chroot_path = runner.get_chroot(), protocolinfo_response = protocolinfo_response)
 
   @test.require.controller
-  def test_authenticate_none(self):
+  @async_test
+  async def test_authenticate_none(self):
     """
     Tests the authenticate_none function.
     """
@@ -226,12 +235,14 @@ class TestAuthenticate(unittest.TestCase):
     auth_type = stem.connection.AuthMethod.NONE
 
     if _can_authenticate(auth_type):
-      self._check_auth(auth_type)
+      await self._check_auth(auth_type)
     else:
-      self.assertRaises(stem.connection.OpenAuthRejected, self._check_auth, auth_type)
+      with self.assertRaises(stem.connection.OpenAuthRejected):
+        await self._check_auth(auth_type)
 
   @test.require.controller
-  def test_authenticate_password(self):
+  @async_test
+  async def test_authenticate_password(self):
     """
     Tests the authenticate_password function.
     """
@@ -240,26 +251,29 @@ class TestAuthenticate(unittest.TestCase):
     auth_value = test.runner.CONTROL_PASSWORD
 
     if _can_authenticate(auth_type):
-      self._check_auth(auth_type, auth_value)
+      await self._check_auth(auth_type, auth_value)
     else:
-      self.assertRaises(stem.connection.PasswordAuthRejected, self._check_auth, auth_type, auth_value)
+      with self.assertRaises(stem.connection.PasswordAuthRejected):
+        await self._check_auth(auth_type, auth_value)
 
     # Check with an empty, invalid, and quoted password. These should work if
     # we have no authentication, and fail otherwise.
 
     for auth_value in ('', 'blarg', 'this has a " in it'):
       if _can_authenticate(stem.connection.AuthMethod.NONE):
-        self._check_auth(auth_type, auth_value)
+        await self._check_auth(auth_type, auth_value)
       else:
         if _can_authenticate(stem.connection.AuthMethod.PASSWORD):
           exc_type = stem.connection.IncorrectPassword
         else:
           exc_type = stem.connection.PasswordAuthRejected
 
-        self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
+        with self.assertRaises(exc_type):
+          await self._check_auth(auth_type, auth_value)
 
   @test.require.controller
-  def test_wrong_password_with_controller(self):
+  @async_test
+  async def test_wrong_password_with_controller(self):
     """
     We ran into a race condition where providing the wrong password to the
     Controller caused inconsistent responses. Checking for that...
@@ -273,11 +287,13 @@ class TestAuthenticate(unittest.TestCase):
       self.skipTest('(requires only password auth)')
 
     for i in range(10):
-      with runner.get_tor_controller(False) as controller:
-        self.assertRaises(stem.connection.IncorrectPassword, controller.authenticate, 'wrong_password')
+      with await runner.get_tor_controller(False) as controller:
+        with self.assertRaises(stem.connection.IncorrectPassword):
+          await controller.authenticate('wrong_password')
 
   @test.require.controller
-  def test_authenticate_cookie(self):
+  @async_test
+  async def test_authenticate_cookie(self):
     """
     Tests the authenticate_cookie function.
     """
@@ -292,14 +308,17 @@ class TestAuthenticate(unittest.TestCase):
         # auth but the function will short circuit with failure due to the
         # missing file.
 
-        self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
+        with self.assertRaises(stem.connection.UnreadableCookieFile):
+          await self._check_auth(auth_type, auth_value, False)
       elif _can_authenticate(auth_type):
-        self._check_auth(auth_type, auth_value)
+        await self._check_auth(auth_type, auth_value)
       else:
-        self.assertRaises(stem.connection.CookieAuthRejected, self._check_auth, auth_type, auth_value, False)
+        with self.assertRaises(stem.connection.CookieAuthRejected):
+          await self._check_auth(auth_type, auth_value, False)
 
   @test.require.controller
-  def test_authenticate_cookie_invalid(self):
+  @async_test
+  async def test_authenticate_cookie_invalid(self):
     """
     Tests the authenticate_cookie function with a properly sized but incorrect
     value.
@@ -316,10 +335,11 @@ class TestAuthenticate(unittest.TestCase):
       if _can_authenticate(stem.connection.AuthMethod.NONE):
         # authentication will work anyway unless this is safecookie
         if auth_type == stem.connection.AuthMethod.COOKIE:
-          self._check_auth(auth_type, auth_value)
+          await self._check_auth(auth_type, auth_value)
         elif auth_type == stem.connection.AuthMethod.SAFECOOKIE:
           exc_type = stem.connection.CookieAuthRejected
-          self.assertRaises(exc_type, self._check_auth, auth_type, auth_value)
+          with self.assertRaises(exc_type):
+            await self._check_auth(auth_type, auth_value)
       else:
         if auth_type == stem.connection.AuthMethod.SAFECOOKIE:
           if _can_authenticate(auth_type):
@@ -331,12 +351,14 @@ class TestAuthenticate(unittest.TestCase):
         else:
           exc_type = stem.connection.CookieAuthRejected
 
-        self.assertRaises(exc_type, self._check_auth, auth_type, auth_value, False)
+        with self.assertRaises(exc_type):
+          await self._check_auth(auth_type, auth_value, False)
 
     os.remove(auth_value)
 
   @test.require.controller
-  def test_authenticate_cookie_missing(self):
+  @async_test
+  async def test_authenticate_cookie_missing(self):
     """
     Tests the authenticate_cookie function with a path that really, really
     shouldn't exist.
@@ -344,10 +366,12 @@ class TestAuthenticate(unittest.TestCase):
 
     for auth_type in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
       auth_value = "/if/this/exists/then/they're/asking/for/a/failure"
-      self.assertRaises(stem.connection.UnreadableCookieFile, self._check_auth, auth_type, auth_value, False)
+      with self.assertRaises(stem.connection.UnreadableCookieFile):
+        await self._check_auth(auth_type, auth_value, False)
 
   @test.require.controller
-  def test_authenticate_cookie_wrong_size(self):
+  @async_test
+  async def test_authenticate_cookie_wrong_size(self):
     """
     Tests the authenticate_cookie function with our torrc as an auth cookie.
     This is to confirm that we won't read arbitrary files to the control
@@ -361,9 +385,10 @@ class TestAuthenticate(unittest.TestCase):
         # Weird coincidence? Fail so we can pick another file to check against.
         self.fail('Our torrc is 32 bytes, preventing the test_authenticate_cookie_wrong_size test from running.')
       else:
-        self.assertRaises(stem.connection.IncorrectCookieSize, self._check_auth, auth_type, auth_value, False)
+        with self.assertRaises(stem.connection.IncorrectCookieSize):
+          await self._check_auth(auth_type, auth_value, False)
 
-  def _check_auth(self, auth_type, auth_arg = None, check_message = True):
+  async def _check_auth(self, auth_type, auth_arg = None, check_message = True):
     """
     Attempts to use the given type of authentication against tor's control
     socket. If it succeeds then we check that the socket can then be used. If
@@ -377,19 +402,19 @@ class TestAuthenticate(unittest.TestCase):
     :raises: :class:`stem.connection.AuthenticationFailure` if the authentication fails
     """
 
-    with test.runner.get_runner().get_tor_socket(False) as control_socket:
+    async with await test.runner.get_runner().get_tor_socket(False) as control_socket:
       # run the authentication, re-raising if there's a problem
       try:
         if auth_type == stem.connection.AuthMethod.NONE:
-          stem.connection.authenticate_none(control_socket)
+          await stem.connection.authenticate_none(control_socket)
         elif auth_type == stem.connection.AuthMethod.PASSWORD:
-          stem.connection.authenticate_password(control_socket, auth_arg)
+          await stem.connection.authenticate_password(control_socket, auth_arg)
         elif auth_type == stem.connection.AuthMethod.COOKIE:
-          stem.connection.authenticate_cookie(control_socket, auth_arg)
+          await stem.connection.authenticate_cookie(control_socket, auth_arg)
         elif auth_type == stem.connection.AuthMethod.SAFECOOKIE:
-          stem.connection.authenticate_safecookie(control_socket, auth_arg)
+          await stem.connection.authenticate_safecookie(control_socket, auth_arg)
 
-        test.runner.exercise_controller(self, control_socket)
+        await test.runner.exercise_controller(self, control_socket)
       except stem.connection.AuthenticationFailure as exc:
         # authentication functions should re-attach on failure
         self.assertTrue(control_socket.is_alive())

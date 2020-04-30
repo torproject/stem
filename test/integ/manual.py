@@ -14,6 +14,7 @@ import test
 import test.runner
 
 from stem.manual import Category
+from test.async_util import async_test
 
 EXPECTED_CATEGORIES = set([
   'NAME',
@@ -216,14 +217,15 @@ class TestManual(unittest.TestCase):
     self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
     self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
 
-  def test_has_all_tor_config_options(self):
+  @async_test
+  async def test_has_all_tor_config_options(self):
     """
     Check that all the configuration options tor supports are in the man page.
     """
 
     self.requires_downloaded_manual()
 
-    with test.runner.get_runner().get_tor_controller() as controller:
+    with await test.runner.get_runner().get_tor_controller() as controller:
       config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines() if line.split()[1] != 'Virtual'])
 
       # options starting with an underscore are hidden by convention

@@ -13,11 +13,13 @@ import test.require
 import test.runner
 
 from stem.util.connection import Resolver
+from test.async_util import async_test
 
 
 class TestConnection(unittest.TestCase):
   @test.require.ptrace
-  def check_resolver(self, resolver):
+  @async_test
+  async def check_resolver(self, resolver):
     runner = test.runner.get_runner()
 
     if test.runner.Torrc.PORT not in runner.get_options():
@@ -25,7 +27,7 @@ class TestConnection(unittest.TestCase):
     elif resolver not in stem.util.connection.system_resolvers():
       self.skipTest('(resolver unavailable on this platform)')
 
-    with runner.get_tor_socket():
+    async with await runner.get_tor_socket():
       connections = stem.util.connection.get_connections(resolver, process_pid = runner.get_pid())
 
       for conn in connections:
