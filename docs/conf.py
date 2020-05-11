@@ -28,8 +28,12 @@ needs_sphinx = '1.1' # required for the sphinx-apidoc command
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'roles']
 
-autodoc_member_order = 'bysource'
-autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
+autodoc_default_options = {
+  'members': True,
+  'member-order': 'bysource',
+  'show-inheritance': True,
+  'undoc-members': True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
