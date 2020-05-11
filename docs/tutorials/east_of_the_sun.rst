@@ -62,6 +62,7 @@ that <../api/util/system.html#stem.util.system.DaemonTask>`_.
 
   % python fibonacci_multiprocessing.py
   took 6.2 seconds
+
 .. _connection-resolution:
 
 Connection Resolution

@@ -392,7 +392,7 @@ So what does code with each of these look like?
 Stem Example
 ------------
 
-* `Benchmark Script <../.../../_static/example/benchmark_stem.py>`_
+* `Stem Benchmark Script <../.../../_static/example/benchmark_stem.py>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_stem.py
    :language: python
@@ -400,7 +400,7 @@ Stem Example
 Metrics-lib Example
 -------------------
 
-* `Benchmark Script <../.../../_static/example/benchmark_metrics_lib.java>`_
+* `Metrics-lib Benchmark Script <../.../../_static/example/benchmark_metrics_lib.java>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_metrics_lib.java
    :language: java
@@ -408,7 +408,7 @@ Metrics-lib Example
 Zoossh Example
 --------------
 
-* `Benchmark Script <../.../../_static/example/benchmark_zoossh.go>`_
+* `Zoossh Benchmark Script <../.../../_static/example/benchmark_zoossh.go>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_zoossh.go
    :language: go
