@@ -26,6 +26,8 @@ import sys
 import stem.util
 import stem.util.enum
 
+from typing import List, Sequence, Tuple, Union, overload
+
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
 
@@ -57,7 +59,7 @@ TIME_UNITS = (
 _timestamp_re = re.compile(r'(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})')
 
 
-def _to_bytes(msg):
+def _to_bytes(msg: Union[str, bytes]) -> bytes:
   """
   Provides the ASCII bytes for the given string. This is purely to provide
   python 3 compatability, normalizing the unicode/ASCII change in the version
@@ -71,12 +73,12 @@ def _to_bytes(msg):
   """
 
   if isinstance(msg, str):
-    return codecs.latin_1_encode(msg, 'replace')[0]
+    return codecs.latin_1_encode(msg, 'replace')[0]  # type: ignore
   else:
     return msg
 
 
-def _to_unicode(msg):
+def _to_unicode(msg: Union[str, bytes]) -> str:
   """
   Provides the unicode string for the given ASCII bytes. This is purely to
   provide python 3 compatability, normalizing the unicode/ASCII change in the
@@ -93,7 +95,7 @@ def _to_unicode(msg):
     return msg
 
 
-def _decode_b64(msg):
+def _decode_b64(msg: bytes) -> bytes:
   """
   Base64 decode, without padding concerns.
   """
@@ -101,10 +103,10 @@ def _decode_b64(msg):
   missing_padding = len(msg) % 4
   padding_chr = b'=' if isinstance(msg, bytes) else '='
 
-  return base64.b64decode(msg + padding_chr * missing_padding)
+  return base64.b64decode(msg + (padding_chr * missing_padding))
 
 
-def _to_int(msg):
+def _to_int(msg: Union[str, bytes]) -> int:
   """
   Serializes a string to a number.
 
@@ -120,7 +122,7 @@ def _to_int(msg):
     return sum([pow(256, (len(msg) - i - 1)) * ord(c) for (i, c) in enumerate(msg)])
 
 
-def _to_camel_case(label, divider = '_', joiner = ' '):
+def _to_camel_case(label: str, divider: str = '_', joiner: str = ' ') -> str:
   """
   Converts the given string to camel case, ie:
 
@@ -148,6 +150,16 @@ def _to_camel_case(label, divider = '_', joiner = ' '):
   return joiner.join(words)
 
 
+@overload
+def _split_by_length(msg: bytes, size: int) -> List[bytes]:
+  ...
+
+
+@overload
+def _split_by_length(msg: str, size: int) -> List[str]:
+  ...
+
+
 def _split_by_length(msg, size):
   """
   Splits a string into a list of strings up to the given size.
@@ -172,7 +184,7 @@ def _split_by_length(msg, size):
 Ending = stem.util.enum.Enum('ELLIPSE', 'HYPHEN')
 
 
-def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, get_remainder = False):
+def crop(msg: str, size: int, min_word_length: int = 4, min_crop: int = 0, ending: 'stem.util.str_tools.Ending' = Ending.ELLIPSE, get_remainder: bool = False) -> Union[str, Tuple[str, str]]:
   """
   Shortens a string to a given length.
 
@@ -286,7 +298,7 @@ def crop(msg, size, min_word_length = 4, min_crop = 0, ending = Ending.ELLIPSE, 
   return (return_msg, remainder) if get_remainder else return_msg
 
 
-def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True, round = False):
+def size_label(byte_count: int, decimal: int = 0, is_long: bool = False, is_bytes: bool = True, round: bool = False) -> str:
   """
   Converts a number of bytes into a human readable label in its most
   significant units. For instance, 7500 bytes would return "7 KB". If the
@@ -323,7 +335,7 @@ def size_label(byte_count, decimal = 0, is_long = False, is_bytes = True, round 
     return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long, round)
 
 
-def time_label(seconds, decimal = 0, is_long = False):
+def time_label(seconds: int, decimal: int = 0, is_long: bool = False) -> str:
   """
   Converts seconds into a time label truncated to its most significant units.
   For instance, 7500 seconds would return "2h". Units go up through days.
@@ -354,7 +366,7 @@ def time_label(seconds, decimal = 0, is_long = False):
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
 
 
-def time_labels(seconds, is_long = False):
+def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
   """
   Provides a list of label conversions for each time unit, starting with its
   most significant units on down. Any counts that evaluate to zero are omitted.
@@ -379,12 +391,12 @@ def time_labels(seconds, is_long = False):
   for count_per_unit, _, _ in TIME_UNITS:
     if abs(seconds) >= count_per_unit:
       time_labels.append(_get_label(TIME_UNITS, seconds, 0, is_long))
-      seconds %= count_per_unit
+      seconds %= int(count_per_unit)
 
   return time_labels
 
 
-def short_time_label(seconds):
+def short_time_label(seconds: int) -> str:
   """
   Provides a time in the following format:
   [[dd-]hh:]mm:ss
@@ -411,7 +423,7 @@ def short_time_label(seconds):
 
   for amount, _, label in TIME_UNITS:
     count = int(seconds / amount)
-    seconds %= amount
+    seconds %= int(amount)
     time_comp[label.strip()] = count
 
   label = '%02i:%02i' % (time_comp['minute'], time_comp['second'])
@@ -424,7 +436,7 @@ def short_time_label(seconds):
   return label
 
 
-def parse_short_time_label(label):
+def parse_short_time_label(label: str) -> int:
   """
   Provides the number of seconds corresponding to the formatting used for the
   cputime and etime fields of ps:
@@ -469,7 +481,7 @@ def parse_short_time_label(label):
     raise ValueError('Non-numeric value in time entry: %s' % label)
 
 
-def _parse_timestamp(entry):
+def _parse_timestamp(entry: str) -> datetime.datetime:
   """
   Parses the date and time that in format like like...
 
@@ -495,7 +507,7 @@ def _parse_timestamp(entry):
   return datetime.datetime(time[0], time[1], time[2], time[3], time[4], time[5])
 
 
-def _parse_iso_timestamp(entry):
+def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
   """
   Parses the ISO 8601 standard that provides for timestamps like...
 
@@ -533,7 +545,7 @@ def _parse_iso_timestamp(entry):
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 
-def _get_label(units, count, decimal, is_long, round = False):
+def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int, is_long: bool, round: bool = False) -> str:
   """
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
@@ -578,3 +590,5 @@ def _get_label(units, count, decimal, is_long, round = False):
         return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label
+
+  raise ValueError('BUG: value should always be divisible by a unit (%s)' % str(units))

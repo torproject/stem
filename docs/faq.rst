@@ -545,7 +545,7 @@ To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
-#. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes**.
+#. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes mypy**.
 #. Find a `bug or feature <https://github.com/torproject/stem/issues/>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
@@ -588,11 +588,14 @@ can exercise alternate Tor configurations with the ``--target`` argument (see
   ~/stem$ ./run_tests.py --integ --tor /path/to/tor
   ~/stem$ ./run_tests.py --integ --target RUN_COOKIE
 
-**Static** tests use `pyflakes <https://launchpad.net/pyflakes>`_ to do static
-error checking and `pycodestyle
-<http://pycodestyle.readthedocs.org/en/latest/>`_ for style checking. If you
-have them installed then they automatically take place as part of all test
-runs.
+**Static** tests use...
+
+* `pyflakes <https://launchpad.net/pyflakes>`_ for error checks
+* `pycodestyle <http://pycodestyle.readthedocs.org/en/latest/>`_ for style checks
+* `mypy <http://mypy-lang.org/>`_ for type checks
+
+If you have them installed then they automatically take place as part of all
+test runs.
 
 See ``run_tests.py --help`` for more usage information.
 

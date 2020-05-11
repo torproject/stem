@@ -7,6 +7,8 @@ Utility functions used by the stem library.
 
 import datetime
 
+from typing import Any, Union
+
 __all__ = [
   'conf',
   'connection',
@@ -43,7 +45,7 @@ __all__ = [
 HASH_TYPES = True
 
 
-def _hash_value(val):
+def _hash_value(val: Any) -> int:
   if not HASH_TYPES:
     my_hash = 0
   else:
@@ -64,7 +66,7 @@ def _hash_value(val):
   return my_hash
 
 
-def datetime_to_unix(timestamp):
+def datetime_to_unix(timestamp: 'datetime.datetime') -> float:
   """
   Converts a utc datetime object to a unix timestamp.
 
@@ -78,13 +80,15 @@ def datetime_to_unix(timestamp):
   return (timestamp - datetime.datetime(1970, 1, 1)).total_seconds()
 
 
-def _pubkey_bytes(key):
+def _pubkey_bytes(key: Union['cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PublicKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PrivateKey', 'cryptography.hazmat.primitives.asymmetric.x25519.X25519PublicKey']) -> bytes:  # type: ignore
   """
   Normalizes X25509 and ED25519 keys into their public key bytes.
   """
 
-  if isinstance(key, (bytes, str)):
+  if isinstance(key, bytes):
     return key
+  elif isinstance(key, str):
+    return key.encode('utf-8')
 
   try:
     from cryptography.hazmat.primitives import serialization
@@ -107,7 +111,7 @@ def _pubkey_bytes(key):
     raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % type(key).__name__)
 
 
-def _hash_attr(obj, *attributes, **kwargs):
+def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
   """
   Provide a hash value for the given set of attributes.
 

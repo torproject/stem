@@ -206,7 +206,7 @@ class TestControl(unittest.TestCase):
 
     get_info_mock.side_effect = InvalidArguments
 
-    get_conf_mock.side_effect = lambda param, **kwargs: {
+    get_conf_mock.side_effect = lambda param, *args, **kwargs: {
       'ControlPort': '9050',
       'ControlListenAddress': ['127.0.0.1'],
     }[param]
@@ -217,7 +217,7 @@ class TestControl(unittest.TestCase):
 
     # non-local addresss
 
-    get_conf_mock.side_effect = lambda param, **kwargs: {
+    get_conf_mock.side_effect = lambda param, *args, **kwargs: {
       'ControlPort': '9050',
       'ControlListenAddress': ['27.4.4.1'],
     }[param]
@@ -679,7 +679,7 @@ class TestControl(unittest.TestCase):
 
     # check default if nothing was set
 
-    get_conf_mock.side_effect = lambda param, **kwargs: {
+    get_conf_mock.side_effect = lambda param, *args, **kwargs: {
       'BandwidthRate': '1073741824',
       'BandwidthBurst': '1073741824',
       'RelayBandwidthRate': '0',

@@ -5,12 +5,13 @@
 Commandline argument parsing for our test runner.
 """
 
-import collections
 import getopt
 
 import stem.util.conf
 import stem.util.log
 import test
+
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence
 
 LOG_TYPE_ERROR = """\
 '%s' isn't a logging runlevel, use one of the following instead:
@@ -23,138 +24,136 @@ CONFIG = stem.util.conf.config_dict('test', {
   'target.torrc': {},
 })
 
-DEFAULT_ARGS = {
-  'run_unit': False,
-  'run_integ': False,
-  'specific_test': [],
-  'exclude_test': [],
-  'logging_runlevel': None,
-  'logging_path': None,
-  'tor_path': 'tor',
-  'run_targets': [test.Target.RUN_OPEN],
-  'attribute_targets': [],
-  'quiet': False,
-  'verbose': False,
-  'print_help': False,
-}
-
 OPT = 'auit:l:qvh'
 OPT_EXPANDED = ['all', 'unit', 'integ', 'targets=', 'test=', 'exclude-test=', 'log=', 'log-file=', 'tor=', 'quiet', 'verbose', 'help']
 
 
-def parse(argv):
-  """
-  Parses our arguments, providing a named tuple with their values.
+class Arguments(NamedTuple):
+  run_unit: bool = False
+  run_integ: bool = False
+  specific_test: List[str] = []
+  exclude_test: List[str] = []
+  logging_runlevel: Optional[str] = None
+  logging_path: Optional[str] = None
+  tor_path: str = 'tor'
+  run_targets: List['test.Target'] = [test.Target.RUN_OPEN]
+  attribute_targets: List['test.Target'] = []
+  quiet: bool = False
+  verbose: bool = False
+  print_help: bool = False
 
-  :param list argv: input arguments to be parsed
+  @staticmethod
+  def parse(argv: Sequence[str]) -> 'test.arguments.Arguments':
+    """
+    Parses our commandline arguments into this class.
 
-  :returns: a **named tuple** with our parsed arguments
+    :param list argv: input arguments to be parsed
 
-  :raises: **ValueError** if we got an invalid argument
-  """
+    :returns: :class:`test.arguments.Arguments` for this commandline input
 
-  args = dict(DEFAULT_ARGS)
+    :raises: **ValueError** if we got an invalid argument
+    """
 
-  try:
-    recognized_args, unrecognized_args = getopt.getopt(argv, OPT, OPT_EXPANDED)
+    args = {}  # type: Dict[str, Any]
 
-    if unrecognized_args:
-      error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
-      raise getopt.GetoptError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
-  except Exception as exc:
-    raise ValueError('%s (for usage provide --help)' % exc)
+    try:
+      recognized_args, unrecognized_args = getopt.getopt(argv, OPT, OPT_EXPANDED)  # type: ignore
 
-  for opt, arg in recognized_args:
-    if opt in ('-a', '--all'):
-      args['run_unit'] = True
-      args['run_integ'] = True
-    elif opt in ('-u', '--unit'):
-      args['run_unit'] = True
-    elif opt in ('-i', '--integ'):
-      args['run_integ'] = True
-    elif opt in ('-t', '--targets'):
-      run_targets, attribute_targets = [], []
+      if unrecognized_args:
+        error_msg = "aren't recognized arguments" if len(unrecognized_args) > 1 else "isn't a recognized argument"
+        raise getopt.GetoptError("'%s' %s" % ("', '".join(unrecognized_args), error_msg))
+    except Exception as exc:
+      raise ValueError('%s (for usage provide --help)' % exc)
 
-      integ_targets = arg.split(',')
-      all_run_targets = [t for t in test.Target if CONFIG['target.torrc'].get(t) is not None]
+    for opt, arg in recognized_args:
+      if opt in ('-a', '--all'):
+        args['run_unit'] = True
+        args['run_integ'] = True
+      elif opt in ('-u', '--unit'):
+        args['run_unit'] = True
+      elif opt in ('-i', '--integ'):
+        args['run_integ'] = True
+      elif opt in ('-t', '--targets'):
+        run_targets, attribute_targets = [], []
 
-      # validates the targets and split them into run and attribute targets
+        integ_targets = arg.split(',')
+        all_run_targets = [t for t in test.Target if CONFIG['target.torrc'].get(t) is not None]
 
-      if not integ_targets:
-        raise ValueError('No targets provided')
+        # validates the targets and split them into run and attribute targets
 
-      for target in integ_targets:
-        if target not in test.Target:
-          raise ValueError('Invalid integration target: %s' % target)
-        elif target in all_run_targets:
-          run_targets.append(target)
-        else:
-          attribute_targets.append(target)
+        if not integ_targets:
+          raise ValueError('No targets provided')
 
-      # check if we were told to use all run targets
+        for target in integ_targets:
+          if target not in test.Target:
+            raise ValueError('Invalid integration target: %s' % target)
+          elif target in all_run_targets:
+            run_targets.append(target)
+          else:
+            attribute_targets.append(target)
 
-      if test.Target.RUN_ALL in attribute_targets:
-        attribute_targets.remove(test.Target.RUN_ALL)
-        run_targets = all_run_targets
+        # check if we were told to use all run targets
 
-      # if no RUN_* targets are provided then keep the default (otherwise we
-      # won't have any tests to run)
+        if test.Target.RUN_ALL in attribute_targets:
+          attribute_targets.remove(test.Target.RUN_ALL)
+          run_targets = all_run_targets
 
-      if run_targets:
-        args['run_targets'] = run_targets
+        # if no RUN_* targets are provided then keep the default (otherwise we
+        # won't have any tests to run)
 
-      args['attribute_targets'] = attribute_targets
-    elif opt == '--test':
-      args['specific_test'].append(crop_module_name(arg))
-    elif opt == '--exclude-test':
-      args['exclude_test'].append(crop_module_name(arg))
-    elif opt in ('-l', '--log'):
-      arg = arg.upper()
+        if run_targets:
+          args['run_targets'] = run_targets
 
-      if arg not in stem.util.log.LOG_VALUES:
-        raise ValueError(LOG_TYPE_ERROR % arg)
+        args['attribute_targets'] = attribute_targets
+      elif opt == '--test':
+        args['specific_test'].append(crop_module_name(arg))
+      elif opt == '--exclude-test':
+        args['exclude_test'].append(crop_module_name(arg))
+      elif opt in ('-l', '--log'):
+        arg = arg.upper()
 
-      args['logging_runlevel'] = arg
-    elif opt == '--log-file':
-      args['logging_path'] = arg
-    elif opt in ('--tor'):
-      args['tor_path'] = arg
-    elif opt in ('-q', '--quiet'):
-      args['quiet'] = True
-    elif opt in ('-v', '--verbose'):
-      args['verbose'] = True
-    elif opt in ('-h', '--help'):
-      args['print_help'] = True
+        if arg not in stem.util.log.LOG_VALUES:
+          raise ValueError(LOG_TYPE_ERROR % arg)
 
-  # translates our args dict into a named tuple
+        args['logging_runlevel'] = arg
+      elif opt == '--log-file':
+        args['logging_path'] = arg
+      elif opt in ('--tor'):
+        args['tor_path'] = arg
+      elif opt in ('-q', '--quiet'):
+        args['quiet'] = True
+      elif opt in ('-v', '--verbose'):
+        args['verbose'] = True
+      elif opt in ('-h', '--help'):
+        args['print_help'] = True
 
-  Args = collections.namedtuple('Args', args.keys())
-  return Args(**args)
+    return Arguments(**args)
+
+  @staticmethod
+  def get_help() -> str:
+    """
+    Provides usage information, as provided by the '--help' argument. This
+    includes a listing of the valid integration targets.
+
+    :returns: **str** with our usage information
+    """
+
+    help_msg = CONFIG['msg.help']
+
+    # gets the longest target length so we can show the entries in columns
+
+    target_name_length = max(map(len, test.Target))
+    description_format = '\n    %%-%is - %%s' % target_name_length
+
+    for target in test.Target:
+      help_msg += description_format % (target, CONFIG['target.description'].get(target, ''))
+
+    help_msg += '\n'
+
+    return help_msg
 
 
-def get_help():
-  """
-  Provides usage information, as provided by the '--help' argument. This
-  includes a listing of the valid integration targets.
-
-  :returns: **str** with our usage information
-  """
-
-  help_msg = CONFIG['msg.help']
-
-  # gets the longest target length so we can show the entries in columns
-  target_name_length = max(map(len, test.Target))
-  description_format = '\n    %%-%is - %%s' % target_name_length
-
-  for target in test.Target:
-    help_msg += description_format % (target, CONFIG['target.description'].get(target, ''))
-
-  help_msg += '\n'
-
-  return help_msg
-
-
-def crop_module_name(name):
+def crop_module_name(name: str) -> str:
   """
   Test modules have a 'test.unit.' or 'test.integ.' prefix which can
   be omitted from our '--test' argument. Cropping this so we can do

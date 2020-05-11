@@ -4,6 +4,8 @@
 import stem.response
 import stem.socket
 
+from typing import Dict, List
+
 
 class GetConfResponse(stem.response.ControlMessage):
   """
@@ -16,14 +18,14 @@ class GetConfResponse(stem.response.ControlMessage):
     values (**list** of **str**)
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     # 250-CookieAuthentication=0
     # 250-ControlPort=9100
     # 250-DataDirectory=/home/neena/.tor
     # 250 DirPort
 
-    self.entries = {}
+    self.entries = {}  # type: Dict[str, List[str]]
     remaining_lines = list(self)
 
     if self.content() == [('250', ' ', 'OK')]:

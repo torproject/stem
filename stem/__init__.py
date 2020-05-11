@@ -507,6 +507,8 @@ import traceback
 import stem.util
 import stem.util.enum
 
+from typing import Any, Optional, Sequence
+
 __version__ = '1.8.0-dev'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
@@ -565,7 +567,7 @@ __all__ = [
 ]
 
 # Constant that we use by default for our User-Agent when downloading descriptors
-stem.USER_AGENT = 'Stem/%s' % __version__
+USER_AGENT = 'Stem/%s' % __version__
 
 # Constant to indicate an undefined argument default. Usually we'd use None for
 # this, but users will commonly provide None as the argument so need something
@@ -584,7 +586,7 @@ class Endpoint(object):
   :var int port: port of the endpoint
   """
 
-  def __init__(self, address, port):
+  def __init__(self, address: str, port: int) -> None:
     if not stem.util.connection.is_valid_ipv4_address(address) and not stem.util.connection.is_valid_ipv6_address(address):
       raise ValueError("'%s' isn't a valid IPv4 or IPv6 address" % address)
     elif not stem.util.connection.is_valid_port(port):
@@ -593,13 +595,13 @@ class Endpoint(object):
     self.address = address
     self.port = int(port)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'address', 'port', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Endpoint) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -610,11 +612,11 @@ class ORPort(Endpoint):
   :var list link_protocols: link protocol version we're willing to establish
   """
 
-  def __init__(self, address, port, link_protocols = None):
+  def __init__(self, address: str, port: int, link_protocols: Optional[Sequence['stem.client.datatype.LinkProtocol']] = None) -> None:  # type: ignore
     super(ORPort, self).__init__(address, port)
     self.link_protocols = link_protocols
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'link_protocols', parent = Endpoint, cache = True)
 
 
@@ -642,7 +644,9 @@ class OperationFailed(ControllerError):
     message
   """
 
-  def __init__(self, code = None, message = None):
+  # TODO: should the code be an int instead?
+
+  def __init__(self, code: Optional[str] = None, message: Optional[str] = None) -> None:
     super(ControllerError, self).__init__(message)
     self.code = code
     self.message = message
@@ -658,10 +662,10 @@ class CircuitExtensionFailed(UnsatisfiableRequest):
   """
   An attempt to create or extend a circuit failed.
 
-  :var stem.response.CircuitEvent circ: response notifying us of the failure
+  :var stem.response.events.CircuitEvent circ: response notifying us of the failure
   """
 
-  def __init__(self, message, circ = None):
+  def __init__(self, message: str, circ: Optional['stem.response.events.CircuitEvent'] = None) -> None:  # type: ignore
     super(CircuitExtensionFailed, self).__init__(message = message)
     self.circ = circ
 
@@ -674,7 +678,7 @@ class DescriptorUnavailable(UnsatisfiableRequest):
      Subclassed under UnsatisfiableRequest rather than OperationFailed.
   """
 
-  def __init__(self, message):
+  def __init__(self, message: str) -> None:
     super(DescriptorUnavailable, self).__init__(message = message)
 
 
@@ -685,7 +689,7 @@ class Timeout(UnsatisfiableRequest):
   .. versionadded:: 1.7.0
   """
 
-  def __init__(self, message):
+  def __init__(self, message: str) -> None:
     super(Timeout, self).__init__(message = message)
 
 
@@ -705,7 +709,7 @@ class InvalidArguments(InvalidRequest):
   :var list arguments: a list of arguments which were invalid
   """
 
-  def __init__(self, code = None, message = None, arguments = None):
+  def __init__(self, code: Optional[str] = None, message: Optional[str] = None, arguments: Optional[Sequence[str]] = None):
     super(InvalidArguments, self).__init__(code, message)
     self.arguments = arguments
 
@@ -736,7 +740,7 @@ class DownloadFailed(IOError):
   :var str stacktrace_str: string representation of the stacktrace
   """
 
-  def __init__(self, url, error, stacktrace, message = None):
+  def __init__(self, url: str, error: BaseException, stacktrace: Any, message: Optional[str] = None) -> None:
     if message is None:
       # The string representation of exceptions can reside in several places.
       # urllib.URLError use a 'reason' attribute that in turn may referrence
@@ -773,7 +777,7 @@ class DownloadTimeout(DownloadFailed):
   .. versionadded:: 1.8.0
   """
 
-  def __init__(self, url, error, stacktrace, timeout):
+  def __init__(self, url: str, error: BaseException, stacktrace: Any, timeout: float):
     message = 'Failed to download from %s: %0.1f second timeout reached' % (url, timeout)
     super(DownloadTimeout, self).__init__(url, error, stacktrace, message)
 
@@ -917,7 +921,7 @@ StreamStatus = stem.util.enum.UppercaseEnum(
 )
 
 # StreamClosureReason is a superset of RelayEndReason
-StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + [
+StreamClosureReason = stem.util.enum.UppercaseEnum(*(RelayEndReason.keys() + [  # type: ignore
   'END',
   'PRIVATE_ADDR',
 ]))

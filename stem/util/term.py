@@ -50,6 +50,8 @@ Utilities for working with the terminal.
 import stem.util.enum
 import stem.util.str_tools
 
+from typing import Optional, Union
+
 TERM_COLORS = ('BLACK', 'RED', 'GREEN', 'YELLOW', 'BLUE', 'MAGENTA', 'CYAN', 'WHITE')
 
 # DISABLE_COLOR_SUPPORT is *not* being vended to Stem users. This is likely to
@@ -70,18 +72,18 @@ CSI = '\x1B[%sm'
 RESET = CSI % '0'
 
 
-def encoding(*attrs):
+def encoding(*attrs: Union['stem.util.term.Color', 'stem.util.term.BgColor', 'stem.util.term.Attr']) -> Optional[str]:
   """
   Provides the ANSI escape sequence for these terminal color or attributes.
 
   .. versionadded:: 1.5.0
 
-  :param list attr: :data:`~stem.util.terminal.Color`,
-    :data:`~stem.util.terminal.BgColor`, or :data:`~stem.util.terminal.Attr` to
+  :param list attr: :data:`~stem.util.term.Color`,
+    :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` to
     provide an ecoding for
 
   :returns: **str** of the ANSI escape sequence, **None** no attributes are
-    recognized
+    unrecognized
   """
 
   term_encodings = []
@@ -97,9 +99,11 @@ def encoding(*attrs):
 
   if term_encodings:
     return CSI % ';'.join(term_encodings)
+  else:
+    return None
 
 
-def format(msg, *attr):
+def format(msg: str, *attr: Union['stem.util.term.Color', 'stem.util.term.BgColor', 'stem.util.term.Attr']) -> str:
   """
   Simple terminal text formatting using `ANSI escape sequences
   <https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_codes>`_.
@@ -118,17 +122,17 @@ def format(msg, *attr):
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like 'red' are fine)
 
-  :returns: **unicode** wrapped with ANSI escape encodings, starting with the given
+  :returns: **str** wrapped with ANSI escape encodings, starting with the given
     attributes and ending with a reset
   """
 
   msg = stem.util.str_tools._to_unicode(msg)
+  attr = list(attr)
 
   if DISABLE_COLOR_SUPPORT:
     return msg
 
   if Attr.LINES in attr:
-    attr = list(attr)
     attr.remove(Attr.LINES)
     lines = [format(line, *attr) for line in msg.split('\n')]
     return '\n'.join(lines)

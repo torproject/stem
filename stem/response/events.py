@@ -1,6 +1,9 @@
 # Copyright 2012-2020, Damian Johnson and The Tor Project
 # See LICENSE for licensing information
+#
+# mypy: ignore-errors
 
+import datetime
 import io
 import re
 
@@ -12,6 +15,7 @@ import stem.util
 import stem.version
 
 from stem.util import connection, log, str_tools, tor_tools
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 # Matches keyword=value arguments. This can't be a simple "(.*)=(.*)" pattern
 # because some positional arguments, like circuit paths, can have an equal
@@ -33,35 +37,39 @@ class Event(stem.response.ControlMessage):
   :var dict keyword_args: key/value arguments of the event
   """
 
-  _POSITIONAL_ARGS = ()    # attribute names for recognized positional arguments
-  _KEYWORD_ARGS = {}       # map of 'keyword => attribute' for recognized attributes
-  _QUOTED = ()             # positional arguments that are quoted
-  _OPTIONALLY_QUOTED = ()  # positional arguments that may or may not be quoted
+  # TODO: Replace metaprogramming with concrete implementations (to simplify type information)
+  # TODO: _QUOTED looks to be unused
+
+  _POSITIONAL_ARGS = ()    # type: Tuple[str, ...] # attribute names for recognized positional arguments
+  _KEYWORD_ARGS = {}       # type: Dict[str, str] # map of 'keyword => attribute' for recognized attributes
+  _QUOTED = ()             # type: Tuple[str, ...] # positional arguments that are quoted
+  _OPTIONALLY_QUOTED = ()  # type: Tuple[str, ...] # positional arguments that may or may not be quoted
   _SKIP_PARSING = False    # skip parsing contents into our positional_args and keyword_args
   _VERSION_ADDED = stem.version.Version('0.1.1.1-alpha')  # minimum version with control-spec V1 event support
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     if not str(self).strip():
       raise stem.ProtocolError('Received a blank tor event. Events must at the very least have a type.')
 
     self.type = str(self).split()[0]
-    self.positional_args = []
-    self.keyword_args = {}
+    self.positional_args = []  # type: List[str]
+    self.keyword_args = {}  # type: Dict[str, str]
 
     # if we're a recognized event type then translate ourselves into that subclass
 
     if self.type in EVENT_TYPE_TO_CLASS:
       self.__class__ = EVENT_TYPE_TO_CLASS[self.type]
+      self.__init__()  # type: ignore
 
     if not self._SKIP_PARSING:
       self._parse_standard_attr()
 
     self._parse()
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'arrived_at', parent = stem.response.ControlMessage, cache = True)
 
-  def _parse_standard_attr(self):
+  def _parse_standard_attr(self) -> None:
     """
     Most events are of the form...
     650 *( positional_args ) *( key "=" value )
@@ -122,7 +130,7 @@ class Event(stem.response.ControlMessage):
     for controller_attr_name, attr_name in self._KEYWORD_ARGS.items():
       setattr(self, attr_name, self.keyword_args.get(controller_attr_name))
 
-  def _iso_timestamp(self, timestamp):
+  def _iso_timestamp(self, timestamp: str) -> datetime.datetime:
     """
     Parses an iso timestamp (ISOTime2Frac in the control-spec).
 
@@ -142,10 +150,10 @@ class Event(stem.response.ControlMessage):
       raise stem.ProtocolError('Unable to parse timestamp (%s): %s' % (exc, self))
 
   # method overwritten by our subclasses for special handling that they do
-  def _parse(self):
+  def _parse(self) -> None:
     pass
 
-  def _log_if_unrecognized(self, attr, attr_enum):
+  def _log_if_unrecognized(self, attr: str, attr_enum: Union[stem.util.enum.Enum, Sequence[stem.util.enum.Enum]]) -> None:
     """
     Checks if an attribute exists in a given enumeration, logging a message if
     it isn't. Attributes can either be for a string or collection of strings
@@ -194,9 +202,17 @@ class AddrMapEvent(Event):
     'EXPIRES': 'utc_expiry',
     'CACHED': 'cached',
   }
-  _OPTIONALLY_QUOTED = ('expiry')
+  _OPTIONALLY_QUOTED = ('expiry',)
 
-  def _parse(self):
+  def __init__(self):
+    self.hostname = None  # type: Optional[str]
+    self.destination = None  # type: Optional[str]
+    self.expiry = None  # type: Optional[datetime.datetime]
+    self.error = None  # type: Optional[str]
+    self.utc_expiry = None  # type: Optional[datetime.datetime]
+    self.cached = None  # type: Optional[bool]
+
+  def _parse(self) -> None:
     if self.destination == '<error>':
       self.destination = None
 
@@ -234,7 +250,11 @@ class BandwidthEvent(Event):
 
   _POSITIONAL_ARGS = ('read', 'written')
 
-  def _parse(self):
+  def __init__(self):
+    self.read = None  # type: Optional[int]
+    self.written = None  # type: Optional[int]
+
+  def _parse(self) -> None:
     if not self.read:
       raise stem.ProtocolError('BW event is missing its read value')
     elif not self.written:
@@ -277,7 +297,18 @@ class BuildTimeoutSetEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.2.7-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.set_type = None  # type: Optional[stem.TimeoutSetType]
+    self.total_times = None  # type: Optional[int]
+    self.timeout = None  # type: Optional[int]
+    self.xm = None  # type: Optional[int]
+    self.alpha = None  # type: Optional[float]
+    self.quantile = None  # type: Optional[float]
+    self.timeout_rate = None  # type: Optional[float]
+    self.close_timeout = None  # type: Optional[int]
+    self.close_rate = None  # type: Optional[float]
+
+  def _parse(self) -> None:
     # convert our integer and float parameters
 
     for param in ('total_times', 'timeout', 'xm', 'close_timeout'):
@@ -346,7 +377,21 @@ class CircuitEvent(Event):
     'SOCKS_PASSWORD': 'socks_password',
   }
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.status = None  # type: Optional[stem.CircStatus]
+    self.path = None  # type: Optional[Tuple[Tuple[str, str], ...]]
+    self.build_flags = None  # type: Optional[Tuple[stem.CircBuildFlag, ...]]
+    self.purpose = None  # type: Optional[stem.CircPurpose]
+    self.hs_state = None  # type: Optional[stem.HiddenServiceState]
+    self.rend_query = None  # type: Optional[str]
+    self.created = None  # type: Optional[datetime.datetime]
+    self.reason = None  # type: Optional[stem.CircClosureReason]
+    self.remote_reason = None  # type: Optional[stem.CircClosureReason]
+    self.socks_username = None  # type: Optional[str]
+    self.socks_password = None  # type: Optional[str]
+
+  def _parse(self) -> None:
     self.path = tuple(stem.control._parse_circ_path(self.path))
     self.created = self._iso_timestamp(self.created)
 
@@ -363,7 +408,7 @@ class CircuitEvent(Event):
     self._log_if_unrecognized('reason', stem.CircClosureReason)
     self._log_if_unrecognized('remote_reason', stem.CircClosureReason)
 
-  def _compare(self, other, method):
+  def _compare(self, other: Any, method: Any) -> bool:
     # sorting circuit events by their identifier
 
     if not isinstance(other, CircuitEvent):
@@ -374,10 +419,10 @@ class CircuitEvent(Event):
 
     return method(my_id, their_id) if my_id != their_id else method(hash(self), hash(other))
 
-  def __gt__(self, other):
+  def __gt__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s > o)
 
-  def __ge__(self, other):
+  def __ge__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s >= o)
 
 
@@ -414,7 +459,19 @@ class CircMinorEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.3.11-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.event = None  # type: Optional[stem.CircEvent]
+    self.path = None  # type: Optional[Tuple[Tuple[str, str], ...]]
+    self.build_flags = None  # type: Optional[Tuple[stem.CircBuildFlag, ...]]
+    self.purpose = None  # type: Optional[stem.CircPurpose]
+    self.hs_state = None  # type: Optional[stem.HiddenServiceState]
+    self.rend_query = None  # type: Optional[str]
+    self.created = None  # type: Optional[datetime.datetime]
+    self.old_purpose = None  # type: Optional[stem.CircPurpose]
+    self.old_hs_state = None  # type: Optional[stem.HiddenServiceState]
+
+  def _parse(self) -> None:
     self.path = tuple(stem.control._parse_circ_path(self.path))
     self.created = self._iso_timestamp(self.created)
 
@@ -450,7 +507,12 @@ class ClientsSeenEvent(Event):
   }
   _VERSION_ADDED = stem.version.Version('0.2.1.10-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.start_time = None  # type: Optional[datetime.datetime]
+    self.locales = None  # type: Optional[Dict[str, int]]
+    self.ip_versions = None  # type: Optional[Dict[str, int]]
+
+  def _parse(self) -> None:
     if self.start_time is not None:
       self.start_time = stem.util.str_tools._parse_timestamp(self.start_time)
 
@@ -509,7 +571,11 @@ class ConfChangedEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.2.3.3-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.changed = {}  # type: Dict[str, List[str]]
+    self.unset = []  # type: List[str]
+
+  def _parse(self) -> None:
     self.changed = {}
     self.unset = []
 
@@ -540,6 +606,9 @@ class DescChangedEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.1.2.2-alpha')
 
+  def __init__(self):
+    pass
+
 
 class GuardEvent(Event):
   """
@@ -563,10 +632,14 @@ class GuardEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.1.2.5-alpha')
   _POSITIONAL_ARGS = ('guard_type', 'endpoint', 'status')
 
-  def _parse(self):
-    self.endpoint_fingerprint = None
-    self.endpoint_nickname = None
+  def __init__(self):
+    self.guard_type = None  # type: Optional[stem.GuardType]
+    self.endpoint = None  # type: Optional[str]
+    self.endpoint_fingerprint = None  # type: Optional[str]
+    self.endpoint_nickname = None  # type: Optional[str]
+    self.status = None  # type: Optional[stem.GuardStatus]
 
+  def _parse(self) -> None:
     try:
       self.endpoint_fingerprint, self.endpoint_nickname = \
         stem.control._parse_circ_entry(self.endpoint)
@@ -610,10 +683,19 @@ class HSDescEvent(Event):
   _POSITIONAL_ARGS = ('action', 'address', 'authentication', 'directory', 'descriptor_id')
   _KEYWORD_ARGS = {'REASON': 'reason', 'REPLICA': 'replica', 'HSDIR_INDEX': 'index'}
 
-  def _parse(self):
-    self.directory_fingerprint = None
-    self.directory_nickname = None
+  def __init__(self):
+    self.action = None  # type: Optional[stem.HSDescAction]
+    self.address = None  # type: Optional[str]
+    self.authentication = None  # type: Optional[stem.HSAuth]
+    self.directory = None  # type: Optional[str]
+    self.directory_fingerprint = None  # type: Optional[str]
+    self.directory_nickname = None  # type: Optional[str]
+    self.descriptor_id = None  # type: Optional[str]
+    self.reason = None  # type: Optional[stem.HSDescReason]
+    self.replica = None  # type: Optional[int]
+    self.index = None  # type: Optional[str]
 
+  def _parse(self) -> None:
     if self.directory != 'UNKNOWN':
       try:
         self.directory_fingerprint, self.directory_nickname = \
@@ -650,12 +732,17 @@ class HSDescContentEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.2.7.1-alpha')
   _POSITIONAL_ARGS = ('address', 'descriptor_id', 'directory')
 
-  def _parse(self):
+  def __init__(self):
+    self.address = None  # type: Optional[str]
+    self.descriptor_id = None  # type: Optional[str]
+    self.directory = None  # type: Optional[str]
+    self.directory_fingerprint = None  # type: Optional[str]
+    self.directory_nickname = None  # type: Optional[str]
+    self.descriptor = None  # type: Optional[stem.descriptor.hidden_service.HiddenServiceDescriptorV2]
+
+  def _parse(self) -> None:
     if self.address == 'UNKNOWN':
       self.address = None
-
-    self.directory_fingerprint = None
-    self.directory_nickname = None
 
     try:
       self.directory_fingerprint, self.directory_nickname = \
@@ -686,7 +773,11 @@ class LogEvent(Event):
 
   _SKIP_PARSING = True
 
-  def _parse(self):
+  def __init__(self):
+    self.runlevel = None  # type: Optional[stem.Runlevel]
+    self.message = None  # type: Optional[str]
+
+  def _parse(self) -> None:
     self.runlevel = self.type
     self._log_if_unrecognized('runlevel', stem.Runlevel)
 
@@ -709,7 +800,10 @@ class NetworkStatusEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.descriptors = None  # type: Optional[List[stem.descriptor.router_status_entry.RouterStatusEntryV3]]
+
+  def _parse(self) -> None:
     content = str(self).lstrip('NS\n').rstrip('\nOK')
 
     self.descriptors = list(stem.descriptor.router_status_entry._parse_file(
@@ -734,6 +828,9 @@ class NetworkLivenessEvent(Event):
   _VERSION_ADDED = stem.version.Version('0.2.7.2-alpha')
   _POSITIONAL_ARGS = ('status',)
 
+  def __init__(self):
+    self.status = None  # type: Optional[str]
+
 
 class NewConsensusEvent(Event):
   """
@@ -753,11 +850,14 @@ class NewConsensusEvent(Event):
   _SKIP_PARSING = True
   _VERSION_ADDED = stem.version.Version('0.2.1.13-alpha')
 
-  def _parse(self):
-    self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
-    self._parsed = None
+  def __init__(self):
+    self.consensus_content = None  # type: Optional[str]
+    self._parsed = None  # type: List[stem.descriptor.router_status_entry.RouterStatusEntryV3]
 
-  def entries(self):
+  def _parse(self) -> None:
+    self.consensus_content = str(self).lstrip('NEWCONSENSUS\n').rstrip('\nOK')
+
+  def entries(self) -> List[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
     """
     Relay router status entries residing within this consensus.
 
@@ -773,7 +873,7 @@ class NewConsensusEvent(Event):
         entry_class = stem.descriptor.router_status_entry.RouterStatusEntryV3,
       ))
 
-    return self._parsed
+    return list(self._parsed)
 
 
 class NewDescEvent(Event):
@@ -791,7 +891,10 @@ class NewDescEvent(Event):
     new descriptors
   """
 
-  def _parse(self):
+  def __init__(self):
+    self.relays = ()  # type: Tuple[Tuple[str, str], ...]
+
+  def _parse(self) -> None:
     self.relays = tuple([stem.control._parse_circ_entry(entry) for entry in str(self).split()[1:]])
 
 
@@ -832,12 +935,18 @@ class ORConnEvent(Event):
     'ID': 'id',
   }
 
-  def _parse(self):
-    self.endpoint_fingerprint = None
-    self.endpoint_nickname = None
-    self.endpoint_address = None
-    self.endpoint_port = None
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.endpoint = None  # type: Optional[str]
+    self.endpoint_fingerprint = None  # type: Optional[str]
+    self.endpoint_nickname = None  # type: Optional[str]
+    self.endpoint_address = None  # type: Optional[str]
+    self.endpoint_port = None  # type: Optional[int]
+    self.status = None  # type: Optional[stem.ORStatus]
+    self.reason = None  # type: Optional[stem.ORClosureReason]
+    self.circ_count = None  # type: Optional[int]
 
+  def _parse(self) -> None:
     try:
       self.endpoint_fingerprint, self.endpoint_nickname = \
         stem.control._parse_circ_entry(self.endpoint)
@@ -886,7 +995,10 @@ class SignalEvent(Event):
   _POSITIONAL_ARGS = ('signal',)
   _VERSION_ADDED = stem.version.Version('0.2.3.1-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.signal = None  # type: Optional[stem.Signal]
+
+  def _parse(self) -> None:
     # log if we recieved an unrecognized signal
     expected_signals = (
       stem.Signal.RELOAD,
@@ -918,7 +1030,13 @@ class StatusEvent(Event):
   _POSITIONAL_ARGS = ('runlevel', 'action')
   _VERSION_ADDED = stem.version.Version('0.1.2.3-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.status_type = None  # type: Optional[stem.StatusType]
+    self.runlevel = None  # type: Optional[stem.Runlevel]
+    self.action = None  # type: Optional[str]
+    self.arguments = None  # type: Optional[Dict[str, str]]
+
+  def _parse(self) -> None:
     if self.type == 'STATUS_GENERAL':
       self.status_type = stem.StatusType.GENERAL
     elif self.type == 'STATUS_CLIENT':
@@ -970,7 +1088,22 @@ class StreamEvent(Event):
     'PURPOSE': 'purpose',
   }
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.status = None  # type: Optional[stem.StreamStatus]
+    self.circ_id = None  # type: Optional[str]
+    self.target = None  # type: Optional[str]
+    self.target_address = None  # type: Optional[str]
+    self.target_port = None  # type: Optional[int]
+    self.reason = None  # type: Optional[stem.StreamClosureReason]
+    self.remote_reason = None  # type: Optional[stem.StreamClosureReason]
+    self.source = None  # type: Optional[stem.StreamSource]
+    self.source_addr = None  # type: Optional[str]
+    self.source_address = None  # type: Optional[str]
+    self.source_port = None  # type: Optional[str]
+    self.purpose = None  # type: Optional[stem.StreamPurpose]
+
+  def _parse(self) -> None:
     if self.target is None:
       raise stem.ProtocolError("STREAM event didn't have a target: %s" % self)
     else:
@@ -1029,7 +1162,13 @@ class StreamBwEvent(Event):
   _POSITIONAL_ARGS = ('id', 'written', 'read', 'time')
   _VERSION_ADDED = stem.version.Version('0.1.2.8-beta')
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.written = None  # type: Optional[int]
+    self.read = None  # type: Optional[int]
+    self.time = None  # type: Optional[datetime.datetime]
+
+  def _parse(self) -> None:
     if not tor_tools.is_valid_stream_id(self.id):
       raise stem.ProtocolError("Stream IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.written:
@@ -1062,7 +1201,13 @@ class TransportLaunchedEvent(Event):
   _POSITIONAL_ARGS = ('type', 'name', 'address', 'port')
   _VERSION_ADDED = stem.version.Version('0.2.5.0-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.type = None  # type: Optional[str]
+    self.name = None  # type: Optional[str]
+    self.address = None  # type: Optional[str]
+    self.port = None  # type: Optional[int]
+
+  def _parse(self) -> None:
     if self.type not in ('server', 'client'):
       raise stem.ProtocolError("Transport type should either be 'server' or 'client': %s" % self)
 
@@ -1104,7 +1249,13 @@ class ConnectionBandwidthEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.conn_type = None  # type: Optional[stem.ConnectionType]
+    self.read = None  # type: Optional[int]
+    self.written = None  # type: Optional[int]
+
+  def _parse(self) -> None:
     if not self.id:
       raise stem.ProtocolError('CONN_BW event is missing its id')
     elif not self.conn_type:
@@ -1163,7 +1314,17 @@ class CircuitBandwidthEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.read = None  # type: Optional[int]
+    self.written = None  # type: Optional[int]
+    self.delivered_read = None  # type: Optional[int]
+    self.delivered_written = None  # type: Optional[int]
+    self.overhead_read = None  # type: Optional[int]
+    self.overhead_written = None  # type: Optional[int]
+    self.time = None  # type: Optional[datetime.datetime]
+
+  def _parse(self) -> None:
     if not self.id:
       raise stem.ProtocolError('CIRC_BW event is missing its id')
     elif not self.read:
@@ -1233,7 +1394,20 @@ class CellStatsEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.id = None  # type: Optional[str]
+    self.inbound_queue = None  # type: Optional[str]
+    self.inbound_connection = None  # type: Optional[str]
+    self.inbound_added = None  # type: Optional[Dict[str, int]]
+    self.inbound_removed = None  # type: Optional[Dict[str, int]]
+    self.inbound_time = None  # type: Optional[Dict[str, int]]
+    self.outbound_queue = None  # type: Optional[str]
+    self.outbound_connection = None  # type: Optional[str]
+    self.outbound_added = None  # type: Optional[Dict[str, int]]
+    self.outbound_removed = None  # type: Optional[Dict[str, int]]
+    self.outbound_time = None  # type: Optional[Dict[str, int]]
+
+  def _parse(self) -> None:
     if self.id and not tor_tools.is_valid_circuit_id(self.id):
       raise stem.ProtocolError("Circuit IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif self.inbound_queue and not tor_tools.is_valid_circuit_id(self.inbound_queue):
@@ -1279,7 +1453,14 @@ class TokenBucketEmptyEvent(Event):
 
   _VERSION_ADDED = stem.version.Version('0.2.5.2-alpha')
 
-  def _parse(self):
+  def __init__(self):
+    self.bucket = None  # type: Optional[stem.TokenBucket]
+    self.id = None  # type: Optional[str]
+    self.read = None  # type: Optional[int]
+    self.written = None  # type: Optional[int]
+    self.last_refill = None  # type: Optional[int]
+
+  def _parse(self) -> None:
     if self.id and not tor_tools.is_valid_connection_id(self.id):
       raise stem.ProtocolError("Connection IDs must be one to sixteen alphanumeric characters, got '%s': %s" % (self.id, self))
     elif not self.read.isdigit():
@@ -1296,7 +1477,7 @@ class TokenBucketEmptyEvent(Event):
     self._log_if_unrecognized('bucket', stem.TokenBucket)
 
 
-def _parse_cell_type_mapping(mapping):
+def _parse_cell_type_mapping(mapping: str) -> Dict[str, int]:
   """
   Parses a mapping of the form...
 

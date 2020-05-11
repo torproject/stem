@@ -69,7 +69,10 @@ import hashlib
 
 import stem.exit_policy
 
+from typing import Any, BinaryIO, Dict, Iterator, Mapping, Optional, Sequence, Type, Union
+
 from stem.descriptor import (
+  ENTRY_TYPE,
   Descriptor,
   DigestHash,
   DigestEncoding,
@@ -102,7 +105,7 @@ SINGLE_FIELDS = (
 )
 
 
-def _parse_file(descriptor_file, validate = False, **kwargs):
+def _parse_file(descriptor_file: BinaryIO, validate: bool = False, **kwargs: Any) -> Iterator['stem.descriptor.microdescriptor.Microdescriptor']:
   """
   Iterates over the microdescriptors in a file.
 
@@ -117,6 +120,9 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
     * **ValueError** if the contents is malformed and validate is True
     * **IOError** if the file can't be read
   """
+
+  if kwargs:
+    raise ValueError('BUG: keyword arguments unused by microdescriptors')
 
   while True:
     annotations = _read_until_keywords('onion-key', descriptor_file)
@@ -154,12 +160,12 @@ def _parse_file(descriptor_file, validate = False, **kwargs):
 
       descriptor_text = bytes.join(b'', descriptor_lines)
 
-      yield Microdescriptor(descriptor_text, validate, annotations, **kwargs)
+      yield Microdescriptor(descriptor_text, validate, annotations)
     else:
       break  # done parsing descriptors
 
 
-def _parse_id_line(descriptor, entries):
+def _parse_id_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE) -> None:
   identities = {}
 
   for entry in _values('id', entries):
@@ -244,12 +250,12 @@ class Microdescriptor(Descriptor):
   }
 
   @classmethod
-  def content(cls, attr = None, exclude = ()):
+  def content(cls: Type['stem.descriptor.microdescriptor.Microdescriptor'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = ()) -> bytes:
     return _descriptor_content(attr, exclude, (
       ('onion-key', _random_crypto_blob('RSA PUBLIC KEY')),
     ))
 
-  def __init__(self, raw_contents, validate = False, annotations = None):
+  def __init__(self, raw_contents: bytes, validate: bool = False, annotations: Optional[Sequence[bytes]] = None) -> None:
     super(Microdescriptor, self).__init__(raw_contents, lazy_load = not validate)
     self._annotation_lines = annotations if annotations else []
     entries = _descriptor_components(raw_contents, validate)
@@ -260,7 +266,7 @@ class Microdescriptor(Descriptor):
     else:
       self._entries = entries
 
-  def digest(self, hash_type = DigestHash.SHA256, encoding = DigestEncoding.BASE64):
+  def digest(self, hash_type: 'stem.descriptor.DigestHash' = DigestHash.SHA256, encoding: 'stem.descriptor.DigestEncoding' = DigestEncoding.BASE64) -> Union[str, 'hashlib._HASH']:  # type: ignore
     """
     Digest of this microdescriptor. These are referenced by...
 
@@ -285,7 +291,7 @@ class Microdescriptor(Descriptor):
       raise NotImplementedError('Microdescriptor digests are only available in sha1 and sha256, not %s' % hash_type)
 
   @functools.lru_cache()
-  def get_annotations(self):
+  def get_annotations(self) -> Dict[bytes, bytes]:
     """
     Provides content that appeared prior to the descriptor. If this comes from
     the cached-microdescs then this commonly contains content like...
@@ -308,7 +314,7 @@ class Microdescriptor(Descriptor):
 
     return annotation_dict
 
-  def get_annotation_lines(self):
+  def get_annotation_lines(self) -> Sequence[bytes]:
     """
     Provides the lines of content that appeared prior to the descriptor. This
     is the same as the
@@ -320,7 +326,7 @@ class Microdescriptor(Descriptor):
 
     return self._annotation_lines
 
-  def _check_constraints(self, entries):
+  def _check_constraints(self, entries: ENTRY_TYPE) -> None:
     """
     Does a basic check that the entries conform to this descriptor type's
     constraints.
@@ -341,5 +347,5 @@ class Microdescriptor(Descriptor):
     if 'onion-key' != list(entries.keys())[0]:
       raise ValueError("Microdescriptor must start with a 'onion-key' entry")
 
-  def _name(self, is_plural = False):
+  def _name(self, is_plural: bool = False) -> str:
     return 'microdescriptors' if is_plural else 'microdescriptor'

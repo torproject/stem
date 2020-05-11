@@ -49,10 +49,12 @@ from stem import UNDEFINED
 from stem.client.datatype import HASH_LEN, ZERO, LinkProtocol, Address, Certificate, CloseReason, RelayCommand, Size, split
 from stem.util import datetime_to_unix, str_tools
 
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Type, Union
+
 FIXED_PAYLOAD_LEN = 509  # PAYLOAD_LEN, per tor-spec section 0.2
 AUTH_CHALLENGE_SIZE = 32
 
-CELL_TYPE_SIZE = Size.CHAR
+CELL_TYPE_SIZE = Size.CHAR  # type: stem.client.datatype.Size
 PAYLOAD_LEN_SIZE = Size.SHORT
 RELAY_DIGEST_SIZE = Size.LONG
 
@@ -96,16 +98,18 @@ class Cell(object):
   VALUE = -1
   IS_FIXED_SIZE = False
 
-  def __init__(self, unused = b''):
+  def __init__(self, unused: bytes = b'') -> None:
     super(Cell, self).__init__()
     self.unused = unused
 
   @staticmethod
-  def by_name(name):
+  def by_name(name: str) -> Type['stem.client.cell.Cell']:
     """
     Provides cell attributes by its name.
 
     :param str name: cell command to fetch
+
+    :returns: cell class with this name
 
     :raises: **ValueError** if cell type is invalid
     """
@@ -117,11 +121,13 @@ class Cell(object):
     raise ValueError("'%s' isn't a valid cell type" % name)
 
   @staticmethod
-  def by_value(value):
+  def by_value(value: int) -> Type['stem.client.cell.Cell']:
     """
     Provides cell attributes by its value.
 
     :param int value: cell value to fetch
+
+    :returns: cell class with this numeric value
 
     :raises: **ValueError** if cell type is invalid
     """
@@ -132,11 +138,11 @@ class Cell(object):
 
     raise ValueError("'%s' isn't a valid cell value" % value)
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     raise NotImplementedError('Packing not yet implemented for %s cells' % type(self).NAME)
 
   @staticmethod
-  def unpack(content, link_protocol):
+  def unpack(content: bytes, link_protocol: 'stem.client.datatype.LinkProtocol') -> Iterator['stem.client.cell.Cell']:
     """
     Unpacks all cells from a response.
 
@@ -155,7 +161,7 @@ class Cell(object):
       yield cell
 
   @staticmethod
-  def pop(content, link_protocol):
+  def pop(content: bytes, link_protocol: 'stem.client.datatype.LinkProtocol') -> Tuple['stem.client.cell.Cell', bytes]:
     """
     Unpacks the first cell.
 
@@ -187,7 +193,7 @@ class Cell(object):
     return cls._unpack(payload, circ_id, link_protocol), content
 
   @classmethod
-  def _pack(cls, link_protocol, payload, unused = b'', circ_id = None):
+  def _pack(cls: Type['stem.client.cell.Cell'], link_protocol: 'stem.client.datatype.LinkProtocol', payload: bytes, unused: bytes = b'', circ_id: Optional[int] = None) -> bytes:
     """
     Provides bytes that can be used on the wire for these cell attributes.
     Format of a properly packed cell depends on if it's fixed or variable
@@ -241,13 +247,13 @@ class Cell(object):
     return bytes(cell)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls: Type['stem.client.cell.Cell'], content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.Cell':
     """
     Subclass implementation for unpacking cell content.
 
     :param bytes content: payload to decode
-    :param stem.client.datatype.LinkProtocol link_protocol: link protocol version
     :param int circ_id: circuit id cell is for
+    :param stem.client.datatype.LinkProtocol link_protocol: link protocol version
 
     :returns: instance of this cell type
 
@@ -256,10 +262,10 @@ class Cell(object):
 
     raise NotImplementedError('Unpacking not yet implemented for %s cells' % cls.NAME)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Cell) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -270,7 +276,7 @@ class CircuitCell(Cell):
   :var int circ_id: circuit id
   """
 
-  def __init__(self, circ_id, unused = b''):
+  def __init__(self, circ_id: int, unused: bytes = b'') -> None:
     super(CircuitCell, self).__init__(unused)
     self.circ_id = circ_id
 
@@ -286,7 +292,7 @@ class PaddingCell(Cell):
   VALUE = 0
   IS_FIXED_SIZE = True
 
-  def __init__(self, payload = None):
+  def __init__(self, payload: Optional[bytes] = None) -> None:
     if not payload:
       payload = os.urandom(FIXED_PAYLOAD_LEN)
     elif len(payload) != FIXED_PAYLOAD_LEN:
@@ -295,14 +301,14 @@ class PaddingCell(Cell):
     super(PaddingCell, self).__init__()
     self.payload = payload
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return PaddingCell._pack(link_protocol, self.payload)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.PaddingCell':
     return PaddingCell(content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'payload', cache = True)
 
 
@@ -311,8 +317,8 @@ class CreateCell(CircuitCell):
   VALUE = 1
   IS_FIXED_SIZE = True
 
-  def __init__(self):
-    super(CreateCell, self).__init__()  # TODO: implement
+  def __init__(self, circ_id: int, unused: bytes = b'') -> None:
+    super(CreateCell, self).__init__(circ_id, unused)  # TODO: implement
 
 
 class CreatedCell(CircuitCell):
@@ -320,8 +326,8 @@ class CreatedCell(CircuitCell):
   VALUE = 2
   IS_FIXED_SIZE = True
 
-  def __init__(self):
-    super(CreatedCell, self).__init__()  # TODO: implement
+  def __init__(self, circ_id: int, unused: bytes = b'') -> None:
+    super(CreatedCell, self).__init__(circ_id, unused)  # TODO: implement
 
 
 class RelayCell(CircuitCell):
@@ -346,13 +352,13 @@ class RelayCell(CircuitCell):
   VALUE = 3
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, command, data, digest = 0, stream_id = 0, recognized = 0, unused = b''):
+  def __init__(self, circ_id: int, command, data: Union[bytes, str], digest: Union[int, bytes, str, 'hashlib._HASH'] = 0, stream_id: int = 0, recognized: int = 0, unused: bytes = b'') -> None:  # type: ignore
     if 'hash' in str(type(digest)).lower():
       # Unfortunately hashlib generates from a dynamic private class so
       # isinstance() isn't such a great option. With python2/python3 the
       # name is 'hashlib.HASH' whereas PyPy calls it just 'HASH' or 'Hash'.
 
-      digest_packed = digest.digest()[:RELAY_DIGEST_SIZE.size]
+      digest_packed = digest.digest()[:RELAY_DIGEST_SIZE.size]  # type: ignore
       digest = RELAY_DIGEST_SIZE.unpack(digest_packed)
     elif isinstance(digest, (bytes, str)):
       digest_packed = digest[:RELAY_DIGEST_SIZE.size]
@@ -375,7 +381,7 @@ class RelayCell(CircuitCell):
       elif stream_id and self.command in STREAM_ID_DISALLOWED:
         raise ValueError('%s relay cells concern the circuit itself and cannot have a stream id' % self.command)
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     payload = bytearray()
     payload += Size.CHAR.pack(self.command_int)
     payload += Size.SHORT.pack(self.recognized)
@@ -387,7 +393,7 @@ class RelayCell(CircuitCell):
     return RelayCell._pack(link_protocol, bytes(payload), self.unused, self.circ_id)
 
   @staticmethod
-  def decrypt(link_protocol, content, key, digest):
+  def decrypt(link_protocol: 'stem.client.datatype.LinkProtocol', content: bytes, key: 'cryptography.hazmat.primitives.ciphers.CipherContext', digest: 'hashlib._HASH') -> Tuple['stem.client.cell.RelayCell', 'cryptography.hazmat.primitives.ciphers.CipherContext', 'hashlib._HASH']:  # type: ignore
     """
     Decrypts content as a relay cell addressed to us. This provides back a
     tuple of the form...
@@ -441,7 +447,7 @@ class RelayCell(CircuitCell):
 
     return cell, new_key, new_digest
 
-  def encrypt(self, link_protocol, key, digest):
+  def encrypt(self, link_protocol: 'stem.client.datatype.LinkProtocol', key: 'cryptography.hazmat.primitives.ciphers.CipherContext', digest: 'hashlib._HASH') -> Tuple[bytes, 'cryptography.hazmat.primitives.ciphers.CipherContext', 'hashlib._HASH']:  # type: ignore
     """
     Encrypts our cell content to be sent with the given key. This provides back
     a tuple of the form...
@@ -477,7 +483,7 @@ class RelayCell(CircuitCell):
     return header + new_key.update(payload), new_key, new_digest
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.RelayCell':
     command, content = Size.CHAR.pop(content)
     recognized, content = Size.SHORT.pop(content)  # 'recognized' field
     stream_id, content = Size.SHORT.pop(content)
@@ -490,7 +496,7 @@ class RelayCell(CircuitCell):
 
     return RelayCell(circ_id, command, data, digest, stream_id, recognized, unused)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'command_int', 'stream_id', 'digest', 'data', cache = True)
 
 
@@ -506,19 +512,19 @@ class DestroyCell(CircuitCell):
   VALUE = 4
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, reason = CloseReason.NONE, unused = b''):
+  def __init__(self, circ_id: int, reason: 'stem.client.datatype.CloseReason' = CloseReason.NONE, unused: bytes = b'') -> None:
     super(DestroyCell, self).__init__(circ_id, unused)
     self.reason, self.reason_int = CloseReason.get(reason)
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return DestroyCell._pack(link_protocol, Size.CHAR.pack(self.reason_int), self.unused, self.circ_id)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls: Type['stem.client.cell.DestroyCell'], content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.DestroyCell':
     reason, unused = Size.CHAR.pop(content)
     return DestroyCell(circ_id, reason, unused)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'circ_id', 'reason_int', cache = True)
 
 
@@ -534,7 +540,7 @@ class CreateFastCell(CircuitCell):
   VALUE = 5
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, key_material = None, unused = b''):
+  def __init__(self, circ_id: int, key_material: Optional[bytes] = None, unused: bytes = b'') -> None:
     if not key_material:
       key_material = os.urandom(HASH_LEN)
     elif len(key_material) != HASH_LEN:
@@ -543,11 +549,11 @@ class CreateFastCell(CircuitCell):
     super(CreateFastCell, self).__init__(circ_id, unused)
     self.key_material = key_material
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return CreateFastCell._pack(link_protocol, self.key_material, self.unused, self.circ_id)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.CreateFastCell':
     key_material, unused = split(content, HASH_LEN)
 
     if len(key_material) != HASH_LEN:
@@ -555,7 +561,7 @@ class CreateFastCell(CircuitCell):
 
     return CreateFastCell(circ_id, key_material, unused)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'circ_id', 'key_material', cache = True)
 
 
@@ -571,7 +577,7 @@ class CreatedFastCell(CircuitCell):
   VALUE = 6
   IS_FIXED_SIZE = True
 
-  def __init__(self, circ_id, derivative_key, key_material = None, unused = b''):
+  def __init__(self, circ_id: int, derivative_key: bytes, key_material: Optional[bytes] = None, unused: bytes = b'') -> None:
     if not key_material:
       key_material = os.urandom(HASH_LEN)
     elif len(key_material) != HASH_LEN:
@@ -584,11 +590,11 @@ class CreatedFastCell(CircuitCell):
     self.key_material = key_material
     self.derivative_key = derivative_key
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return CreatedFastCell._pack(link_protocol, self.key_material + self.derivative_key, self.unused, self.circ_id)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.CreatedFastCell':
     if len(content) < HASH_LEN * 2:
       raise ValueError('Key material and derivatived key should be %i bytes, but was %i' % (HASH_LEN * 2, len(content)))
 
@@ -597,7 +603,7 @@ class CreatedFastCell(CircuitCell):
 
     return CreatedFastCell(circ_id, derivative_key, key_material, content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'circ_id', 'derivative_key', 'key_material', cache = True)
 
 
@@ -612,16 +618,16 @@ class VersionsCell(Cell):
   VALUE = 7
   IS_FIXED_SIZE = False
 
-  def __init__(self, versions):
+  def __init__(self, versions: Sequence[int]) -> None:
     super(VersionsCell, self).__init__()
     self.versions = versions
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     payload = b''.join([Size.SHORT.pack(v) for v in self.versions])
     return VersionsCell._pack(link_protocol, payload)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls: Type['stem.client.cell.VersionsCell'], content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.VersionsCell':
     link_protocols = []
 
     while content:
@@ -630,7 +636,7 @@ class VersionsCell(Cell):
 
     return VersionsCell(link_protocols)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'versions', cache = True)
 
 
@@ -647,13 +653,13 @@ class NetinfoCell(Cell):
   VALUE = 8
   IS_FIXED_SIZE = True
 
-  def __init__(self, receiver_address, sender_addresses, timestamp = None, unused = b''):
+  def __init__(self, receiver_address: 'stem.client.datatype.Address', sender_addresses: Sequence['stem.client.datatype.Address'], timestamp: Optional[datetime.datetime] = None, unused: bytes = b'') -> None:
     super(NetinfoCell, self).__init__(unused)
     self.timestamp = timestamp if timestamp else datetime.datetime.now()
     self.receiver_address = receiver_address
     self.sender_addresses = sender_addresses
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     payload = bytearray()
     payload += Size.LONG.pack(int(datetime_to_unix(self.timestamp)))
     payload += self.receiver_address.pack()
@@ -665,7 +671,7 @@ class NetinfoCell(Cell):
     return NetinfoCell._pack(link_protocol, bytes(payload), self.unused)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.NetinfoCell':
     timestamp, content = Size.LONG.pop(content)
     receiver_address, content = Address.pop(content)
 
@@ -678,7 +684,7 @@ class NetinfoCell(Cell):
 
     return NetinfoCell(receiver_address, sender_addresses, datetime.datetime.utcfromtimestamp(timestamp), unused = content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'timestamp', 'receiver_address', 'sender_addresses', cache = True)
 
 
@@ -687,8 +693,8 @@ class RelayEarlyCell(CircuitCell):
   VALUE = 9
   IS_FIXED_SIZE = True
 
-  def __init__(self):
-    super(RelayEarlyCell, self).__init__()  # TODO: implement
+  def __init__(self, circ_id: int, unused: bytes = b'') -> None:
+    super(RelayEarlyCell, self).__init__(circ_id, unused)  # TODO: implement
 
 
 class Create2Cell(CircuitCell):
@@ -696,8 +702,8 @@ class Create2Cell(CircuitCell):
   VALUE = 10
   IS_FIXED_SIZE = True
 
-  def __init__(self):
-    super(Create2Cell, self).__init__()  # TODO: implement
+  def __init__(self, circ_id: int, unused: bytes = b'') -> None:
+    super(Create2Cell, self).__init__(circ_id, unused)  # TODO: implement
 
 
 class Created2Cell(Cell):
@@ -705,7 +711,7 @@ class Created2Cell(Cell):
   VALUE = 11
   IS_FIXED_SIZE = True
 
-  def __init__(self):
+  def __init__(self) -> None:
     super(Created2Cell, self).__init__()  # TODO: implement
 
 
@@ -714,7 +720,7 @@ class PaddingNegotiateCell(Cell):
   VALUE = 12
   IS_FIXED_SIZE = True
 
-  def __init__(self):
+  def __init__(self) -> None:
     super(PaddingNegotiateCell, self).__init__()  # TODO: implement
 
 
@@ -729,7 +735,7 @@ class VPaddingCell(Cell):
   VALUE = 128
   IS_FIXED_SIZE = False
 
-  def __init__(self, size = None, payload = None):
+  def __init__(self, size: Optional[int] = None, payload: Optional[bytes] = None) -> None:
     if size is None and payload is None:
       raise ValueError('VPaddingCell constructor must specify payload or size')
     elif size is not None and size < 0:
@@ -740,14 +746,14 @@ class VPaddingCell(Cell):
     super(VPaddingCell, self).__init__()
     self.payload = payload if payload is not None else os.urandom(size)
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return VPaddingCell._pack(link_protocol, self.payload)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.VPaddingCell':
     return VPaddingCell(payload = content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'payload', cache = True)
 
 
@@ -762,17 +768,17 @@ class CertsCell(Cell):
   VALUE = 129
   IS_FIXED_SIZE = False
 
-  def __init__(self, certs, unused = b''):
+  def __init__(self, certs: Sequence['stem.client.datatype.Certificate'], unused: bytes = b'') -> None:
     super(CertsCell, self).__init__(unused)
     self.certificates = certs
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     return CertsCell._pack(link_protocol, Size.CHAR.pack(len(self.certificates)) + b''.join([cert.pack() for cert in self.certificates]), self.unused)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls, content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.CertsCell':
     cert_count, content = Size.CHAR.pop(content)
-    certs = []
+    certs = []  # type: List[stem.client.datatype.Certificate]
 
     for i in range(cert_count):
       if not content:
@@ -783,7 +789,7 @@ class CertsCell(Cell):
 
     return CertsCell(certs, unused = content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'certificates', cache = True)
 
 
@@ -800,7 +806,7 @@ class AuthChallengeCell(Cell):
   VALUE = 130
   IS_FIXED_SIZE = False
 
-  def __init__(self, methods, challenge = None, unused = b''):
+  def __init__(self, methods: Sequence[int], challenge: Optional[bytes] = None, unused: bytes = b'') -> None:
     if not challenge:
       challenge = os.urandom(AUTH_CHALLENGE_SIZE)
     elif len(challenge) != AUTH_CHALLENGE_SIZE:
@@ -810,7 +816,7 @@ class AuthChallengeCell(Cell):
     self.challenge = challenge
     self.methods = methods
 
-  def pack(self, link_protocol):
+  def pack(self, link_protocol: 'stem.client.datatype.LinkProtocol') -> bytes:
     payload = bytearray()
     payload += self.challenge
     payload += Size.SHORT.pack(len(self.methods))
@@ -821,7 +827,7 @@ class AuthChallengeCell(Cell):
     return AuthChallengeCell._pack(link_protocol, bytes(payload), self.unused)
 
   @classmethod
-  def _unpack(cls, content, circ_id, link_protocol):
+  def _unpack(cls: Type['stem.client.cell.AuthChallengeCell'], content: bytes, circ_id: int, link_protocol: 'stem.client.datatype.LinkProtocol') -> 'stem.client.cell.AuthChallengeCell':
     min_size = AUTH_CHALLENGE_SIZE + Size.SHORT.size
     if len(content) < min_size:
       raise ValueError('AUTH_CHALLENGE payload should be at least %i bytes, but was %i' % (min_size, len(content)))
@@ -840,7 +846,7 @@ class AuthChallengeCell(Cell):
 
     return AuthChallengeCell(methods, challenge, unused = content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'challenge', 'methods', cache = True)
 
 
@@ -849,7 +855,7 @@ class AuthenticateCell(Cell):
   VALUE = 131
   IS_FIXED_SIZE = False
 
-  def __init__(self):
+  def __init__(self) -> None:
     super(AuthenticateCell, self).__init__()  # TODO: implement
 
 
@@ -858,5 +864,5 @@ class AuthorizeCell(Cell):
   VALUE = 132
   IS_FIXED_SIZE = False
 
-  def __init__(self):
+  def __init__(self) -> None:
     super(AuthorizeCell, self).__init__()  # TODO: implement

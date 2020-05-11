@@ -7,6 +7,7 @@ import datetime
 import unittest
 
 import stem.descriptor
+import stem.util.str_tools
 
 from unittest.mock import Mock, patch
 
@@ -334,5 +335,5 @@ class TestBandwidthFile(unittest.TestCase):
     )
 
     for value in test_values:
-      expected_exc = "First line should be a unix timestamp, but was '%s'" % value
+      expected_exc = "First line should be a unix timestamp, but was '%s'" % stem.util.str_tools._to_unicode(value)
       self.assertRaisesWith(ValueError, expected_exc, BandwidthFile.create, {'timestamp': value})

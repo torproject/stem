@@ -38,6 +38,8 @@ import stem.socket
 import stem.util
 import stem.util.str_tools
 
+from typing import Any, Iterator, List, Optional, Sequence, Tuple, Union
+
 __all__ = [
   'add_onion',
   'events',
@@ -54,7 +56,7 @@ __all__ = [
 KEY_ARG = re.compile('^(\\S+)=')
 
 
-def convert(response_type, message, **kwargs):
+def convert(response_type: str, message: 'stem.response.ControlMessage', **kwargs: Any) -> None:
   """
   Converts a :class:`~stem.response.ControlMessage` into a particular kind of
   tor response. This does an in-place conversion of the message from being a
@@ -121,7 +123,40 @@ def convert(response_type, message, **kwargs):
     raise TypeError('Unsupported response type: %s' % response_type)
 
   message.__class__ = response_class
-  message._parse_message(**kwargs)
+  message._parse_message(**kwargs)  # type: ignore
+
+
+# TODO: These aliases are for type hint compatability. We should refactor how
+# message conversion is performed to avoid this headache.
+
+def _convert_to_single_line(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.SingleLineResponse':
+  stem.response.convert('SINGLELINE', message)
+  return message  # type: ignore
+
+
+def _convert_to_event(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.events.Event':
+  stem.response.convert('EVENT', message)
+  return message  # type: ignore
+
+
+def _convert_to_getinfo(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.getinfo.GetInfoResponse':
+  stem.response.convert('GETINFO', message)
+  return message  # type: ignore
+
+
+def _convert_to_getconf(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.getconf.GetConfResponse':
+  stem.response.convert('GETCONF', message)
+  return message  # type: ignore
+
+
+def _convert_to_add_onion(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.add_onion.AddOnionResponse':
+  stem.response.convert('ADD_ONION', message)
+  return message  # type: ignore
+
+
+def _convert_to_mapaddress(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.mapaddress.MapAddressResponse':
+  stem.response.convert('MAPADDRESS', message)
+  return message  # type: ignore
 
 
 class ControlMessage(object):
@@ -140,7 +175,7 @@ class ControlMessage(object):
   """
 
   @staticmethod
-  def from_str(content, msg_type = None, normalize = False, **kwargs):
+  def from_str(content: Union[str, bytes], msg_type: Optional[str] = None, normalize: bool = False, **kwargs: Any) -> 'stem.response.ControlMessage':
     """
     Provides a ControlMessage for the given content.
 
@@ -158,31 +193,38 @@ class ControlMessage(object):
     :returns: stem.response.ControlMessage instance
     """
 
+    if isinstance(content, str):
+      content = stem.util.str_tools._to_bytes(content)
+
     if normalize:
-      if not content.endswith('\n'):
-        content += '\n'
+      if not content.endswith(b'\n'):
+        content += b'\n'
 
-      content = re.sub('([\r]?)\n', '\r\n', content)
+      content = re.sub(b'([\r]?)\n', b'\r\n', content)
 
-    msg = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes(content)), arrived_at = kwargs.pop('arrived_at', None))
+    msg = stem.socket.recv_message(io.BytesIO(content), arrived_at = kwargs.pop('arrived_at', None))
 
     if msg_type is not None:
       convert(msg_type, msg, **kwargs)
 
     return msg
 
-  def __init__(self, parsed_content, raw_content, arrived_at = None):
+  def __init__(self, parsed_content: Sequence[Tuple[str, str, bytes]], raw_content: bytes, arrived_at: Optional[float] = None) -> None:
     if not parsed_content:
       raise ValueError("ControlMessages can't be empty")
 
-    self.arrived_at = arrived_at if arrived_at else int(time.time())
+    # TODO: Change arrived_at to a float (can't yet because it causes Event
+    # equality checks to fail - events include arrived_at within their hash
+    # whereas ControlMessages don't).
+
+    self.arrived_at = int(arrived_at if arrived_at else time.time())
 
     self._parsed_content = parsed_content
     self._raw_content = raw_content
-    self._str = None
+    self._str = None  # type: Optional[str]
     self._hash = stem.util._hash_attr(self, '_raw_content')
 
-  def is_ok(self):
+  def is_ok(self) -> bool:
     """
     Checks if any of our lines have a 250 response.
 
@@ -195,7 +237,12 @@ class ControlMessage(object):
 
     return False
 
-  def content(self, get_bytes = False):
+  # TODO: drop this alias when we provide better type support
+
+  def _content_bytes(self) -> List[Tuple[str, str, bytes]]:
+    return self.content(get_bytes = True)  # type: ignore
+
+  def content(self, get_bytes: bool = False) -> List[Tuple[str, str, str]]:
     """
     Provides the parsed message content. These are entries of the form...
 
@@ -232,9 +279,9 @@ class ControlMessage(object):
     if not get_bytes:
       return [(code, div, stem.util.str_tools._to_unicode(content)) for (code, div, content) in self._parsed_content]
     else:
-      return list(self._parsed_content)
+      return list(self._parsed_content)  # type: ignore
 
-  def raw_content(self, get_bytes = False):
+  def raw_content(self, get_bytes: bool = False) -> Union[str, bytes]:
     """
     Provides the unparsed content read from the control socket.
 
@@ -251,7 +298,10 @@ class ControlMessage(object):
     else:
       return self._raw_content
 
-  def __str__(self):
+  def _parse_message(self) -> None:
+    raise NotImplementedError('Implemented by subclasses')
+
+  def __str__(self) -> str:
     """
     Content of the message, stripped of status code and divider protocol
     formatting.
@@ -262,7 +312,7 @@ class ControlMessage(object):
 
     return self._str
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator['stem.response.ControlLine']:
     """
     Provides :class:`~stem.response.ControlLine` instances for the content of
     the message. This is stripped of status codes and dividers, for instance...
@@ -286,18 +336,16 @@ class ControlMessage(object):
     """
 
     for _, _, content in self._parsed_content:
-      content = stem.util.str_tools._to_unicode(content)
+      yield ControlLine(stem.util.str_tools._to_unicode(content))
 
-      yield ControlLine(content)
-
-  def __len__(self):
+  def __len__(self) -> int:
     """
     :returns: number of ControlLines
     """
 
     return len(self._parsed_content)
 
-  def __getitem__(self, index):
+  def __getitem__(self, index: int) -> 'stem.response.ControlLine':
     """
     :returns: :class:`~stem.response.ControlLine` at the index
     """
@@ -307,13 +355,13 @@ class ControlMessage(object):
 
     return ControlLine(content)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return self._hash
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, ControlMessage) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -327,14 +375,14 @@ class ControlLine(str):
   immutable). All methods are thread safe.
   """
 
-  def __new__(self, value):
-    return str.__new__(self, value)
+  def __new__(self, value: str) -> 'stem.response.ControlLine':
+    return str.__new__(self, value)  # type: ignore
 
-  def __init__(self, value):
+  def __init__(self, value: str) -> None:
     self._remainder = value
     self._remainder_lock = threading.RLock()
 
-  def remainder(self):
+  def remainder(self) -> str:
     """
     Provides our unparsed content. This is an empty string after we've popped
     all entries.
@@ -344,7 +392,7 @@ class ControlLine(str):
 
     return self._remainder
 
-  def is_empty(self):
+  def is_empty(self) -> bool:
     """
     Checks if we have further content to pop or not.
 
@@ -353,7 +401,7 @@ class ControlLine(str):
 
     return self._remainder == ''
 
-  def is_next_quoted(self, escaped = False):
+  def is_next_quoted(self, escaped: bool = False) -> bool:
     """
     Checks if our next entry is a quoted value or not.
 
@@ -365,7 +413,7 @@ class ControlLine(str):
     start_quote, end_quote = _get_quote_indices(self._remainder, escaped)
     return start_quote == 0 and end_quote != -1
 
-  def is_next_mapping(self, key = None, quoted = False, escaped = False):
+  def is_next_mapping(self, key: Optional[str] = None, quoted: bool = False, escaped: bool = False) -> bool:
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
 
@@ -393,7 +441,7 @@ class ControlLine(str):
     else:
       return False  # doesn't start with a key
 
-  def peek_key(self):
+  def peek_key(self) -> str:
     """
     Provides the key of the next entry, providing **None** if it isn't a
     key/value mapping.
@@ -409,7 +457,7 @@ class ControlLine(str):
     else:
       return None
 
-  def pop(self, quoted = False, escaped = False):
+  def pop(self, quoted: bool = False, escaped: bool = False) -> str:
     """
     Parses the next space separated entry, removing it and the space from our
     remaining content. Examples...
@@ -441,9 +489,14 @@ class ControlLine(str):
     with self._remainder_lock:
       next_entry, remainder = _parse_entry(self._remainder, quoted, escaped, False)
       self._remainder = remainder
-      return next_entry
+      return next_entry  # type: ignore
 
-  def pop_mapping(self, quoted = False, escaped = False, get_bytes = False):
+  # TODO: drop this alias when we provide better type support
+
+  def _pop_mapping_bytes(self, quoted: bool = False, escaped: bool = False) -> Tuple[str, bytes]:
+    return self.pop_mapping(quoted, escaped, get_bytes = True)  # type: ignore
+
+  def pop_mapping(self, quoted: bool = False, escaped: bool = False, get_bytes: bool = False) -> Tuple[str, str]:
     """
     Parses the next space separated entry as a KEY=VALUE mapping, removing it
     and the space from our remaining content.
@@ -477,16 +530,17 @@ class ControlLine(str):
 
       next_entry, remainder = _parse_entry(remainder, quoted, escaped, get_bytes)
       self._remainder = remainder
-      return (key, next_entry)
+      return (key, next_entry)  # type: ignore
 
 
-def _parse_entry(line, quoted, escaped, get_bytes):
+def _parse_entry(line: str, quoted: bool, escaped: bool, get_bytes: bool) -> Tuple[Union[str, bytes], str]:
   """
   Parses the next entry from the given space separated content.
 
   :param str line: content to be parsed
   :param bool quoted: parses the next entry as a quoted value, removing the quotes
   :param bool escaped: unescapes the string
+  :param bool get_bytes: provides **bytes** for the entry rather than a **str**
 
   :returns: **tuple** of the form (entry, remainder)
 
@@ -529,18 +583,18 @@ def _parse_entry(line, quoted, escaped, get_bytes):
     #
     #   https://stackoverflow.com/questions/14820429/how-do-i-decodestring-escape-in-python3
 
-    next_entry = codecs.escape_decode(next_entry)[0]
+    next_entry = codecs.escape_decode(next_entry)[0]  # type: ignore
 
     if not get_bytes:
       next_entry = stem.util.str_tools._to_unicode(next_entry)  # normalize back to str
 
   if get_bytes:
-    next_entry = stem.util.str_tools._to_bytes(next_entry)
+    return (stem.util.str_tools._to_bytes(next_entry), remainder.lstrip())
+  else:
+    return (next_entry, remainder.lstrip())
 
-  return (next_entry, remainder.lstrip())
 
-
-def _get_quote_indices(line, escaped):
+def _get_quote_indices(line: str, escaped: bool) -> Tuple[int, int]:
   """
   Provides the indices of the next two quotes in the given content.
 
@@ -563,7 +617,7 @@ def _get_quote_indices(line, escaped):
 
     indices.append(quote_index)
 
-  return tuple(indices)
+  return tuple(indices)  # type: ignore
 
 
 class SingleLineResponse(ControlMessage):
@@ -576,7 +630,7 @@ class SingleLineResponse(ControlMessage):
   :var str message: content of the line
   """
 
-  def is_ok(self, strict = False):
+  def is_ok(self, strict: bool = False) -> bool:
     """
     Checks if the response code is "250". If strict is **True** then this
     checks if the response is "250 OK"
@@ -593,7 +647,7 @@ class SingleLineResponse(ControlMessage):
 
     return self.content()[0][0] == '250'
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     content = self.content()
 
     if len(content) > 1:
@@ -601,4 +655,7 @@ class SingleLineResponse(ControlMessage):
     elif len(content) == 0:
       raise stem.ProtocolError('Received empty response')
     else:
-      self.code, _, self.message = content[0]
+      code, _, msg = content[0]
+
+      self.code = stem.util.str_tools._to_unicode(code)
+      self.message = stem.util.str_tools._to_unicode(msg)

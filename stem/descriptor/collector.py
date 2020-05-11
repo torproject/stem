@@ -63,6 +63,7 @@ import stem.util.connection
 import stem.util.str_tools
 
 from stem.descriptor import Compression, DocumentHandler
+from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
 
 COLLECTOR_URL = 'https://collector.torproject.org/'
 REFRESH_INDEX_RATE = 3600  # get new index if cached copy is an hour old
@@ -76,7 +77,7 @@ SEC_DATE = re.compile('(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})')
 FUTURE = datetime.datetime(9999, 1, 1)
 
 
-def get_instance():
+def get_instance() -> 'stem.descriptor.collector.CollecTor':
   """
   Provides the singleton :class:`~stem.descriptor.collector.CollecTor`
   used for this module's shorthand functions.
@@ -92,7 +93,7 @@ def get_instance():
   return SINGLETON_COLLECTOR
 
 
-def get_server_descriptors(start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
+def get_server_descriptors(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_server_descriptors`
@@ -103,7 +104,7 @@ def get_server_descriptors(start = None, end = None, cache_to = None, bridge = F
     yield desc
 
 
-def get_extrainfo_descriptors(start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
+def get_extrainfo_descriptors(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_extrainfo_descriptors`
@@ -114,7 +115,7 @@ def get_extrainfo_descriptors(start = None, end = None, cache_to = None, bridge 
     yield desc
 
 
-def get_microdescriptors(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_microdescriptors(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_microdescriptors`
@@ -125,7 +126,7 @@ def get_microdescriptors(start = None, end = None, cache_to = None, timeout = No
     yield desc
 
 
-def get_consensus(start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, bridge = False, timeout = None, retries = 3):
+def get_consensus(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, document_handler: stem.descriptor.DocumentHandler = DocumentHandler.ENTRIES, version: int = 3, microdescriptor: bool = False, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntry]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_consensus`
@@ -136,7 +137,7 @@ def get_consensus(start = None, end = None, cache_to = None, document_handler = 
     yield desc
 
 
-def get_key_certificates(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_key_certificates(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.networkstatus.KeyCertificate]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_key_certificates`
@@ -147,7 +148,7 @@ def get_key_certificates(start = None, end = None, cache_to = None, timeout = No
     yield desc
 
 
-def get_bandwidth_files(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_bandwidth_files(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.bandwidth_file.BandwidthFile]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_bandwidth_files`
@@ -158,7 +159,7 @@ def get_bandwidth_files(start = None, end = None, cache_to = None, timeout = Non
     yield desc
 
 
-def get_exit_lists(start = None, end = None, cache_to = None, timeout = None, retries = 3):
+def get_exit_lists(start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.tordnsel.TorDNSEL]:
   """
   Shorthand for
   :func:`~stem.descriptor.collector.CollecTor.get_exit_lists`
@@ -187,14 +188,14 @@ class File(object):
   :var datetime last_modified: when the file was last modified
   """
 
-  def __init__(self, path, types, size, sha256, first_published, last_published, last_modified):
+  def __init__(self, path: str, types: Tuple[str], size: int, sha256: str, first_published: str, last_published: str, last_modified: str) -> None:
     self.path = path
     self.types = tuple(types) if types else ()
     self.compression = File._guess_compression(path)
     self.size = size
     self.sha256 = sha256
     self.last_modified = datetime.datetime.strptime(last_modified, '%Y-%m-%d %H:%M')
-    self._downloaded_to = None  # location we last downloaded to
+    self._downloaded_to = None  # type: Optional[str] # location we last downloaded to
 
     # Most descriptor types have publication time fields, but microdescriptors
     # don't because these files lack timestamps to parse.
@@ -205,7 +206,7 @@ class File(object):
     else:
       self.start, self.end = File._guess_time_range(path)
 
-  def read(self, directory = None, descriptor_type = None, start = None, end = None, document_handler = DocumentHandler.ENTRIES, timeout = None, retries = 3):
+  def read(self, directory: Optional[str] = None, descriptor_type: Optional[str] = None, start: datetime.datetime = None, end: datetime.datetime = None, document_handler: stem.descriptor.DocumentHandler = DocumentHandler.ENTRIES, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.Descriptor]:
     """
     Provides descriptors from this archive. Descriptors are downloaded or read
     from disk as follows...
@@ -289,7 +290,7 @@ class File(object):
 
         yield desc
 
-  def download(self, directory, decompress = True, timeout = None, retries = 3, overwrite = False):
+  def download(self, directory: str, decompress: bool = True, timeout: Optional[int] = None, retries: Optional[int] = 3, overwrite: bool = False) -> str:
     """
     Downloads this file to the given location. If a file already exists this is
     a no-op.
@@ -324,8 +325,8 @@ class File(object):
     # check if this file already exists with the correct checksum
 
     if os.path.exists(path):
-      with open(path) as prior_file:
-        expected_hash = binascii.hexlify(base64.b64decode(self.sha256))
+      with open(path, 'b') as prior_file:
+        expected_hash = binascii.hexlify(base64.b64decode(self.sha256)).decode('utf-8')
         actual_hash = hashlib.sha256(prior_file.read()).hexdigest()
 
         if expected_hash == actual_hash:
@@ -345,7 +346,7 @@ class File(object):
     return path
 
   @staticmethod
-  def _guess_compression(path):
+  def _guess_compression(path: str) -> stem.descriptor._Compression:
     """
     Determine file comprssion from CollecTor's filename.
     """
@@ -357,7 +358,7 @@ class File(object):
     return Compression.PLAINTEXT
 
   @staticmethod
-  def _guess_time_range(path):
+  def _guess_time_range(path: str) -> Tuple[datetime.datetime, datetime.datetime]:
     """
     Attemt to determine the (start, end) time range from CollecTor's filename.
     This provides (None, None) if this cannot be determined.
@@ -398,15 +399,15 @@ class CollecTor(object):
   :var float timeout: duration before we'll time out our request
   """
 
-  def __init__(self, retries = 2, timeout = None):
+  def __init__(self, retries: Optional[int] = 2, timeout: Optional[int] = None) -> None:
     self.retries = retries
     self.timeout = timeout
 
     self._cached_index = None
-    self._cached_files = None
-    self._cached_index_at = 0
+    self._cached_files = None  # type: Optional[List[File]]
+    self._cached_index_at = 0.0
 
-  def get_server_descriptors(self, start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
+  def get_server_descriptors(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
     """
     Provides server descriptors published during the given time range, sorted
     oldest to newest.
@@ -431,9 +432,9 @@ class CollecTor(object):
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_extrainfo_descriptors(self, start = None, end = None, cache_to = None, bridge = False, timeout = None, retries = 3):
+  def get_extrainfo_descriptors(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor]:
     """
     Provides extrainfo descriptors published during the given time range,
     sorted oldest to newest.
@@ -458,9 +459,9 @@ class CollecTor(object):
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_microdescriptors(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_microdescriptors(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
     """
     Provides microdescriptors estimated to be published during the given time
     range, sorted oldest to newest. Unlike server/extrainfo descriptors,
@@ -492,9 +493,9 @@ class CollecTor(object):
 
     for f in self.files('microdescriptor', start, end):
       for desc in f.read(cache_to, 'microdescriptor', start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_consensus(self, start = None, end = None, cache_to = None, document_handler = DocumentHandler.ENTRIES, version = 3, microdescriptor = False, bridge = False, timeout = None, retries = 3):
+  def get_consensus(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, document_handler: stem.descriptor.DocumentHandler = DocumentHandler.ENTRIES, version: int = 3, microdescriptor: bool = False, bridge: bool = False, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntry]:
     """
     Provides consensus router status entries published during the given time
     range, sorted oldest to newest.
@@ -536,9 +537,9 @@ class CollecTor(object):
 
     for f in self.files(desc_type, start, end):
       for desc in f.read(cache_to, desc_type, start, end, document_handler, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_key_certificates(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_key_certificates(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.networkstatus.KeyCertificate]:
     """
     Directory authority key certificates for the given time range,
     sorted oldest to newest.
@@ -560,9 +561,9 @@ class CollecTor(object):
 
     for f in self.files('dir-key-certificate-3', start, end):
       for desc in f.read(cache_to, 'dir-key-certificate-3', start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_bandwidth_files(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_bandwidth_files(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.bandwidth_file.BandwidthFile]:
     """
     Bandwidth authority heuristics for the given time range, sorted oldest to
     newest.
@@ -584,9 +585,9 @@ class CollecTor(object):
 
     for f in self.files('bandwidth-file', start, end):
       for desc in f.read(cache_to, 'bandwidth-file', start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def get_exit_lists(self, start = None, end = None, cache_to = None, timeout = None, retries = 3):
+  def get_exit_lists(self, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None, cache_to: Optional[str] = None, timeout: Optional[int] = None, retries: Optional[int] = 3) -> Iterator[stem.descriptor.tordnsel.TorDNSEL]:
     """
     `TorDNSEL exit lists <https://www.torproject.org/projects/tordnsel.html.en>`_
     for the given time range, sorted oldest to newest.
@@ -608,9 +609,9 @@ class CollecTor(object):
 
     for f in self.files('tordnsel', start, end):
       for desc in f.read(cache_to, 'tordnsel', start, end, timeout = timeout, retries = retries):
-        yield desc
+        yield desc  # type: ignore
 
-  def index(self, compression = 'best'):
+  def index(self, compression: Union[str, stem.descriptor._Compression] = 'best') -> Dict[str, Any]:
     """
     Provides the archives available in CollecTor.
 
@@ -631,21 +632,25 @@ class CollecTor(object):
       if compression == 'best':
         for option in (Compression.LZMA, Compression.BZ2, Compression.GZIP, Compression.PLAINTEXT):
           if option.available:
-            compression = option
+            compression_enum = option
             break
       elif compression is None:
-        compression = Compression.PLAINTEXT
+        compression_enum = Compression.PLAINTEXT
+      elif isinstance(compression, stem.descriptor._Compression):
+        compression_enum = compression
+      else:
+        raise ValueError('compression must be a descriptor.Compression, was %s (%s)' % (compression, type(compression).__name__))
 
-      extension = compression.extension if compression != Compression.PLAINTEXT else ''
+      extension = compression_enum.extension if compression_enum != Compression.PLAINTEXT else ''
       url = COLLECTOR_URL + 'index/index.json' + extension
-      response = compression.decompress(stem.util.connection.download(url, self.timeout, self.retries))
+      response = compression_enum.decompress(stem.util.connection.download(url, self.timeout, self.retries))
 
       self._cached_index = json.loads(stem.util.str_tools._to_unicode(response))
       self._cached_index_at = time.time()
 
     return self._cached_index
 
-  def files(self, descriptor_type = None, start = None, end = None):
+  def files(self, descriptor_type: Optional[str] = None, start: Optional[datetime.datetime] = None, end: Optional[datetime.datetime] = None) -> List['stem.descriptor.collector.File']:
     """
     Provides files CollecTor presently has, sorted oldest to newest.
 
@@ -680,7 +685,7 @@ class CollecTor(object):
     return matches
 
   @staticmethod
-  def _files(val, path):
+  def _files(val: Dict[str, Any], path: List[str]) -> List['stem.descriptor.collector.File']:
     """
     Recursively provies files within the index.
 
@@ -697,7 +702,7 @@ class CollecTor(object):
 
     for k, v in val.items():
       if k == 'files':
-        for attr in v:
+        for attr in v:  # Dict[str, str]
           file_path = '/'.join(path + [attr.get('path')])
           files.append(File(file_path, attr.get('types'), attr.get('size'), attr.get('sha256'), attr.get('first_published'), attr.get('last_published'), attr.get('last_modified')))
       elif k == 'directories':

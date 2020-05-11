@@ -42,13 +42,15 @@ import stem.util
 import stem.util.enum
 import stem.util.system
 
+from typing import Any, Callable
+
 # cache for the get_system_tor_version function
 VERSION_CACHE = {}
 
 VERSION_PATTERN = re.compile(r'^([0-9]+)\.([0-9]+)\.([0-9]+)(\.[0-9]+)?(-\S*)?(( \(\S*\))*)$')
 
 
-def get_system_tor_version(tor_cmd = 'tor'):
+def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
   """
   Queries tor for its version. This is os dependent, only working on linux,
   osx, and bsd.
@@ -70,9 +72,9 @@ def get_system_tor_version(tor_cmd = 'tor'):
 
       if 'No such file or directory' in str(exc):
         if os.path.isabs(tor_cmd):
-          exc = "Unable to check tor's version. '%s' doesn't exist." % tor_cmd
+          raise IOError("Unable to check tor's version. '%s' doesn't exist." % tor_cmd)
         else:
-          exc = "Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd
+          raise IOError("Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd)
 
       raise IOError(exc)
 
@@ -96,7 +98,7 @@ def get_system_tor_version(tor_cmd = 'tor'):
 
 
 @functools.lru_cache()
-def _get_version(version_str):
+def _get_version(version_str: str) -> 'stem.version.Version':
   return Version(version_str)
 
 
@@ -125,18 +127,17 @@ class Version(object):
   :raises: **ValueError** if input isn't a valid tor version
   """
 
-  def __init__(self, version_str):
+  def __init__(self, version_str: str) -> None:
     self.version_str = version_str
     version_parts = VERSION_PATTERN.match(version_str)
 
     if version_parts:
-      major, minor, micro, patch, status, extra_str, _ = version_parts.groups()
+      major, minor, micro, patch_str, status, extra_str, _ = version_parts.groups()
 
       # The patch and status matches are optional (may be None) and have an extra
       # proceeding period or dash if they exist. Stripping those off.
 
-      if patch:
-        patch = int(patch[1:])
+      patch = int(patch_str[1:]) if patch_str else None
 
       if status:
         status = status[1:]
@@ -157,14 +158,14 @@ class Version(object):
     else:
       raise ValueError("'%s' isn't a properly formatted tor version" % version_str)
 
-  def __str__(self):
+  def __str__(self) -> str:
     """
     Provides the string used to construct the version.
     """
 
     return self.version_str
 
-  def _compare(self, other, method):
+  def _compare(self, other: Any, method: Callable[[Any, Any], bool]) -> bool:
     """
     Compares version ordering according to the spec.
     """
@@ -195,23 +196,23 @@ class Version(object):
 
     return method(my_status, other_status)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'major', 'minor', 'micro', 'patch', 'status', cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s == o)
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
-  def __gt__(self, other):
+  def __gt__(self, other: Any) -> bool:
     """
     Checks if this version meets the requirements for a given feature.
     """
 
     return self._compare(other, lambda s, o: s > o)
 
-  def __ge__(self, other):
+  def __ge__(self, other: Any) -> bool:
     return self._compare(other, lambda s, o: s >= o)
 
 

@@ -49,6 +49,7 @@ import stem.util
 import stem.util.conf
 
 from stem.util import connection, str_tools, tor_tools
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Pattern, Sequence, Tuple, Union
 
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
 GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
@@ -68,7 +69,7 @@ FALLBACK_EXTRAINFO = re.compile('/\\* extrainfo=([0-1]) \\*/')
 FALLBACK_IPV6 = re.compile('" ipv6=\\[([\\da-f:]+)\\]:(\\d+)"')
 
 
-def _match_with(lines, regexes, required = None):
+def _match_with(lines: Sequence[str], regexes: Sequence[Pattern], required: Optional[Sequence[Pattern]] = None) -> Dict[Pattern, Union[str, List[str]]]:
   """
   Scans the given content against a series of regex matchers, providing back a
   mapping of regexes to their capture groups. This maping is with the value if
@@ -101,7 +102,7 @@ def _match_with(lines, regexes, required = None):
   return matches
 
 
-def _directory_entries(lines, pop_section_func, regexes, required = None):
+def _directory_entries(lines: List[str], pop_section_func: Callable[[List[str]], List[str]], regexes: Sequence[Pattern], required: Optional[Sequence[Pattern]] = None) -> Iterator[Dict[Pattern, Union[str, List[str]]]]:
   next_section = pop_section_func(lines)
 
   while next_section:
@@ -129,11 +130,11 @@ class Directory(object):
   :var int dir_port: port on which directory information is available
   :var str fingerprint: relay fingerprint
   :var str nickname: relay nickname
-  :var str orport_v6: **(address, port)** tuple for the directory's IPv6
+  :var tuple orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address, or_port, dir_port, fingerprint, nickname, orport_v6):
+  def __init__(self, address: str, or_port: Union[int, str], dir_port: Union[int, str], fingerprint: str, nickname: str, orport_v6: Tuple[str, int]) -> None:
     identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
 
     if not connection.is_valid_ipv4_address(address):
@@ -163,7 +164,7 @@ class Directory(object):
     self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
 
   @staticmethod
-  def from_cache():
+  def from_cache() -> Dict[str, Any]:
     """
     Provides cached Tor directory information. This information is hardcoded
     into Tor and occasionally changes, so the information provided by this
@@ -181,7 +182,7 @@ class Directory(object):
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
   @staticmethod
-  def from_remote(timeout = 60):
+  def from_remote(timeout: int = 60) -> Dict[str, Any]:
     """
     Reads and parses tor's directory data `from gitweb.torproject.org <https://gitweb.torproject.org/>`_.
     Note that while convenient, this reliance on GitWeb means you should alway
@@ -209,13 +210,13 @@ class Directory(object):
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'address', 'or_port', 'dir_port', 'fingerprint', 'nickname', 'orport_v6')
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Directory) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -231,7 +232,7 @@ class Authority(Directory):
   :var str v3ident: identity key fingerprint used to sign votes and consensus
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, orport_v6 = None, v3ident = None):
+  def __init__(self, address: Optional[str] = None, or_port: Optional[Union[int, str]] = None, dir_port: Optional[Union[int, str]] = None, fingerprint: Optional[str] = None, nickname: Optional[str] = None, orport_v6: Optional[Tuple[str, int]] = None, v3ident: Optional[str] = None) -> None:
     super(Authority, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
 
     if v3ident and not tor_tools.is_valid_fingerprint(v3ident):
@@ -241,11 +242,11 @@ class Authority(Directory):
     self.v3ident = v3ident
 
   @staticmethod
-  def from_cache():
+  def from_cache() -> Dict[str, 'stem.directory.Authority']:
     return dict(DIRECTORY_AUTHORITIES)
 
   @staticmethod
-  def from_remote(timeout = 60):
+  def from_remote(timeout: int = 60) -> Dict[str, 'stem.directory.Authority']:
     try:
       lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
@@ -275,8 +276,8 @@ class Authority(Directory):
           dir_port = dir_port,
           fingerprint = fingerprint.replace(' ', ''),
           nickname = nickname,
-          orport_v6 = matches.get(AUTHORITY_IPV6),
-          v3ident = matches.get(AUTHORITY_V3IDENT),
+          orport_v6 = matches.get(AUTHORITY_IPV6),  # type: ignore
+          v3ident = matches.get(AUTHORITY_V3IDENT),  # type: ignore
         )
     except ValueError as exc:
       raise IOError(str(exc))
@@ -284,7 +285,7 @@ class Authority(Directory):
     return results
 
   @staticmethod
-  def _pop_section(lines):
+  def _pop_section(lines: List[str]) -> List[str]:
     """
     Provides the next authority entry.
     """
@@ -299,13 +300,13 @@ class Authority(Directory):
 
     return section_lines
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'v3ident', parent = Directory, cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Authority) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
@@ -348,13 +349,13 @@ class Fallback(Directory):
   :var collections.OrderedDict header: metadata about the fallback directory file this originated from
   """
 
-  def __init__(self, address = None, or_port = None, dir_port = None, fingerprint = None, nickname = None, has_extrainfo = False, orport_v6 = None, header = None):
+  def __init__(self, address: Optional[str] = None, or_port: Optional[Union[int, str]] = None, dir_port: Optional[Union[int, str]] = None, fingerprint: Optional[str] = None, nickname: Optional[str] = None, has_extrainfo: bool = False, orport_v6: Optional[Tuple[str, int]] = None, header: Optional[Mapping[str, str]] = None) -> None:
     super(Fallback, self).__init__(address, or_port, dir_port, fingerprint, nickname, orport_v6)
     self.has_extrainfo = has_extrainfo
     self.header = collections.OrderedDict(header) if header else collections.OrderedDict()
 
   @staticmethod
-  def from_cache(path = FALLBACK_CACHE_PATH):
+  def from_cache(path: str = FALLBACK_CACHE_PATH) -> Dict[str, 'stem.directory.Fallback']:
     conf = stem.util.conf.Config()
     conf.load(path)
     headers = collections.OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
@@ -393,7 +394,7 @@ class Fallback(Directory):
     return results
 
   @staticmethod
-  def from_remote(timeout = 60):
+  def from_remote(timeout: int = 60) -> Dict[str, 'stem.directory.Fallback']:
     try:
       lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
 
@@ -439,9 +440,9 @@ class Fallback(Directory):
           or_port = int(or_port),
           dir_port = int(dir_port),
           fingerprint = fingerprint,
-          nickname = matches.get(FALLBACK_NICKNAME),
+          nickname = matches.get(FALLBACK_NICKNAME),  # type: ignore
           has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1',
-          orport_v6 = matches.get(FALLBACK_IPV6),
+          orport_v6 = matches.get(FALLBACK_IPV6),  # type: ignore
           header = header,
         )
     except ValueError as exc:
@@ -450,7 +451,7 @@ class Fallback(Directory):
     return results
 
   @staticmethod
-  def _pop_section(lines):
+  def _pop_section(lines: List[str]) -> List[str]:
     """
     Provides lines up through the next divider. This excludes lines with just a
     comma since they're an artifact of these being C strings.
@@ -470,7 +471,7 @@ class Fallback(Directory):
     return section_lines
 
   @staticmethod
-  def _write(fallbacks, tor_commit, stem_commit, headers, path = FALLBACK_CACHE_PATH):
+  def _write(fallbacks: Dict[str, 'stem.directory.Fallback'], tor_commit: str, stem_commit: str, headers: Mapping[str, str], path: str = FALLBACK_CACHE_PATH) -> None:
     """
     Persists fallback directories to a location in a way that can be read by
     from_cache().
@@ -503,17 +504,17 @@ class Fallback(Directory):
 
     conf.save(path)
 
-  def __hash__(self):
+  def __hash__(self) -> int:
     return stem.util._hash_attr(self, 'has_extrainfo', 'header', parent = Directory, cache = True)
 
-  def __eq__(self, other):
+  def __eq__(self, other: Any) -> bool:
     return hash(self) == hash(other) if isinstance(other, Fallback) else False
 
-  def __ne__(self, other):
+  def __ne__(self, other: Any) -> bool:
     return not self == other
 
 
-def _fallback_directory_differences(previous_directories, new_directories):
+def _fallback_directory_differences(previous_directories: Mapping[str, 'stem.directory.Fallback'], new_directories: Mapping[str, 'stem.directory.Fallback']) -> str:
   """
   Provides a description of how fallback directories differ.
   """

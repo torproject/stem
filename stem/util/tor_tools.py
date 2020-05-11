@@ -23,6 +23,8 @@ import re
 
 import stem.util.str_tools
 
+from typing import Optional, Sequence, Union
+
 # The control-spec defines the following as...
 #
 #   Fingerprint = "$" 40*HEXDIG
@@ -45,7 +47,7 @@ HS_V2_ADDRESS_PATTERN = re.compile('^[a-z2-7]{16}$')
 HS_V3_ADDRESS_PATTERN = re.compile('^[a-z2-7]{56}$')
 
 
-def is_valid_fingerprint(entry, check_prefix = False):
+def is_valid_fingerprint(entry: str, check_prefix: bool = False) -> bool:
   """
   Checks if a string is a properly formatted relay fingerprint. This checks for
   a '$' prefix if check_prefix is true, otherwise this only validates the hex
@@ -72,11 +74,11 @@ def is_valid_fingerprint(entry, check_prefix = False):
     return False
 
 
-def is_valid_nickname(entry):
+def is_valid_nickname(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a nickname.
 
-  :param str entry: string to be checked
+  :param str entry: string to check
 
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
@@ -90,9 +92,11 @@ def is_valid_nickname(entry):
     return False
 
 
-def is_valid_circuit_id(entry):
+def is_valid_circuit_id(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a circuit identifier.
+
+  :param str entry: string to check
 
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
@@ -106,10 +110,12 @@ def is_valid_circuit_id(entry):
     return False
 
 
-def is_valid_stream_id(entry):
+def is_valid_stream_id(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a stream identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
+
+  :param str entry: string to check
 
   :returns: **True** if the string could be a stream id, **False** otherwise
   """
@@ -117,10 +123,12 @@ def is_valid_stream_id(entry):
   return is_valid_circuit_id(entry)
 
 
-def is_valid_connection_id(entry):
+def is_valid_connection_id(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a connection identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
+
+  :param str entry: string to check
 
   :returns: **True** if the string could be a connection id, **False** otherwise
   """
@@ -128,7 +136,7 @@ def is_valid_connection_id(entry):
   return is_valid_circuit_id(entry)
 
 
-def is_valid_hidden_service_address(entry, version = None):
+def is_valid_hidden_service_address(entry: str, version: Optional[Union[int, Sequence[int]]] = None) -> bool:
   """
   Checks if a string is a valid format for being a hidden service address (not
   including the '.onion' suffix).
@@ -137,6 +145,7 @@ def is_valid_hidden_service_address(entry, version = None):
      Added the **version** argument, and responds with **True** if a version 3
      hidden service address rather than just version 2 addresses.
 
+  :param str entry: string to check
   :param int,list version: versions to check for, if unspecified either v2 or v3
     hidden service address will provide **True**
 
@@ -166,7 +175,7 @@ def is_valid_hidden_service_address(entry, version = None):
     return False
 
 
-def is_hex_digits(entry, count):
+def is_hex_digits(entry: str, count: int) -> bool:
   """
   Checks if a string is the given number of hex digits. Digits represented by
   letters are case insensitive.

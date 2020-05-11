@@ -15,7 +15,7 @@ class AddOnionResponse(stem.response.ControlMessage):
   :var dict client_auth: newly generated client credentials the service accepts
   """
 
-  def _parse_message(self):
+  def _parse_message(self) -> None:
     # Example:
     #   250-ServiceID=gfzprpioee3hoppz
     #   250-PrivateKey=RSA1024:MIICXgIBAAKBgQDZvYVxv...

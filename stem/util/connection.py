@@ -65,6 +65,7 @@ import stem.util.proc
 import stem.util.system
 
 from stem.util import conf, enum, log, str_tools
+from typing import List, Optional, Sequence, Tuple, Union
 
 # Connection resolution is risky to log about since it's highly likely to
 # contain sensitive information. That said, it's also difficult to get right in
@@ -157,15 +158,15 @@ class Connection(collections.namedtuple('Connection', ['local_address', 'local_p
   """
 
 
-def download(url, timeout = None, retries = None):
+def download(url: str, timeout: Optional[float] = None, retries: Optional[int] = None) -> bytes:
   """
   Download from the given url.
 
   .. versionadded:: 1.8.0
 
   :param str url: uncompressed url to download from
-  :param int timeout: timeout when connection becomes idle, no timeout applied
-    if **None**
+  :param float timeout: timeout when connection becomes idle, no timeout
+    applied if **None**
   :param int retires: maximum attempts to impose
 
   :returns: **bytes** content of the given url
@@ -185,20 +186,20 @@ def download(url, timeout = None, retries = None):
   except socket.timeout as exc:
     raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
   except:
-    exc, stacktrace = sys.exc_info()[1:3]
+    exception, stacktrace = sys.exc_info()[1:3]
 
     if timeout is not None:
       timeout -= time.time() - start_time
 
     if retries > 0 and (timeout is None or timeout > 0):
-      log.debug('Failed to download from %s (%i retries remaining): %s' % (url, retries, exc))
+      log.debug('Failed to download from %s (%i retries remaining): %s' % (url, retries, exception))
       return download(url, timeout, retries - 1)
     else:
-      log.debug('Failed to download from %s: %s' % (url, exc))
-      raise stem.DownloadFailed(url, exc, stacktrace)
+      log.debug('Failed to download from %s: %s' % (url, exception))
+      raise stem.DownloadFailed(url, exception, stacktrace)
 
 
-def get_connections(resolver = None, process_pid = None, process_name = None):
+def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, process_pid: Optional[int] = None, process_name: Optional[str] = None) -> Sequence['stem.util.connection.Connection']:
   """
   Retrieves a list of the current connections for a given process. This
   provides a list of :class:`~stem.util.connection.Connection`. Note that
@@ -239,7 +240,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   if not process_pid and not process_name:
     raise ValueError('You must provide a pid or process name to provide connections for')
 
-  def _log(msg):
+  def _log(msg: str) -> None:
     if LOG_CONNECTION_RESOLUTION:
       log.debug(msg)
 
@@ -253,7 +254,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
       raise ValueError('Process pid was non-numeric: %s' % process_pid)
 
   if process_pid is None:
-    all_pids = stem.util.system.pid_by_name(process_name, True)
+    all_pids = stem.util.system.pid_by_name(process_name, True)  # type: List[int] # type: ignore
 
     if len(all_pids) == 0:
       if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
@@ -288,7 +289,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   connections = []
   resolver_regex = re.compile(resolver_regex_str)
 
-  def _parse_address_str(addr_type, addr_str, line):
+  def _parse_address_str(addr_type: str, addr_str: str, line: str) -> Tuple[str, int]:
     addr, port = addr_str.rsplit(':', 1)
 
     if not is_valid_ipv4_address(addr) and not is_valid_ipv6_address(addr, allow_brackets = True):
@@ -334,7 +335,7 @@ def get_connections(resolver = None, process_pid = None, process_name = None):
   return connections
 
 
-def system_resolvers(system = None):
+def system_resolvers(system: Optional[str] = None) -> Sequence['stem.util.connection.Resolver']:
   """
   Provides the types of connection resolvers likely to be available on this platform.
 
@@ -383,7 +384,7 @@ def system_resolvers(system = None):
   return resolvers
 
 
-def port_usage(port):
+def port_usage(port: int) -> Optional[str]:
   """
   Provides the common use of a given port. For example, 'HTTP' for port 80 or
   'SSH' for 22.
@@ -429,7 +430,7 @@ def port_usage(port):
   return PORT_USES.get(port)
 
 
-def is_valid_ipv4_address(address):
+def is_valid_ipv4_address(address: str) -> bool:
   """
   Checks if a string is a valid IPv4 address.
 
@@ -458,7 +459,7 @@ def is_valid_ipv4_address(address):
   return True
 
 
-def is_valid_ipv6_address(address, allow_brackets = False):
+def is_valid_ipv6_address(address: str, allow_brackets: bool = False) -> bool:
   """
   Checks if a string is a valid IPv6 address.
 
@@ -513,7 +514,7 @@ def is_valid_ipv6_address(address, allow_brackets = False):
   return True
 
 
-def is_valid_port(entry, allow_zero = False):
+def is_valid_port(entry: Union[str, int, Sequence[str], Sequence[int]], allow_zero: bool = False) -> bool:
   """
   Checks if a string or int is a valid port number.
 
@@ -523,8 +524,15 @@ def is_valid_port(entry, allow_zero = False):
   :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
 
+  if isinstance(entry, (tuple, list)):
+    for port in entry:
+      if not is_valid_port(port, allow_zero):
+        return False
+
+    return True
+
   try:
-    value = int(entry)
+    value = int(entry)  # type: ignore
 
     if str(value) != str(entry):
       return False  # invalid leading char, e.g. space or zero
@@ -533,19 +541,12 @@ def is_valid_port(entry, allow_zero = False):
     else:
       return value > 0 and value < 65536
   except TypeError:
-    if isinstance(entry, (tuple, list)):
-      for port in entry:
-        if not is_valid_port(port, allow_zero):
-          return False
-
-      return True
-    else:
-      return False
+    return False
   except ValueError:
     return False
 
 
-def is_private_address(address):
+def is_private_address(address: str) -> bool:
   """
   Checks if the IPv4 address is in a range belonging to the local network or
   loopback. These include:
@@ -581,7 +582,7 @@ def is_private_address(address):
   return False
 
 
-def address_to_int(address):
+def address_to_int(address: str) -> int:
   """
   Provides an integer representation of a IPv4 or IPv6 address that can be used
   for sorting.
@@ -599,7 +600,7 @@ def address_to_int(address):
   return int(_address_to_binary(address), 2)
 
 
-def expand_ipv6_address(address):
+def expand_ipv6_address(address: str) -> str:
   """
   Expands abbreviated IPv6 addresses to their full colon separated hex format.
   For instance...
@@ -619,6 +620,9 @@ def expand_ipv6_address(address):
 
   :raises: **ValueError** if the address can't be expanded due to being malformed
   """
+
+  if isinstance(address, bytes):
+    address = str_tools._to_unicode(address)
 
   if not is_valid_ipv6_address(address):
     raise ValueError("'%s' isn't a valid IPv6 address" % address)
@@ -660,7 +664,7 @@ def expand_ipv6_address(address):
   return address
 
 
-def get_mask_ipv4(bits):
+def get_mask_ipv4(bits: int) -> str:
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
 
@@ -686,7 +690,7 @@ def get_mask_ipv4(bits):
   return '.'.join([str(int(octet, 2)) for octet in octets])
 
 
-def get_mask_ipv6(bits):
+def get_mask_ipv6(bits: int) -> str:
   """
   Provides the IPv6 mask for a given number of bits, in the hex colon-delimited
   format.
@@ -713,7 +717,7 @@ def get_mask_ipv6(bits):
   return ':'.join(['%04x' % int(group, 2) for group in groupings]).upper()
 
 
-def _get_masked_bits(mask):
+def _get_masked_bits(mask: str) -> int:
   """
   Provides the number of bits that an IPv4 subnet mask represents. Note that
   not all masks can be represented by a bit count.
@@ -738,13 +742,15 @@ def _get_masked_bits(mask):
     raise ValueError('Unable to convert mask to a bit count: %s' % mask)
 
 
-def _get_binary(value, bits):
+def _get_binary(value: int, bits: int) -> str:
   """
   Provides the given value as a binary string, padded with zeros to the given
   number of bits.
 
   :param int value: value to be converted
   :param int bits: number of bits to pad to
+
+  :returns: **str** of this binary value
   """
 
   # http://www.daniweb.com/code/snippet216539.html
@@ -754,9 +760,11 @@ def _get_binary(value, bits):
 # TODO: In stem 2.x we should consider unifying this with
 # stem.client.datatype's _unpack_ipv4_address() and _unpack_ipv6_address().
 
-def _address_to_binary(address):
+def _address_to_binary(address: str) -> str:
   """
   Provides the binary value for an IPv4 or IPv6 address.
+
+  :param str address: address to convert
 
   :returns: **str** with the binary representation of this address
 

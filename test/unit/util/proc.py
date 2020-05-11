@@ -147,18 +147,17 @@ class TestProc(unittest.TestCase):
 
       # tests the case where pid = 0
 
-      if 'start time' in args:
-        response = 10
-      else:
-        response = ()
+      response = ()
 
-        for arg in args:
-          if arg == 'command':
-            response += ('sched',)
-          elif arg == 'utime':
-            response += ('0',)
-          elif arg == 'stime':
-            response += ('0',)
+      for arg in args:
+        if arg == 'command':
+          response += ('sched',)
+        elif arg == 'utime':
+          response += ('0',)
+        elif arg == 'stime':
+          response += ('0',)
+        elif arg == 'start time':
+          response += ('10',)
 
       get_line_mock.side_effect = lambda *params: {
         ('/proc/0/stat', '0', 'process %s' % ', '.join(args)): stat

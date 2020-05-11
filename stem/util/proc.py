@@ -56,6 +56,7 @@ import stem.util.enum
 import stem.util.str_tools
 
 from stem.util import log
+from typing import Any, Mapping, Optional, Sequence, Set, Tuple
 
 try:
   # unavailable on windows (#19823)
@@ -80,7 +81,7 @@ Stat = stem.util.enum.Enum(
 
 
 @functools.lru_cache()
-def is_available():
+def is_available() -> bool:
   """
   Checks if proc information is available on this platform.
 
@@ -101,7 +102,7 @@ def is_available():
 
 
 @functools.lru_cache()
-def system_start_time():
+def system_start_time() -> float:
   """
   Provides the unix time (seconds since epoch) when the system started.
 
@@ -124,7 +125,7 @@ def system_start_time():
 
 
 @functools.lru_cache()
-def physical_memory():
+def physical_memory() -> int:
   """
   Provides the total physical memory on the system in bytes.
 
@@ -146,7 +147,7 @@ def physical_memory():
     raise exc
 
 
-def cwd(pid):
+def cwd(pid: int) -> str:
   """
   Provides the current working directory for the given process.
 
@@ -174,7 +175,7 @@ def cwd(pid):
   return cwd
 
 
-def uid(pid):
+def uid(pid: int) -> int:
   """
   Provides the user ID the given process is running under.
 
@@ -199,7 +200,7 @@ def uid(pid):
     raise exc
 
 
-def memory_usage(pid):
+def memory_usage(pid: int) -> Tuple[int, int]:
   """
   Provides the memory usage in bytes for the given process.
 
@@ -232,7 +233,7 @@ def memory_usage(pid):
     raise exc
 
 
-def stats(pid, *stat_types):
+def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[str]:
   """
   Provides process specific information. See the :data:`~stem.util.proc.Stat`
   enum for valid options.
@@ -270,6 +271,7 @@ def stats(pid, *stat_types):
     raise exc
 
   results = []
+
   for stat_type in stat_types:
     if stat_type == Stat.COMMAND:
       if pid == 0:
@@ -288,7 +290,7 @@ def stats(pid, *stat_types):
         results.append(str(float(stat_comp[14]) / CLOCK_TICKS))
     elif stat_type == Stat.START_TIME:
       if pid == 0:
-        return system_start_time()
+        results.append(str(system_start_time()))
       else:
         # According to documentation, starttime is in field 21 and the unit is
         # jiffies (clock ticks). We divide it for clock ticks, then add the
@@ -300,7 +302,7 @@ def stats(pid, *stat_types):
   return tuple(results)
 
 
-def file_descriptors_used(pid):
+def file_descriptors_used(pid: int) -> int:
   """
   Provides the number of file descriptors currently being used by a process.
 
@@ -327,7 +329,7 @@ def file_descriptors_used(pid):
     raise IOError('Unable to check number of file descriptors used: %s' % exc)
 
 
-def connections(pid = None, user = None):
+def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequence['stem.util.connection.Connection']:
   """
   Queries connections from the proc contents. This matches netstat, lsof, and
   friends but is much faster. If no **pid** or **user** are provided this
@@ -412,7 +414,7 @@ def connections(pid = None, user = None):
     raise
 
 
-def _inodes_for_sockets(pid):
+def _inodes_for_sockets(pid: int) -> Set[bytes]:
   """
   Provides inodes in use by a process for its sockets.
 
@@ -450,7 +452,7 @@ def _inodes_for_sockets(pid):
   return inodes
 
 
-def _unpack_addr(addr):
+def _unpack_addr(addr: bytes) -> str:
   """
   Translates an address entry in the /proc/net/* contents to a human readable
   form (`reference <http://linuxdevcenter.com/pub/a/linux/2000/11/16/LinuxAdmin.html>`_,
@@ -494,7 +496,7 @@ def _unpack_addr(addr):
   return ENCODED_ADDR[addr]
 
 
-def _is_float(*value):
+def _is_float(*value: Any) -> bool:
   try:
     for v in value:
       float(v)
@@ -504,11 +506,11 @@ def _is_float(*value):
     return False
 
 
-def _get_line(file_path, line_prefix, parameter):
+def _get_line(file_path: str, line_prefix: str, parameter: str) -> str:
   return _get_lines(file_path, (line_prefix, ), parameter)[line_prefix]
 
 
-def _get_lines(file_path, line_prefixes, parameter):
+def _get_lines(file_path: str, line_prefixes: Sequence[str], parameter: str) -> Mapping[str, str]:
   """
   Fetches lines with the given prefixes from a file. This only provides back
   the first instance of each prefix.
@@ -552,7 +554,7 @@ def _get_lines(file_path, line_prefixes, parameter):
     raise
 
 
-def _log_runtime(parameter, proc_location, start_time):
+def _log_runtime(parameter: str, proc_location: str, start_time: float) -> None:
   """
   Logs a message indicating a successful proc query.
 
@@ -565,7 +567,7 @@ def _log_runtime(parameter, proc_location, start_time):
   log.debug('proc call (%s): %s (runtime: %0.4f)' % (parameter, proc_location, runtime))
 
 
-def _log_failure(parameter, exc):
+def _log_failure(parameter: str, exc: BaseException) -> None:
   """
   Logs a message indicating that the proc query failed.
 

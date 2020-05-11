@@ -13,8 +13,8 @@ import stem.version
 
 from unittest.mock import Mock, patch
 
+from stem.connection import AuthMethod
 from stem.response import ControlMessage
-from stem.response.protocolinfo import AuthMethod
 
 NO_AUTH = """250-PROTOCOLINFO 1
 250-AUTH METHODS=NULL

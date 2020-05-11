@@ -162,17 +162,20 @@ import inspect
 import os
 import threading
 
+import stem.util.enum
+
 from stem.util import log
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, Union
 
 CONFS = {}  # mapping of identifier to singleton instances of configs
 
 
 class _SyncListener(object):
-  def __init__(self, config_dict, interceptor):
+  def __init__(self, config_dict: Mapping[str, Any], interceptor: Callable[[str, Any], Any]) -> None:
     self.config_dict = config_dict
     self.interceptor = interceptor
 
-  def update(self, config, key):
+  def update(self, config: 'stem.util.conf.Config', key: str) -> None:
     if key in self.config_dict:
       new_value = config.get(key, self.config_dict[key])
 
@@ -185,10 +188,10 @@ class _SyncListener(object):
         if interceptor_value:
           new_value = interceptor_value
 
-      self.config_dict[key] = new_value
+      self.config_dict[key] = new_value  # type: ignore
 
 
-def config_dict(handle, conf_mappings, handler = None):
+def config_dict(handle: str, conf_mappings: Dict[str, Any], handler: Optional[Callable[[str, Any], Any]] = None) -> Dict[str, Any]:
   """
   Makes a dictionary that stays synchronized with a configuration.
 
@@ -214,6 +217,8 @@ def config_dict(handle, conf_mappings, handler = None):
   :param str handle: unique identifier for a config instance
   :param dict conf_mappings: config key/value mappings used as our defaults
   :param functor handler: function referred to prior to assigning values
+
+  :returns: mapping of attributes to their current configuration value
   """
 
   selected_config = get_config(handle)
@@ -221,7 +226,7 @@ def config_dict(handle, conf_mappings, handler = None):
   return conf_mappings
 
 
-def get_config(handle):
+def get_config(handle: str) -> 'stem.util.conf.Config':
   """
   Singleton constructor for configuration file instances. If a configuration
   already exists for the handle then it's returned. Otherwise a fresh instance
@@ -236,7 +241,7 @@ def get_config(handle):
   return CONFS[handle]
 
 
-def uses_settings(handle, path, lazy_load = True):
+def uses_settings(handle: str, path: str, lazy_load: bool = True) -> Callable:
   """
   Provides a function that can be used as a decorator for other functions that
   require settings to be loaded. Functions with this decorator will be provided
@@ -272,13 +277,13 @@ def uses_settings(handle, path, lazy_load = True):
     config.load(path)
     config._settings_loaded = True
 
-  def decorator(func):
-    def wrapped(*args, **kwargs):
+  def decorator(func: Callable) -> Callable:
+    def wrapped(*args: Any, **kwargs: Any) -> Any:
       if lazy_load and not config._settings_loaded:
         config.load(path)
         config._settings_loaded = True
 
-      if 'config' in inspect.getargspec(func).args:
+      if 'config' in inspect.getfullargspec(func).args:
         return func(*args, config = config, **kwargs)
       else:
         return func(*args, **kwargs)
@@ -288,7 +293,7 @@ def uses_settings(handle, path, lazy_load = True):
   return decorator
 
 
-def parse_enum(key, value, enumeration):
+def parse_enum(key: str, value: str, enumeration: 'stem.util.enum.Enum') -> Any:
   """
   Provides the enumeration value for a given key. This is a case insensitive
   lookup and raises an exception if the enum key doesn't exist.
@@ -305,7 +310,7 @@ def parse_enum(key, value, enumeration):
   return parse_enum_csv(key, value, enumeration, 1)[0]
 
 
-def parse_enum_csv(key, value, enumeration, count = None):
+def parse_enum_csv(key: str, value: str, enumeration: 'stem.util.enum.Enum', count: Optional[Union[int, Sequence[int]]] = None) -> List[Any]:
   """
   Parses a given value as being a comma separated listing of enumeration keys,
   returning the corresponding enumeration values. This is intended to be a
@@ -445,21 +450,21 @@ class Config(object):
        Class can now be used as a dictionary.
   """
 
-  def __init__(self):
-    self._path = None  # location we last loaded from or saved to
-    self._contents = collections.OrderedDict()  # configuration key/value pairs
-    self._listeners = []  # functors to be notified of config changes
+  def __init__(self) -> None:
+    self._path = None  # type: Optional[str] # location we last loaded from or saved to
+    self._contents = collections.OrderedDict()  # type: Dict[str, Any] # configuration key/value pairs
+    self._listeners = []  # type: List[Callable[['stem.util.conf.Config', str], Any]] # functors to be notified of config changes
 
     # used for accessing _contents
     self._contents_lock = threading.RLock()
 
     # keys that have been requested (used to provide unused config contents)
-    self._requested_keys = set()
+    self._requested_keys = set()  # type: Set[str]
 
     # flag to support lazy loading in uses_settings()
     self._settings_loaded = False
 
-  def load(self, path = None, commenting = True):
+  def load(self, path: Optional[str] = None, commenting: bool = True) -> None:
     """
     Reads in the contents of the given path, adding its configuration values
     to our current contents. If the path is a directory then this loads each
@@ -534,7 +539,7 @@ class Config(object):
             else:
               self.set(line, '', False)  # default to a key => '' mapping
 
-  def save(self, path = None):
+  def save(self, path: Optional[str] = None) -> None:
     """
     Saves configuration contents to disk. If a path is provided then it
     replaces the configuration location that we track.
@@ -564,7 +569,7 @@ class Config(object):
 
             output_file.write('%s %s\n' % (entry_key, entry_value))
 
-  def clear(self):
+  def clear(self) -> None:
     """
     Drops the configuration contents and reverts back to a blank, unloaded
     state.
@@ -574,7 +579,7 @@ class Config(object):
       self._contents.clear()
       self._requested_keys = set()
 
-  def add_listener(self, listener, backfill = True):
+  def add_listener(self, listener: Callable[['stem.util.conf.Config', str], Any], backfill: bool = True) -> None:
     """
     Registers the function to be notified of configuration updates. Listeners
     are expected to be functors which accept (config, key).
@@ -590,14 +595,14 @@ class Config(object):
         for key in self.keys():
           listener(self, key)
 
-  def clear_listeners(self):
+  def clear_listeners(self) -> None:
     """
     Removes all attached listeners.
     """
 
     self._listeners = []
 
-  def keys(self):
+  def keys(self) -> List[str]:
     """
     Provides all keys in the currently loaded configuration.
 
@@ -606,7 +611,7 @@ class Config(object):
 
     return list(self._contents.keys())
 
-  def unused_keys(self):
+  def unused_keys(self) -> Set[str]:
     """
     Provides the configuration keys that have never been provided to a caller
     via :func:`~stem.util.conf.config_dict` or the
@@ -618,7 +623,7 @@ class Config(object):
 
     return set(self.keys()).difference(self._requested_keys)
 
-  def set(self, key, value, overwrite = True):
+  def set(self, key: str, value: Union[str, Sequence[str]], overwrite: bool = True) -> None:
     """
     Appends the given key/value configuration mapping, behaving the same as if
     we'd loaded this from a configuration file.
@@ -657,7 +662,7 @@ class Config(object):
       else:
         raise ValueError("Config.set() only accepts str (bytes or unicode), list, or tuple. Provided value was a '%s'" % type(value))
 
-  def get(self, key, default = None):
+  def get(self, key: str, default: Optional[Any] = None) -> Any:
     """
     Fetches the given configuration, using the key and default value to
     determine the type it should be. Recognized inferences are:
@@ -737,7 +742,7 @@ class Config(object):
 
     return val
 
-  def get_value(self, key, default = None, multiple = False):
+  def get_value(self, key: str, default: Optional[Any] = None, multiple: bool = False) -> Union[str, List[str]]:
     """
     This provides the current value associated with a given key.
 
@@ -763,6 +768,6 @@ class Config(object):
         log.log_once(message_id, log.TRACE, "config entry '%s' not found, defaulting to '%s'" % (key, default))
         return default
 
-  def __getitem__(self, key):
+  def __getitem__(self, key: str) -> Any:
     with self._contents_lock:
       return self._contents[key]

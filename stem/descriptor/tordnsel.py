@@ -10,18 +10,23 @@ exit list files.
   TorDNSEL - Exit list provided by TorDNSEL
 """
 
+import datetime
+
 import stem.util.connection
 import stem.util.str_tools
 import stem.util.tor_tools
 
+from typing import Any, BinaryIO, Callable, Dict, Iterator, List, Optional, Tuple
+
 from stem.descriptor import (
+  ENTRY_TYPE,
   Descriptor,
   _read_until_keywords,
   _descriptor_components,
 )
 
 
-def _parse_file(tordnsel_file, validate = False, **kwargs):
+def _parse_file(tordnsel_file: BinaryIO, validate: bool = False, **kwargs: Any) -> Iterator['stem.descriptor.tordnsel.TorDNSEL']:
   """
   Iterates over a tordnsel file.
 
@@ -33,6 +38,9 @@ def _parse_file(tordnsel_file, validate = False, **kwargs):
     * **IOError** if the file can't be read
   """
 
+  if kwargs:
+    raise ValueError("TorDNSEL doesn't support additional arguments: %s" % kwargs)
+
   # skip content prior to the first ExitNode
   _read_until_keywords('ExitNode', tordnsel_file, skip = True)
 
@@ -41,7 +49,7 @@ def _parse_file(tordnsel_file, validate = False, **kwargs):
     contents += _read_until_keywords('ExitNode', tordnsel_file)
 
     if contents:
-      yield TorDNSEL(bytes.join(b'', contents), validate, **kwargs)
+      yield TorDNSEL(bytes.join(b'', contents), validate)
     else:
       break  # done parsing file
 
@@ -62,19 +70,20 @@ class TorDNSEL(Descriptor):
 
   TYPE_ANNOTATION_NAME = 'tordnsel'
 
-  def __init__(self, raw_contents, validate):
+  def __init__(self, raw_contents: bytes, validate: bool) -> None:
     super(TorDNSEL, self).__init__(raw_contents)
-    raw_contents = stem.util.str_tools._to_unicode(raw_contents)
     entries = _descriptor_components(raw_contents, validate)
 
-    self.fingerprint = None
-    self.published = None
-    self.last_status = None
-    self.exit_addresses = []
+    self.fingerprint = None  # type: Optional[str]
+    self.published = None  # type: Optional[datetime.datetime]
+    self.last_status = None  # type: Optional[datetime.datetime]
+    self.exit_addresses = []  # type: List[Tuple[str, datetime.datetime]]
 
     self._parse(entries, validate)
 
-  def _parse(self, entries, validate):
+  def _parse(self, entries: ENTRY_TYPE, validate: bool, parser_for_line: Optional[Dict[str, Callable]] = None) -> None:
+    if parser_for_line:
+      raise ValueError('parser_for_line is unused by TorDNSEL')
 
     for keyword, values in list(entries.items()):
       value, block_type, block_content = values[0]
@@ -101,7 +110,7 @@ class TorDNSEL(Descriptor):
             raise ValueError("LastStatus time wasn't parsable: %s" % value)
       elif keyword == 'ExitAddress':
         for value, block_type, block_content in values:
-          address, date = value.split(' ', 1)
+          address, date_str = value.split(' ', 1)
 
           if validate:
             if not stem.util.connection.is_valid_ipv4_address(address):
@@ -110,7 +119,7 @@ class TorDNSEL(Descriptor):
               raise ValueError('Unexpected block content: %s' % block_content)
 
           try:
-            date = stem.util.str_tools._parse_timestamp(date)
+            date = stem.util.str_tools._parse_timestamp(date_str)
             self.exit_addresses.append((address, date))
           except ValueError:
             if validate:

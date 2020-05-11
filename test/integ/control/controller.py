@@ -339,14 +339,14 @@ class TestController(unittest.TestCase):
       auth_methods = []
 
       if test.runner.Torrc.COOKIE in tor_options:
-        auth_methods.append(stem.response.protocolinfo.AuthMethod.COOKIE)
-        auth_methods.append(stem.response.protocolinfo.AuthMethod.SAFECOOKIE)
+        auth_methods.append(stem.connection.AuthMethod.COOKIE)
+        auth_methods.append(stem.connection.AuthMethod.SAFECOOKIE)
 
       if test.runner.Torrc.PASSWORD in tor_options:
-        auth_methods.append(stem.response.protocolinfo.AuthMethod.PASSWORD)
+        auth_methods.append(stem.connection.AuthMethod.PASSWORD)
 
       if not auth_methods:
-        auth_methods.append(stem.response.protocolinfo.AuthMethod.NONE)
+        auth_methods.append(stem.connection.AuthMethod.NONE)
 
       self.assertEqual(tuple(auth_methods), protocolinfo.auth_methods)
 
