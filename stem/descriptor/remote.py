@@ -565,7 +565,7 @@ class Query(stem.util.AsyncClassWrapper):
   def __init__(self, resource, descriptor_type = None, endpoints = None, compression = (Compression.GZIP,), retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
     self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
     self._thread_for_wrapped_class.start()
-    self._wrapped_instance = self._init_async_class(
+    self._wrapped_instance: AsyncQuery = self._init_async_class(
       AsyncQuery,
       resource,
       descriptor_type,

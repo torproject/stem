@@ -3899,7 +3899,7 @@ class Controller(_ControllerClassMethodMixin, _BaseControllerSocketMixin, stem.u
       self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
       self._thread_for_wrapped_class.start()
 
-    self._wrapped_instance = self._init_async_class(AsyncController, control_socket, is_authenticated)
+    self._wrapped_instance: AsyncController = self._init_async_class(AsyncController, control_socket, is_authenticated)
     self._socket = self._wrapped_instance._socket
 
   def msg(self, message: str) -> stem.response.ControlMessage:
