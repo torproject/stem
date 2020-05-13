@@ -964,10 +964,10 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
       encrypted layer
     :param stem.descriptor.hidden_service.OuterLayer outer_layer: outer
       encrypted layer
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
-      identity_key: service identity key
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
-      signing_key: service signing key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey identity_key:
+      service identity key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key:
+      service signing key
     :param stem.descriptor.Ed25519CertificateV1 signing_cert: certificate
       signing this descriptor
     :param int revision_counter: descriptor revision number
