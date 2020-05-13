@@ -44,7 +44,7 @@ class TestControl(unittest.TestCase):
 
     with patch('stem.control.BaseController.msg', Mock(side_effect = coro_func_returning_value(None))):
       self.controller = Controller(socket)
-      self.async_controller = self.controller._async_controller
+      self.async_controller = self.controller._wrapped_instance
 
       self.circ_listener = Mock()
       self.controller.add_event_listener(self.circ_listener, EventType.CIRC)
@@ -748,7 +748,7 @@ class TestControl(unittest.TestCase):
     with patch('time.time', Mock(return_value = TEST_TIMESTAMP)):
       with patch('stem.control.AsyncController.is_alive') as is_alive_mock:
         is_alive_mock.return_value = True
-        loop = self.controller._asyncio_loop
+        loop = self.controller._thread_for_wrapped_class.loop
         asyncio.run_coroutine_threadsafe(self.async_controller._event_loop(), loop)
 
         try:

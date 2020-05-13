@@ -113,7 +113,7 @@ class TestController(unittest.TestCase):
 
       state_controller, state_type, state_timestamp = received_events[0]
 
-      self.assertEqual(controller._async_controller, state_controller)
+      self.assertEqual(controller._wrapped_instance, state_controller)
       self.assertEqual(State.RESET, state_type)
       self.assertTrue(state_timestamp > before and state_timestamp < after)
 

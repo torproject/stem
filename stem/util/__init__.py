@@ -5,7 +5,9 @@
 Utility functions used by the stem library.
 """
 
+import asyncio
 import datetime
+import threading
 
 from typing import Any, Union
 
@@ -139,3 +141,82 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
     setattr(obj, '_cached_hash', my_hash)
 
   return my_hash
+
+
+class CombinedReentrantAndAsyncioLock:
+  """
+  Lock that combines thread-safe reentrant and not thread-safe asyncio locks.
+  """
+
+  __slots__ = ('_r_lock', '_async_lock')
+
+  def __init__(self):
+    self._r_lock = threading.RLock()
+    self._async_lock = asyncio.Lock()
+
+  async def acquire(self):
+    await self._async_lock.acquire()
+    self._r_lock.acquire()
+
+  def release(self):
+    self._r_lock.release()
+    self._async_lock.release()
+
+  async def __aenter__(self):
+    await self.acquire()
+    return self
+
+  async def __aexit__(self, exc_type, exc_val, exc_tb):
+    self.release()
+
+
+class ThreadForWrappedAsyncClass(threading.Thread):
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, *kwargs)
+    self.loop = asyncio.new_event_loop()
+    self.setDaemon(True)
+
+  def run(self):
+    self.loop.run_forever()
+
+  def join(self, timeout=None):
+    self.loop.call_soon_threadsafe(self.loop.stop)
+    super().join(timeout)
+    self.loop.close()
+
+
+class AsyncClassWrapper:
+  _thread_for_wrapped_class: ThreadForWrappedAsyncClass
+  _wrapped_instance: type
+
+  def _init_async_class(self, async_class, *args, **kwargs):
+    thread = self._thread_for_wrapped_class
+    # The asynchronous class should be initialized in the thread where
+    # its methods will be executed.
+    if thread != threading.current_thread():
+      async def init():
+        return async_class(*args, **kwargs)
+
+      return asyncio.run_coroutine_threadsafe(init(), thread.loop).result()
+
+    return async_class(*args, **kwargs)
+
+  def _call_async_method_soon(self, method_name, *args, **kwargs):
+    return asyncio.run_coroutine_threadsafe(
+      getattr(self._wrapped_instance, method_name)(*args, **kwargs),
+      self._thread_for_wrapped_class.loop,
+    )
+
+  def _execute_async_method(self, method_name, *args, **kwargs):
+    return self._call_async_method_soon(method_name, *args, **kwargs).result()
+
+  def _execute_async_generator_method(self, method_name, *args, **kwargs):
+    async def convert_async_generator(generator):
+      return iter([d async for d in generator])
+
+    return asyncio.run_coroutine_threadsafe(
+      convert_async_generator(
+        getattr(self._wrapped_instance, method_name)(*args, **kwargs),
+      ),
+      self._thread_for_wrapped_class.loop,
+    ).result()

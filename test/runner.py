@@ -488,7 +488,7 @@ class Runner(object):
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    async_controller_thread = stem.control._AsyncControllerThread()
+    async_controller_thread = stem.util.ThreadForWrappedAsyncClass()
     async_controller_thread.start()
 
     try:
