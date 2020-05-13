@@ -1,5 +1,5 @@
 Util
 ====
 
-.. automodule:: stem.util.__init__
+.. automodule:: stem.util
 
