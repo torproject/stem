@@ -13,9 +13,10 @@ import stem.descriptor.remote
 import stem.util.str_tools
 import test.require
 
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock
 
 from stem.descriptor.remote import Compression
+from stem.util.test_tools import coro_func_returning_value
 from test.unit.descriptor import read_resource
 
 TEST_RESOURCE = '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31'
@@ -78,11 +79,20 @@ def _orport_mock(data, encoding = 'identity', response_code_header = None):
     cell.data = hunk
     cells.append(cell)
 
-  connect_mock = MagicMock()
-  relay_mock = connect_mock().__enter__()
-  circ_mock = relay_mock.create_circuit().__enter__()
-  circ_mock.directory.return_value = data
-  return connect_mock
+  class AsyncMock(Mock):
+    async def __aenter__(self):
+      return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+      return
+
+  circ_mock = AsyncMock()
+  circ_mock.directory.side_effect = coro_func_returning_value(data)
+
+  relay_mock = AsyncMock()
+  relay_mock.create_circuit.side_effect = coro_func_returning_value(circ_mock)
+
+  return coro_func_returning_value(relay_mock)
 
 
 def _dirport_mock(data, encoding = 'identity'):
@@ -294,7 +304,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
     )
 
-    self.assertEqual(stem.DirPort('128.31.0.39', 9131), query._pick_endpoint())
+    self.assertEqual(stem.DirPort('128.31.0.39', 9131), query._wrapped_instance._pick_endpoint())
 
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
