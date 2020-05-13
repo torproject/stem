@@ -1168,7 +1168,8 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 class OuterLayer(Descriptor):
   """
   Initial encryped layer of a hidden service v3 descriptor (`spec
-  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1154>`_).
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ section
+  2.5.1.2).
 
   .. versionadded:: 1.8.0
 
@@ -1264,7 +1265,8 @@ class OuterLayer(Descriptor):
 class InnerLayer(Descriptor):
   """
   Second encryped layer of a hidden service v3 descriptor (`spec
-  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1308>`_).
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ section
+  2.5.2.2).
 
   .. versionadded:: 1.8.0
 
