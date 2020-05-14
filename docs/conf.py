@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys, os
+from sphinx.domains.python import PythonDomain
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -260,9 +261,35 @@ man_pages = [
 trac_url = 'https://trac.torproject.org/{slug}'
 spec_url = 'https://gitweb.torproject.org/torspec.git/commit/?id={slug}'
 
+
 def skip_members(app, what, name, obj, skip, options):
   if name in ('ATTRIBUTES', 'PARSER_FOR_LINE'):
     return True  # skip the descriptor's parser constants
 
+
+class PythonDomainNoXref(PythonDomain):
+  """
+  Sphinx attempts to create cross-reference links for variable names...
+
+    https://github.com/sphinx-doc/sphinx/issues/2549
+    https://github.com/sphinx-doc/sphinx/issues/3866
+
+  This causes alot of warnings such as...
+
+    stem/descriptor/networkstatus.py:docstring of
+    stem.descriptor.networkstatus.DocumentDigest:: WARNING: more than one
+    target found for cross-reference 'digest':
+    stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest, ...
+  """
+
+  def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
+    if 'refspecific' in node:
+      del node['refspecific']
+
+    return super(PythonDomainNoXref, self).resolve_xref(
+      env, fromdocname, builder, typ, target, node, contnode)
+
+
 def setup(app):
   app.connect('autodoc-skip-member', skip_members)
+  app.add_domain(PythonDomainNoXref, override = True)
