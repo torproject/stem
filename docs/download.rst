@@ -162,7 +162,7 @@ Download
      - .. image:: /_static/label/archlinux.png
           :target: https://www.archlinux.org/packages/community/any/python-stem/
 
-       Package by Sjon for `Arch Linux...
+       Package by Sjon for `Arch Linux <https://www.archlinux.org/>`_...
 
        ::
 

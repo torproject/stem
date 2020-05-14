@@ -805,7 +805,7 @@ class DescriptorDownloader(object):
 
     :param str,list authority_v3idents: fingerprint or list of fingerprints of the
       authority keys, see `'v3ident' in tor's config.c
-      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c#n819>`_
+      <https://gitweb.torproject.org/tor.git/tree/src/or/config.c>`_
       for the values.
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor

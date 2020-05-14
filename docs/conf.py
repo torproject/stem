@@ -12,6 +12,7 @@
 # serve to show the default.
 
 import sys, os
+from sphinx.domains.python import PythonDomain
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,8 +29,36 @@ needs_sphinx = '1.1' # required for the sphinx-apidoc command
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'roles']
 
-autodoc_member_order = 'bysource'
-autodoc_default_flags = ['members', 'show-inheritance', 'undoc-members']
+autodoc_default_options = {
+  'members': True,
+  'member-order': 'bysource',
+  'show-inheritance': True,
+  'undoc-members': True,
+
+  # Without this Sphinx emits several warnings of the form...
+  #
+  #   WARNING: missing attribute mentioned in :members: or __all__: module stem, attribute directory
+  #
+  # This is because Sphinx expects modules from importlib.import_module() to
+  # have attributes for its submodules. These attributes might or might not be
+  # present depending on what other modules have been imported.
+  #
+  # Said another way...
+  #
+  #  % print(importlib.import_module('stem').__dict__.keys())
+  #  dict_keys(['__name__', '__doc__', '__package__', ...])  <= doesn't have submodules
+  #
+  # But if instead we call...
+  #
+  #  % importlib.import_module('stem.connection')
+  #  % print(importlib.import_module('stem').__dict__.keys())
+  #  dict_keys(['__name__', '__doc__', '__package__', ..., 'descriptor', 'control', 'connection'])  <= includes submodules refernced by stem.connection
+  #
+  # By telling it to ignore our '__all__' attributes Sphinx will import in a
+  # fashon that doesn't emit these warnings.
+
+  'ignore-module-all': True,
+}
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -123,13 +152,13 @@ html_short_title = 'Stem Docs'
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 
-html_logo = 'logo.png'
+html_logo = '_static/logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
 
-html_favicon = 'favicon.png'
+html_favicon = '_static/favicon.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -142,7 +171,7 @@ html_static_path = ['_static']
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-html_use_smartypants = False
+smartquotes = False
 
 # Custom sidebar templates, maps document names to template names.
 #html_sidebars = {}
@@ -232,9 +261,35 @@ man_pages = [
 trac_url = 'https://trac.torproject.org/{slug}'
 spec_url = 'https://gitweb.torproject.org/torspec.git/commit/?id={slug}'
 
+
 def skip_members(app, what, name, obj, skip, options):
   if name in ('ATTRIBUTES', 'PARSER_FOR_LINE'):
     return True  # skip the descriptor's parser constants
 
+
+class PythonDomainNoXref(PythonDomain):
+  """
+  Sphinx attempts to create cross-reference links for variable names...
+
+    https://github.com/sphinx-doc/sphinx/issues/2549
+    https://github.com/sphinx-doc/sphinx/issues/3866
+
+  This causes alot of warnings such as...
+
+    stem/descriptor/networkstatus.py:docstring of
+    stem.descriptor.networkstatus.DocumentDigest:: WARNING: more than one
+    target found for cross-reference 'digest':
+    stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest, ...
+  """
+
+  def resolve_xref(self, env, fromdocname, builder, typ, target, node, contnode):
+    if 'refspecific' in node:
+      del node['refspecific']
+
+    return super(PythonDomainNoXref, self).resolve_xref(
+      env, fromdocname, builder, typ, target, node, contnode)
+
+
 def setup(app):
   app.connect('autodoc-skip-member', skip_members)
+  app.add_domain(PythonDomainNoXref, override = True)

@@ -212,7 +212,7 @@ class File(object):
     from disk as follows...
 
     * If this file has already been downloaded through
-      :func:`~stem.descriptor.collector.CollecTor.download' these descriptors
+      :func:`~stem.descriptor.collector.CollecTor.download` these descriptors
       are read from disk.
 
     * If a **directory** argument is provided and the file is already present
@@ -485,7 +485,7 @@ class CollecTor(object):
     :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
-      :class:`~stem.descriptor.microdescriptor.Microdescriptor
+      :class:`~stem.descriptor.microdescriptor.Microdescriptor`
       for the given time range
 
     :raises: :class:`~stem.DownloadFailed` if the download fails
@@ -553,7 +553,7 @@ class CollecTor(object):
     :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
-      :class:`~stem.descriptor.networkstatus.KeyCertificate
+      :class:`~stem.descriptor.networkstatus.KeyCertificate`
       for the given time range
 
     :raises: :class:`~stem.DownloadFailed` if the download fails
@@ -577,7 +577,7 @@ class CollecTor(object):
     :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
-      :class:`~stem.descriptor.bandwidth_file.BandwidthFile
+      :class:`~stem.descriptor.bandwidth_file.BandwidthFile`
       for the given time range
 
     :raises: :class:`~stem.DownloadFailed` if the download fails
@@ -601,7 +601,7 @@ class CollecTor(object):
     :param int retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
-      :class:`~stem.descriptor.tordnsel.TorDNSEL
+      :class:`~stem.descriptor.tordnsel.TorDNSEL`
       for the given time range
 
     :raises: :class:`~stem.DownloadFailed` if the download fails

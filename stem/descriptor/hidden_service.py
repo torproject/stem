@@ -964,10 +964,10 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
       encrypted layer
     :param stem.descriptor.hidden_service.OuterLayer outer_layer: outer
       encrypted layer
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
-      identity_key: service identity key
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey
-      signing_key: service signing key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey identity_key:
+      service identity key
+    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key:
+      service signing key
     :param stem.descriptor.Ed25519CertificateV1 signing_cert: certificate
       signing this descriptor
     :param int revision_counter: descriptor revision number
@@ -1168,7 +1168,8 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 class OuterLayer(Descriptor):
   """
   Initial encryped layer of a hidden service v3 descriptor (`spec
-  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1154>`_).
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ section
+  2.5.1.2).
 
   .. versionadded:: 1.8.0
 
@@ -1264,7 +1265,8 @@ class OuterLayer(Descriptor):
 class InnerLayer(Descriptor):
   """
   Second encryped layer of a hidden service v3 descriptor (`spec
-  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt#n1308>`_).
+  <https://gitweb.torproject.org/torspec.git/tree/rend-spec-v3.txt>`_ section
+  2.5.2.2).
 
   .. versionadded:: 1.8.0
 

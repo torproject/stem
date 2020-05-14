@@ -1,5 +1,5 @@
 Descriptor
 ==========
 
-.. automodule:: stem.descriptor.__init__
+.. automodule:: stem.descriptor
 
