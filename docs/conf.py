@@ -33,6 +33,30 @@ autodoc_default_options = {
   'member-order': 'bysource',
   'show-inheritance': True,
   'undoc-members': True,
+
+  # Without this Sphinx emits several warnings of the form...
+  #
+  #   WARNING: missing attribute mentioned in :members: or __all__: module stem, attribute directory
+  #
+  # This is because Sphinx expects modules from importlib.import_module() to
+  # have attributes for its submodules. These attributes might or might not be
+  # present depending on what other modules have been imported.
+  #
+  # Said another way...
+  #
+  #  % print(importlib.import_module('stem').__dict__.keys())
+  #  dict_keys(['__name__', '__doc__', '__package__', ...])  <= doesn't have submodules
+  #
+  # But if instead we call...
+  #
+  #  % importlib.import_module('stem.connection')
+  #  % print(importlib.import_module('stem').__dict__.keys())
+  #  dict_keys(['__name__', '__doc__', '__package__', ..., 'descriptor', 'control', 'connection'])  <= includes submodules refernced by stem.connection
+  #
+  # By telling it to ignore our '__all__' attributes Sphinx will import in a
+  # fashon that doesn't emit these warnings.
+
+  'ignore-module-all': True,
 }
 
 # Add any paths that contain templates here, relative to this directory.
