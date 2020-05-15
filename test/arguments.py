@@ -106,9 +106,9 @@ class Arguments(NamedTuple):
 
         args['attribute_targets'] = attribute_targets
       elif opt == '--test':
-        args['specific_test'].append(crop_module_name(arg))
+        args.setdefault('specific_test', []).append(crop_module_name(arg))
       elif opt == '--exclude-test':
-        args['exclude_test'].append(crop_module_name(arg))
+        args.setdefault('exclude_test', []).append(crop_module_name(arg))
       elif opt in ('-l', '--log'):
         arg = arg.upper()
 
