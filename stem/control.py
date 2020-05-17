@@ -1040,8 +1040,8 @@ class AsyncController(BaseController):
 
     # mapping of event types to their listeners
 
-    self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], None]]]
-    self._event_listeners_lock = threading.RLock()
+    self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]]]
+    self._event_listeners_lock = stem.util.CombinedReentrantAndAsyncioLock()
     self._enabled_features = []  # type: List[str]
 
     self._last_address_exc = None  # type: Optional[BaseException]
@@ -3062,7 +3062,7 @@ class AsyncController(BaseController):
 
     # first checking that tor supports these event types
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       if self.is_authenticated():
         for event_type in events:
           event_type = stem.response.events.EVENT_TYPE_TO_CLASS.get(event_type)
@@ -3091,7 +3091,7 @@ class AsyncController(BaseController):
     :raises: :class:`stem.ProtocolError` if unable to set the events
     """
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       event_types_changed = False
 
       for event_type, event_listeners in list(self._event_listeners.items()):
@@ -3760,7 +3760,7 @@ class AsyncController(BaseController):
 
     # try to re-attach event listeners to the new instance
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       try:
         failed_events = (await self._attach_listeners())[1]
 
@@ -3807,7 +3807,7 @@ class AsyncController(BaseController):
       log.error('Tor sent a malformed event (%s): %s' % (exc, event_message))
       event_type = MALFORMED_EVENTS
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       for listener_type, event_listeners in list(self._event_listeners.items()):
         if listener_type == event_type:
           for listener in event_listeners:
@@ -3830,34 +3830,33 @@ class AsyncController(BaseController):
 
     set_events, failed_events = [], []
 
-    with self._event_listeners_lock:
-      if self.is_authenticated():
-        # try to set them all
-        response = await self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
+    if self.is_authenticated():
+      # try to set them all
+      response = await self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
-        if response.is_ok():
-          set_events = list(self._event_listeners.keys())
-        else:
-          # One of the following likely happened...
-          #
-          # * Our user attached listeners before having an authenticated
-          #   connection, so we couldn't check if we met the version
-          #   requirement.
-          #
-          # * User attached listeners to one tor instance, then connected us to
-          #   an older tor instancce.
-          #
-          # * Some other controller hiccup (far less likely).
-          #
-          # See if we can set some subset of our events.
+      if response.is_ok():
+        set_events = list(self._event_listeners.keys())
+      else:
+        # One of the following likely happened...
+        #
+        # * Our user attached listeners before having an authenticated
+        #   connection, so we couldn't check if we met the version
+        #   requirement.
+        #
+        # * User attached listeners to one tor instance, then connected us to
+        #   an older tor instancce.
+        #
+        # * Some other controller hiccup (far less likely).
+        #
+        # See if we can set some subset of our events.
 
-          for event in list(self._event_listeners.keys()):
-            response = await self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
+        for event in list(self._event_listeners.keys()):
+          response = await self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
 
-            if response.is_ok():
-              set_events.append(event)
-            else:
-              failed_events.append(event)
+          if response.is_ok():
+            set_events.append(event)
+          else:
+            failed_events.append(event)
 
     return (set_events, failed_events)
 
