@@ -685,6 +685,14 @@ def _is_ignored(config: Mapping[str, Sequence[str]], path: str, issue: str) -> b
 
 
 def async_test(func: Callable) -> Callable:
+  """
+  Decorator for asynchronous test functions.
+
+  :param func: function that will be decorated
+
+  :return: decorated function
+  """
+
   @functools.wraps(func)
   def wrapper(*args: Any, **kwargs: Any) -> Any:
     loop = asyncio.new_event_loop()
@@ -697,12 +705,30 @@ def async_test(func: Callable) -> Callable:
 
 
 def coro_func_returning_value(return_value: Any) -> Callable[..., Awaitable]:
+  """
+  Creates and returns a coroutine function that returns the specified
+  value and is used for mocking asynchronous functions.
+
+  :param return_value: return value for the coroutine function
+
+  :return: coroutine function returning the specified value
+  """
+
   async def coroutine_func(*args, **kwargs):
     return return_value
   return coroutine_func
 
 
 def coro_func_raising_exc(exc: Exception) -> Callable[..., Awaitable]:
+  """
+  Creates and returns a coroutine function that raises the specified
+  exception and is used for mocking asynchronous functions.
+
+  :param exc: exception for the coroutine function
+
+  :return: coroutine function raising the specified exception
+  """
+
   async def coroutine_func(*args, **kwargs):
     raise exc
   return coroutine_func
