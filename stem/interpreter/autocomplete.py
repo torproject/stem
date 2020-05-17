@@ -88,7 +88,7 @@ class Autocompleter(object):
     """
     Provides autocompletion matches for the given text.
 
-    :param str text: text to check for autocompletion matches with
+    :param text: text to check for autocompletion matches with
 
     :returns: **list** with possible matches
     """
@@ -101,8 +101,8 @@ class Autocompleter(object):
     Provides case insensetive autocompletion options, acting as a functor for
     the readlines set_completer function.
 
-    :param str text: text to check for autocompletion matches with
-    :param int state: index of result to be provided, readline fetches matches
+    :param text: text to check for autocompletion matches with
+    :param state: index of result to be provided, readline fetches matches
       until this function provides None
 
     :returns: **str** with the autocompletion match, **None** if eithe none

@@ -58,21 +58,21 @@ def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc
   .. versionchanged:: 1.7.0
      Added the **close_output** argument.
 
-  :param str tor_cmd: command for starting tor
-  :param list args: additional arguments for tor
-  :param str torrc_path: location of the torrc for us to use
-  :param int completion_percent: percent of bootstrap completion at which
+  :param tor_cmd: command for starting tor
+  :param args: additional arguments for tor
+  :param torrc_path: location of the torrc for us to use
+  :param completion_percent: percent of bootstrap completion at which
     this'll return
-  :param functor init_msg_handler: optional functor that will be provided with
+  :param init_msg_handler: optional functor that will be provided with
     tor's initialization stdout as we get it
-  :param int timeout: time after which the attempt to start tor is aborted, no
+  :param timeout: time after which the attempt to start tor is aborted, no
     timeouts are applied if **None**
-  :param bool take_ownership: asserts ownership over the tor process so it
+  :param take_ownership: asserts ownership over the tor process so it
     aborts if this python process terminates or a :class:`~stem.control.Controller`
     we establish to it disconnects
-  :param bool close_output: closes tor's stdout and stderr streams when
+  :param close_output: closes tor's stdout and stderr streams when
     bootstrapping is complete if true
-  :param str stdin: content to provide on stdin
+  :param stdin: content to provide on stdin
 
   :returns: **subprocess.Popen** instance for the tor subprocess
 
@@ -222,19 +222,19 @@ def launch_tor_with_config(config: Dict[str, Union[str, Sequence[str]]], tor_cmd
   .. versionchanged:: 1.7.0
      Added the **close_output** argument.
 
-  :param dict config: configuration options, such as "{'ControlPort': '9051'}",
+  :param config: configuration options, such as "{'ControlPort': '9051'}",
     values can either be a **str** or **list of str** if for multiple values
-  :param str tor_cmd: command for starting tor
-  :param int completion_percent: percent of bootstrap completion at which
+  :param tor_cmd: command for starting tor
+  :param completion_percent: percent of bootstrap completion at which
     this'll return
-  :param functor init_msg_handler: optional functor that will be provided with
+  :param init_msg_handler: optional functor that will be provided with
     tor's initialization stdout as we get it
-  :param int timeout: time after which the attempt to start tor is aborted, no
+  :param timeout: time after which the attempt to start tor is aborted, no
     timeouts are applied if **None**
-  :param bool take_ownership: asserts ownership over the tor process so it
+  :param take_ownership: asserts ownership over the tor process so it
     aborts if this python process terminates or a :class:`~stem.control.Controller`
     we establish to it disconnects
-  :param bool close_output: closes tor's stdout and stderr streams when
+  :param close_output: closes tor's stdout and stderr streams when
     bootstrapping is complete if true
 
   :returns: **subprocess.Popen** instance for the tor subprocess

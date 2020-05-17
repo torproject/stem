@@ -76,8 +76,8 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
   **SINGLELINE**      :class:`stem.response.SingleLineResponse`
   =================== =====
 
-  :param str response_type: type of tor response to convert to
-  :param stem.response.ControlMessage message: message to be converted
+  :param response_type: type of tor response to convert to
+  :param message: message to be converted
   :param kwargs: optional keyword arguments to be passed to the parser method
 
   :raises:
@@ -184,9 +184,9 @@ class ControlMessage(object):
     .. versionchanged:: 1.6.0
        Added the normalize argument.
 
-    :param str content: message to construct the message from
-    :param str msg_type: type of tor reply to parse the content as
-    :param bool normalize: ensures expected carriage return and ending newline
+    :param content: message to construct the message from
+    :param msg_type: type of tor reply to parse the content as
+    :param normalize: ensures expected carriage return and ending newline
       are present
     :param kwargs: optional keyword arguments to be passed to the parser method
 
@@ -271,7 +271,7 @@ class ControlMessage(object):
     .. versionchanged:: 1.1.0
        Added the get_bytes argument.
 
-    :param bool get_bytes: provides **bytes** for the **content** rather than a **str**
+    :param get_bytes: provides **bytes** for the **content** rather than a **str**
 
     :returns: **list** of (str, str, str) tuples for the components of this message
     """
@@ -288,7 +288,7 @@ class ControlMessage(object):
     .. versionchanged:: 1.1.0
        Added the get_bytes argument.
 
-    :param bool get_bytes: if **True** then this provides **bytes** rather than a **str**
+    :param get_bytes: if **True** then this provides **bytes** rather than a **str**
 
     :returns: **str** of the socket data used to generate this message
     """
@@ -405,7 +405,7 @@ class ControlLine(str):
     """
     Checks if our next entry is a quoted value or not.
 
-    :param bool escaped: unescapes the string
+    :param escaped: unescapes the string
 
     :returns: **True** if the next entry can be parsed as a quoted value, **False** otherwise
     """
@@ -417,9 +417,9 @@ class ControlLine(str):
     """
     Checks if our next entry is a KEY=VALUE mapping or not.
 
-    :param str key: checks that the key matches this value, skipping the check if **None**
-    :param bool quoted: checks that the mapping is to a quoted value
-    :param bool escaped: unescapes the string
+    :param key: checks that the key matches this value, skipping the check if **None**
+    :param quoted: checks that the mapping is to a quoted value
+    :param escaped: unescapes the string
 
     :returns: **True** if the next entry can be parsed as a key=value mapping,
       **False** otherwise
@@ -476,8 +476,8 @@ class ControlLine(str):
       >>> print line.pop(True, True)
         "this has a \\" and \\\\ in it"
 
-    :param bool quoted: parses the next entry as a quoted value, removing the quotes
-    :param bool escaped: unescapes the string
+    :param quoted: parses the next entry as a quoted value, removing the quotes
+    :param escaped: unescapes the string
 
     :returns: **str** of the next space separated entry
 
@@ -504,9 +504,9 @@ class ControlLine(str):
     .. versionchanged:: 1.6.0
        Added the get_bytes argument.
 
-    :param bool quoted: parses the value as being quoted, removing the quotes
-    :param bool escaped: unescapes the string
-    :param bool get_bytes: provides **bytes** for the **value** rather than a **str**
+    :param quoted: parses the value as being quoted, removing the quotes
+    :param escaped: unescapes the string
+    :param get_bytes: provides **bytes** for the **value** rather than a **str**
 
     :returns: **tuple** of the form (key, value)
 
@@ -537,10 +537,10 @@ def _parse_entry(line: str, quoted: bool, escaped: bool, get_bytes: bool) -> Tup
   """
   Parses the next entry from the given space separated content.
 
-  :param str line: content to be parsed
-  :param bool quoted: parses the next entry as a quoted value, removing the quotes
-  :param bool escaped: unescapes the string
-  :param bool get_bytes: provides **bytes** for the entry rather than a **str**
+  :param line: content to be parsed
+  :param quoted: parses the next entry as a quoted value, removing the quotes
+  :param escaped: unescapes the string
+  :param get_bytes: provides **bytes** for the entry rather than a **str**
 
   :returns: **tuple** of the form (entry, remainder)
 
@@ -598,8 +598,8 @@ def _get_quote_indices(line: str, escaped: bool) -> Tuple[int, int]:
   """
   Provides the indices of the next two quotes in the given content.
 
-  :param str line: content to be parsed
-  :param bool escaped: unescapes the string
+  :param line: content to be parsed
+  :param escaped: unescapes the string
 
   :returns: **tuple** of two ints, indices being -1 if a quote doesn't exist
   """
@@ -635,7 +635,7 @@ class SingleLineResponse(ControlMessage):
     Checks if the response code is "250". If strict is **True** then this
     checks if the response is "250 OK"
 
-    :param bool strict: checks for a "250 OK" message if **True**
+    :param strict: checks for a "250 OK" message if **True**
 
     :returns:
       * If strict is **False**: **True** if the response code is "250", **False** otherwise

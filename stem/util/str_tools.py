@@ -67,7 +67,7 @@ def _to_bytes(msg: Union[str, bytes]) -> bytes:
 
   http://python3porting.com/problems.html#nicer-solutions
 
-  :param str,unicode msg: string to be converted
+  :param msg: string to be converted
 
   :returns: ASCII bytes for string
   """
@@ -84,7 +84,7 @@ def _to_unicode(msg: Union[str, bytes]) -> str:
   provide python 3 compatability, normalizing the unicode/ASCII change in the
   version bump.
 
-  :param str,unicode msg: string to be converted
+  :param msg: string to be converted
 
   :returns: unicode conversion
   """
@@ -110,7 +110,7 @@ def _to_int(msg: Union[str, bytes]) -> int:
   """
   Serializes a string to a number.
 
-  :param str msg: string to be serialized
+  :param msg: string to be serialized
 
   :returns: **int** representation of the string
   """
@@ -131,9 +131,9 @@ def _to_camel_case(label: str, divider: str = '_', joiner: str = ' ') -> str:
     >>> _to_camel_case('I_LIKE_PEPPERJACK!')
     'I Like Pepperjack!'
 
-  :param str label: input string to be converted
-  :param str divider: word boundary
-  :param str joiner: replacement for word boundaries
+  :param label: input string to be converted
+  :param divider: word boundary
+  :param joiner: replacement for word boundaries
 
   :returns: camel cased string
   """
@@ -169,8 +169,8 @@ def _split_by_length(msg, size):
     >>> _split_by_length('hello', 2)
     ['he', 'll', 'o']
 
-  :param str msg: string to split
-  :param int size: number of characters to chunk into
+  :param msg: string to split
+  :param size: number of characters to chunk into
 
   :returns: **list** with chunked string components
   """
@@ -213,15 +213,15 @@ def crop(msg: str, size: int, min_word_length: int = 4, min_crop: int = 0, endin
 
   .. versionadded:: 1.3.0
 
-  :param str msg: text to be processed
-  :param int size: space available for text
-  :param int min_word_length: minimum characters before which a word is
+  :param msg: text to be processed
+  :param size: space available for text
+  :param min_word_length: minimum characters before which a word is
     dropped, requires whole word if **None**
-  :param int min_crop: minimum characters that must be dropped if a word is
+  :param min_crop: minimum characters that must be dropped if a word is
     cropped
-  :param Ending ending: type of ending used when truncating, no special
+  :param ending: type of ending used when truncating, no special
     truncation is used if **None**
-  :param bool get_remainder: returns a tuple with the second part being the
+  :param get_remainder: returns a tuple with the second part being the
     cropped portion of the message
 
   :returns: **str** of the text truncated to the given length
@@ -320,11 +320,11 @@ def size_label(byte_count: int, decimal: int = 0, is_long: bool = False, is_byte
   .. versionchanged:: 1.6.0
      Added round argument.
 
-  :param int byte_count: number of bytes to be converted
-  :param int decimal: number of decimal digits to be included
-  :param bool is_long: expands units label
-  :param bool is_bytes: provides units in bytes if **True**, bits otherwise
-  :param bool round: rounds normally if **True**, otherwise rounds down
+  :param byte_count: number of bytes to be converted
+  :param decimal: number of decimal digits to be included
+  :param is_long: expands units label
+  :param is_bytes: provides units in bytes if **True**, bits otherwise
+  :param round: rounds normally if **True**, otherwise rounds down
 
   :returns: **str** with human readable representation of the size
   """
@@ -356,9 +356,9 @@ def time_label(seconds: int, decimal: int = 0, is_long: bool = False) -> str:
     >>> time_label(61, 2, True)
     '1.01 minutes'
 
-  :param int seconds: number of seconds to be converted
-  :param int decimal: number of decimal digits to be included
-  :param bool is_long: expands units label
+  :param seconds: number of seconds to be converted
+  :param decimal: number of decimal digits to be included
+  :param is_long: expands units label
 
   :returns: **str** with human readable representation of the time
   """
@@ -380,8 +380,8 @@ def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
     >>> time_labels(3640, True)
     ['1 hour', '40 seconds']
 
-  :param int seconds: number of seconds to be converted
-  :param bool is_long: expands units label
+  :param seconds: number of seconds to be converted
+  :param is_long: expands units label
 
   :returns: **list** of strings with human readable representations of the time
   """
@@ -409,7 +409,7 @@ def short_time_label(seconds: int) -> str:
     >>> short_time_label(544100)
     '6-07:08:20'
 
-  :param int seconds: number of seconds to be converted
+  :param seconds: number of seconds to be converted
 
   :returns: **str** with the short representation for the time
 
@@ -450,7 +450,7 @@ def parse_short_time_label(label: str) -> int:
     >>> parse_short_time_label('6-07:08:20')
     544100
 
-  :param str label: time entry to be parsed
+  :param label: time entry to be parsed
 
   :returns: **int** with the number of seconds represented by the label
 
@@ -489,7 +489,7 @@ def _parse_timestamp(entry: str) -> datetime.datetime:
 
     2012-11-08 16:48:41
 
-  :param str entry: timestamp to be parsed
+  :param entry: timestamp to be parsed
 
   :returns: **datetime** for the time represented by the timestamp
 
@@ -515,7 +515,7 @@ def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
 
     2012-11-08T16:48:41.420251
 
-  :param str entry: timestamp to be parsed
+  :param entry: timestamp to be parsed
 
   :returns: **datetime** for the time represented by the timestamp
 
@@ -550,12 +550,12 @@ def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
 
-  :param tuple units: type of units to be used for conversion, containing
+  :param units: type of units to be used for conversion, containing
     (count_per_unit, short_label, long_label)
-  :param int count: number of base units being converted
-  :param int decimal: decimal precision of label
-  :param bool is_long: uses the long label if **True**, short label otherwise
-  :param bool round: rounds normally if **True**, otherwise rounds down
+  :param count: number of base units being converted
+  :param decimal: decimal precision of label
+  :param is_long: uses the long label if **True**, short label otherwise
+  :param round: rounds normally if **True**, otherwise rounds down
   """
 
   # formatted string for the requested number of digits

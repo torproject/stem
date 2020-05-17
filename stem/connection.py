@@ -235,13 +235,13 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   .. versionchanged:: 1.5.0
      Use both port 9051 and 9151 by default.
 
-  :param tuple contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
-  :param str control_socket: path where the control socket is located
-  :param str password: passphrase to authenticate to the socket
-  :param bool password_prompt: prompt for the controller password if it wasn't
+  :param contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
+  :param control_socket: path where the control socket is located
+  :param password: passphrase to authenticate to the socket
+  :param password_prompt: prompt for the controller password if it wasn't
     supplied
-  :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+  :param chroot_path: path prefix if in a chroot environment
+  :param controller: :class:`~stem.control.BaseController` subclass to be
     returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
@@ -305,12 +305,12 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
   Helper for the connect_* functions that authenticates the socket and
   constructs the controller.
 
-  :param stem.socket.ControlSocket control_socket: socket being authenticated to
-  :param str password: passphrase to authenticate to the socket
-  :param bool password_prompt: prompt for the controller password if it wasn't
+  :param control_socket: socket being authenticated to
+  :param password: passphrase to authenticate to the socket
+  :param password_prompt: prompt for the controller password if it wasn't
     supplied
-  :param str chroot_path: path prefix if in a chroot environment
-  :param Class controller: :class:`~stem.control.BaseController` subclass to be
+  :param chroot_path: path prefix if in a chroot environment
+  :param controller: :class:`~stem.control.BaseController` subclass to be
     returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
@@ -381,10 +381,10 @@ def authenticate(controller: Union[stem.control.BaseController, stem.socket.Cont
   :class:`~stem.socket.ControlSocket`.
 
   :param controller: tor controller or socket to be authenticated
-  :param str password: passphrase to present to the socket if it uses password
+  :param password: passphrase to present to the socket if it uses password
     authentication (skips password auth if **None**)
-  :param str chroot_path: path prefix if in a chroot environment
-  :param stem.response.protocolinfo.ProtocolInfoResponse protocolinfo_response:
+  :param chroot_path: path prefix if in a chroot environment
+  :param protocolinfo_response:
     tor protocolinfo response, this is retrieved on our own if **None**
 
   :raises: If all attempts to authenticate fails then this will raise a
@@ -597,7 +597,7 @@ def authenticate_none(controller: Union[stem.control.BaseController, stem.socket
   instead.
 
   :param controller: tor controller or socket to be authenticated
-  :param bool suppress_ctl_errors: reports raised
+  :param suppress_ctl_errors: reports raised
     :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
 
@@ -649,8 +649,8 @@ def authenticate_password(controller: Union[stem.control.BaseController, stem.so
   instead.
 
   :param controller: tor controller or socket to be authenticated
-  :param str password: passphrase to present to the socket
-  :param bool suppress_ctl_errors: reports raised
+  :param password: passphrase to present to the socket
+  :param suppress_ctl_errors: reports raised
     :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
 
@@ -726,8 +726,8 @@ def authenticate_cookie(controller: Union[stem.control.BaseController, stem.sock
   instead.
 
   :param controller: tor controller or socket to be authenticated
-  :param str cookie_path: path of the authentication cookie to send to tor
-  :param bool suppress_ctl_errors: reports raised
+  :param cookie_path: path of the authentication cookie to send to tor
+  :param suppress_ctl_errors: reports raised
     :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
 
@@ -823,8 +823,8 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
   instead.
 
   :param controller: tor controller or socket to be authenticated
-  :param str cookie_path: path of the authentication cookie to send to tor
-  :param bool suppress_ctl_errors: reports raised
+  :param cookie_path: path of the authentication cookie to send to tor
+  :param suppress_ctl_errors: reports raised
     :class:`~stem.ControllerError` as authentication rejection if
     **True**, otherwise they're re-raised
 
@@ -1001,7 +1001,7 @@ def _connection_for_default_port(address: str) -> stem.socket.ControlPort:
   relays) or 9151 (default for Tor Browser). If both fail then this raises the
   exception for port 9051.
 
-  :param str address: address to connect to
+  :param address: address to connect to
 
   :returns: :class:`~stem.socket.ControlPort` for the controller conneciton
 
@@ -1021,8 +1021,8 @@ def _read_cookie(cookie_path: str, is_safecookie: bool) -> bytes:
   """
   Provides the contents of a given cookie file.
 
-  :param str cookie_path: absolute path of the cookie file
-  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+  :param cookie_path: absolute path of the cookie file
+  :param is_safecookie: **True** if this was for SAFECOOKIE
     authentication, **False** if for COOKIE
 
   :returns: **bytes** with the cookie file content
@@ -1065,8 +1065,8 @@ def _hmac_sha256(key: bytes, msg: bytes) -> bytes:
   """
   Generates a sha256 digest using the given key and message.
 
-  :param bytes key: starting key for the hash
-  :param bytes msg: message to be hashed
+  :param key: starting key for the hash
+  :param msg: message to be hashed
 
   :returns: sha256 digest of msg as bytes, hashed using the given key
   """
@@ -1131,11 +1131,10 @@ class CookieAuthFailed(AuthenticationFailure):
   """
   Failure to authenticate with an authentication cookie.
 
-  :param str cookie_path: location of the authentication cookie we attempted
-  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+  :param cookie_path: location of the authentication cookie we attempted
+  :param is_safecookie: **True** if this was for SAFECOOKIE
     authentication, **False** if for COOKIE
-  :param stem.response.ControlMessage auth_response: reply to our
-    authentication attempt
+  :param auth_response: reply to our authentication attempt
   """
 
   def __init__(self, message: str, cookie_path: str, is_safecookie: bool, auth_response: Optional[stem.response.ControlMessage] = None) -> None:
@@ -1210,7 +1209,7 @@ class NoAuthCookie(MissingAuthInfo):
   """
   PROTOCOLINFO response supports cookie auth but doesn't have its path.
 
-  :param bool is_safecookie: **True** if this was for SAFECOOKIE
+  :param is_safecookie: **True** if this was for SAFECOOKIE
     authentication, **False** if for COOKIE
   """
 

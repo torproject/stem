@@ -160,7 +160,7 @@ class ExitPolicy(object):
   is, in effect, just a list of :class:`~stem.exit_policy.ExitPolicyRule`
   entries.
 
-  :param list rules: **str** or :class:`~stem.exit_policy.ExitPolicyRule`
+  :param rules: **str** or :class:`~stem.exit_policy.ExitPolicyRule`
     entries that make up this policy
   """
 
@@ -207,9 +207,9 @@ class ExitPolicy(object):
     address or port is omitted then this will check if we're allowed to exit to
     any instances of the defined address or port.
 
-    :param str address: IPv4 or IPv6 address (with or without brackets)
-    :param int port: port number
-    :param bool strict: if the address or port is excluded then check if we can
+    :param address: IPv4 or IPv6 address (with or without brackets)
+    :param port: port number
+    :param strict: if the address or port is excluded then check if we can
       exit to **all** instances of the defined address or port
 
     :returns: **True** if exiting to this destination is allowed, **False** otherwise
@@ -505,7 +505,7 @@ class MicroExitPolicy(ExitPolicy):
   :var bool is_accept: **True** if these are ports that we accept, **False** if
     they're ports that we reject
 
-  :param str policy: policy string that describes this policy
+  :param policy: policy string that describes this policy
   """
 
   def __init__(self, policy: str) -> None:
@@ -589,7 +589,7 @@ class ExitPolicyRule(object):
   :var int min_port: lower end of the port range that we include (inclusive)
   :var int max_port: upper end of the port range that we include (inclusive)
 
-  :param str rule: exit policy rule to be parsed
+  :param rule: exit policy rule to be parsed
 
   :raises: **ValueError** if input isn't a valid tor exit policy rule
   """
@@ -675,9 +675,9 @@ class ExitPolicyRule(object):
     the address or port is omitted then this will check if we're allowed to
     exit to any instances of the defined address or port.
 
-    :param str address: IPv4 or IPv6 address (with or without brackets)
-    :param int port: port number
-    :param bool strict: if the address or port is excluded then check if we can
+    :param address: IPv4 or IPv6 address (with or without brackets)
+    :param port: port number
+    :param strict: if the address or port is excluded then check if we can
       exit to **all** instances of the defined address or port
 
     :returns: **bool** indicating if we match against this destination
@@ -754,7 +754,7 @@ class ExitPolicyRule(object):
     Provides the address represented by our mask. This is **None** if our
     address type is a wildcard.
 
-    :param bool cache: caches the result if **True**
+    :param cache: caches the result if **True**
 
     :returns: str of our subnet mask for the address (ex. '255.255.255.0')
     """

@@ -56,16 +56,16 @@ def _parse_file(document_file: BinaryIO, validate: bool, entry_class: Type['stem
 
   Either an end_position or section_end_keywords must be provided.
 
-  :param file document_file: file with network status document content
-  :param bool validate: checks the validity of the document's contents if
+  :param document_file: file with network status document content
+  :param validate: checks the validity of the document's contents if
     **True**, skips these checks otherwise
-  :param class entry_class: class to construct instance for
-  :param str entry_keyword: first keyword for the entry instances
-  :param int start_position: start of the section, default is the current position
-  :param int end_position: end of the section
-  :param tuple section_end_keywords: keyword(s) that deliminate the end of the
+  :param entry_class: class to construct instance for
+  :param entry_keyword: first keyword for the entry instances
+  :param start_position: start of the section, default is the current position
+  :param end_position: end of the section
+  :param section_end_keywords: keyword(s) that deliminate the end of the
     section if no end_position was provided
-  :param tuple extra_args: extra arguments for the entry_class (after the
+  :param extra_args: extra arguments for the entry_class (after the
     content and validate flag)
 
   :returns: iterator over entry_class instances
@@ -358,8 +358,8 @@ def _base64_to_hex(identity: str, check_if_fingerprint: bool = True) -> str:
     >>> _base64_to_hex('p1aag7VwarGxqctS7/fS0y5FU+s')
     'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
 
-  :param str identity: encoded fingerprint from the consensus
-  :param bool check_if_fingerprint: asserts that the result is a fingerprint if **True**
+  :param identity: encoded fingerprint from the consensus
+  :param check_if_fingerprint: asserts that the result is a fingerprint if **True**
 
   :returns: **str** with the uppercase hex encoding of the relay's fingerprint
 
@@ -447,10 +447,10 @@ class RouterStatusEntry(Descriptor):
     """
     Parse a router descriptor in a network status document.
 
-    :param str content: router descriptor content to be parsed
-    :param bool validate: checks the validity of the content if **True**, skips
+    :param content: router descriptor content to be parsed
+    :param validate: checks the validity of the content if **True**, skips
       these checks otherwise
-    :param NetworkStatusDocument document: document this descriptor came from
+    :param document: document this descriptor came from
 
     :raises: **ValueError** if the descriptor data is invalid
     """

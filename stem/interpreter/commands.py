@@ -35,8 +35,8 @@ def _get_fingerprint(arg: str, controller: stem.control.Controller) -> str:
     * IPv4 addresses, either with or without an ORPort
     * Empty input, which is resolved to ourselves if we're a relay
 
-  :param str arg: input to be resolved to a relay fingerprint
-  :param stem.control.Controller controller: tor control connection
+  :param arg: input to be resolved to a relay fingerprint
+  :param controller: tor control connection
 
   :returns: **str** for the relay fingerprint
 
@@ -302,8 +302,8 @@ class ControlInterpreter(code.InteractiveConsole):
     Runs the given command. Requests starting with a '/' are special commands
     to the interpreter, and anything else is sent to the control port.
 
-    :param str command: command to be processed
-    :param bool print_response: prints the response to stdout if true
+    :param command: command to be processed
+    :param print_response: prints the response to stdout if true
 
     :returns: **str** output of the command
 

@@ -148,7 +148,7 @@ class Ed25519Certificate(object):
     """
     Parses a byte encoded ED25519 certificate.
 
-    :param bytes content: encoded certificate
+    :param content: encoded certificate
 
     :returns: :class:`~stem.descriptor.certificate.Ed25519Certificate` subclsss
       for the given certificate
@@ -168,7 +168,7 @@ class Ed25519Certificate(object):
     """
     Parses a base64 encoded ED25519 certificate.
 
-    :param str content: base64 encoded certificate
+    :param content: base64 encoded certificate
 
     :returns: :class:`~stem.descriptor.certificate.Ed25519Certificate` subclsss
       for the given certificate
@@ -204,7 +204,7 @@ class Ed25519Certificate(object):
     """
     Base64 encoded certificate data.
 
-    :param bool pem: include `PEM header/footer
+    :param pem: include `PEM header/footer
       <https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail>`_, for more
       information see `RFC 7468 <https://tools.ietf.org/html/rfc7468>`_
 
@@ -247,8 +247,8 @@ class Ed25519CertificateV1(Ed25519Certificate):
   :var list extensions: :class:`~stem.descriptor.certificate.Ed25519Extension` in this certificate
   :var bytes signature: certificate signature
 
-  :param bytes signature: pre-calculated certificate signature
-  :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: certificate signing key
+  :param signature: pre-calculated certificate signature
+  :param signing_key: certificate signing key
 
   :raises: **ImportError** if key is a cryptographic type and ed25519 support
     is unavailable
@@ -367,7 +367,7 @@ class Ed25519CertificateV1(Ed25519Certificate):
       * :class:`~stem.descriptor.server_descriptor.RelayDescriptor`
       * :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV3`
 
-    :param stem.descriptor.__init__.Descriptor descriptor: descriptor to validate
+    :param descriptor: descriptor to validate
 
     :raises:
       * **ValueError** if signing key or descriptor are invalid

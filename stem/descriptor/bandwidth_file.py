@@ -157,10 +157,10 @@ def _parse_file(descriptor_file: BinaryIO, validate: bool = False, **kwargs: Any
   """
   Iterates over the bandwidth authority metrics in a file.
 
-  :param file descriptor_file: file with descriptor content
-  :param bool validate: checks the validity of the descriptor's content if
+  :param descriptor_file: file with descriptor content
+  :param validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: :class:`stem.descriptor.bandwidth_file.BandwidthFile` object
 

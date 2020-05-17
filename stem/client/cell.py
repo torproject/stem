@@ -107,7 +107,7 @@ class Cell(object):
     """
     Provides cell attributes by its name.
 
-    :param str name: cell command to fetch
+    :param name: cell command to fetch
 
     :returns: cell class with this name
 
@@ -125,7 +125,7 @@ class Cell(object):
     """
     Provides cell attributes by its value.
 
-    :param int value: cell value to fetch
+    :param value: cell value to fetch
 
     :returns: cell class with this numeric value
 
@@ -146,8 +146,8 @@ class Cell(object):
     """
     Unpacks all cells from a response.
 
-    :param bytes content: payload to decode
-    :param int link_protocol: link protocol version
+    :param content: payload to decode
+    :param link_protocol: link protocol version
 
     :returns: :class:`~stem.client.cell.Cell` generator
 
@@ -165,8 +165,8 @@ class Cell(object):
     """
     Unpacks the first cell.
 
-    :param bytes content: payload to decode
-    :param int link_protocol: link protocol version
+    :param content: payload to decode
+    :param link_protocol: link protocol version
 
     :returns: (:class:`~stem.client.cell.Cell`, remainder) tuple
 
@@ -204,10 +204,10 @@ class Cell(object):
       Fixed:    [ CircuitID ][ Command ][ Payload ][ Padding ]
       Variable: [ CircuitID ][ Command ][ Size ][ Payload ]
 
-    :param str name: cell command
-    :param int link_protocol: link protocol version
-    :param bytes payload: cell payload
-    :param int circ_id: circuit id, if a CircuitCell
+    :param name: cell command
+    :param link_protocol: link protocol version
+    :param payload: cell payload
+    :param circ_id: circuit id, if a CircuitCell
 
     :returns: **bytes** with the encoded payload
 
@@ -251,9 +251,9 @@ class Cell(object):
     """
     Subclass implementation for unpacking cell content.
 
-    :param bytes content: payload to decode
-    :param int circ_id: circuit id cell is for
-    :param stem.client.datatype.LinkProtocol link_protocol: link protocol version
+    :param content: payload to decode
+    :param circ_id: circuit id cell is for
+    :param link_protocol: link protocol version
 
     :returns: instance of this cell type
 
@@ -402,11 +402,10 @@ class RelayCell(CircuitCell):
 
       (cell (RelayCell), new_key (CipherContext), new_digest (HASH))
 
-    :param int link_protocol: link protocol version
-    :param bytes content: cell content to be decrypted
-    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
-      key established with the relay we received this cell from
-    :param hashlib.HASH digest: running digest held with the relay
+    :param link_protocol: link protocol version
+    :param content: cell content to be decrypted
+    :param key: key established with the relay we received this cell from
+    :param digest: running digest held with the relay
 
     :returns: **tuple** with our decrypted cell and updated key/digest
 
@@ -456,10 +455,9 @@ class RelayCell(CircuitCell):
 
       (payload (bytes), new_key (CipherContext), new_digest (HASH))
 
-    :param int link_protocol: link protocol version
-    :param cryptography.hazmat.primitives.ciphers.CipherContext key:
-      key established with the relay we're sending this cell to
-    :param hashlib.HASH digest: running digest held with the relay
+    :param link_protocol: link protocol version
+    :param key: key established with the relay we're sending this cell to
+    :param digest: running digest held with the relay
 
     :returns: **tuple** with our encrypted payload and updated key/digest
     """

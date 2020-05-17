@@ -252,8 +252,8 @@ def split(content: bytes, size: int) -> Tuple[bytes, bytes]:
   """
   Simple split of bytes into two substrings.
 
-  :param bytes content: string to split
-  :param int size: index to split the string on
+  :param content: string to split
+  :param size: index to split the string on
 
   :returns: two value tuple with the split bytes
   """
@@ -326,7 +326,7 @@ class Field(object):
     """
     Decodes bytes into a field of this type.
 
-    :param bytes packed: content to decode
+    :param packed: content to decode
 
     :returns: instance of this class
 
@@ -345,7 +345,7 @@ class Field(object):
     """
     Decodes bytes as this field type, providing it and the remainder.
 
-    :param bytes packed: content to decode
+    :param packed: content to decode
 
     :returns: tuple of the form (unpacked, remainder)
 

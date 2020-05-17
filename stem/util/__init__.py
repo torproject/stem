@@ -72,7 +72,7 @@ def datetime_to_unix(timestamp: 'datetime.datetime') -> float:
 
   .. versionadded:: 1.5.0
 
-  :param datetime timestamp: timestamp to be converted
+  :param timestamp: timestamp to be converted
 
   :returns: **float** for the unix timestamp of the given datetime object
   """
@@ -115,10 +115,10 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
   """
   Provide a hash value for the given set of attributes.
 
-  :param Object obj: object to be hashed
-  :param list attributes: attribute names to take into account
-  :param bool cache: persists hash in a '_cached_hash' object attribute
-  :param class parent: include parent's hash value
+  :param obj: object to be hashed
+  :param attributes: attribute names to take into account
+  :param cache: persists hash in a '_cached_hash' object attribute
+  :param parent: include parent's hash value
   """
 
   is_cached = kwargs.get('cache', False)

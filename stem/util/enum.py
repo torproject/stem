@@ -56,7 +56,7 @@ def UppercaseEnum(*args: str) -> 'Enum':
     >>> runlevels.DEBUG
     'DEBUG'
 
-  :param list args: enum keys to initialize with
+  :param args: enum keys to initialize with
 
   :returns: :class:`~stem.util.enum.Enum` instance with the given keys
   """
@@ -104,7 +104,7 @@ class Enum(object):
     """
     Provides the index of the given value in the collection.
 
-    :param object value: entry to be looked up
+    :param value: entry to be looked up
 
     :returns: **int** index of the given entry
 
@@ -117,7 +117,7 @@ class Enum(object):
     """
     Provides the next enumeration after the given value.
 
-    :param object value: enumeration for which to get the next entry
+    :param value: enumeration for which to get the next entry
 
     :returns: enum value following the given entry
 
@@ -134,7 +134,7 @@ class Enum(object):
     """
     Provides the previous enumeration before the given value.
 
-    :param object value: enumeration for which to get the previous entry
+    :param value: enumeration for which to get the previous entry
 
     :returns: enum value proceeding the given entry
 
@@ -151,7 +151,7 @@ class Enum(object):
     """
     Provides the values for the given key.
 
-    :param str item: key to look up
+    :param item: key to look up
 
     :returns: value for the given key
 

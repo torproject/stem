@@ -79,9 +79,9 @@ class Relay(object):
     """
     Establishes a connection with the given ORPort.
 
-    :param str address: ip address of the relay
-    :param int port: ORPort of the relay
-    :param tuple link_protocols: acceptable link protocol versions
+    :param address: ip address of the relay
+    :param port: ORPort of the relay
+    :param link_protocols: acceptable link protocol versions
 
     :raises:
       * **ValueError** if address or port are invalid
@@ -156,7 +156,7 @@ class Relay(object):
     Reads the next cell from our ORPort. If none is present this blocks
     until one is available.
 
-    :param bool raw: provides bytes rather than parsing as a cell if **True**
+    :param raw: provides bytes rather than parsing as a cell if **True**
 
     :returns: next :class:`~stem.client.cell.Cell`
     """
@@ -212,7 +212,7 @@ class Relay(object):
 
     It's quite possible this is a stupid approach. If so, patches welcome.
 
-    :param stem.client.cell.Cell cell: cell to be sent
+    :param cell: cell to be sent
 
     :returns: **generator** with the cells received in reply
     """
@@ -331,8 +331,8 @@ class Circuit(object):
     """
     Request descriptors from the relay.
 
-    :param str request: directory request to make
-    :param int stream_id: specific stream this concerns
+    :param request: directory request to make
+    :param stream_id: specific stream this concerns
 
     :returns: **str** with the requested descriptor data
     """
@@ -366,9 +366,9 @@ class Circuit(object):
     """
     Sends a message over the circuit.
 
-    :param stem.client.datatype.RelayCommand command: command to be issued
-    :param bytes data: message payload
-    :param int stream_id: specific stream this concerns
+    :param command: command to be issued
+    :param data: message payload
+    :param stream_id: specific stream this concerns
     """
 
     with self.relay._orport_lock:

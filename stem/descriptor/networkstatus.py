@@ -302,15 +302,15 @@ def _parse_file(document_file: BinaryIO, document_type: Optional[Type] = None, v
   document that these instances reference have an empty 'routers' attribute to
   allow for limited memory usage.
 
-  :param file document_file: file with network status document content
-  :param class document_type: NetworkStatusDocument subclass
-  :param bool validate: checks the validity of the document's contents if
+  :param document_file: file with network status document content
+  :param document_type: NetworkStatusDocument subclass
+  :param validate: checks the validity of the document's contents if
     **True**, skips these checks otherwise
-  :param bool is_microdescriptor: **True** if this is for a microdescriptor
+  :param is_microdescriptor: **True** if this is for a microdescriptor
     consensus, **False** otherwise
-  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+  :param document_handler: method in
     which to parse :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: :class:`stem.descriptor.networkstatus.NetworkStatusDocument` object
 
@@ -381,8 +381,8 @@ def _parse_file_key_certs(certificate_file: BinaryIO, validate: bool = False) ->
   """
   Parses a file containing one or more authority key certificates.
 
-  :param file certificate_file: file with key certificates
-  :param bool validate: checks the validity of the certificate's contents if
+  :param certificate_file: file with key certificates
+  :param validate: checks the validity of the certificate's contents if
     **True**, skips these checks otherwise
 
   :returns: iterator for :class:`stem.descriptor.networkstatus.KeyCertificate`
@@ -410,8 +410,8 @@ def _parse_file_detached_sigs(detached_signature_file: BinaryIO, validate: bool 
   """
   Parses a file containing one or more detached signatures.
 
-  :param file detached_signature_file: file with detached signatures
-  :param bool validate: checks the validity of the detached signature's
+  :param detached_signature_file: file with detached signatures
+  :param validate: checks the validity of the detached signature's
     contents if **True**, skips these checks otherwise
 
   :returns: iterator for :class:`stem.descriptor.networkstatus.DetachedSignature`
@@ -447,8 +447,8 @@ class NetworkStatusDocument(Descriptor):
 
     .. versionadded:: 1.8.0
 
-    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
-    :param stem.descriptor.DigestEncoding encoding: digest encoding
+    :param hash_type: digest hashing algorithm
+    :param encoding: digest encoding
 
     :returns: **hashlib.HASH** or **str** based on our encoding argument
     """
@@ -1180,9 +1180,9 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     """
     Parse a v3 network status document.
 
-    :param str raw_content: raw network status document data
-    :param bool validate: **True** if the document is to be validated, **False** otherwise
-    :param bool default_params: includes defaults in our params dict, otherwise
+    :param raw_content: raw network status document data
+    :param validate: **True** if the document is to be validated, **False** otherwise
+    :param default_params: includes defaults in our params dict, otherwise
       it just contains values from the document
 
     :raises: **ValueError** if the document is invalid
@@ -1266,7 +1266,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
 
     .. versionadded:: 1.6.0
 
-    :param list key_certs: :class:`~stem.descriptor.networkstatus.KeyCertificate`
+    :param key_certs: :class:`~stem.descriptor.networkstatus.KeyCertificate`
       to validate the consensus against
 
     :raises: **ValueError** if an insufficient number of valid signatures are present.
@@ -1308,7 +1308,7 @@ class NetworkStatusDocumentV3(NetworkStatusDocument):
     consensuses, checking our 'consensus-method' and 'consensus-methods'
     entries.
 
-    :param int method: consensus-method to check for
+    :param method: consensus-method to check for
 
     :returns: **True** if we meet the given consensus-method, and **False** otherwise
     """
@@ -1411,9 +1411,9 @@ def _check_for_missing_and_disallowed_fields(document: 'stem.descriptor.networks
   any fields exclusive to the other (ie, no vote-only fields appear in a
   consensus or vice versa).
 
-  :param NetworkStatusDocumentV3 document: network status document
-  :param dict entries: ordered keyword/value mappings of the header or footer
-  :param list fields: expected field attributes (either
+  :param document: network status document
+  :param entries: ordered keyword/value mappings of the header or footer
+  :param fields: expected field attributes (either
     **HEADER_STATUS_DOCUMENT_FIELDS** or **FOOTER_STATUS_DOCUMENT_FIELDS**)
 
   :raises: **ValueError** if we're missing mandatory fields or have fields we shouldn't
@@ -1614,10 +1614,10 @@ class DirectoryAuthority(Descriptor):
     """
     Parse a directory authority entry in a v3 network status document.
 
-    :param str raw_content: raw directory authority entry information
-    :param bool validate: checks the validity of the content if True, skips
+    :param raw_content: raw directory authority entry information
+    :param validate: checks the validity of the content if True, skips
       these checks otherwise
-    :param bool is_vote: True if this is for a vote, False if it's for a consensus
+    :param is_vote: True if this is for a vote, False if it's for a consensus
 
     :raises: ValueError if the descriptor data is invalid
     """
@@ -1808,7 +1808,8 @@ class DocumentSignature(object):
   :var str signature: document signature
   :var str flavor: consensus type this signature is for (such as 'microdesc'),
     **None** if for the standard consensus
-  :param bool validate: checks validity if **True**
+
+  :param validate: checks validity if **True**
 
   :raises: **ValueError** if a validity check fails
   """

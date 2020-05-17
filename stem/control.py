@@ -504,7 +504,7 @@ def event_description(event: str) -> str:
   """
   Provides a description for Tor events.
 
-  :param str event: the event for which a description is needed
+  :param event: the event for which a description is needed
 
   :returns: **str** The event description or **None** if this is an event name
     we don't have a description for
@@ -584,7 +584,7 @@ class BaseController(object):
     """
     Sends a message to our control socket and provides back its reply.
 
-    :param str message: message to be formatted and sent to tor
+    :param message: message to be formatted and sent to tor
 
     :returns: :class:`~stem.response.ControlMessage` with the response
 
@@ -779,8 +779,8 @@ class BaseController(object):
     callback could block for a while. If still outstanding these threads are
     joined on as part of closing this controller.
 
-    :param function callback: function to be notified when our state changes
-    :param bool spawn: calls function via a new thread if **True**, otherwise
+    :param callback: function to be notified when our state changes
+    :param spawn: calls function via a new thread if **True**, otherwise
       it's part of the connect/close method call
     """
 
@@ -791,7 +791,7 @@ class BaseController(object):
     """
     Stops listener from being notified of further events.
 
-    :param function callback: function to be removed from our listeners
+    :param callback: function to be removed from our listeners
 
     :returns: **bool** that's **True** if we removed one or more occurrences of
       the callback, **False** otherwise
@@ -820,8 +820,7 @@ class BaseController(object):
     Callback to be overwritten by subclasses for event listening. This is
     notified whenever we receive an event from the control socket.
 
-    :param stem.response.ControlMessage event_message: message received from
-      the control socket
+    :param event_message: message received from the control socket
     """
 
     pass
@@ -859,7 +858,7 @@ class BaseController(object):
     """
     Informs our status listeners that a state change occurred.
 
-    :param stem.control.State state: state change that has occurred
+    :param state: state change that has occurred
     """
 
     # Any changes to our is_alive() state happen under the send lock, so we
@@ -997,8 +996,8 @@ class Controller(BaseController):
     .. versionchanged:: 1.5.0
        Use both port 9051 and 9151 by default.
 
-    :param str address: ip address of the controller
-    :param int port: port number of the controller
+    :param address: ip address of the controller
+    :param port: port number of the controller
 
     :returns: :class:`~stem.control.Controller` attached to the given port
 
@@ -1024,7 +1023,7 @@ class Controller(BaseController):
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
 
-    :param str path: path where the control socket is located
+    :param path: path where the control socket is located
 
     :returns: :class:`~stem.control.Controller` attached to the given socket file
 
@@ -1128,9 +1127,9 @@ class Controller(BaseController):
        Errors commonly provided a :class:`stem.ProtocolError` when we should
        raise a :class:`stem.OperationFailed`.
 
-    :param str,list params: GETINFO option or options to be queried
-    :param object default: response if the query fails
-    :param bool get_bytes: provides **bytes** values rather than a **str** under python 3.x
+    :param params: GETINFO option or options to be queried
+    :param default: response if the query fails
+    :param get_bytes: provides **bytes** values rather than a **str** under python 3.x
 
     :returns:
       Response depends upon how we were called as follows...
@@ -1242,7 +1241,7 @@ class Controller(BaseController):
     A convenience method to get tor version that current controller is
     connected to.
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: :class:`~stem.version.Version` of the tor instance that we're
       connected to
@@ -1275,7 +1274,7 @@ class Controller(BaseController):
        parsing the user's torrc entries. This should be more reliable for
        some edge cases. (:trac:`25739`)
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: :class:`~stem.exit_policy.ExitPolicy` of the tor instance that
       we're connected to
@@ -1307,9 +1306,8 @@ class Controller(BaseController):
 
     .. versionadded:: 1.2.0
 
-    :param stem.control.Listener listener_type: connection type being handled
-      by the ports we return
-    :param object default: response if the query fails
+    :param listener_type: connection type being handled by the ports we return
+    :param default: response if the query fails
 
     :returns: **list** of **ints** for the local ports where tor handles
       connections of the given type
@@ -1347,9 +1345,8 @@ class Controller(BaseController):
     .. versionchanged:: 1.5.0
        Recognize listeners with IPv6 addresses.
 
-    :param stem.control.Listener listener_type: connection type being handled
-      by the listeners we return
-    :param object default: response if the query fails
+    :param listener_type: connection type handled by listeners we return
+    :param default: response if the query fails
 
     :returns: **list** of **(address, port)** tuples for the available
       listeners
@@ -1448,7 +1445,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.3.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: :class:`~stem.control.AccountingStats` with our accounting stats
 
@@ -1489,7 +1486,7 @@ class Controller(BaseController):
 
     A convenience method to get the protocol info of the controller.
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: :class:`~stem.response.protocolinfo.ProtocolInfoResponse` provided by tor
 
@@ -1516,7 +1513,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.1.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: str with the username tor is running as
     """
@@ -1551,7 +1548,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.1.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: **int** for tor's pid
 
@@ -1605,7 +1602,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.8.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: **float** for the unix timestamp of when the tor process began
 
@@ -1655,7 +1652,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.8.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: **float** for the number of seconds tor has been running
 
@@ -1723,8 +1720,8 @@ class Controller(BaseController):
     .. versionchanged:: 1.3.0
        Changed so we'd fetch our own descriptor if no 'relay' is provided.
 
-    :param str relay: fingerprint or nickname of the relay to be queried
-    :param object default: response if the query fails
+    :param relay: fingerprint or nickname of the relay to be queried
+    :param default: response if the query fails
 
     :returns: :class:`~stem.descriptor.microdescriptor.Microdescriptor` for the given relay
 
@@ -1777,7 +1774,7 @@ class Controller(BaseController):
     directly from disk instead, which will not work remotely or if our process
     lacks read permissions.
 
-    :param list default: items to provide if the query fails
+    :param default: items to provide if the query fails
 
     :returns: iterates over
       :class:`~stem.descriptor.microdescriptor.Microdescriptor` for relays in
@@ -1817,8 +1814,8 @@ class Controller(BaseController):
     .. versionchanged:: 1.3.0
        Changed so we'd fetch our own descriptor if no 'relay' is provided.
 
-    :param str relay: fingerprint or nickname of the relay to be queried
-    :param object default: response if the query fails
+    :param relay: fingerprint or nickname of the relay to be queried
+    :param default: response if the query fails
 
     :returns: :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for the given relay
 
@@ -1871,7 +1868,7 @@ class Controller(BaseController):
     really need server descriptors then you can get them by setting
     'UseMicrodescriptors 0'.
 
-    :param list default: items to provide if the query fails
+    :param default: items to provide if the query fails
 
     :returns: iterates over
       :class:`~stem.descriptor.server_descriptor.RelayDescriptor` for relays in
@@ -1911,8 +1908,8 @@ class Controller(BaseController):
     .. versionchanged:: 1.3.0
        Changed so we'd fetch our own descriptor if no 'relay' is provided.
 
-    :param str relay: fingerprint or nickname of the relay to be queried
-    :param object default: response if the query fails
+    :param relay: fingerprint or nickname of the relay to be queried
+    :param default: response if the query fails
 
     :returns: :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3`
       for the given relay
@@ -1961,7 +1958,7 @@ class Controller(BaseController):
     Provides an iterator for all of the router status entries that tor
     currently knows about.
 
-    :param list default: items to provide if the query fails
+    :param default: items to provide if the query fails
 
     :returns: iterates over
       :class:`~stem.descriptor.router_status_entry.RouterStatusEntryV3` for
@@ -2009,10 +2006,10 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout argument.
 
-    :param str address: address of the hidden service descriptor, the '.onion' suffix is optional
-    :param object default: response if the query fails
-    :param list servers: requrest the descriptor from these specific servers
-    :param float timeout: seconds to wait when **await_result** is **True**
+    :param address: address of the hidden service descriptor, the '.onion' suffix is optional
+    :param default: response if the query fails
+    :param servers: requrest the descriptor from these specific servers
+    :param timeout: seconds to wait when **await_result** is **True**
 
     :returns: :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptorV2`
       for the given service if **await_result** is **True**, or **None** otherwise
@@ -2107,9 +2104,9 @@ class Controller(BaseController):
     provides **None** if **multiple** was **False** and an empty list if it was
     **True**.
 
-    :param str param: configuration option to be queried
-    :param object default: response if the option is unset or the query fails
-    :param bool multiple: if **True** then provides a list with all of the
+    :param param: configuration option to be queried
+    :param default: response if the option is unset or the query fails
+    :param multiple: if **True** then provides a list with all of the
       present values (this is an empty list if the config option is unset)
 
     :returns:
@@ -2173,10 +2170,10 @@ class Controller(BaseController):
     **Note:** HiddenServiceOptions are best retrieved via the
     :func:`~stem.control.Controller.get_hidden_service_conf` method instead.
 
-    :param str,list params: configuration option(s) to be queried
-    :param object default: value for the mappings if the configuration option
+    :param params: configuration option(s) to be queried
+    :param default: value for the mappings if the configuration option
       is either undefined or the query fails
-    :param bool multiple: if **True** then the values provided are lists with
+    :param multiple: if **True** then the values provided are lists with
       all of the present values
 
     :returns:
@@ -2294,8 +2291,8 @@ class Controller(BaseController):
 
     .. versionadded:: 1.5.0
 
-    :param str param: configuration option to check
-    :param object default: response if the query fails
+    :param param: configuration option to check
+    :param default: response if the query fails
 
     :returns: **True** if option differs from its default and **False**
       otherwise
@@ -2342,8 +2339,8 @@ class Controller(BaseController):
     * a list of strings to set a series of values (for instance the ExitPolicy)
     * None to either set the value to 0/NULL
 
-    :param str param: configuration option to be set
-    :param str,list value: value to set the parameter to
+    :param param: configuration option to be set
+    :param value: value to set the parameter to
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -2359,7 +2356,7 @@ class Controller(BaseController):
     """
     Reverts one or more parameters to their default values.
 
-    :param str params: configuration option to be reset
+    :param params: configuration option to be reset
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -2391,9 +2388,9 @@ class Controller(BaseController):
     reason this type of argument would be useful is for hidden service
     configuration (those options are order dependent).
 
-    :param dict,list params: mapping of configuration options to the values
+    :param params: mapping of configuration options to the values
       we're setting it to
-    :param bool reset: issues a RESETCONF, returning **None** values to their
+    :param reset: issues a RESETCONF, returning **None** values to their
       defaults if **True**
 
     :raises:
@@ -2478,7 +2475,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.3.0
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: **dict** with the hidden service configuration
 
@@ -2569,7 +2566,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.3.0
 
-    :param dict conf: configuration dictionary
+    :param conf: configuration dictionary
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -2628,13 +2625,13 @@ class Controller(BaseController):
     .. versionchanged:: 1.4.0
        Added the auth_type and client_names arguments.
 
-    :param str path: path for the hidden service's data directory
-    :param int port: hidden service port
-    :param str target_address: address of the service, by default 127.0.0.1
-    :param int target_port: port of the service, by default this is the same as
+    :param path: path for the hidden service's data directory
+    :param port: hidden service port
+    :param target_address: address of the service, by default 127.0.0.1
+    :param target_port: port of the service, by default this is the same as
       **port**
-    :param str auth_type: authentication type: basic, stealth or None to disable auth
-    :param list client_names: client names (1-16 characters "A-Za-z0-9+-_")
+    :param auth_type: authentication type: basic, stealth or None to disable auth
+    :param client_names: client names (1-16 characters "A-Za-z0-9+-_")
 
     :returns: :class:`~stem.control.CreateHiddenServiceOutput` if we create
       or update a hidden service, **None** otherwise
@@ -2734,8 +2731,8 @@ class Controller(BaseController):
 
     .. versionadded:: 1.3.0
 
-    :param str path: path for the hidden service's data directory
-    :param int port: hidden service port
+    :param path: path for the hidden service's data directory
+    :param port: hidden service port
 
     :returns: **True** if the hidden service is discontinued, **False** if it
       wasn't running in the first place
@@ -2783,10 +2780,10 @@ class Controller(BaseController):
        Tor change caused this to start providing empty strings if unset
        (:trac:`21329`).
 
-    :param object default: response if the query fails
-    :param bool our_services: include services created with this controller
+    :param default: response if the query fails
+    :param our_services: include services created with this controller
       that weren't flagged as 'detached'
-    :param bool detached: include services whos contiuation isn't tied to a
+    :param detached: include services whos contiuation isn't tied to a
       controller
 
     :returns: **list** of hidden service addresses without their '.onion'
@@ -2888,21 +2885,21 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout and max_streams arguments.
 
-    :param int,list,dict ports: hidden service port(s) or mapping of hidden
+    :param ports: hidden service port(s) or mapping of hidden
       service ports to their targets
-    :param str key_type: type of key being provided, generates a new key if
+    :param key_type: type of key being provided, generates a new key if
       'NEW' (options are: **NEW**, **RSA1024**, and **ED25519-V3**)
-    :param str key_content: key for the service to use or type of key to be
+    :param key_content: key for the service to use or type of key to be
       generated (options when **key_type** is **NEW** are **BEST**,
       **RSA1024**, and **ED25519-V3**)
-    :param bool discard_key: avoid providing the key back in our response
-    :param bool detached: continue this hidden service even after this control
+    :param discard_key: avoid providing the key back in our response
+    :param detached: continue this hidden service even after this control
       connection is closed if **True**
-    :param bool await_publication: blocks until our descriptor is successfully
+    :param await_publication: blocks until our descriptor is successfully
       published if **True**
-    :param float timeout: seconds to wait when **await_result** is **True**
-    :param dict basic_auth: required user credentials to access this service
-    :param int max_streams: maximum number of streams the hidden service will
+    :param timeout: seconds to wait when **await_result** is **True**
+    :param basic_auth: required user credentials to access this service
+    :param max_streams: maximum number of streams the hidden service will
       accept, unlimited if zero or not set
 
     :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
@@ -3001,7 +2998,7 @@ class Controller(BaseController):
 
     .. versionadded:: 1.4.0
 
-    :param str service_id: hidden service address without the '.onion' suffix
+    :param service_id: hidden service address without the '.onion' suffix
 
     :returns: **True** if the hidden service is discontinued, **False** if it
       wasn't running in the first place
@@ -3048,8 +3045,8 @@ class Controller(BaseController):
        Listener exceptions and malformed events no longer break further event
        processing. Added the **MALFORMED_EVENTS** constant.
 
-    :param functor listener: function to be called when an event is received
-    :param stem.control.EventType events: event types to be listened for
+    :param listener: function to be called when an event is received
+    :param events: event types to be listened for
 
     :raises: :class:`stem.ProtocolError` if unable to set the events
     """
@@ -3080,7 +3077,7 @@ class Controller(BaseController):
     """
     Stops a listener from being notified of further tor events.
 
-    :param stem.control.EventListener listener: listener to be removed
+    :param listener: listener to be removed
 
     :raises: :class:`stem.ProtocolError` if unable to set the events
     """
@@ -3106,8 +3103,8 @@ class Controller(BaseController):
     """
     Queries our request cache for the given key.
 
-    :param str param: key to be queried
-    :param str namespace: namespace in which to check for the key
+    :param param: key to be queried
+    :param namespace: namespace in which to check for the key
 
     :returns: cached value corresponding to key or **None** if the key wasn't found
     """
@@ -3123,8 +3120,8 @@ class Controller(BaseController):
     """
     Queries our request cache for multiple entries.
 
-    :param list params: keys to be queried
-    :param str namespace: namespace in which to check for the keys
+    :param params: keys to be queried
+    :param namespace: namespace in which to check for the keys
 
     :returns: **dict** of 'param => cached value' pairs of keys present in cache
     """
@@ -3146,8 +3143,8 @@ class Controller(BaseController):
     Sets the given request cache entries. If the new cache value is **None**
     then it is removed from our cache.
 
-    :param dict params: **dict** of 'cache_key => value' pairs to be cached
-    :param str namespace: namespace for the keys
+    :param params: **dict** of 'cache_key => value' pairs to be cached
+    :param namespace: namespace for the keys
     """
 
     with self._cache_lock:
@@ -3187,7 +3184,7 @@ class Controller(BaseController):
     """
     Drops dependent portions of the cache when configuration changes.
 
-    :param dict params: **dict** of 'config_key => value' pairs for configs
+    :param params: **dict** of 'config_key => value' pairs for configs
       that changed. The entries' values are currently unused.
     """
 
@@ -3220,7 +3217,7 @@ class Controller(BaseController):
     """
     Enables or disables caching of information retrieved from tor.
 
-    :param bool enabled: **True** to enable caching, **False** to disable it
+    :param enabled: **True** to enable caching, **False** to disable it
     """
 
     self._is_caching_enabled = enabled
@@ -3242,7 +3239,7 @@ class Controller(BaseController):
     Sends the configuration text to Tor and loads it as if it has been read from
     the torrc.
 
-    :param str configtext: the configuration text
+    :param configtext: the configuration text
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
@@ -3263,7 +3260,7 @@ class Controller(BaseController):
     .. versionchanged:: 1.6.0
        Added the force argument.
 
-    :param bool force: overwrite the configuration even if it includes a
+    :param force: overwrite the configuration even if it includes a
       '%include' clause, this is ignored if tor doesn't support it
 
     :raises:
@@ -3286,7 +3283,7 @@ class Controller(BaseController):
     Checks if a control connection feature is enabled. These features can be
     enabled using :func:`~stem.control.Controller.enable_feature`.
 
-    :param str feature: feature to be checked
+    :param feature: feature to be checked
 
     :returns: **True** if feature is enabled, **False** otherwise
     """
@@ -3305,7 +3302,7 @@ class Controller(BaseController):
     control connection must be opened to get a connection with the feature
     disabled. Feature names are case-insensitive.
 
-    :param str,list features: a single feature or a list of features to be enabled
+    :param features: a single feature or a list of features to be enabled
 
     :raises:
       * :class:`stem.ControllerError` if the call fails
@@ -3337,8 +3334,8 @@ class Controller(BaseController):
 
     Provides a circuit currently available from tor.
 
-    :param int circuit_id: circuit to be fetched
-    :param object default: response if the query fails
+    :param circuit_id: circuit to be fetched
+    :param default: response if the query fails
 
     :returns: :class:`stem.response.events.CircuitEvent` for the given circuit
 
@@ -3362,7 +3359,7 @@ class Controller(BaseController):
 
     Provides tor's currently available circuits.
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: **list** of :class:`stem.response.events.CircuitEvent` for our circuits
 
@@ -3386,10 +3383,10 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout argument.
 
-    :param str,list path: one or more relays to make a circuit through
-    :param str purpose: 'general' or 'controller'
-    :param bool await_build: blocks until the circuit is built if **True**
-    :param float timeout: seconds to wait when **await_build** is **True**
+    :param path: one or more relays to make a circuit through
+    :param purpose: 'general' or 'controller'
+    :param await_build: blocks until the circuit is built if **True**
+    :param timeout: seconds to wait when **await_build** is **True**
 
     :returns: str of the circuit id of the newly created circuit
 
@@ -3423,12 +3420,12 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout argument.
 
-    :param str circuit_id: id of a circuit to be extended
-    :param str,list path: one or more relays to make a circuit through, this is
+    :param circuit_id: id of a circuit to be extended
+    :param path: one or more relays to make a circuit through, this is
       required if the circuit id is non-zero
-    :param str purpose: 'general' or 'controller'
-    :param bool await_build: blocks until the circuit is built if **True**
-    :param float timeout: seconds to wait when **await_build** is **True**
+    :param purpose: 'general' or 'controller'
+    :param await_build: blocks until the circuit is built if **True**
+    :param timeout: seconds to wait when **await_build** is **True**
 
     :returns: str of the circuit id of the created or extended circuit
 
@@ -3501,8 +3498,8 @@ class Controller(BaseController):
       * general
       * controller
 
-    :param str circuit_id: id of the circuit whose purpose is to be changed
-    :param str purpose: purpose (either 'general' or 'controller')
+    :param circuit_id: id of the circuit whose purpose is to be changed
+    :param purpose: purpose (either 'general' or 'controller')
 
     :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
     """
@@ -3519,8 +3516,8 @@ class Controller(BaseController):
     """
     Closes the specified circuit.
 
-    :param str circuit_id: id of the circuit to be closed
-    :param str flag: optional value to modify closing, the only flag available
+    :param circuit_id: id of the circuit to be closed
+    :param flag: optional value to modify closing, the only flag available
       is 'IfUnused' which will not close the circuit unless it is unused
 
     :raises:
@@ -3545,7 +3542,7 @@ class Controller(BaseController):
 
     Provides the list of streams tor is currently handling.
 
-    :param object default: response if the query fails
+    :param default: response if the query fails
 
     :returns: list of :class:`stem.response.events.StreamEvent` objects
 
@@ -3569,9 +3566,9 @@ class Controller(BaseController):
     Note: Tor attaches streams to circuits automatically unless the
     __LeaveStreamsUnattached configuration variable is set to '1'
 
-    :param str stream_id: id of the stream that must be attached
-    :param str circuit_id: id of the circuit to which it must be attached
-    :param int exiting_hop: hop in the circuit where traffic should exit
+    :param stream_id: id of the stream that must be attached
+    :param circuit_id: id of the circuit to which it must be attached
+    :param exiting_hop: hop in the circuit where traffic should exit
 
     :raises:
       * :class:`stem.InvalidRequest` if the stream or circuit id were unrecognized
@@ -3600,9 +3597,9 @@ class Controller(BaseController):
     """
     Closes the specified stream.
 
-    :param str stream_id: id of the stream to be closed
-    :param stem.RelayEndReason reason: reason the stream is closing
-    :param str flag: not currently used
+    :param stream_id: id of the stream to be closed
+    :param reason: reason the stream is closing
+    :param flag: not currently used
 
     :raises:
       * :class:`stem.InvalidArguments` if the stream or reason are not recognized
@@ -3628,7 +3625,7 @@ class Controller(BaseController):
     """
     Sends a signal to the Tor client.
 
-    :param stem.Signal signal: type of signal to be sent
+    :param signal: type of signal to be sent
 
     :raises:
       * :class:`stem.ControllerError` if sending the signal failed
@@ -3688,8 +3685,8 @@ class Controller(BaseController):
 
     .. versionadded:: 1.3.0
 
-    :param object default: response if the query fails
-    :param bool burst: provides the burst bandwidth, otherwise this provides
+    :param default: response if the query fails
+    :param burst: provides the burst bandwidth, otherwise this provides
       the standard rate
 
     :returns: **int** with the effective bandwidth rate in bytes per second
@@ -3725,7 +3722,7 @@ class Controller(BaseController):
     original address is already mapped to a different address the mapping is
     removed.
 
-    :param dict mapping: mapping of original addresses to replacement addresses
+    :param mapping: mapping of original addresses to replacement addresses
 
     :returns: **dict** with 'original -> replacement' address mappings
 
@@ -3880,7 +3877,7 @@ def _parse_circ_path(path: str) -> Sequence[Tuple[str, str]]:
     example:
     $E57A476CD4DFBD99B4EE52A100A58610AD6E80B9,hamburgerphone,PrivacyRepublic14
 
-  :param str path: circuit path to be parsed
+  :param path: circuit path to be parsed
 
   :returns: list of **(fingerprint, nickname)** tuples, fingerprints do not have a proceeding '$'
 
@@ -3902,7 +3899,7 @@ def _parse_circ_entry(entry: str) -> Tuple[str, str]:
   Parses a single relay's 'LongName' or 'ServerID'. See the
   :func:`~stem.control._parse_circ_path` function for more information.
 
-  :param str entry: relay information to be parsed
+  :param entry: relay information to be parsed
 
   :returns: **(fingerprint, nickname)** tuple
 
@@ -3940,9 +3937,9 @@ def _case_insensitive_lookup(entries: Union[Sequence[str], Mapping[str, Any]], k
   Makes a case insensitive lookup within a list or dictionary, providing the
   first matching entry that we come across.
 
-  :param list,dict entries: list or dictionary to be searched
-  :param str key: entry or key value to look up
-  :param object default: value to be returned if the key doesn't exist
+  :param entries: list or dictionary to be searched
+  :param key: entry or key value to look up
+  :param default: value to be returned if the key doesn't exist
 
   :returns: case insensitive match or default if one was provided and key wasn't found
 

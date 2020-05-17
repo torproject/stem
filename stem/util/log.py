@@ -117,7 +117,7 @@ def logging_level(runlevel: 'stem.util.log.Runlevel') -> int:
   """
   Translates a runlevel into the value expected by the logging module.
 
-  :param stem.util.log.Runlevel runlevel: runlevel to be returned, no logging if **None**
+  :param runlevel: runlevel to be returned, no logging if **None**
   """
 
   if runlevel:
@@ -147,7 +147,7 @@ def escape(message: str) -> str:
   Escapes specific sequences for logging (newlines, tabs, carriage returns). If
   the input is **bytes** then this converts it to **unicode** under python 3.x.
 
-  :param str message: string to be escaped
+  :param message: string to be escaped
 
   :returns: str that is escaped
   """
@@ -164,8 +164,8 @@ def log(runlevel: 'stem.util.log.Runlevel', message: str) -> None:
   """
   Logs a message at the given runlevel.
 
-  :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
-  :param str message: message to be logged
+  :param runlevel: runlevel to log the message at, logging is skipped if **None**
+  :param message: message to be logged
   """
 
   if runlevel:
@@ -177,9 +177,9 @@ def log_once(message_id: str, runlevel: 'stem.util.log.Runlevel', message: str) 
   Logs a message at the given runlevel. If a message with this ID has already
   been logged then this is a no-op.
 
-  :param str message_id: unique message identifier to deduplicate on
-  :param stem.util.log.Runlevel runlevel: runlevel to log the message at, logging is skipped if **None**
-  :param str message: message to be logged
+  :param message_id: unique message identifier to deduplicate on
+  :param runlevel: runlevel to log the message at, logging is skipped if **None**
+  :param message: message to be logged
 
   :returns: **True** if we log the message, **False** otherwise
   """
@@ -234,7 +234,7 @@ def log_to_stdout(runlevel: 'stem.util.log.Runlevel') -> None:
   """
   Logs further events to stdout.
 
-  :param stem.util.log.Runlevel runlevel: minimum runlevel a message needs to be to be logged
+  :param runlevel: minimum runlevel a message needs to be to be logged
   """
 
   get_logger().addHandler(_StdoutLogger(runlevel))

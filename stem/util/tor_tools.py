@@ -53,8 +53,8 @@ def is_valid_fingerprint(entry: str, check_prefix: bool = False) -> bool:
   a '$' prefix if check_prefix is true, otherwise this only validates the hex
   digits.
 
-  :param str entry: string to be checked
-  :param bool check_prefix: checks for a '$' prefix
+  :param entry: string to be checked
+  :param check_prefix: checks for a '$' prefix
 
   :returns: **True** if the string could be a relay fingerprint, **False** otherwise
   """
@@ -78,7 +78,7 @@ def is_valid_nickname(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a nickname.
 
-  :param str entry: string to check
+  :param entry: string to check
 
   :returns: **True** if the string could be a nickname, **False** otherwise
   """
@@ -96,7 +96,7 @@ def is_valid_circuit_id(entry: str) -> bool:
   """
   Checks if a string is a valid format for being a circuit identifier.
 
-  :param str entry: string to check
+  :param entry: string to check
 
   :returns: **True** if the string could be a circuit id, **False** otherwise
   """
@@ -115,7 +115,7 @@ def is_valid_stream_id(entry: str) -> bool:
   Checks if a string is a valid format for being a stream identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
 
-  :param str entry: string to check
+  :param entry: string to check
 
   :returns: **True** if the string could be a stream id, **False** otherwise
   """
@@ -128,7 +128,7 @@ def is_valid_connection_id(entry: str) -> bool:
   Checks if a string is a valid format for being a connection identifier.
   Currently, this is just an alias to :func:`~stem.util.tor_tools.is_valid_circuit_id`.
 
-  :param str entry: string to check
+  :param entry: string to check
 
   :returns: **True** if the string could be a connection id, **False** otherwise
   """
@@ -145,9 +145,9 @@ def is_valid_hidden_service_address(entry: str, version: Optional[Union[int, Seq
      Added the **version** argument, and responds with **True** if a version 3
      hidden service address rather than just version 2 addresses.
 
-  :param str entry: string to check
-  :param int,list version: versions to check for, if unspecified either v2 or v3
-    hidden service address will provide **True**
+  :param entry: string to check
+  :param version: versions to check for, if unspecified either v2 or v3 hidden
+    service address will provide **True**
 
   :returns: **True** if the string could be a hidden service address, **False**
     otherwise
@@ -180,8 +180,8 @@ def is_hex_digits(entry: str, count: int) -> bool:
   Checks if a string is the given number of hex digits. Digits represented by
   letters are case insensitive.
 
-  :param str entry: string to be checked
-  :param int count: number of hex digits to be checked for
+  :param entry: string to be checked
+  :param count: number of hex digits to be checked for
 
   :returns: **True** if the given number of hex digits, **False** otherwise
   """

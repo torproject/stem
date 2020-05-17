@@ -126,8 +126,8 @@ def query(query: str, *param: str) -> 'sqlite3.Cursor':  # type: ignore
 
   .. versionadded:: 1.6.0
 
-  :param str query: query to run on the cache
-  :param list param: query parameters
+  :param query: query to run on the cache
+  :param param: query parameters
 
   :returns: :class:`sqlite3.Cursor` with the query results
 
@@ -190,7 +190,7 @@ def _config(lowercase: bool = True) -> Dict[str, Union[List[str], str]]:
     * manual.important (list) - configuration options considered to be important
     * manual.summary.* (str) - summary descriptions of config options
 
-  :param bool lowercase: uses lowercase keys if **True** to allow for case
+  :param lowercase: uses lowercase keys if **True** to allow for case
     insensitive lookups
   """
 
@@ -256,7 +256,7 @@ def is_important(option: str) -> bool:
   """
   Indicates if a configuration option of particularly common importance or not.
 
-  :param str option: tor configuration option to check
+  :param option: tor configuration option to check
 
   :returns: **bool** that's **True** if this is an important option and
     **False** otherwise
@@ -272,10 +272,10 @@ def download_man_page(path: Optional[str] = None, file_handle: Optional[BinaryIO
   both slow and unreliable - please see the warnings on
   :func:`~stem.manual.Manual.from_remote`.
 
-  :param str path: path to save tor's man page to
-  :param file file_handle: file handler to save tor's man page to
-  :param str url: url to download tor's asciidoc manual from
-  :param int timeout: seconds to wait before timing out the request
+  :param path: path to save tor's man page to
+  :param file_handle: file handler to save tor's man page to
+  :param url: url to download tor's asciidoc manual from
+  :param timeout: seconds to wait before timing out the request
 
   :raises: **IOError** if unable to retrieve the manual
   """
@@ -375,7 +375,7 @@ class Manual(object):
        Added support for sqlite cache. Support for
        :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
 
-    :param str path: cached manual content to read, if not provided this uses
+    :param path: cached manual content to read, if not provided this uses
       the bundled manual information
 
     :returns: :class:`~stem.manual.Manual` with our bundled manual information
@@ -435,7 +435,7 @@ class Manual(object):
     may not quite match other platforms. For instance, it normalizes long
     dashes into '--'.
 
-    :param str man_path: path argument for 'man', for example you might want
+    :param man_path: path argument for 'man', for example you might want
       '/path/to/tor/doc/tor.1' to read from tor's git repository
 
     :returns: :class:`~stem.manual.Manual` for the system's man page
@@ -493,7 +493,7 @@ class Manual(object):
       * 5.57s to convert the asciidoc to a man page
       * 0.17s for stem to read and parse the manual
 
-    :param int timeout: seconds to wait before timing out the request
+    :param timeout: seconds to wait before timing out the request
 
     :returns: latest :class:`~stem.manual.Manual` available for tor
 
@@ -512,7 +512,7 @@ class Manual(object):
        Added support for sqlite cache. Support for
        :class:`~stem.util.conf.Config` caches will be dropped in Stem 2.x.
 
-    :param str path: path to save our manual content to
+    :param path: path to save our manual content to
 
     :raises:
       * **ImportError** if saving as sqlite and the sqlite3 module is

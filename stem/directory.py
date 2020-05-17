@@ -75,9 +75,9 @@ def _match_with(lines: Sequence[str], regexes: Sequence[Pattern], required: Opti
   mapping of regexes to their capture groups. This maping is with the value if
   the regex has just a single capture group, and a tuple otherwise.
 
-  :param list lines: text to parse
-  :param list regexes: regexes to match against
-  :param list required: matches that must be in the content
+  :param lines: text to parse
+  :param regexes: regexes to match against
+  :param required: matches that must be in the content
 
   :returns: **dict** mapping matchers against their capture groups
 
@@ -200,7 +200,7 @@ class Directory(object):
     .. versionchanged:: 1.7.0
        Support added to the :class:`~stem.directory.Authority` class.
 
-    :param int timeout: seconds to wait before timing out the request
+    :param timeout: seconds to wait before timing out the request
 
     :returns: **dict** of **str** identifiers to their
       :class:`~stem.directory.Directory`
@@ -476,11 +476,11 @@ class Fallback(Directory):
     Persists fallback directories to a location in a way that can be read by
     from_cache().
 
-    :param dict fallbacks: mapping of fingerprints to their fallback directory
-    :param str tor_commit: tor commit the fallbacks came from
-    :param str stem_commit: stem commit the fallbacks came from
-    :param dict headers: metadata about the file these came from
-    :param str path: location fallbacks will be persisted to
+    :param fallbacks: mapping of fingerprints to their fallback directory
+    :param tor_commit: tor commit the fallbacks came from
+    :param stem_commit: stem commit the fallbacks came from
+    :param headers: metadata about the file these came from
+    :param path: location fallbacks will be persisted to
     """
 
     conf = stem.util.conf.Config()

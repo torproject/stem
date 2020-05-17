@@ -78,7 +78,7 @@ def encoding(*attrs: Union['stem.util.term.Color', 'stem.util.term.BgColor', 'st
 
   .. versionadded:: 1.5.0
 
-  :param list attr: :data:`~stem.util.term.Color`,
+  :param attr: :data:`~stem.util.term.Color`,
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` to
     provide an ecoding for
 
@@ -117,8 +117,8 @@ def format(msg: str, *attr: Union['stem.util.term.Color', 'stem.util.term.BgColo
      Normalized return value to be unicode to better support python 2/3
      compatibility.
 
-  :param str msg: string to be formatted
-  :param str attr: text attributes, this can be :data:`~stem.util.term.Color`,
+  :param msg: string to be formatted
+  :param attr: text attributes, this can be :data:`~stem.util.term.Color`,
     :data:`~stem.util.term.BgColor`, or :data:`~stem.util.term.Attr` enums
     and are case insensitive (so strings like 'red' are fine)
 

@@ -231,7 +231,7 @@ class _Compression(object):
     """
     Decompresses the given content via this method.
 
-    :param bytes content: content to be decompressed
+    :param content: content to be decompressed
 
     :returns: **bytes** with the decompressed content
 
@@ -355,15 +355,15 @@ def parse_file(descriptor_file: Union[str, BinaryIO, tarfile.TarFile, IO[bytes]]
 
     my_descriptor_file = open(descriptor_path, 'rb')
 
-  :param str,file,tarfile descriptor_file: path or opened file with the descriptor contents
-  :param str descriptor_type: `descriptor type <https://metrics.torproject.org/collector.html#data-formats>`_, this is guessed if not provided
-  :param bool validate: checks the validity of the descriptor's content if
-    **True**, skips these checks otherwise
-  :param stem.descriptor.__init__.DocumentHandler document_handler: method in
-    which to parse the :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
-  :param bool normalize_newlines: converts windows newlines (CRLF), this is the
+  :param descriptor_file: path or opened file with the descriptor contents
+  :param descriptor_type: `descriptor type <https://metrics.torproject.org/collector.html#data-formats>`_, this is guessed if not provided
+  :param validate: checks the validity of the descriptor's content if **True**,
+    skips these checks otherwise
+  :param document_handler: method in which to parse the
+    :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :param normalize_newlines: converts windows newlines (CRLF), this is the
     default when reading data directories on windows
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor` instances in the file
 
@@ -585,10 +585,10 @@ def _descriptor_content(attr: Mapping[str, str] = None, exclude: Sequence[str] =
     fingerprint 12345
     contact atagar
 
-  :param dict attr: keyword/value mappings to be included in the descriptor
-  :param list exclude: mandatory keywords to exclude from the descriptor
-  :param tuple header_template: key/value pairs for mandatory fields before unrecognized content
-  :param tuple footer_template: key/value pairs for mandatory fields after unrecognized content
+  :param attr: keyword/value mappings to be included in the descriptor
+  :param exclude: mandatory keywords to exclude from the descriptor
+  :param header_template: key/value pairs for mandatory fields before unrecognized content
+  :param footer_template: key/value pairs for mandatory fields after unrecognized content
 
   :returns: bytes with the requested descriptor content
   """
@@ -760,10 +760,10 @@ def _mappings_for(keyword: str, value: str, require_value: bool = False, divider
   functions this is a helper, returning the attribute value rather than setting
   a descriptor field. This way parsers can perform additional validations.
 
-  :param str keyword: descriptor field being parsed
-  :param str value: 'attribute => values' mappings to parse
-  :param str divider: separator between the key/value mappings
-  :param bool require_value: validates that values are not empty
+  :param keyword: descriptor field being parsed
+  :param value: 'attribute => values' mappings to parse
+  :param divider: separator between the key/value mappings
+  :param require_value: validates that values are not empty
 
   :returns: **generator** with the key/value of the map attribute
 
@@ -852,10 +852,10 @@ class Descriptor(object):
 
     .. versionadded:: 1.8.0
 
-    :param str,bytes content: string to construct the descriptor from
-    :param bool multiple: if provided with **True** this provides a list of
+    :param content: string to construct the descriptor from
+    :param multiple: if provided with **True** this provides a list of
       descriptors rather than a single one
-    :param dict kwargs: additional arguments for :func:`~stem.descriptor.__init__.parse_file`
+    :param kwargs: additional arguments for :func:`~stem.descriptor.__init__.parse_file`
 
     :returns: :class:`~stem.descriptor.__init__.Descriptor` subclass for the
       given content, or a **list** of descriptors if **multiple = True** is
@@ -889,8 +889,8 @@ class Descriptor(object):
 
     .. versionadded:: 1.6.0
 
-    :param dict attr: keyword/value mappings to be included in the descriptor
-    :param list exclude: mandatory keywords to exclude from the descriptor, this
+    :param attr: keyword/value mappings to be included in the descriptor
+    :param exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
 
     :returns: **bytes** with the content of a descriptor
@@ -911,10 +911,10 @@ class Descriptor(object):
 
     .. versionadded:: 1.6.0
 
-    :param dict attr: keyword/value mappings to be included in the descriptor
-    :param list exclude: mandatory keywords to exclude from the descriptor, this
+    :param attr: keyword/value mappings to be included in the descriptor
+    :param exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
-    :param bool validate: checks the validity of the descriptor's content if
+    :param validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
 
     :returns: :class:`~stem.descriptor.Descriptor` subclass
@@ -1002,9 +1002,9 @@ class Descriptor(object):
     Parses a series of 'keyword => (value, pgp block)' mappings and applies
     them as attributes.
 
-    :param dict entries: descriptor contents to be applied
-    :param bool validate: checks the validity of descriptor content if True
-    :param dict parsers: mapping of lines to the function for parsing it
+    :param entries: descriptor contents to be applied
+    :param validate: checks the validity of descriptor content if True
+    :param parsers: mapping of lines to the function for parsing it
 
     :raises: **ValueError** if an error occurs in validation
     """
@@ -1041,8 +1041,8 @@ class Descriptor(object):
     """
     Provides the signed digest we should have given this key and signature.
 
-    :param str signing_key: key block used to make this signature
-    :param str signature: signed digest for this descriptor content
+    :param signing_key: key block used to make this signature
+    :param signature: signed digest for this descriptor content
 
     :returns: the digest string encoded in uppercase hex
 
@@ -1103,8 +1103,8 @@ class Descriptor(object):
     """
     Provides the descriptor content inclusively between two substrings.
 
-    :param bytes start: start of the content range to get
-    :param bytes end: end of the content range to get
+    :param start: start of the content range to get
+    :param end: end of the content range to get
 
     :returns: **bytes** within the given range
 
@@ -1228,14 +1228,14 @@ def _read_until_keywords_with_ending_keyword(keywords: Union[str, Sequence[str]]
   Reads from the descriptor file until we get to one of the given keywords or reach the
   end of the file.
 
-  :param str,list keywords: keyword(s) we want to read until
-  :param file descriptor_file: file with the descriptor content
-  :param bool inclusive: includes the line with the keyword if True
-  :param bool ignore_first: doesn't check if the first line read has one of the
+  :param keywords: keyword(s) we want to read until
+  :param descriptor_file: file with the descriptor content
+  :param inclusive: includes the line with the keyword if True
+  :param ignore_first: doesn't check if the first line read has one of the
     given keywords
-  :param bool skip: skips buffering content, returning None
-  :param int end_position: end if we reach this point in the file
-  :param bool include_ending_keyword: provides the keyword we broke on if **True**
+  :param skip: skips buffering content, returning None
+  :param end_position: end if we reach this point in the file
+  :param include_ending_keyword: provides the keyword we broke on if **True**
 
   :returns: **list** with the lines until we find one of the keywords, this is
     a two value tuple with the ending keyword if include_ending_keyword is
@@ -1291,7 +1291,7 @@ def _bytes_for_block(content: str) -> bytes:
   """
   Provides the base64 decoded content of a pgp-style block.
 
-  :param str content: block to be decoded
+  :param content: block to be decoded
 
   :returns: decoded block content
 
@@ -1310,7 +1310,7 @@ def _get_pseudo_pgp_block(remaining_contents: List[str]) -> Tuple[str, str]:
   Checks if given contents begins with a pseudo-Open-PGP-style block and, if
   so, pops it off and provides it back to the caller.
 
-  :param list remaining_contents: lines to be checked for a public key block
+  :param remaining_contents: lines to be checked for a public key block
 
   :returns: **tuple** of the (block_type, content) or None if it doesn't exist
 
@@ -1348,7 +1348,7 @@ def create_signing_key(private_key: Optional['cryptography.hazmat.backends.opens
 
   .. versionadded:: 1.6.0
 
-  :param cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private_key: private key
+  :param private_key: private key
 
   :returns: :class:`~stem.descriptor.__init__.SigningKey` that can be used to
     create descriptors
@@ -1396,9 +1396,8 @@ def _append_router_signature(content: bytes, private_key: 'cryptography.hazmat.b
   """
   Appends a router signature to a server or extrainfo descriptor.
 
-  :param bytes content: descriptor content up through 'router-signature\\n'
-  :param cryptography.hazmat.backends.openssl.rsa._RSAPrivateKey private_key:
-    private relay signing key
+  :param content: descriptor content up through 'router-signature\\n'
+  :param private_key: private relay signing key
 
   :returns: **bytes** with the signed descriptor content
   """
@@ -1461,12 +1460,12 @@ def _descriptor_components_with_extra(raw_contents: bytes, validate: bool, extra
   entries because this influences the resulting exit policy, but for everything
   else in server descriptors the order does not matter.
 
-  :param bytes raw_contents: descriptor content provided by the relay
-  :param bool validate: checks the validity of the descriptor's content if
+  :param raw_contents: descriptor content provided by the relay
+  :param validate: checks the validity of the descriptor's content if
     True, skips these checks otherwise
-  :param list extra_keywords: entity keywords to put into a separate listing
+  :param extra_keywords: entity keywords to put into a separate listing
     with ordering intact
-  :param list non_ascii_fields: fields containing non-ascii content
+  :param non_ascii_fields: fields containing non-ascii content
 
   :returns:
     **collections.OrderedDict** with the 'keyword => (value, pgp key) entries'

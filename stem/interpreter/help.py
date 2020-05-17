@@ -25,8 +25,8 @@ def response(controller: stem.control.Controller, arg: str) -> str:
   """
   Provides our /help response.
 
-  :param stem.control.Controller controller: tor control connection
-  :param str arg: controller or interpreter command to provide help output for
+  :param controller: tor control connection
+  :param arg: controller or interpreter command to provide help output for
 
   :returns: **str** with our help response
   """

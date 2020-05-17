@@ -225,17 +225,17 @@ class File(object):
       is provided then the file is downloaded to a temporary directory that's
       deleted after it is read.
 
-    :param str directory: destination to download into
-    :param str descriptor_type: `descriptor type
+    :param directory: destination to download into
+    :param descriptor_type: `descriptor type
       <https://metrics.torproject.org/collector.html#data-formats>`_, this is
       guessed if not provided
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param document_handler: method in
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
-    :param int timeout: timeout when connection becomes idle, no timeout
+    :param timeout: timeout when connection becomes idle, no timeout
       applied if **None**
-    :param int retries: maximum attempts to impose
+    :param retries: maximum attempts to impose
 
     :returns: iterator for :class:`~stem.descriptor.__init__.Descriptor`
       instances in the file
@@ -295,12 +295,12 @@ class File(object):
     Downloads this file to the given location. If a file already exists this is
     a no-op.
 
-    :param str directory: destination to download into
-    :param bool decompress: decompress written file
-    :param int timeout: timeout when connection becomes idle, no timeout
+    :param directory: destination to download into
+    :param decompress: decompress written file
+    :param timeout: timeout when connection becomes idle, no timeout
       applied if **None**
-    :param int retries: maximum attempts to impose
-    :param bool overwrite: if this file exists but mismatches CollecTor's
+    :param retries: maximum attempts to impose
+    :param overwrite: if this file exists but mismatches CollecTor's
       checksum then overwrites if **True**, otherwise rases an exception
 
     :returns: **str** with the path we downloaded to
@@ -412,14 +412,14 @@ class CollecTor(object):
     Provides server descriptors published during the given time range, sorted
     oldest to newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param bool bridge: standard descriptors if **False**, bridge if **True**
-    :param int timeout: timeout for downloading each individual archive when
+    :param bridge: standard descriptors if **False**, bridge if **True**
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.server_descriptor.ServerDescriptor` for the
@@ -439,14 +439,14 @@ class CollecTor(object):
     Provides extrainfo descriptors published during the given time range,
     sorted oldest to newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param bool bridge: standard descriptors if **False**, bridge if **True**
-    :param int timeout: timeout for downloading each individual archive when
+    :param bridge: standard descriptors if **False**, bridge if **True**
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.extrainfo_descriptor.RelayExtraInfoDescriptor`
@@ -476,13 +476,13 @@ class CollecTor(object):
     tarballs often contain very few. Microdescriptors also do not contain
     their publication timestamp, so this is estimated.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param int timeout: timeout for downloading each individual archive when
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.microdescriptor.Microdescriptor`
@@ -500,19 +500,19 @@ class CollecTor(object):
     Provides consensus router status entries published during the given time
     range, sorted oldest to newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param stem.descriptor.__init__.DocumentHandler document_handler: method in
+    :param document_handler: method in
       which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
-    :param int version: consensus variant to retrieve (versions 2 or 3)
-    :param bool microdescriptor: provides the microdescriptor consensus if
+    :param version: consensus variant to retrieve (versions 2 or 3)
+    :param microdescriptor: provides the microdescriptor consensus if
       **True**, standard consensus otherwise
-    :param bool bridge: standard descriptors if **False**, bridge if **True**
-    :param int timeout: timeout for downloading each individual archive when
+    :param bridge: standard descriptors if **False**, bridge if **True**
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.router_status_entry.RouterStatusEntry`
@@ -544,13 +544,13 @@ class CollecTor(object):
     Directory authority key certificates for the given time range,
     sorted oldest to newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param int timeout: timeout for downloading each individual archive when
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.networkstatus.KeyCertificate`
@@ -568,13 +568,13 @@ class CollecTor(object):
     Bandwidth authority heuristics for the given time range, sorted oldest to
     newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param int timeout: timeout for downloading each individual archive when
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.bandwidth_file.BandwidthFile`
@@ -592,13 +592,13 @@ class CollecTor(object):
     `TorDNSEL exit lists <https://www.torproject.org/projects/tordnsel.html.en>`_
     for the given time range, sorted oldest to newest.
 
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
-    :param str cache_to: directory to cache archives into, if an archive is
+    :param start: publication time to begin with
+    :param end: publication time to end with
+    :param cache_to: directory to cache archives into, if an archive is
       available here it is not downloaded
-    :param int timeout: timeout for downloading each individual archive when
+    :param timeout: timeout for downloading each individual archive when
       the connection becomes idle, no timeout applied if **None**
-    :param int retries: maximum attempts to impose on a per-archive basis
+    :param retries: maximum attempts to impose on a per-archive basis
 
     :returns: **iterator** of
       :class:`~stem.descriptor.tordnsel.TorDNSEL`
@@ -615,7 +615,7 @@ class CollecTor(object):
     """
     Provides the archives available in CollecTor.
 
-    :param descriptor.Compression compression: compression type to
+    :param compression: compression type to
       download from, if undefiled we'll use the best decompression available
 
     :returns: **dict** with the archive contents
@@ -654,9 +654,9 @@ class CollecTor(object):
     """
     Provides files CollecTor presently has, sorted oldest to newest.
 
-    :param str descriptor_type: descriptor type or prefix to retrieve
-    :param datetime.datetime start: publication time to begin with
-    :param datetime.datetime end: publication time to end with
+    :param descriptor_type: descriptor type or prefix to retrieve
+    :param start: publication time to begin with
+    :param end: publication time to end with
 
     :returns: **list** of :class:`~stem.descriptor.collector.File`
 
@@ -689,8 +689,8 @@ class CollecTor(object):
     """
     Recursively provies files within the index.
 
-    :param dict val: index hash
-    :param list path: path we've transversed into
+    :param val: index hash
+    :param path: path we've transversed into
 
     :returns: **list** of :class:`~stem.descriptor.collector.File`
     """

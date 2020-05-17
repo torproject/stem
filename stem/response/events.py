@@ -134,7 +134,7 @@ class Event(stem.response.ControlMessage):
     """
     Parses an iso timestamp (ISOTime2Frac in the control-spec).
 
-    :param str timestamp: timestamp to parse
+    :param timestamp: timestamp to parse
 
     :returns: **datetime** with the parsed timestamp
 
@@ -158,8 +158,8 @@ class Event(stem.response.ControlMessage):
     Checks if an attribute exists in a given enumeration, logging a message if
     it isn't. Attributes can either be for a string or collection of strings
 
-    :param str attr: name of the attribute to check
-    :param stem.util.enum.Enum enum: enumeration to check against
+    :param attr: name of the attribute to check
+    :param enum: enumeration to check against
     """
 
     attr_values = getattr(self, attr)
@@ -1485,7 +1485,7 @@ def _parse_cell_type_mapping(mapping: str) -> Dict[str, int]:
 
   ... in which keys are strings and values are integers.
 
-  :param str mapping: value to be parsed
+  :param mapping: value to be parsed
 
   :returns: dict of **str => int** mappings
 

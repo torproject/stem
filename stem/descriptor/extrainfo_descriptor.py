@@ -171,11 +171,11 @@ def _parse_file(descriptor_file: BinaryIO, is_bridge = False, validate = False, 
   """
   Iterates over the extra-info descriptors in a file.
 
-  :param file descriptor_file: file with descriptor content
-  :param bool is_bridge: parses the file as being a bridge descriptor
-  :param bool validate: checks the validity of the descriptor's content if
+  :param descriptor_file: file with descriptor content
+  :param is_bridge: parses the file as being a bridge descriptor
+  :param validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for :class:`~stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor`
     instances in the file
@@ -215,8 +215,8 @@ def _parse_timestamp_and_interval(keyword: str, content: str) -> Tuple[datetime.
   """
   Parses a 'YYYY-MM-DD HH:MM:SS (NSEC s) *' entry.
 
-  :param str keyword: line's keyword
-  :param str content: line content to be parsed
+  :param keyword: line's keyword
+  :param content: line content to be parsed
 
   :returns: **tuple** of the form (timestamp (**datetime**), interval
     (**int**), remaining content (**str**))
@@ -827,8 +827,8 @@ class ExtraInfoDescriptor(Descriptor):
     descriptor's content as it's parsed. This validation can be disabled to
     either improve performance or be accepting of malformed data.
 
-    :param str raw_contents: extra-info content provided by the relay
-    :param bool validate: checks the validity of the extra-info descriptor if
+    :param raw_contents: extra-info content provided by the relay
+    :param validate: checks the validity of the extra-info descriptor if
       **True**, skips these checks otherwise
 
     :raises: **ValueError** if the contents is malformed and validate is True
@@ -875,8 +875,8 @@ class ExtraInfoDescriptor(Descriptor):
     .. versionchanged:: 1.8.0
        Added the hash_type and encoding arguments.
 
-    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
-    :param stem.descriptor.DigestEncoding encoding: digest encoding
+    :param hash_type: digest hashing algorithm
+    :param encoding: digest encoding
 
     :returns: **hashlib.HASH** or **str** based on our encoding argument
     """

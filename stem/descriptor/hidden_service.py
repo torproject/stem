@@ -168,7 +168,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     """
     Parses an introduction point from its descriptor content.
 
-    :param str content: descriptor content to parse
+    :param content: descriptor content to parse
 
     :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` for the descriptor content
 
@@ -206,13 +206,13 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     """
     Simplified constructor for a single address/port link specifier.
 
-    :param str address: IPv4 or IPv6 address where the service is reachable
-    :param int port: port where the service is reachable
-    :param datetime.datetime expiration: when certificates should expire
-    :param str onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
-    :param str enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
-    :param str auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: service signing key
+    :param address: IPv4 or IPv6 address where the service is reachable
+    :param port: port where the service is reachable
+    :param expiration: when certificates should expire
+    :param onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
+    :param enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
+    :param auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
+    :param signing_key: service signing key
 
     :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
 
@@ -241,12 +241,12 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     Simplified constructor. For more sophisticated use cases you can use this
     as a template for how introduction points are properly created.
 
-    :param list link_specifiers: series of stem.client.datatype.LinkSpecifier where the service is reachable
-    :param datetime.datetime expiration: when certificates should expire
-    :param str onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
-    :param str enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
-    :param str auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key: service signing key
+    :param link_specifiers: series of stem.client.datatype.LinkSpecifier where the service is reachable
+    :param expiration: when certificates should expire
+    :param onion_key: encoded, X25519PublicKey, or X25519PrivateKey onion key
+    :param enc_key: encoded, X25519PublicKey, or X25519PrivateKey encryption key
+    :param auth_key: encoded, Ed25519PublicKey, or Ed25519PrivateKey authentication key
+    :param signing_key: service signing key
 
     :returns: :class:`~stem.descriptor.hidden_service.IntroductionPointV3` with these attributes
 
@@ -440,11 +440,11 @@ def _parse_file(descriptor_file: BinaryIO, desc_type: Optional[Type['stem.descri
   """
   Iterates over the hidden service descriptors in a file.
 
-  :param file descriptor_file: file with descriptor content
-  :param class desc_type: HiddenServiceDescriptor subclass
-  :param bool validate: checks the validity of the descriptor's content if
+  :param descriptor_file: file with descriptor content
+  :param desc_type: HiddenServiceDescriptor subclass
+  :param validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for :class:`~stem.descriptor.hidden_service.HiddenServiceDescriptor`
     instances in the file
@@ -744,7 +744,7 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
     """
     Provided this service's introduction points.
 
-    :param bytes authentication_cookie: base64 encoded authentication cookie
+    :param authentication_cookie: base64 encoded authentication cookie
 
     :returns: **list** of :class:`~stem.descriptor.hidden_service.IntroductionPointV2`
 
@@ -956,22 +956,17 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
 
       HiddenServiceDescriptorV3.create(blinding_nonce = os.urandom(32))
 
-    :param dict attr: keyword/value mappings to be included in plaintext descriptor
-    :param list exclude: mandatory keywords to exclude from the descriptor, this
+    :param attr: keyword/value mappings to be included in plaintext descriptor
+    :param exclude: mandatory keywords to exclude from the descriptor, this
       results in an invalid descriptor
-    :param bool sign: includes cryptographic signatures and digests if True
-    :param stem.descriptor.hidden_service.InnerLayer inner_layer: inner
-      encrypted layer
-    :param stem.descriptor.hidden_service.OuterLayer outer_layer: outer
-      encrypted layer
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey identity_key:
-      service identity key
-    :param cryptography.hazmat.primitives.asymmetric.ed25519.Ed25519PrivateKey signing_key:
-      service signing key
-    :param stem.descriptor.Ed25519CertificateV1 signing_cert: certificate
-      signing this descriptor
-    :param int revision_counter: descriptor revision number
-    :param bytes blinding_nonce: 32 byte blinding factor to derive the blinding key
+    :param sign: includes cryptographic signatures and digests if True
+    :param inner_layer: inner encrypted layer
+    :param outer_layer: outer encrypted layer
+    :param identity_key: service identity key
+    :param signing_key: service signing key
+    :param signing_cert: certificate signing this descriptor
+    :param revision_counter: descriptor revision number
+    :param blinding_nonce: 32 byte blinding factor to derive the blinding key
 
     :returns: **str** with the content of a descriptor
 
@@ -1071,7 +1066,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     layers (:class:`~stem.descriptor.hidden_service.OuterLayer` and
     :class:`~stem.descriptor.hidden_service.InnerLayer`).
 
-    :param str onion_address: hidden service address this descriptor is from
+    :param onion_address: hidden service address this descriptor is from
 
     :returns: :class:`~stem.descriptor.hidden_service.InnerLayer` with our
       decrypted content
@@ -1102,8 +1097,8 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     Converts a hidden service identity key into its address. This accepts all
     key formats (private, public, or public bytes).
 
-    :param Ed25519PublicKey,Ed25519PrivateKey,bytes key: hidden service identity key
-    :param bool suffix: includes the '.onion' suffix if true, excluded otherwise
+    :param key: hidden service identity key
+    :param suffix: includes the '.onion' suffix if true, excluded otherwise
 
     :returns: **str** hidden service address
 
@@ -1124,7 +1119,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     """
     Converts a hidden service address into its public identity key.
 
-    :param str onion_address: hidden service address
+    :param onion_address: hidden service address
 
     :returns: **bytes** for the hidden service's public identity key
 

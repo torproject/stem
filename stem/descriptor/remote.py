@@ -366,8 +366,8 @@ class Query(object):
   :var str download_url: last url used to download the descriptor, this is
     unset until we've actually made a download attempt
 
-  :param bool start: start making the request when constructed (default is **True**)
-  :param bool block: only return after the request has been completed, this is
+  :param start: start making the request when constructed (default is **True**)
+  :param block: only return after the request has been completed, this is
     the same as running **query.run(True)** (default is **False**)
   """
 
@@ -457,7 +457,7 @@ class Query(object):
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
 
-    :param bool suppress: avoids raising exceptions if **True**
+    :param suppress: avoids raising exceptions if **True**
 
     :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
 
@@ -517,7 +517,7 @@ class Query(object):
     Provides an endpoint to query. If we have multiple endpoints then one
     is picked at random.
 
-    :param bool use_authority: ignores our endpoints and uses a directory
+    :param use_authority: ignores our endpoints and uses a directory
       authority instead
 
     :returns: :class:`stem.Endpoint` for the location to be downloaded
@@ -568,7 +568,7 @@ class DescriptorDownloader(object):
   Configurable class that issues :class:`~stem.descriptor.remote.Query`
   instances on your behalf.
 
-  :param bool use_mirrors: downloads the present consensus and uses the directory
+  :param use_mirrors: downloads the present consensus and uses the directory
     mirrors to fetch future requests, this fails silently if the consensus
     cannot be downloaded
   :param default_args: default arguments for the
@@ -634,8 +634,8 @@ class DescriptorDownloader(object):
     fingerprints are provided then this returns all descriptors known
     by the relay.
 
-    :param str,list fingerprints: fingerprint or list of fingerprints to be
-      retrieved, gets all descriptors if **None**
+    :param fingerprints: fingerprint or list of fingerprints to be retrieved,
+      gets all descriptors if **None**
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -664,8 +664,8 @@ class DescriptorDownloader(object):
     fingerprints are provided then this returns all descriptors in the present
     consensus.
 
-    :param str,list fingerprints: fingerprint or list of fingerprints to be
-      retrieved, gets all descriptors if **None**
+    :param fingerprints: fingerprint or list of fingerprints to be retrieved,
+      gets all descriptors if **None**
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -715,8 +715,7 @@ class DescriptorDownloader(object):
       ntor-onion-key kWOHNd+2uBlMpcIUbbpFLiq/rry66Ep6MlwmNpwzcBg=
       id ed25519 xE/GeYImYAIB0RbzJXFL8kDLpDrj/ydCuCdvOgC4F/4
 
-    :param str,list hashes: microdescriptor hash or list of hashes to be
-      retrieved
+    :param hashes: microdescriptor hash or list of hashes to be retrieved
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -741,11 +740,11 @@ class DescriptorDownloader(object):
     .. versionchanged:: 1.5.0
        Added the microdescriptor argument.
 
-    :param str authority_v3ident: fingerprint of the authority key for which
+    :param authority_v3ident: fingerprint of the authority key for which
       to get the consensus, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/tree/src/or/config.c>`_
       for the values.
-    :param bool microdescriptor: provides the microdescriptor consensus if
+    :param microdescriptor: provides the microdescriptor consensus if
       **True**, standard consensus otherwise
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
@@ -782,7 +781,7 @@ class DescriptorDownloader(object):
     """
     Provides the present vote for a given directory authority.
 
-    :param stem.directory.Authority authority: authority for which to retrieve a vote for
+    :param authority: authority for which to retrieve a vote for
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -803,7 +802,7 @@ class DescriptorDownloader(object):
     If no fingerprints are provided then this returns all present key
     certificates.
 
-    :param str,list authority_v3idents: fingerprint or list of fingerprints of the
+    :param authority_v3idents: fingerprint or list of fingerprints of the
       authority keys, see `'v3ident' in tor's config.c
       <https://gitweb.torproject.org/tor.git/tree/src/or/config.c>`_
       for the values.
@@ -907,7 +906,7 @@ class DescriptorDownloader(object):
        The **fall_back_to_authority** default when using this method is now
        **False**, like the :class:`~stem.descriptor.Query` class.
 
-    :param str resource: resource being fetched, such as '/tor/server/all'
+    :param resource: resource being fetched, such as '/tor/server/all'
     :param query_args: additional arguments for the
       :class:`~stem.descriptor.remote.Query` constructor
 
@@ -944,9 +943,9 @@ def _download_from_orport(endpoint: stem.ORPort, compression: Sequence[stem.desc
     identity-ed25519
     ... rest of the descriptor content...
 
-  :param stem.ORPort endpoint: endpoint to download from
-  :param list compression: compression methods for the request
-  :param str resource: descriptor resource to download
+  :param endpoint: endpoint to download from
+  :param compression: compression methods for the request
+  :param resource: descriptor resource to download
 
   :returns: two value tuple of the form (data, reply_headers)
 
@@ -988,9 +987,9 @@ def _download_from_dirport(url: str, compression: Sequence[stem.descriptor._Comp
   """
   Downloads descriptors from the given url.
 
-  :param str url: dirport url from which to download from
-  :param list compression: compression methods for the request
-  :param float timeout: duration before we'll time out our request
+  :param url: dirport url from which to download from
+  :param compression: compression methods for the request
+  :param timeout: duration before we'll time out our request
 
   :returns: two value tuple of the form (data, reply_headers)
 
@@ -1030,8 +1029,8 @@ def _decompress(data: bytes, encoding: str) -> bytes:
 
   ... and with zstd we need to use the streaming API.
 
-  :param bytes data: data we received
-  :param str encoding: 'Content-Encoding' header of the response
+  :param data: data we received
+  :param encoding: 'Content-Encoding' header of the response
 
   :returns: **bytes** with the decompressed data
 

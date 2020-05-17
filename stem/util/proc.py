@@ -151,7 +151,7 @@ def cwd(pid: int) -> str:
   """
   Provides the current working directory for the given process.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **str** with the path of the working directory for the process
 
@@ -179,7 +179,7 @@ def uid(pid: int) -> int:
   """
   Provides the user ID the given process is running under.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **int** with the user id for the owner of the process
 
@@ -204,7 +204,7 @@ def memory_usage(pid: int) -> Tuple[int, int]:
   """
   Provides the memory usage in bytes for the given process.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **tuple** of two ints with the memory usage of the process, of the
     form **(resident_size, virtual_size)**
@@ -238,8 +238,8 @@ def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[str]:
   Provides process specific information. See the :data:`~stem.util.proc.Stat`
   enum for valid options.
 
-  :param int pid: process id of the process to be queried
-  :param Stat stat_types: information to be provided back
+  :param pid: process id of the process to be queried
+  :param stat_types: information to be provided back
 
   :returns: **tuple** with all of the requested statistics as strings
 
@@ -308,7 +308,7 @@ def file_descriptors_used(pid: int) -> int:
 
   .. versionadded:: 1.3.0
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **int** of the number of file descriptors used
 
@@ -335,8 +335,8 @@ def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequen
   friends but is much faster. If no **pid** or **user** are provided this
   provides all present connections.
 
-  :param int pid: pid to provide connections for
-  :param str user: username to look up connections for
+  :param pid: pid to provide connections for
+  :param user: username to look up connections for
 
   :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
@@ -418,7 +418,7 @@ def _inodes_for_sockets(pid: int) -> Set[bytes]:
   """
   Provides inodes in use by a process for its sockets.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **set** with inodes for its sockets
 
@@ -463,7 +463,7 @@ def _unpack_addr(addr: bytes) -> str:
     "0500000A" -> "10.0.0.5"
     "F804012A4A5190010000000002000000" -> "2a01:4f8:190:514a::2"
 
-  :param str addr: proc address entry to be decoded
+  :param addr: proc address entry to be decoded
 
   :returns: **str** of the decoded address
   """
@@ -515,9 +515,9 @@ def _get_lines(file_path: str, line_prefixes: Sequence[str], parameter: str) -> 
   Fetches lines with the given prefixes from a file. This only provides back
   the first instance of each prefix.
 
-  :param str file_path: path of the file to read
-  :param tuple line_prefixes: string prefixes of the lines to return
-  :param str parameter: description of the proc attribute being fetch
+  :param file_path: path of the file to read
+  :param line_prefixes: string prefixes of the lines to return
+  :param parameter: description of the proc attribute being fetch
 
   :returns: mapping of prefixes to the matching line
 
@@ -558,9 +558,9 @@ def _log_runtime(parameter: str, proc_location: str, start_time: float) -> None:
   """
   Logs a message indicating a successful proc query.
 
-  :param str parameter: description of the proc attribute being fetch
-  :param str proc_location: proc files we were querying
-  :param int start_time: unix time for when this query was started
+  :param parameter: description of the proc attribute being fetch
+  :param proc_location: proc files we were querying
+  :param start_time: unix time for when this query was started
   """
 
   runtime = time.time() - start_time
@@ -571,8 +571,8 @@ def _log_failure(parameter: str, exc: BaseException) -> None:
   """
   Logs a message indicating that the proc query failed.
 
-  :param str parameter: description of the proc attribute being fetch
-  :param Exception exc: exception that we're raising
+  :param parameter: description of the proc attribute being fetch
+  :param exc: exception that we're raising
   """
 
   log.debug('proc call failed (%s): %s' % (parameter, exc))

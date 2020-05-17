@@ -72,7 +72,7 @@ class GetInfoResponse(stem.response.ControlMessage):
     """
     Checks if we match a given set of parameters, and raise a ProtocolError if not.
 
-    :param set params: parameters to assert that we contain
+    :param params: parameters to assert that we contain
 
     :raises:
       * :class:`stem.ProtocolError` if parameters don't match this response

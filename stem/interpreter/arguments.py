@@ -34,7 +34,7 @@ class Arguments(NamedTuple):
     """
     Parses our commandline arguments into this class.
 
-    :param list argv: input arguments to be parsed
+    :param argv: input arguments to be parsed
 
     :returns: :class:`stem.interpreter.arguments.Arguments` for this
       commandline input

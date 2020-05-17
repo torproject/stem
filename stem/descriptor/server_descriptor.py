@@ -149,11 +149,11 @@ def _parse_file(descriptor_file: BinaryIO, is_bridge: bool = False, validate: bo
   """
   Iterates over the server descriptors in a file.
 
-  :param file descriptor_file: file with descriptor content
-  :param bool is_bridge: parses the file as being a bridge descriptor
-  :param bool validate: checks the validity of the descriptor's content if
+  :param descriptor_file: file with descriptor content
+  :param is_bridge: parses the file as being a bridge descriptor
+  :param validate: checks the validity of the descriptor's content if
     **True**, skips these checks otherwise
-  :param dict kwargs: additional arguments for the descriptor constructor
+  :param kwargs: additional arguments for the descriptor constructor
 
   :returns: iterator for ServerDescriptor instances in the file
 
@@ -591,8 +591,8 @@ class ServerDescriptor(Descriptor):
     validation can be disables to either improve performance or be accepting of
     malformed data.
 
-    :param str raw_contents: descriptor content provided by the relay
-    :param bool validate: checks the validity of the descriptor's content if
+    :param raw_contents: descriptor content provided by the relay
+    :param validate: checks the validity of the descriptor's content if
       **True**, skips these checks otherwise
 
     :raises: **ValueError** if the contents is malformed and validate is True
@@ -638,8 +638,8 @@ class ServerDescriptor(Descriptor):
     .. versionchanged:: 1.8.0
        Added the hash_type and encoding arguments.
 
-    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
-    :param stem.descriptor.DigestEncoding encoding: digest encoding
+    :param hash_type: digest hashing algorithm
+    :param encoding: digest encoding
 
     :returns: **hashlib.HASH** or **str** based on our encoding argument
     """
@@ -651,7 +651,7 @@ class ServerDescriptor(Descriptor):
     Does a basic check that the entries conform to this descriptor type's
     constraints.
 
-    :param dict entries: keyword => (value, pgp key) entries
+    :param entries: keyword => (value, pgp key) entries
 
     :raises: **ValueError** if an issue arises in validation
     """
@@ -839,8 +839,8 @@ class RelayDescriptor(ServerDescriptor):
     """
     Provides the digest of our descriptor's content.
 
-    :param stem.descriptor.DigestHash hash_type: digest hashing algorithm
-    :param stem.descriptor.DigestEncoding encoding: digest encoding
+    :param hash_type: digest hashing algorithm
+    :param encoding: digest encoding
 
     :returns: **hashlib.HASH** or **str** based on our encoding argument
 

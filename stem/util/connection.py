@@ -164,10 +164,10 @@ def download(url: str, timeout: Optional[float] = None, retries: Optional[int] =
 
   .. versionadded:: 1.8.0
 
-  :param str url: uncompressed url to download from
-  :param float timeout: timeout when connection becomes idle, no timeout
+  :param url: uncompressed url to download from
+  :param timeout: timeout when connection becomes idle, no timeout
     applied if **None**
-  :param int retires: maximum attempts to impose
+  :param retires: maximum attempts to impose
 
   :returns: **bytes** content of the given url
 
@@ -213,11 +213,11 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
   .. versionchanged:: 1.5.0
      IPv6 support when resolving via proc, netstat, lsof, or ss.
 
-  :param Resolver resolver: method of connection resolution to use, if not
+  :param resolver: method of connection resolution to use, if not
     provided then one is picked from among those that should likely be
     available for the system
-  :param int process_pid: pid of the process to retrieve
-  :param str process_name: name of the process to retrieve
+  :param process_pid: pid of the process to retrieve
+  :param process_name: name of the process to retrieve
 
   :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
@@ -345,7 +345,7 @@ def system_resolvers(system: Optional[str] = None) -> Sequence['stem.util.connec
      Renamed from get_system_resolvers() to system_resolvers(). The old name
      still works as an alias, but will be dropped in Stem version 2.0.0.
 
-  :param str system: system to get resolvers for, this is determined by
+  :param system: system to get resolvers for, this is determined by
     platform.system() if not provided
 
   :returns: **list** of :data:`~stem.util.connection.Resolver` instances available on this platform
@@ -391,7 +391,7 @@ def port_usage(port: int) -> Optional[str]:
 
   .. versionadded:: 1.2.0
 
-  :param int port: port number to look up
+  :param port: port number to look up
 
   :returns: **str** with a description for the port, **None** if none is known
   """
@@ -434,7 +434,7 @@ def is_valid_ipv4_address(address: str) -> bool:
   """
   Checks if a string is a valid IPv4 address.
 
-  :param str address: string to be checked
+  :param address: string to be checked
 
   :returns: **True** if input is a valid IPv4 address, **False** otherwise
   """
@@ -463,8 +463,8 @@ def is_valid_ipv6_address(address: str, allow_brackets: bool = False) -> bool:
   """
   Checks if a string is a valid IPv6 address.
 
-  :param str address: string to be checked
-  :param bool allow_brackets: ignore brackets which form '[address]'
+  :param address: string to be checked
+  :param allow_brackets: ignore brackets which form '[address]'
 
   :returns: **True** if input is a valid IPv6 address, **False** otherwise
   """
@@ -518,8 +518,8 @@ def is_valid_port(entry: Union[str, int, Sequence[str], Sequence[int]], allow_ze
   """
   Checks if a string or int is a valid port number.
 
-  :param list,str,int entry: string, integer or list to be checked
-  :param bool allow_zero: accept port number of zero (reserved by definition)
+  :param entry: string, integer or list to be checked
+  :param allow_zero: accept port number of zero (reserved by definition)
 
   :returns: **True** if input is an integer and within the valid port range, **False** otherwise
   """
@@ -556,7 +556,7 @@ def is_private_address(address: str) -> bool:
 
   .. versionadded:: 1.1.0
 
-  :param str address: string to be checked
+  :param address: string to be checked
 
   :returns: **True** if input is in a private range, **False** otherwise
 
@@ -589,7 +589,7 @@ def address_to_int(address: str) -> int:
 
   .. versionadded:: 1.5.0
 
-  :param str address: IPv4 or IPv6 address
+  :param address: IPv4 or IPv6 address
 
   :returns: **int** representation of the address
   """
@@ -616,7 +616,7 @@ def expand_ipv6_address(address: str) -> str:
     >>> expand_ipv6_address('::ffff:5.9.158.75')
     '0000:0000:0000:0000:0000:ffff:0509:9e4b'
 
-  :param str address: IPv6 address to be expanded
+  :param address: IPv6 address to be expanded
 
   :raises: **ValueError** if the address can't be expanded due to being malformed
   """
@@ -668,7 +668,7 @@ def get_mask_ipv4(bits: int) -> str:
   """
   Provides the IPv4 mask for a given number of bits, in the dotted-quad format.
 
-  :param int bits: number of bits to be converted
+  :param bits: number of bits to be converted
 
   :returns: **str** with the subnet mask representation for this many bits
 
@@ -695,7 +695,7 @@ def get_mask_ipv6(bits: int) -> str:
   Provides the IPv6 mask for a given number of bits, in the hex colon-delimited
   format.
 
-  :param int bits: number of bits to be converted
+  :param bits: number of bits to be converted
 
   :returns: **str** with the subnet mask representation for this many bits
 
@@ -722,7 +722,7 @@ def _get_masked_bits(mask: str) -> int:
   Provides the number of bits that an IPv4 subnet mask represents. Note that
   not all masks can be represented by a bit count.
 
-  :param str mask: mask to be converted
+  :param mask: mask to be converted
 
   :returns: **int** with the number of bits represented by the mask
 
@@ -747,8 +747,8 @@ def _get_binary(value: int, bits: int) -> str:
   Provides the given value as a binary string, padded with zeros to the given
   number of bits.
 
-  :param int value: value to be converted
-  :param int bits: number of bits to pad to
+  :param value: value to be converted
+  :param bits: number of bits to pad to
 
   :returns: **str** of this binary value
   """
@@ -764,7 +764,7 @@ def _address_to_binary(address: str) -> str:
   """
   Provides the binary value for an IPv4 or IPv6 address.
 
-  :param str address: address to convert
+  :param address: address to convert
 
   :returns: **str** with the binary representation of this address
 

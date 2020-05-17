@@ -214,9 +214,9 @@ def config_dict(handle: str, conf_mappings: Dict[str, Any], handler: Optional[Ca
   **The dictionary you get from this is manged by the Config class and should
   be treated as being read-only.**
 
-  :param str handle: unique identifier for a config instance
-  :param dict conf_mappings: config key/value mappings used as our defaults
-  :param functor handler: function referred to prior to assigning values
+  :param handle: unique identifier for a config instance
+  :param conf_mappings: config key/value mappings used as our defaults
+  :param handler: function referred to prior to assigning values
 
   :returns: mapping of attributes to their current configuration value
   """
@@ -232,7 +232,7 @@ def get_config(handle: str) -> 'stem.util.conf.Config':
   already exists for the handle then it's returned. Otherwise a fresh instance
   is constructed.
 
-  :param str handle: unique identifier used to access this config instance
+  :param handle: unique identifier used to access this config instance
   """
 
   if handle not in CONFS:
@@ -259,9 +259,9 @@ def uses_settings(handle: str, path: str, lazy_load: bool = True) -> Callable:
     def my_function(config):
       print 'hello %s!' % config.get('username', '')
 
-  :param str handle: hande for the configuration
-  :param str path: path where the configuration should be loaded from
-  :param bool lazy_load: loads the configuration file when the decorator is
+  :param handle: hande for the configuration
+  :param path: path where the configuration should be loaded from
+  :param lazy_load: loads the configuration file when the decorator is
     used if true, otherwise it's loaded right away
 
   :returns: **function** that can be used as a decorator to provide the
@@ -298,9 +298,9 @@ def parse_enum(key: str, value: str, enumeration: 'stem.util.enum.Enum') -> Any:
   Provides the enumeration value for a given key. This is a case insensitive
   lookup and raises an exception if the enum key doesn't exist.
 
-  :param str key: configuration key being looked up
-  :param str value: value to be parsed
-  :param stem.util.enum.Enum enumeration: enumeration the values should be in
+  :param key: configuration key being looked up
+  :param value: value to be parsed
+  :param enumeration: enumeration the values should be in
 
   :returns: enumeration value
 
@@ -325,10 +325,10 @@ def parse_enum_csv(key: str, value: str, enumeration: 'stem.util.enum.Enum', cou
     is inclusive and either can be None to indicate the lack of a lower or
     upper bound.
 
-  :param str key: configuration key being looked up
-  :param str value: value to be parsed
-  :param stem.util.enum.Enum enumeration: enumeration the values should be in
-  :param int,tuple count: validates that we have this many items
+  :param key: configuration key being looked up
+  :param value: value to be parsed
+  :param enumeration: enumeration the values should be in
+  :param count: validates that we have this many items
 
   :returns: list with the enumeration values
 
@@ -479,9 +479,9 @@ class Config(object):
     .. versionchanged:: 1.6.0
        Avoid loading vim swap files.
 
-    :param str path: file or directory path to be loaded, this uses the last
+    :param path: file or directory path to be loaded, this uses the last
       loaded path if not provided
-    :param bool commenting: ignore line content after a '#' if **True**, read
+    :param commenting: ignore line content after a '#' if **True**, read
       otherwise
 
     :raises:
@@ -544,7 +544,7 @@ class Config(object):
     Saves configuration contents to disk. If a path is provided then it
     replaces the configuration location that we track.
 
-    :param str path: location to be saved to
+    :param path: location to be saved to
 
     :raises:
       * **IOError** if we fail to save the file (insufficient permissions, etc)
@@ -584,8 +584,8 @@ class Config(object):
     Registers the function to be notified of configuration updates. Listeners
     are expected to be functors which accept (config, key).
 
-    :param functor listener: function to be notified when our configuration is changed
-    :param bool backfill: calls the function with our current values if **True**
+    :param listener: function to be notified when our configuration is changed
+    :param backfill: calls the function with our current values if **True**
     """
 
     with self._contents_lock:
@@ -631,9 +631,9 @@ class Config(object):
     .. versionchanged:: 1.5.0
        Allow removal of values by overwriting with a **None** value.
 
-    :param str key: key for the configuration mapping
-    :param str,list value: value we're setting the mapping to
-    :param bool overwrite: replaces the previous value if **True**, otherwise
+    :param key: key for the configuration mapping
+    :param value: value we're setting the mapping to
+    :param overwrite: replaces the previous value if **True**, otherwise
       the values are appended
     """
 
@@ -694,8 +694,8 @@ class Config(object):
       * values are split into key/value pairs on "=>" with extra whitespace
         stripped
 
-    :param str key: config setting to be fetched
-    :param default object: value provided if no such key exists or fails to be converted
+    :param key: config setting to be fetched
+    :param default: value provided if no such key exists or fails to be converted
 
     :returns: given configuration value with its type inferred with the above rules
     """
@@ -746,9 +746,9 @@ class Config(object):
     """
     This provides the current value associated with a given key.
 
-    :param str key: config setting to be fetched
-    :param object default: value provided if no such key exists
-    :param bool multiple: provides back a list of all values if **True**,
+    :param key: config setting to be fetched
+    :param default: value provided if no such key exists
+    :param multiple: provides back a list of all values if **True**,
       otherwise this returns the last loaded configuration value
 
     :returns: **str** or **list** of string configuration values associated

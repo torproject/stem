@@ -66,9 +66,9 @@ def assert_equal(expected: Any, actual: Any, msg: Optional[str] = None) -> None:
 
   .. versionadded:: 1.6.0
 
-  :param object expected: expected value
-  :param object actual: actual value
-  :param str msg: message if assertion fails
+  :param expected: expected value
+  :param actual: actual value
+  :param msg: message if assertion fails
 
   :raises: **AssertionError** if values aren't equal
   """
@@ -83,9 +83,9 @@ def assert_in(expected: Any, actual: Any, msg: Optional[str] = None) -> None:
 
   .. versionadded:: 1.6.0
 
-  :param object expected: expected value
-  :param object actual: actual value
-  :param str msg: message if assertion fails
+  :param expected: expected value
+  :param actual: actual value
+  :param msg: message if assertion fails
 
   :raises: **AssertionError** if the expected value isn't in the actual
   """
@@ -100,7 +100,7 @@ def skip(msg: str) -> None:
 
   .. versionadded:: 1.6.0
 
-  :param str msg: reason test is being skipped
+  :param msg: reason test is being skipped
 
   :raises: **unittest.case.SkipTest** for this reason
   """
@@ -300,7 +300,7 @@ def clean_orphaned_pyc(paths: Sequence[str]) -> List[str]:
   * Another developer clones our repository and is confused because we have a
     bunch of ImportErrors.
 
-  :param list paths: paths to search for orphaned pyc files
+  :param paths: paths to search for orphaned pyc files
 
   :returns: **list** of absolute paths that were deleted
   """
@@ -413,12 +413,12 @@ def stylistic_issues(paths: Sequence[str], check_newlines: bool = False, check_e
      Changed 'pycodestyle.ignore' code snippets to only need to match against
      the prefix.
 
-  :param list paths: paths to search for stylistic issues
-  :param bool check_newlines: check that we have standard newlines (\\n), not
+  :param paths: paths to search for stylistic issues
+  :param check_newlines: check that we have standard newlines (\\n), not
     windows (\\r\\n) nor classic mac (\\r)
-  :param bool check_exception_keyword: checks that we're using 'as' for
+  :param check_exception_keyword: checks that we're using 'as' for
     exceptions rather than a comma
-  :param bool prefer_single_quotes: standardize on using single rather than
+  :param prefer_single_quotes: standardize on using single rather than
     double quotes for strings, when reasonable
 
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
@@ -526,7 +526,7 @@ def pyflakes_issues(paths: Sequence[str]) -> Dict[str, List['stem.util.test_tool
   .. versionchanged:: 1.5.0
      Support matching against prefix or suffix issue strings.
 
-  :param list paths: paths to search for problems
+  :param paths: paths to search for problems
 
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
@@ -578,7 +578,7 @@ def type_issues(args: Sequence[str]) -> Dict[str, List['stem.util.test_tools.Iss
 
     mypy.ignore stem/util/system.py => Incompatible types in assignment*
 
-  :param list args: mypy commmandline arguments
+  :param args: mypy commmandline arguments
 
   :returns: dict of paths list of :class:`stem.util.test_tools.Issue` instances
   """
@@ -634,7 +634,7 @@ def _module_exists(module_name: str) -> bool:
   """
   Checks if a module exists.
 
-  :param str module_name: module to check existance of
+  :param module_name: module to check existance of
 
   :returns: **True** if module exists and **False** otherwise
   """

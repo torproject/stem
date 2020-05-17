@@ -55,7 +55,7 @@ def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
   Queries tor for its version. This is os dependent, only working on linux,
   osx, and bsd.
 
-  :param str tor_cmd: command used to run tor
+  :param tor_cmd: command used to run tor
 
   :returns: :class:`~stem.version.Version` provided by the tor command
 
@@ -122,7 +122,7 @@ class Version(object):
   :var list all_extra: all extra information entries, without their parentheses
   :var str git_commit: git commit id (**None** if it wasn't provided)
 
-  :param str version_str: version to be parsed
+  :param version_str: version to be parsed
 
   :raises: **ValueError** if input isn't a valid tor version
   """

@@ -367,8 +367,8 @@ def is_available(command: str, cached: bool = True) -> bool:
   try to assume that it's available. This only happends for recognized shell
   commands (those in SHELL_COMMANDS).
 
-  :param str command: command to search for
-  :param bool cached: makes use of available cached results if **True**
+  :param command: command to search for
+  :param cached: makes use of available cached results if **True**
 
   :returns: **True** if an executable we can use by that name exists in the
     PATH, **False** otherwise
@@ -407,8 +407,8 @@ def is_running(command: Union[str, int, Sequence[str]]) -> bool:
   .. versionchanged:: 1.6.0
      Added support for list and pid arguments.
 
-  :param str,list,int command: process name if a str, multiple process names if
-    a list, or pid if an int to be checked
+  :param command: process name if a str, multiple process names if a list, or
+    pid if an int to be checked
 
   :returns: **True** if the process is running, **False** if it's not among ps
     results, and **None** if ps can't be queried
@@ -475,8 +475,8 @@ def size_of(obj: Any, exclude: Optional[Collection[int]] = None) -> int:
 
   .. versionadded:: 1.6.0
 
-  :param object obj: object to provide the size of
-  :param set exclude: object ids to exclude from size estimation
+  :param obj: object to provide the size of
+  :param exclude: object ids to exclude from size estimation
 
   :returns: **int** with the size of the object in bytes
 
@@ -515,7 +515,7 @@ def name_by_pid(pid: int) -> Optional[str]:
     1. Information from /proc
     2. ps -p <pid> -o command
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **str** with the process name, **None** if it can't be determined
   """
@@ -561,8 +561,8 @@ def pid_by_name(process_name: str, multiple: bool = False) -> Union[int, List[in
     4. lsof -tc <name>
     5. tasklist | str <name>.exe
 
-  :param str process_name: process name for which to fetch the pid
-  :param bool multiple: provides a list of all pids if **True**, otherwise
+  :param process_name: process name for which to fetch the pid
+  :param multiple: provides a list of all pids if **True**, otherwise
     results with multiple processes are discarded
 
   :returns:
@@ -733,7 +733,7 @@ def pid_by_port(port: int) -> Optional[int]:
   Most queries limit results to listening TCP connections. This function likely
   won't work on Mac OSX.
 
-  :param int port: port where the process we're looking for is listening
+  :param port: port where the process we're looking for is listening
 
   :returns: **int** with the process id, **None** if it can't be determined
   """
@@ -848,7 +848,7 @@ def pid_by_open_file(path: str) -> Optional[int]:
 
     lsof -w <path>
 
-  :param str path: location of the socket file to query against
+  :param path: location of the socket file to query against
 
   :returns: **int** with the process id, **None** if it can't be determined
   """
@@ -883,7 +883,7 @@ def pids_by_user(user: str) -> Optional[Sequence[int]]:
 
   .. versionadded:: 1.5.0
 
-  :param str user: user to look up processes for
+  :param user: user to look up processes for
 
   :returns: **list** with the process ids, **None** if it can't be determined
   """
@@ -913,7 +913,7 @@ def cwd(pid: int) -> Optional[str]:
   """
   Provides the working directory of the given process.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **str** with the absolute path for the process' present working
     directory, **None** if it can't be determined
@@ -982,7 +982,7 @@ def user(pid: int) -> Optional[str]:
   """
   Provides the user a process is running under.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **str** with the username a process is running under, **None** if
     it can't be determined
@@ -1013,7 +1013,7 @@ def start_time(pid: str) -> Optional[float]:
   """
   Provides the unix timestamp when the given process started.
 
-  :param int pid: process id of the process to be queried
+  :param pid: process id of the process to be queried
 
   :returns: **float** for the unix timestamp when the process began, **None**
     if it can't be determined
@@ -1049,8 +1049,8 @@ def tail(target: Union[str, BinaryIO], lines: Optional[int] = None) -> Iterator[
 
     reversed(list(tail('/tmp/my_log', 50)))
 
-  :param str,file target: path or file object to read from
-  :param int lines: number of lines to read
+  :param target: path or file object to read from
+  :param lines: number of lines to read
 
   :returns: **generator** that reads lines, starting with the end
 
@@ -1098,7 +1098,7 @@ def bsd_jail_id(pid: int) -> int:
   Gets the jail id for a process. These seem to only exist for FreeBSD (this
   style for jails does not exist on Linux, OSX, or OpenBSD).
 
-  :param int pid: process id of the jail id to be queried
+  :param pid: process id of the jail id to be queried
 
   :returns: **int** for the jail id, zero if this can't be determined
   """
@@ -1132,7 +1132,7 @@ def bsd_jail_path(jid: int) -> Optional[str]:
   """
   Provides the path of the given FreeBSD jail.
 
-  :param int jid: jail id to be queried
+  :param jid: jail id to be queried
 
   :returns: **str** of the path prefix, **None** if this can't be determined
   """
@@ -1156,7 +1156,7 @@ def is_tarfile(path: str) -> bool:
 
   .. versionadded:: 1.2.0
 
-  :param str path: path to be checked
+  :param path: path to be checked
 
   :returns: **True** if the path belongs to a tarball, **False** otherwise
   """
@@ -1181,8 +1181,8 @@ def expand_path(path: str, cwd: Optional[str] = None) -> str:
   Provides an absolute path, expanding tildes with the user's home and
   appending a current working directory if the path was relative.
 
-  :param str path: path to be expanded
-  :param str cwd: current working directory to expand relative paths with, our
+  :param path: path to be expanded
+  :param cwd: current working directory to expand relative paths with, our
     process' if this is **None**
 
   :returns: **str** of the path expanded to be an absolute path, never with an
@@ -1228,8 +1228,8 @@ def files_with_suffix(base_path: str, suffix: str) -> Iterator[str]:
 
   .. versionadded:: 1.2.0
 
-  :param str base_path: directory to be iterated over
-  :param str suffix: filename suffix to look for
+  :param base_path: directory to be iterated over
+  :param suffix: filename suffix to look for
 
   :returns: iterator that yields the absolute path for files with the given suffix
   """
@@ -1262,13 +1262,12 @@ def call(command: Union[str, Sequence[str]], default: Any = UNDEFINED, ignore_ex
   .. versionchanged:: 1.6.0
      Added timeout and cwd arguments.
 
-  :param str,list command: command to be issued
-  :param object default: response if the query fails
-  :param bool ignore_exit_status: reports failure if our command's exit status
+  :param command: command to be issued
+  :param default: response if the query fails
+  :param ignore_exit_status: reports failure if our command's exit status
     was non-zero
-  :param float timeout: maximum seconds to wait, blocks indefinitely if
-    **None**
-  :param dict env: environment variables
+  :param timeout: maximum seconds to wait, blocks indefinitely if **None**
+  :param env: environment variables
 
   :returns: **list** with the lines of output from the command
 
@@ -1402,7 +1401,7 @@ def set_process_name(process_name: str) -> None:
   Renames our current process from "python <args>" to a custom name. This is
   best-effort, not necessarily working on all platforms.
 
-  :param str process_name: new name for our process
+  :param process_name: new name for our process
 
   :raises: **IOError** if the process cannot be renamed
   """
