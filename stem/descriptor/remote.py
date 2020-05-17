@@ -238,23 +238,18 @@ class AsyncQuery(object):
   advanced usage.
 
   To block on the response and get results either call
-  :func:`~stem.descriptor.remote.Query.run` or iterate over the Query. The
-  :func:`~stem.descriptor.remote.Query.run` method pass along any errors that
-  arise...
+  :func:`~stem.descriptor.remote.AsyncQuery.run` or iterate over the Query. The
+  :func:`~stem.descriptor.remote.AsyncQuery.run` method pass along any errors
+    that arise...
 
   ::
 
-    from stem.descriptor.remote import Query
-
-    query = Query(
-      '/tor/server/all',
-      timeout = 30,
-    )
+    from stem.descriptor.remote import AsyncQuery
 
     print('Current relays:')
 
     try:
-      for desc in Query('/tor/server/all', 'server-descriptor 1.0').run():
+      for desc in await AsyncQuery('/tor/server/all', 'server-descriptor 1.0').run():
         print(desc.fingerprint)
     except Exception as exc:
       print('Unable to retrieve the server descriptors: %s' % exc)
@@ -265,7 +260,7 @@ class AsyncQuery(object):
 
     print('Current relays:')
 
-    for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
+    async for desc in AsyncQuery('/tor/server/all', 'server-descriptor 1.0'):
       print(desc.fingerprint)
 
   In either case exceptions are available via our 'error' attribute.
@@ -297,39 +292,6 @@ class AsyncQuery(object):
 
   For legacy reasons if our resource has a '.z' suffix then our **compression**
   argument is overwritten with Compression.GZIP.
-
-  .. versionchanged:: 1.7.0
-     Added support for downloading from ORPorts.
-
-  .. versionchanged:: 1.7.0
-     Added the compression argument.
-
-  .. versionchanged:: 1.7.0
-     Added the reply_headers attribute.
-
-     The class this provides changed between Python versions. In python2
-     this was called httplib.HTTPMessage, whereas in python3 the class was
-     renamed to http.client.HTTPMessage.
-
-  .. versionchanged:: 1.7.0
-     Avoid downloading from tor26. This directory authority throttles its
-     DirPort to such an extent that requests either time out or take on the
-     order of minutes.
-
-  .. versionchanged:: 1.7.0
-     Avoid downloading from Bifroest. This is the bridge authority so it
-     doesn't vote in the consensus, and apparently times out frequently.
-
-  .. versionchanged:: 1.8.0
-     Serge has replaced Bifroest as our bridge authority. Avoiding descriptor
-     downloads from it instead.
-
-  .. versionchanged:: 1.8.0
-     Defaulting to gzip compression rather than plaintext downloads.
-
-  .. versionchanged:: 1.8.0
-     Using :class:`~stem.descriptor.__init__.Compression` for our compression
-     argument.
 
   :var str resource: resource being fetched, such as '/tor/server/all'
   :var str descriptor_type: type of descriptors being fetched (for options see
@@ -562,7 +524,145 @@ class AsyncQuery(object):
 
 
 class Query(stem.util.AsyncClassWrapper):
-  def __init__(self, resource, descriptor_type = None, endpoints = None, compression = (Compression.GZIP,), retries = 2, fall_back_to_authority = False, timeout = None, start = True, block = False, validate = False, document_handler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs):
+  """
+  Asynchronous request for descriptor content from a directory authority or
+  mirror. These can either be made through the
+  :class:`~stem.descriptor.remote.DescriptorDownloader` or directly for more
+  advanced usage.
+
+  To block on the response and get results either call
+  :func:`~stem.descriptor.remote.Query.run` or iterate over the Query. The
+  :func:`~stem.descriptor.remote.Query.run` method pass along any errors that
+  arise...
+
+  ::
+
+    from stem.descriptor.remote import Query
+
+    print('Current relays:')
+
+    try:
+      for desc in Query('/tor/server/all', 'server-descriptor 1.0').run():
+        print(desc.fingerprint)
+    except Exception as exc:
+      print('Unable to retrieve the server descriptors: %s' % exc)
+
+  ... while iterating fails silently...
+
+  ::
+
+    print('Current relays:')
+
+    for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
+      print(desc.fingerprint)
+
+  In either case exceptions are available via our 'error' attribute.
+
+  Tor provides quite a few different descriptor resources via its directory
+  protocol (see section 4.2 and later of the `dir-spec
+  <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_).
+  Commonly useful ones include...
+
+  =============================================== ===========
+  Resource                                        Description
+  =============================================== ===========
+  /tor/server/all                                 all present server descriptors
+  /tor/server/fp/<fp1>+<fp2>+<fp3>                server descriptors with the given fingerprints
+  /tor/extra/all                                  all present extrainfo descriptors
+  /tor/extra/fp/<fp1>+<fp2>+<fp3>                 extrainfo descriptors with the given fingerprints
+  /tor/micro/d/<hash1>-<hash2>                    microdescriptors with the given hashes
+  /tor/status-vote/current/consensus              present consensus
+  /tor/status-vote/current/consensus-microdesc    present microdescriptor consensus
+  /tor/status-vote/next/bandwidth                 bandwidth authority heuristics for the next consenus
+  /tor/status-vote/next/consensus-signatures      detached signature, used for making the next consenus
+  /tor/keys/all                                   key certificates for the authorities
+  /tor/keys/fp/<v3ident1>+<v3ident2>              key certificates for specific authorities
+  =============================================== ===========
+
+  **ZSTD** compression requires `zstandard
+  <https://pypi.org/project/zstandard/>`_, and **LZMA** requires the `lzma
+  module <https://docs.python.org/3/library/lzma.html>`_.
+
+  For legacy reasons if our resource has a '.z' suffix then our **compression**
+  argument is overwritten with Compression.GZIP.
+
+  .. versionchanged:: 1.7.0
+     Added support for downloading from ORPorts.
+
+  .. versionchanged:: 1.7.0
+     Added the compression argument.
+
+  .. versionchanged:: 1.7.0
+     Added the reply_headers attribute.
+
+     The class this provides changed between Python versions. In python2
+     this was called httplib.HTTPMessage, whereas in python3 the class was
+     renamed to http.client.HTTPMessage.
+
+  .. versionchanged:: 1.7.0
+     Avoid downloading from tor26. This directory authority throttles its
+     DirPort to such an extent that requests either time out or take on the
+     order of minutes.
+
+  .. versionchanged:: 1.7.0
+     Avoid downloading from Bifroest. This is the bridge authority so it
+     doesn't vote in the consensus, and apparently times out frequently.
+
+  .. versionchanged:: 1.8.0
+     Serge has replaced Bifroest as our bridge authority. Avoiding descriptor
+     downloads from it instead.
+
+  .. versionchanged:: 1.8.0
+     Defaulting to gzip compression rather than plaintext downloads.
+
+  .. versionchanged:: 1.8.0
+     Using :class:`~stem.descriptor.__init__.Compression` for our compression
+     argument.
+
+  :var str resource: resource being fetched, such as '/tor/server/all'
+  :var str descriptor_type: type of descriptors being fetched (for options see
+    :func:`~stem.descriptor.__init__.parse_file`), this is guessed from the
+    resource if **None**
+
+  :var list endpoints: :class:`~stem.DirPort` or :class:`~stem.ORPort` of the
+    authority or mirror we're querying, this uses authorities if undefined
+  :var list compression: list of :data:`stem.descriptor.Compression`
+    we're willing to accept, when none are mutually supported downloads fall
+    back to Compression.PLAINTEXT
+  :var int retries: number of times to attempt the request if downloading it
+    fails
+  :var bool fall_back_to_authority: when retrying request issues the last
+    request to a directory authority if **True**
+
+  :var str content: downloaded descriptor content
+  :var Exception error: exception if a problem occured
+  :var bool is_done: flag that indicates if our request has finished
+
+  :var float start_time: unix timestamp when we first started running
+  :var http.client.HTTPMessage reply_headers: headers provided in the response,
+    **None** if we haven't yet made our request
+  :var float runtime: time our query took, this is **None** if it's not yet
+    finished
+
+  :var bool validate: checks the validity of the descriptor's content if
+    **True**, skips these checks otherwise
+  :var stem.descriptor.__init__.DocumentHandler document_handler: method in
+    which to parse a :class:`~stem.descriptor.networkstatus.NetworkStatusDocument`
+  :var dict kwargs: additional arguments for the descriptor constructor
+
+  Following are only applicable when downloading from a
+  :class:`~stem.DirPort`...
+
+  :var float timeout: duration before we'll time out our request
+  :var str download_url: last url used to download the descriptor, this is
+    unset until we've actually made a download attempt
+
+  :param start: start making the request when constructed (default is **True**)
+  :param block: only return after the request has been completed, this is
+    the same as running **query.run(True)** (default is **False**)
+  """
+
+  def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence[stem.Endpoint]] = None, compression: Union[stem.descriptor._Compression, Sequence[stem.descriptor._Compression]] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: stem.descriptor.DocumentHandler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
     self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
     self._thread_for_wrapped_class.start()
     self._wrapped_instance: AsyncQuery = self._init_async_class(
@@ -582,9 +682,30 @@ class Query(stem.util.AsyncClassWrapper):
     )
 
   def start(self) -> None:
+    """
+    Starts downloading the scriptors if we haven't started already.
+    """
+
     self._call_async_method_soon('start')
 
-  def run(self, suppress = False):
+  def run(self, suppress: bool = False) -> List['stem.descriptor.Descriptor']:
+    """
+    Blocks until our request is complete then provides the descriptors. If we
+    haven't yet started our request then this does so.
+
+    :param suppress: avoids raising exceptions if **True**
+
+    :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
+
+    :raises:
+      Using the iterator can fail with the following if **suppress** is
+      **False**...
+
+        * **ValueError** if the descriptor contents is malformed
+        * :class:`~stem.DownloadTimeout` if our request timed out
+        * :class:`~stem.DownloadFailed` if our request fails
+    """
+
     return self._execute_async_method('run', suppress)
 
   def __iter__(self):
