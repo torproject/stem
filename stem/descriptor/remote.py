@@ -591,32 +591,73 @@ class Query(stem.util.AsyncClassWrapper):
     for desc in self._execute_async_generator_method('__aiter__'):
       yield desc
 
-  # Add public attributes of `AsyncQuery` as properties.
-  for attr in (
-    'descriptor_type',
-    'endpoints',
-    'resource',
-    'compression',
-    'retries',
-    'fall_back_to_authority',
-    'content',
-    'error',
-    'is_done',
-    'download_url',
-    'start_time',
-    'timeout',
-    'runtime',
-    'validate',
-    'document_handler',
-    'reply_headers',
-    'kwargs',
-  ):
-    locals()[attr] = property(
-      functools.partial(
-        lambda self, attr_name: getattr(self._wrapped_instance, attr_name),
-        attr_name=attr,
-      ),
-    )
+  @property
+  def descriptor_type(self) -> str:
+    return self._wrapped_instance.descriptor_type
+
+  @property
+  def endpoints(self) -> List[Union[stem.ORPort, stem.DirPort]]:
+    return self._wrapped_instance.endpoints
+
+  @property
+  def resource(self) -> str:
+    return self._wrapped_instance.resource
+
+  @property
+  def compression(self) -> List[stem.descriptor._Compression]:
+    return self._wrapped_instance.compression
+
+  @property
+  def retries(self) -> int:
+    return self._wrapped_instance.retries
+
+  @property
+  def fall_back_to_authority(self) -> bool:
+    return self._wrapped_instance.fall_back_to_authority
+
+  @property
+  def content(self) -> Optional[bytes]:
+    return self._wrapped_instance.content
+
+  @property
+  def error(self) -> Optional[BaseException]:
+    return self._wrapped_instance.error
+
+  @property
+  def is_done(self) -> bool:
+    return self._wrapped_instance.is_done
+
+  @property
+  def download_url(self) -> Optional[str]:
+    return self._wrapped_instance.download_url
+
+  @property
+  def start_time(self) -> Optional[float]:
+    return self._wrapped_instance.start_time
+
+  @property
+  def timeout(self) -> Optional[float]:
+    return self._wrapped_instance.timeout
+
+  @property
+  def runtime(self) -> Optional[float]:
+    return self._wrapped_instance.runtime
+
+  @property
+  def validate(self) -> bool:
+    return self._wrapped_instance.validate
+
+  @property
+  def document_handler(self) -> stem.descriptor.DocumentHandler:
+    return self._wrapped_instance.document_handler
+
+  @property
+  def reply_headers(self) -> Optional[Dict[str, str]]:
+    return self._wrapped_instance.reply_headers
+
+  @property
+  def kwargs(self) -> Dict[str, Any]:
+    return self._wrapped_instance.kwargs
 
 
 class DescriptorDownloader(object):
