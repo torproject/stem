@@ -581,8 +581,8 @@ class Query(stem.util.AsyncClassWrapper):
       **kwargs,
     )
 
-  def start(self):
-    return self._call_async_method_soon('start')
+  def start(self) -> None:
+    self._call_async_method_soon('start')
 
   def run(self, suppress = False):
     return self._execute_async_method('run', suppress)

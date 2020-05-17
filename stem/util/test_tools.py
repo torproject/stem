@@ -46,7 +46,7 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.system
 
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Awaitable, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 CONFIG = stem.util.conf.config_dict('test', {
   'pycodestyle.ignore': [],
@@ -686,7 +686,7 @@ def _is_ignored(config: Mapping[str, Sequence[str]], path: str, issue: str) -> b
 
 def async_test(func: Callable) -> Callable:
   @functools.wraps(func)
-  def wrapper(*args, **kwargs):
+  def wrapper(*args: Any, **kwargs: Any) -> Any:
     loop = asyncio.new_event_loop()
     try:
       result = loop.run_until_complete(func(*args, **kwargs))
@@ -696,13 +696,13 @@ def async_test(func: Callable) -> Callable:
   return wrapper
 
 
-def coro_func_returning_value(return_value):
+def coro_func_returning_value(return_value: Any) -> Callable[..., Awaitable]:
   async def coroutine_func(*args, **kwargs):
     return return_value
   return coroutine_func
 
 
-def coro_func_raising_exc(exc):
+def coro_func_raising_exc(exc: Exception) -> Callable[..., Awaitable]:
   async def coroutine_func(*args, **kwargs):
     raise exc
   return coroutine_func
