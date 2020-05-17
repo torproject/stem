@@ -22,60 +22,74 @@ exceptions, etc).
     if not controller:
       sys.exit(1)  # unable to get a connection
 
-    print 'Tor is running version %s' % controller.get_version()
+    print(f'Tor is running version {controller.get_version()}')
     controller.close()
 
 ::
 
   % python example.py
-  Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+  Tor is running version 0.4.3.5
 
 ... or if Tor isn't running...
 
 ::
 
   % python example.py
-  [Errno 111] Connection refused
+  [Errno 111] Connect call failed
 
 The :func:`~stem.connection.authenticate` function, however, gives easy but
 fine-grained control over the authentication process. For instance...
 
 ::
 
-  import sys
+  import asyncio
   import getpass
+  import sys
+
   import stem.connection
   import stem.socket
 
-  try:
-    control_socket = stem.socket.ControlPort(port = 9051)
-  except stem.SocketError as exc:
-    print 'Unable to connect to port 9051 (%s)' % exc
-    sys.exit(1)
 
-  try:
-    stem.connection.authenticate(control_socket)
-  except stem.connection.IncorrectSocketType:
-    print 'Please check in your torrc that 9051 is the ControlPort.'
-    print 'Maybe you configured it to be the ORPort or SocksPort instead?'
-    sys.exit(1)
-  except stem.connection.MissingPassword:
-    controller_password = getpass.getpass('Controller password: ')
+  async def authenticate() -> None:
+    try:
+      control_socket = stem.socket.ControlPort(port=9051)
+      await control_socket.connect()
+    except stem.SocketError as exc:
+      print(f'Unable to connect to port 9051 ({exc})')
+      sys.exit(1)
 
     try:
-      stem.connection.authenticate_password(control_socket, controller_password)
-    except stem.connection.PasswordAuthFailed:
-      print 'Unable to authenticate, password is incorrect'
+      await stem.connection.authenticate(control_socket)
+    except stem.connection.IncorrectSocketType:
+      print('Please check in your torrc that 9051 is the ControlPort.')
+      print('Maybe you configured it to be the ORPort or SocksPort instead?')
       sys.exit(1)
-  except stem.connection.AuthenticationFailure as exc:
-    print 'Unable to authenticate: %s' % exc
-    sys.exit(1)
+    except stem.connection.MissingPassword:
+      controller_password = getpass.getpass('Controller password: ')
+
+      try:
+        await stem.connection.authenticate_password(control_socket, controller_password)
+      except stem.connection.PasswordAuthFailed:
+        print('Unable to authenticate, password is incorrect')
+        sys.exit(1)
+    except stem.connection.AuthenticationFailure as exc:
+      print(f'Unable to authenticate: {exc}')
+      sys.exit(1)
+
+
+  if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    try:
+      loop.run_until_complete(authenticate())
+    finally:
+      loop.close()
 
 **Module Overview:**
 
 ::
 
-  connect - Simple method for getting authenticated control connection
+  connect - Simple method for getting authenticated control connection for synchronous usage.
+  async_connect - Simple method for getting authenticated control connection  for asynchronous usage.
 
   authenticate - Main method for authenticating to a control socket
   authenticate_none - Authenticates to an open control socket
@@ -215,10 +229,10 @@ COMMON_TOR_COMMANDS = (
 
 def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type = stem.control.Controller) -> Any:
   """
-  Convenience function for quickly getting a control connection. This is very
-  handy for debugging or CLI setup, handling setup and prompting for a password
-  if necessary (and none is provided). If any issues arise this prints a
-  description of the problem and returns **None**.
+  Convenience function for quickly getting a control connection for synchronous
+  usage. This is very handy for debugging or CLI setup, handling setup and
+  prompting for a password if necessary (and none is provided). If any issues
+  arise this prints a description of the problem and returns **None**.
 
   If both a **control_port** and **control_socket** are provided then the
   **control_socket** is tried first, and this provides a generic error message
@@ -243,8 +257,8 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   :param password_prompt: prompt for the controller password if it wasn't
     supplied
   :param chroot_path: path prefix if in a chroot environment
-  :param controller: :class:`~stem.control.BaseController` subclass to be
-    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
+  :param controller: :class:`~stem.control.Controller` subclass to be
+    returned
 
   :returns: authenticated control connection, the type based on the controller argument
 
@@ -272,7 +286,41 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
     raise
 
 
-async def connect_async(control_port = ('127.0.0.1', 'default'), control_socket = '/var/run/tor/control', password = None, password_prompt = False, chroot_path = None, controller = stem.control.AsyncController):
+async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.BaseController] = stem.control.AsyncController) -> Any:
+  """
+  Convenience function for quickly getting a control connection for
+  asynchronous usage. This is very handy for debugging or CLI setup, handling
+  setup and prompting for a password if necessary (and none is provided). If
+  any issues arise this prints a description of the problem and returns
+  **None**.
+
+  If both a **control_port** and **control_socket** are provided then the
+  **control_socket** is tried first, and this provides a generic error message
+  if they're both unavailable.
+
+  In much the same vein as git porcelain commands, users should not rely on
+  details of how this works. Messages and details of this function's behavior
+  could change in the future.
+
+  If the **port** is **'default'** then this checks on both 9051 (default for
+  relays) and 9151 (default for the Tor Browser). This default may change in
+  the future.
+
+  :param contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
+  :param control_socket: path where the control socket is located
+  :param password: passphrase to authenticate to the socket
+  :param password_prompt: prompt for the controller password if it wasn't
+    supplied
+  :param chroot_path: path prefix if in a chroot environment
+  :param controller: :class:`~stem.control.BaseController` subclass to be
+    returned
+
+  :returns: authenticated control connection, the type based on the controller argument
+
+  :raises: **ValueError** if given an invalid control_port, or both
+    **control_port** and **control_socket** are **None**
+  """
+
   if controller and not issubclass(controller, stem.control.BaseController):
     raise ValueError('The provided controller should be a stem.control.BaseController subclass.')
   return await _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
@@ -339,8 +387,9 @@ async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str
   :param password_prompt: prompt for the controller password if it wasn't
     supplied
   :param chroot_path: path prefix if in a chroot environment
-  :param controller: :class:`~stem.control.BaseController` subclass to be
-    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
+  :param controller: :class:`~stem.control.BaseController` or
+    :class:`~stem.control.Controller` subclass to be returned, this provides a
+    :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
   """
