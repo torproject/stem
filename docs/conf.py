@@ -11,8 +11,36 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
+import warnings
+
 from sphinx.domains.python import PythonDomain
+
+TYPEHINTS_REQUIRED = """\
+Building Stem's website requires...
+
+  https://github.com/agronholm/sphinx-autodoc-typehints
+
+Please run...
+
+  % pip install sphinx-autodoc-typehints
+"""
+
+try:
+  import sphinx_autodoc_typehints
+except ImportError:
+  print(TYPEHINTS_REQUIRED, file = sys.stderr)
+  sys.exit(1)
+
+# These warnings are due to: https://github.com/agronholm/sphinx-autodoc-typehints/issues/133
+
+warnings.filterwarnings('ignore', message = 'sphinx.util.inspect.Signature\(\) is deprecated')
+
+# Drop redundant return types because we state this in our :returns: clasuses.
+# This is an argument for sphinx-autodoc-typehints.
+
+typehints_document_rtype = False
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -27,7 +55,7 @@ needs_sphinx = '1.1' # required for the sphinx-apidoc command
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'roles']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode', 'sphinx_autodoc_typehints', 'roles']
 
 autodoc_default_options = {
   'members': True,

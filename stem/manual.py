@@ -64,7 +64,7 @@ import stem.util.log
 import stem.util.str_tools
 import stem.util.system
 
-from typing import Any, Dict, IO, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
 GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
@@ -265,7 +265,7 @@ def is_important(option: str) -> bool:
   return option.lower() in _config()['manual.important']
 
 
-def download_man_page(path: Optional[str] = None, file_handle: Optional[IO[bytes]] = None, url: str = GITWEB_MANUAL_URL, timeout: int = 20) -> None:
+def download_man_page(path: Optional[str] = None, file_handle: Optional[BinaryIO] = None, url: str = GITWEB_MANUAL_URL, timeout: int = 20) -> None:
   """
   Downloads tor's latest man page from `gitweb.torproject.org
   <https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt>`_. This method is
@@ -501,7 +501,7 @@ class Manual(object):
     """
 
     with tempfile.NamedTemporaryFile() as tmp:
-      download_man_page(file_handle = tmp, timeout = timeout)
+      download_man_page(file_handle = tmp, timeout = timeout)  # type: ignore
       return Manual.from_man(tmp.name)
 
   def save(self, path: str) -> None:
