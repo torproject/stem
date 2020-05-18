@@ -3,6 +3,7 @@ Integration tests for authenticating to the control socket via
 stem.connection.authenticate* functions.
 """
 
+import asyncio
 import os
 import unittest
 
@@ -121,7 +122,10 @@ class TestAuthenticate(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with await runner.get_tor_controller(False) as controller:
-      await stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
+      asyncio.run_coroutine_threadsafe(
+        stem.connection.authenticate(controller._wrapped_instance, test.runner.CONTROL_PASSWORD, runner.get_chroot()),
+        controller._thread_for_wrapped_class.loop,
+      ).result()
       await test.runner.exercise_controller(self, controller)
 
   @test.require.controller

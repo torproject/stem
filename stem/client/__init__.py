@@ -33,7 +33,7 @@ import stem.socket
 import stem.util.connection
 
 from types import TracebackType
-from typing import Dict, Iterator, List, Optional, Sequence, Type, Union
+from typing import AsyncIterator, Dict, List, Optional, Sequence, Type, Union
 
 from stem.client.cell import (
   CELL_TYPE_SIZE,
@@ -70,7 +70,8 @@ class Relay(object):
     self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
     self._orport_buffer = b''  # unread bytes
-    self._circuits = {}
+    self._orport_lock = stem.util.CombinedReentrantAndAsyncioLock()
+    self._circuits = {}  # type: Dict[int, stem.client.Circuit]
 
   @staticmethod
   async def connect(address: str, port: int, link_protocols: Sequence['stem.client.datatype.LinkProtocol'] = DEFAULT_LINK_PROTOCOLS) -> 'stem.client.Relay':  # type: ignore
@@ -191,7 +192,7 @@ class Relay(object):
         cell, self._orport_buffer = Cell.pop(self._orport_buffer, self.link_protocol)
         return cell
 
-  async def _msg(self, cell: 'stem.client.cell.Cell') -> Iterator['stem.client.cell.Cell']:
+  async def _msg(self, cell: 'stem.client.cell.Cell') -> AsyncIterator['stem.client.cell.Cell']:
     """
     Sends a cell on the ORPort and provides the response we receive in reply.
 
@@ -283,7 +284,7 @@ class Relay(object):
 
       return circ
 
-  async def __aiter__(self) -> Iterator['stem.client.Circuit']:
+  async def __aiter__(self) -> AsyncIterator['stem.client.Circuit']:
     async with self._orport_lock:
       for circ in self._circuits.values():
         yield circ
@@ -381,7 +382,7 @@ class Circuit(object):
       self.forward_digest = forward_digest
       self.forward_key = forward_key
 
-  async def close(self)- > None:
+  async def close(self) -> None:
     async with self.relay._orport_lock:
       await self.relay._orport.send(stem.client.cell.DestroyCell(self.id).pack(self.relay.link_protocol))
       del self.relay._circuits[self.id]

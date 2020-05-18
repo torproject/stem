@@ -222,7 +222,7 @@ class TestControl(unittest.TestCase):
 
     get_info_mock.side_effect = coro_func_raising_exc(InvalidArguments)
 
-    async def get_conf_mock_side_effect(param, **kwargs):
+    async def get_conf_mock_side_effect(param, *args, **kwargs):
       return {
         'ControlPort': '9050',
         'ControlListenAddress': ['127.0.0.1'],
@@ -236,7 +236,7 @@ class TestControl(unittest.TestCase):
 
     # non-local addresss
 
-    async def get_conf_mock_side_effect(param, **kwargs):
+    async def get_conf_mock_side_effect(param, *args, **kwargs):
       return {
         'ControlPort': '9050',
         'ControlListenAddress': ['27.4.4.1'],
@@ -717,7 +717,7 @@ class TestControl(unittest.TestCase):
 
     # check default if nothing was set
 
-    async def get_conf_mock_side_effect(param, **kwargs):
+    async def get_conf_mock_side_effect(param, *args, **kwargs):
       return {
         'BandwidthRate': '1073741824',
         'BandwidthBurst': '1073741824',

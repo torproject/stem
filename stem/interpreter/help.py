@@ -6,6 +6,7 @@ Provides our /help responses.
 """
 
 import functools
+from typing import cast
 
 import stem.control
 import stem.util.conf
@@ -74,7 +75,7 @@ def _response(controller: stem.control.Controller, arg: str, config: stem.util.c
   output += '\n'
 
   if arg == 'GETINFO':
-    results = controller.get_info('info/names', None)
+    results = cast(str, controller.get_info('info/names', None))
 
     if results:
       for line in results.splitlines():
@@ -84,7 +85,7 @@ def _response(controller: stem.control.Controller, arg: str, config: stem.util.c
           output += format('%-33s' % opt, *BOLD_OUTPUT)
           output += format(' - %s' % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'GETCONF':
-    results = controller.get_info('config/names', None)
+    results = cast(str, controller.get_info('config/names', None))
 
     if results:
       options = [opt.split(' ', 1)[0] for opt in results.splitlines()]
@@ -103,7 +104,7 @@ def _response(controller: stem.control.Controller, arg: str, config: stem.util.c
       output += format('%-15s' % signal, *BOLD_OUTPUT)
       output += format(' - %s' % summary, *STANDARD_OUTPUT) + '\n'
   elif arg == 'SETEVENTS':
-    results = controller.get_info('events/names', None)
+    results = cast(str, controller.get_info('events/names', None))
 
     if results:
       entries = results.split()
@@ -118,7 +119,7 @@ def _response(controller: stem.control.Controller, arg: str, config: stem.util.c
 
         output += format(line.rstrip(), *STANDARD_OUTPUT) + '\n'
   elif arg == 'USEFEATURE':
-    results = controller.get_info('features/names', None)
+    results = cast(str, controller.get_info('features/names', None))
 
     if results:
       output += format(results, *STANDARD_OUTPUT) + '\n'

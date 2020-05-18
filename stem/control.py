@@ -271,7 +271,7 @@ import stem.version
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import log
 from types import TracebackType
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -554,6 +554,8 @@ def event_description(event: str) -> str:
 
 
 class _BaseControllerSocketMixin:
+  _socket: stem.socket.ControlSocket
+
   def is_alive(self) -> bool:
     """
     Checks if our socket is currently connected. This is a pass-through for our
@@ -589,7 +591,7 @@ class _BaseControllerSocketMixin:
 
     return self._socket.connection_time()
 
-  def get_socket(self):
+  def get_socket(self) -> stem.socket.ControlSocket:
     """
     Provides the socket used to speak with the tor process. Communicating with
     the socket directly isn't advised since it may confuse this controller.
@@ -839,7 +841,7 @@ class BaseController(_BaseControllerSocketMixin):
   async def __aenter__(self) -> 'stem.control.BaseController':
     return self
 
-  await def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
+  async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
     await self.close()
 
   async def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
@@ -997,7 +999,7 @@ class AsyncController(BaseController):
   """
 
   @classmethod
-  def from_port(cls: Type, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.AsyncController':
+  def from_port(cls, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'AsyncController':
     """
     Constructs a :class:`~stem.socket.ControlPort` based AsyncController.
 
@@ -1017,7 +1019,7 @@ class AsyncController(BaseController):
     return cls(control_socket)
 
   @classmethod
-  def from_socket_file(cls: Type, path: str = '/var/run/tor/control') -> 'stem.control.AsyncController':
+  def from_socket_file(cls, path: str = '/var/run/tor/control') -> 'AsyncController':
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based AsyncController.
 
@@ -1189,8 +1191,8 @@ class AsyncController(BaseController):
         return list(reply.values())[0]
 
     try:
-      response = stem.response._convert_to_getinfo(await self.msg('GETINFO %s' % ' '.join(params)))
-      response._assert_matches(params)
+      response = stem.response._convert_to_getinfo(await self.msg('GETINFO %s' % ' '.join(param_set)))
+      response._assert_matches(param_set)
 
       # usually we want unicode values under python 3.x
 
@@ -1765,7 +1767,7 @@ class AsyncController(BaseController):
     return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
   @with_default(yields = True)
-  async def get_microdescriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
+  async def get_microdescriptors(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.microdescriptor.Microdescriptor]:
     """
     get_microdescriptors(default = UNDEFINED)
 
@@ -1859,7 +1861,7 @@ class AsyncController(BaseController):
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
-  async def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
+  async def get_server_descriptors(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.server_descriptor.RelayDescriptor]:
     """
     get_server_descriptors(default = UNDEFINED)
 
@@ -1954,7 +1956,7 @@ class AsyncController(BaseController):
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
   @with_default(yields = True)
-  async def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
+  async def get_network_statuses(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
     """
     get_network_statuses(default = UNDEFINED)
 
@@ -2061,6 +2063,7 @@ class AsyncController(BaseController):
         request += ' ' + ' '.join(['SERVER=%s' % s for s in servers])
 
       response = stem.response._convert_to_single_line(await self.msg(request))
+      stem.response.convert('SINGLELINE', response)
 
       if not response.is_ok():
         raise stem.ProtocolError('HSFETCH returned unexpected response code: %s' % response.code)
@@ -2153,7 +2156,7 @@ class AsyncController(BaseController):
   async def _get_conf_multiple(self, param: str, default: Any = UNDEFINED) -> List[str]:
     return await self.get_conf(param, default, multiple = True)  # type: ignore
 
-  await def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
+  async def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
     """
     get_conf_map(params, default = UNDEFINED, multiple = True)
 
@@ -2971,7 +2974,7 @@ class AsyncController(BaseController):
         else:
           request += ' ClientAuth=%s' % client_name
 
-    response = stem.response._convert_to_add_onion(await self.msg(request))
+    response = stem.response._convert_to_add_onion(stem.response._convert_to_add_onion(await self.msg(request)))
 
     if await_publication:
       # We should receive five UPLOAD events, followed by up to another five
@@ -3024,7 +3027,7 @@ class AsyncController(BaseController):
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
-  async def add_event_listener(self, listener: Callable[[stem.response.events.Event], None], *events: 'stem.control.EventType') -> None:
+  async def add_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]], *events: 'stem.control.EventType') -> None:
     """
     Directs further tor controller events to a given function. The function is
     expected to take a single argument, which is a
@@ -3082,7 +3085,7 @@ class AsyncController(BaseController):
       if failed_events:
         raise stem.ProtocolError('SETEVENTS rejected %s' % ', '.join(failed_events))
 
-  async def remove_event_listener(self, listener: Callable[[stem.response.events.Event], None]) -> None:
+  async def remove_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]) -> None:
     """
     Stops a listener from being notified of further tor events.
 
@@ -3253,7 +3256,7 @@ class AsyncController(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    response = stem.response._convert_to_single_line(async self.msg('LOADCONF\n%s' % configtext))
+    response = stem.response._convert_to_single_line(await self.msg('LOADCONF\n%s' % configtext))
 
     if response.code in ('552', '553'):
       if response.code == '552' and response.message.startswith('Invalid config file: Failed to parse/validate config: Unknown option'):
@@ -3379,7 +3382,7 @@ class AsyncController(BaseController):
     response = await self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.response._convert_to_event(await stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
+      circ_message = stem.response._convert_to_event(stem.socket.recv_message_from_bytes_io(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
       circuits.append(circ_message)  # type: ignore
 
     return circuits
@@ -3563,7 +3566,7 @@ class AsyncController(BaseController):
     response = await self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.response._convert_to_event(await stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream))))
+      message = stem.response._convert_to_event(stem.socket.recv_message_from_bytes_io(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream))))
       streams.append(message)  # type: ignore
 
     return streams
@@ -3744,7 +3747,7 @@ class AsyncController(BaseController):
     response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
     return stem.response._convert_to_mapaddress(response).entries
 
-  await def drop_guards(self) -> None:
+  async def drop_guards(self) -> None:
     """
     Drops our present guard nodes and picks a new set.
 
@@ -3812,7 +3815,7 @@ class AsyncController(BaseController):
         if listener_type == event_type:
           for listener in event_listeners:
             try:
-              potential_coroutine = listener(event_message)
+              potential_coroutine = listener(event)
               if asyncio.iscoroutine(potential_coroutine):
                 await potential_coroutine
             except Exception as exc:
@@ -3874,7 +3877,7 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
   """
 
   @classmethod
-  def from_port(cls: Type, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
+  def from_port(cls, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'Controller':
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
@@ -3885,8 +3888,8 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
     .. versionchanged:: 1.5.0
        Use both port 9051 and 9151 by default.
 
-    :param str address: ip address of the controller
-    :param int port: port number of the controller
+    :param address: ip address of the controller
+    :param port: port number of the controller
 
     :returns: :class:`~stem.control.Controller` attached to the given port
 
@@ -3899,7 +3902,7 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
     return controller
 
   @classmethod
-  def from_socket_file(cls: Type, path: str = '/var/run/tor/control') -> 'stem.control.Controller':
+  def from_socket_file(cls, path: str = '/var/run/tor/control') -> 'Controller':
     """
     Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
 
@@ -3915,15 +3918,19 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
     controller.connect()
     return controller
 
-  def __init__(self, control_socket: 'stem.socket.ControlSocket', is_authenticated: bool = False, started_async_controller_thread: Optional['threading.Thread'] = None) -> None:
-  def __init__(self, control_socket, is_authenticated = False, started_async_controller_thread = None):
+  def __init__(
+      self,
+      control_socket: stem.socket.ControlSocket,
+      is_authenticated: bool = False,
+      started_async_controller_thread: stem.util.ThreadForWrappedAsyncClass = None,
+  ) -> None:
     if started_async_controller_thread:
       self._thread_for_wrapped_class = started_async_controller_thread
     else:
       self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
       self._thread_for_wrapped_class.start()
 
-    self._wrapped_instance: AsyncController = self._init_async_class(AsyncController, control_socket, is_authenticated)
+    self._wrapped_instance: AsyncController = self._init_async_class(AsyncController, control_socket, is_authenticated)  # type: ignore
     self._socket = self._wrapped_instance._socket
 
   @_set_doc_from_async_controller
@@ -3956,7 +3963,7 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
 
   @_set_doc_from_async_controller
   def remove_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None]) -> bool:
-    self._wrapped_instance.remove_status_listener(callback)
+    return self._wrapped_instance.remove_status_listener(callback)
 
   @_set_doc_from_async_controller
   def authenticate(self, *args: Any, **kwargs: Any) -> None:
@@ -4306,7 +4313,7 @@ def _case_insensitive_lookup(entries: Union[Sequence[str], Mapping[str, Any]], k
   raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 
 
-async def _get_with_timeout(event_queue: queue.Queue, timeout: float, start_time: float) -> Any:
+async def _get_with_timeout(event_queue: asyncio.Queue, timeout: Optional[float], start_time: float) -> Any:
   """
   Pulls an item from a queue with a given timeout.
   """

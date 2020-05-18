@@ -104,7 +104,7 @@ import stem.util.tor_tools
 
 from stem.descriptor import Compression
 from stem.util import log, str_tools
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Any, AsyncIterator, Dict, Iterator, List, Optional, Sequence, Tuple, Union
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -392,7 +392,7 @@ class AsyncQuery(object):
     self.reply_headers = None  # type: Optional[Dict[str, str]]
     self.kwargs = kwargs
 
-    self._downloader_task = None
+    self._downloader_task = None  # type: Optional[asyncio.Task]
     self._downloader_lock = threading.RLock()
 
     self._asyncio_loop = asyncio.get_event_loop()
@@ -401,7 +401,7 @@ class AsyncQuery(object):
       self.start()
 
     if block:
-      self._asyncio_loop.create_task(self.run(True))
+      self.run(True)
 
   def start(self) -> None:
     """
@@ -432,7 +432,7 @@ class AsyncQuery(object):
 
     return [desc async for desc in self._run(suppress)]
 
-  async def _run(self, suppress: bool) -> Iterator[stem.descriptor.Descriptor]:
+  async def _run(self, suppress: bool) -> AsyncIterator[stem.descriptor.Descriptor]:
     with self._downloader_lock:
       self.start()
       await self._downloader_task
@@ -468,7 +468,7 @@ class AsyncQuery(object):
 
           raise self.error
 
-  async def __aiter__(self) -> Iterator[stem.descriptor.Descriptor]:
+  async def __aiter__(self) -> AsyncIterator[stem.descriptor.Descriptor]:
     async for desc in self._run(True):
       yield desc
 
@@ -665,7 +665,7 @@ class Query(stem.util.AsyncClassWrapper):
   def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence[stem.Endpoint]] = None, compression: Union[stem.descriptor._Compression, Sequence[stem.descriptor._Compression]] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: stem.descriptor.DocumentHandler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
     self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
     self._thread_for_wrapped_class.start()
-    self._wrapped_instance: AsyncQuery = self._init_async_class(
+    self._wrapped_instance: AsyncQuery = self._init_async_class(  # type: ignore
       AsyncQuery,
       resource,
       descriptor_type,
@@ -688,7 +688,7 @@ class Query(stem.util.AsyncClassWrapper):
 
     self._call_async_method_soon('start')
 
-  def run(self, suppress: bool = False) -> List['stem.descriptor.Descriptor']:
+  def run(self, suppress = False) -> List['stem.descriptor.Descriptor']:
     """
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
@@ -708,7 +708,7 @@ class Query(stem.util.AsyncClassWrapper):
 
     return self._execute_async_method('run', suppress)
 
-  def __iter__(self):
+  def __iter__(self) -> Iterator[stem.descriptor.Descriptor]:
     for desc in self._execute_async_generator_method('__aiter__'):
       yield desc
 

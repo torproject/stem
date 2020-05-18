@@ -159,7 +159,7 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
-from typing import Any, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, cast, List, Optional, Sequence, Tuple, Type, Union
 from stem.util import log
 
 AuthMethod = stem.util.enum.Enum('NONE', 'PASSWORD', 'COOKIE', 'SAFECOOKIE', 'UNKNOWN')
@@ -227,7 +227,7 @@ COMMON_TOR_COMMANDS = (
 )
 
 
-def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type = stem.control.Controller) -> Any:
+def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.Controller] = stem.control.Controller) -> Any:
   """
   Convenience function for quickly getting a control connection for synchronous
   usage. This is very handy for debugging or CLI setup, handling setup and
@@ -269,7 +269,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   # TODO: change this function's API so we can provide a concrete type
 
   if controller is None or not issubclass(controller, stem.control.Controller):
-    raise ValueError('Controller should be a stem.control.BaseController subclass.')
+    raise ValueError('Controller should be a stem.control.Controller subclass.')
 
   async_controller_thread = stem.util.ThreadForWrappedAsyncClass()
   async_controller_thread.start()
@@ -326,7 +326,7 @@ async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1'
   return await _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
 
 
-async def _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller):
+async def _connect_async(control_port: Tuple[str, Union[str, int]], control_socket: str, password: Optional[str], password_prompt: bool, chroot_path: Optional[str], controller: Type[Union[stem.control.BaseController, stem.control.Controller]]) -> Any:
   if control_port is None and control_socket is None:
     raise ValueError('Neither a control port nor control socket were provided. Nothing to connect to.')
   elif control_port:
@@ -377,7 +377,7 @@ async def _connect_async(control_port, control_socket, password, password_prompt
   return await _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
 
 
-async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[stem.control.BaseController]]) -> Any:
+async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[Union[stem.control.BaseController, stem.control.Controller]]]) -> Any:
   """
   Helper for the connect_* functions that authenticates the socket and
   constructs the controller.
@@ -402,7 +402,7 @@ async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str
     elif issubclass(controller, stem.control.BaseController):
       return controller(control_socket, is_authenticated = True)
     elif issubclass(controller, stem.control.Controller):
-      return controller(control_socket, is_authenticated = True, started_async_controller_thread = threading.current_thread())
+      return controller(control_socket, is_authenticated = True, started_async_controller_thread = cast(stem.util.ThreadForWrappedAsyncClass, threading.current_thread()))
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):
       print(CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.port))
@@ -995,7 +995,7 @@ async def authenticate_safecookie(controller: Union[stem.control.BaseController,
     auth_response = await _msg(controller, 'AUTHENTICATE %s' % stem.util.str_tools._to_unicode(binascii.b2a_hex(client_hash)))
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -1007,7 +1007,7 @@ async def authenticate_safecookie(controller: Union[stem.control.BaseController,
   # if we got anything but an OK response then err
   if not auth_response.is_ok():
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -1051,9 +1051,7 @@ async def get_protocolinfo(controller: Union[stem.control.BaseController, stem.s
   # next followed by authentication. Transparently reconnect if that happens.
 
   if not protocolinfo_response or str(protocolinfo_response) == 'Authentication required.':
-    potential_coroutine = controller.connect()
-    if asyncio.iscoroutine(potential_coroutine):
-      await potential_coroutine
+    await controller.connect()
 
     try:
       protocolinfo_response = await _msg(controller, 'PROTOCOLINFO 1')
@@ -1074,10 +1072,7 @@ async def _msg(controller: Union[stem.control.BaseController, stem.socket.Contro
     await controller.send(message)
     return await controller.recv()
   else:
-    message = controller.msg(message)
-    if asyncio.iscoroutine(message):
-      message = await message
-    return message
+    return await controller.msg(message)
 
 
 def _connection_for_default_port(address: str) -> stem.socket.ControlPort:

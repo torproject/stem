@@ -85,6 +85,7 @@ import asyncio
 import re
 import socket
 import ssl
+import sys
 import threading
 import time
 
@@ -93,7 +94,7 @@ import stem.util.str_tools
 
 from stem.util import log
 from types import TracebackType
-from typing import BinaryIO, Callable, List, Optional, Tuple, Type, Union, overload
+from typing import Awaitable, BinaryIO, Callable, List, Optional, Tuple, Type, Union, overload
 
 MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
 ERROR_MSG = 'Error while receiving a control message (%s): %s'
@@ -109,8 +110,8 @@ class BaseSocket(object):
   """
 
   def __init__(self) -> None:
-    self._reader = None
-    self._writer = None
+    self._reader = None  # type: Optional[asyncio.StreamReader]
+    self._writer = None  # type: Optional[asyncio.StreamWriter]
     self._is_alive = False
     self._connection_time = 0.0  # time when we last connected or disconnected
 
@@ -209,7 +210,7 @@ class BaseSocket(object):
       if self._writer:
         self._writer.close()
         # `StreamWriter.wait_closed` was added in Python 3.7.
-        if hasattr(self._writer, 'wait_closed'):
+        if sys.version_info >= (3, 7):
           await self._writer.wait_closed()
 
       self._reader = None
@@ -220,7 +221,7 @@ class BaseSocket(object):
       if is_change:
         await self._close()
 
-  async def _send(self, message: Union[bytes, str], handler: Callable[[Union[socket.socket, ssl.SSLSocket], BinaryIO, Union[bytes, str]], None]) -> None:
+  async def _send(self, message: Union[bytes, str], handler: Callable[[asyncio.StreamWriter, Union[bytes, str]], Awaitable[None]]) -> None:
     """
     Send message in a thread safe manner.
     """
@@ -241,11 +242,11 @@ class BaseSocket(object):
         raise
 
   @overload
-  async def _recv(self, handler: Callable[[ssl.SSLSocket, BinaryIO], bytes]) -> bytes:
+  async def _recv(self, handler: Callable[[asyncio.StreamReader], Awaitable[bytes]]) -> bytes:
     ...
 
   @overload
-  async def _recv(self, handler: Callable[[socket.socket, BinaryIO], stem.response.ControlMessage]) -> stem.response.ControlMessage:
+  async def _recv(self, handler: Callable[[asyncio.StreamReader], Awaitable[stem.response.ControlMessage]]) -> stem.response.ControlMessage:
     ...
 
   async def _recv(self, handler):
@@ -303,7 +304,7 @@ class BaseSocket(object):
     return self
 
   async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
-    self.close()
+    await self.close()
 
   async def _connect(self) -> None:
     """
@@ -320,12 +321,6 @@ class BaseSocket(object):
     pass
 
   async def _open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
-    """
-    Constructs and connects new socket. This is implemented by subclasses.
-
-    :returns: **tuple** with our reader and writer streams
-    """
-
     raise NotImplementedError('Unsupported Operation: this should be implemented by the BaseSocket subclass')
 
 
@@ -380,7 +375,7 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    async def wrapped_recv(s: ssl.SSLSocket, sf: BinaryIO) -> bytes:
+    async def wrapped_recv(reader: asyncio.StreamReader) -> Optional[bytes]:
       read_coroutine = reader.read(1024)
       if timeout is None:
         return await read_coroutine
@@ -524,7 +519,7 @@ async def send_message(writer: asyncio.StreamWriter, message: Union[bytes, str],
     <line 3>\\r\\n
     .\\r\\n
 
-  :param writer: stream derived from the control socket
+  :param writer: writer object
   :param message: message to be sent on the control socket
   :param raw: leaves the message formatting untouched, passing it to the
     socket as-is
@@ -591,9 +586,7 @@ async def recv_message(reader: asyncio.StreamReader, arrived_at: Optional[float]
 
   while True:
     try:
-      line = reader.readline()
-      if asyncio.iscoroutine(line):
-        line = await line
+      line = await reader.readline()
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -693,7 +686,7 @@ async def recv_message(reader: asyncio.StreamReader, arrived_at: Optional[float]
       raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
 
 
-def recv_message_from_bytes_io(reader: asyncio.StreamReader, arrived_at: Optional[float] = None) -> 'stem.response.ControlMessage':
+def recv_message_from_bytes_io(reader: BinaryIO, arrived_at: Optional[float] = None) -> stem.response.ControlMessage:
   """
   Pulls from an I/O stream until we either have a complete message or
   encounter a problem.
@@ -708,7 +701,9 @@ def recv_message_from_bytes_io(reader: asyncio.StreamReader, arrived_at: Optiona
       a complete message
   """
 
-  parsed_content, raw_content, first_line = None, None, True
+  parsed_content = []  # type: List[Tuple[str, str, bytes]]
+  raw_content = bytearray()
+  first_line = True
 
   while True:
     try:
@@ -739,10 +734,10 @@ def recv_message_from_bytes_io(reader: asyncio.StreamReader, arrived_at: Optiona
       log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
       raise stem.SocketClosed('Received empty socket content.')
     elif not MESSAGE_PREFIX.match(line):
-      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line)))
+      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line.decode('utf-8'))))
       raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
     elif not line.endswith(b'\r\n'):
-      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line)))
+      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line.decode('utf-8'))))
       raise stem.ProtocolError('All lines should end with CRLF')
 
     status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
@@ -781,11 +776,11 @@ def recv_message_from_bytes_io(reader: asyncio.StreamReader, arrived_at: Optiona
           line = reader.readline()
           raw_content += line
         except socket.error as exc:
-          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content)))))
+          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content).decode('utf-8')))))
           raise stem.SocketClosed(exc)
 
         if not line.endswith(b'\r\n'):
-          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(bytes(raw_content))))
+          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(bytes(raw_content).decode('utf-8'))))
           raise stem.ProtocolError('All lines should end with CRLF')
         elif line == b'.\r\n':
           break  # data block termination
