@@ -477,7 +477,7 @@ class Runner(object):
   def _authenticate_controller(self, controller):
     controller.authenticate(password=CONTROL_PASSWORD, chroot_path=self.get_chroot())
 
-  async def get_tor_controller(self, authenticate = True):
+  def get_tor_controller(self, authenticate = True):
     """
     Provides a controller connected to our tor test instance.
 

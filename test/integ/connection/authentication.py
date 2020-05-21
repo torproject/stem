@@ -121,7 +121,7 @@ class TestAuthenticate(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller(False) as controller:
+    with runner.get_tor_controller(False) as controller:
       asyncio.run_coroutine_threadsafe(
         stem.connection.authenticate(controller._wrapped_instance, test.runner.CONTROL_PASSWORD, runner.get_chroot()),
         controller._thread_for_wrapped_class.loop,
@@ -276,8 +276,7 @@ class TestAuthenticate(unittest.TestCase):
           await self._check_auth(auth_type, auth_value)
 
   @test.require.controller
-  @async_test
-  async def test_wrong_password_with_controller(self):
+  def test_wrong_password_with_controller(self):
     """
     We ran into a race condition where providing the wrong password to the
     Controller caused inconsistent responses. Checking for that...
@@ -291,9 +290,9 @@ class TestAuthenticate(unittest.TestCase):
       self.skipTest('(requires only password auth)')
 
     for i in range(10):
-      with await runner.get_tor_controller(False) as controller:
+      with runner.get_tor_controller(False) as controller:
         with self.assertRaises(stem.connection.IncorrectPassword):
-          await controller.authenticate('wrong_password')
+          controller.authenticate('wrong_password')
 
   @test.require.controller
   @async_test

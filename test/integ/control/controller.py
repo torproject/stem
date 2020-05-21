@@ -38,14 +38,13 @@ TEST_ROUTER_STATUS_ENTRY = None
 class TestController(unittest.TestCase):
   @test.require.only_run_once
   @test.require.controller
-  @async_test
-  async def test_missing_capabilities(self):
+  def test_missing_capabilities(self):
     """
     Check to see if tor supports any events, signals, or features that we
     don't.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       for event in controller.get_info('events/names').split():
         if event not in EventType:
           test.register_new_capability('Event', event)
@@ -89,7 +88,7 @@ class TestController(unittest.TestCase):
     Checks that a notificiation listener is... well, notified of SIGHUPs.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       received_events = []
 
       def status_listener(my_controller, state, timestamp):
@@ -120,8 +119,7 @@ class TestController(unittest.TestCase):
       controller.reset_conf('__OwningControllerProcess')
 
   @test.require.controller
-  @async_test
-  async def test_event_handling(self):
+  def test_event_handling(self):
     """
     Add a couple listeners for various events and make sure that they receive
     them. Then remove the listeners.
@@ -140,7 +138,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       controller.add_event_listener(listener1, EventType.CONF_CHANGED)
       controller.add_event_listener(listener2, EventType.CONF_CHANGED, EventType.DEBUG)
 
@@ -179,8 +177,7 @@ class TestController(unittest.TestCase):
       controller.reset_conf('NodeFamily')
 
   @test.require.controller
-  @async_test
-  async def test_reattaching_listeners(self):
+  def test_reattaching_listeners(self):
     """
     Checks that event listeners are re-attached when a controller disconnects
     then reconnects to tor.
@@ -195,7 +192,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       controller.add_event_listener(listener, EventType.CONF_CHANGED)
 
       # trigger an event
@@ -221,15 +218,14 @@ class TestController(unittest.TestCase):
       controller.reset_conf('NodeFamily')
 
   @test.require.controller
-  @async_test
-  async def test_getinfo(self):
+  def test_getinfo(self):
     """
     Exercises GETINFO with valid and invalid queries.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # successful single query
 
       torrc_path = runner.get_torrc_path()
@@ -260,13 +256,12 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_info([], {}))
 
   @test.require.controller
-  @async_test
-  async def test_getinfo_freshrelaydescs(self):
+  def test_getinfo_freshrelaydescs(self):
     """
     Exercises 'GETINFO status/fresh-relay-descs'.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       response = controller.get_info('status/fresh-relay-descs')
       div = response.find('\nextra-info ')
       nickname = controller.get_conf('Nickname')
@@ -284,13 +279,12 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_getinfo_dir_status(self):
+  def test_getinfo_dir_status(self):
     """
     Exercise 'GETINFO dir/status-vote/*'.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       consensus = controller.get_info('dir/status-vote/current/consensus')
       self.assertTrue('moria1' in consensus, 'moria1 not found in the consensus')
 
@@ -299,26 +293,24 @@ class TestController(unittest.TestCase):
         self.assertTrue('moria1' in microdescs, 'moria1 not found in the microdescriptor consensus')
 
   @test.require.controller
-  @async_test
-  async def test_get_version(self):
+  def test_get_version(self):
     """
     Test that the convenient method get_version() works.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       version = controller.get_version()
       self.assertTrue(isinstance(version, stem.version.Version))
       self.assertEqual(version, test.tor_version())
 
   @test.require.controller
-  @async_test
-  async def test_get_exit_policy(self):
+  def test_get_exit_policy(self):
     """
     Sanity test for get_exit_policy(). Our 'ExitRelay 0' torrc entry causes us
     to have a simple reject-all policy.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual(ExitPolicy('reject *:*'), controller.get_exit_policy())
 
   @test.require.controller
@@ -330,20 +322,19 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller(False) as controller:
+    with runner.get_tor_controller(False) as controller:
       controller.authenticate(test.runner.CONTROL_PASSWORD)
       await test.runner.exercise_controller(self, controller)
 
   @test.require.controller
-  @async_test
-  async def test_protocolinfo(self):
+  def test_protocolinfo(self):
     """
     Test that the convenient method protocolinfo() works.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller(False) as controller:
+    with runner.get_tor_controller(False) as controller:
       protocolinfo = controller.get_protocolinfo()
       self.assertTrue(isinstance(protocolinfo, stem.response.protocolinfo.ProtocolInfoResponse))
 
@@ -364,15 +355,14 @@ class TestController(unittest.TestCase):
       self.assertEqual(tuple(auth_methods), protocolinfo.auth_methods)
 
   @test.require.controller
-  @async_test
-  async def test_getconf(self):
+  def test_getconf(self):
     """
     Exercises GETCONF with valid and invalid queries.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       control_socket = controller.get_socket()
 
       if isinstance(control_socket, stem.socket.ControlPort):
@@ -428,15 +418,14 @@ class TestController(unittest.TestCase):
       self.assertEqual({}, controller.get_conf_map([], 'la-di-dah'))
 
   @test.require.controller
-  @async_test
-  async def test_is_set(self):
+  def test_is_set(self):
     """
     Exercises our is_set() method.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       custom_options = controller._execute_async_method('_get_custom_options')
       self.assertTrue('ControlPort' in custom_options or 'ControlSocket' in custom_options)
       self.assertEqual('1', custom_options['DownloadExtraInfo'])
@@ -456,8 +445,7 @@ class TestController(unittest.TestCase):
       self.assertFalse(controller.is_set('ConnLimit'))
 
   @test.require.controller
-  @async_test
-  async def test_hidden_services_conf(self):
+  def test_hidden_services_conf(self):
     """
     Exercises the hidden service family of methods (get_hidden_service_conf,
     set_hidden_service_conf, create_hidden_service, and remove_hidden_service).
@@ -471,7 +459,7 @@ class TestController(unittest.TestCase):
     service3_path = os.path.join(test_dir, 'test_hidden_service3')
     service4_path = os.path.join(test_dir, 'test_hidden_service4')
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       try:
         # initially we shouldn't be running any hidden services
 
@@ -565,35 +553,32 @@ class TestController(unittest.TestCase):
             pass
 
   @test.require.controller
-  @async_test
-  async def test_without_ephemeral_hidden_services(self):
+  def test_without_ephemeral_hidden_services(self):
     """
     Exercises ephemeral hidden service methods when none are present.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual([], controller.list_ephemeral_hidden_services())
       self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
       self.assertEqual(False, controller.remove_ephemeral_hidden_service('gfzprpioee3hoppz'))
 
   @test.require.controller
-  @async_test
-  async def test_with_invalid_ephemeral_hidden_service_port(self):
-    with await test.runner.get_runner().get_tor_controller() as controller:
+  def test_with_invalid_ephemeral_hidden_service_port(self):
+    with test.runner.get_runner().get_tor_controller() as controller:
       for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
         exc_msg = "ADD_ONION response didn't have an OK status: Invalid VIRTPORT/TARGET"
         self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, ports)
 
   @test.require.controller
-  @async_test
-  async def test_ephemeral_hidden_services_v2(self):
+  def test_ephemeral_hidden_services_v2(self):
     """
     Exercises creating v2 ephemeral hidden services.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, key_content = 'RSA1024')
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
       self.assertTrue(response.private_key is not None)
@@ -625,20 +610,19 @@ class TestController(unittest.TestCase):
 
       # other controllers shouldn't be able to see these hidden services
 
-      with await runner.get_tor_controller() as second_controller:
+      with runner.get_tor_controller() as second_controller:
         self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
 
   @test.require.controller
-  @async_test
-  async def test_ephemeral_hidden_services_v3(self):
+  def test_ephemeral_hidden_services_v3(self):
     """
     Exercises creating v3 ephemeral hidden services.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, key_content = 'ED25519-V3')
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
       self.assertTrue(response.private_key is not None)
@@ -670,20 +654,19 @@ class TestController(unittest.TestCase):
 
       # other controllers shouldn't be able to see these hidden services
 
-      with await runner.get_tor_controller() as second_controller:
+      with runner.get_tor_controller() as second_controller:
         self.assertEqual(2, len(controller.list_ephemeral_hidden_services()))
         self.assertEqual(0, len(second_controller.list_ephemeral_hidden_services()))
 
   @test.require.controller
-  @async_test
-  async def test_with_ephemeral_hidden_services_basic_auth(self):
+  def test_with_ephemeral_hidden_services_basic_auth(self):
     """
     Exercises creating ephemeral hidden services that uses basic authentication.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, key_content = 'RSA1024', basic_auth = {'alice': 'nKwfvVPmTNr2k2pG0pzV4g', 'bob': None})
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
       self.assertTrue(response.private_key is not None)
@@ -695,8 +678,7 @@ class TestController(unittest.TestCase):
       self.assertEqual([], controller.list_ephemeral_hidden_services())
 
   @test.require.controller
-  @async_test
-  async def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
+  def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
     """
     Exercises creating ephemeral hidden services when attempting to use basic
     auth but not including any credentials.
@@ -704,13 +686,12 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       exc_msg = "ADD_ONION response didn't have an OK status: No auth clients specified"
       self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, basic_auth = {})
 
   @test.require.controller
-  @async_test
-  async def test_with_detached_ephemeral_hidden_services(self):
+  def test_with_detached_ephemeral_hidden_services(self):
     """
     Exercises creating detached ephemeral hidden services and methods when
     they're present.
@@ -718,7 +699,7 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       response = controller.create_ephemeral_hidden_service(4567, detached = True)
       self.assertEqual([], controller.list_ephemeral_hidden_services())
       self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services(detached = True))
@@ -732,7 +713,7 @@ class TestController(unittest.TestCase):
 
       # other controllers should be able to see this service, and drop it
 
-      with await runner.get_tor_controller() as second_controller:
+      with runner.get_tor_controller() as second_controller:
         self.assertEqual([response.service_id], second_controller.list_ephemeral_hidden_services(detached = True))
         self.assertEqual(True, second_controller.remove_ephemeral_hidden_service(response.service_id))
         self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
@@ -745,8 +726,7 @@ class TestController(unittest.TestCase):
       controller.remove_ephemeral_hidden_service(response.service_id)
 
   @test.require.controller
-  @async_test
-  async def test_rejecting_unanonymous_hidden_services_creation(self):
+  def test_rejecting_unanonymous_hidden_services_creation(self):
     """
     Attempt to create a non-anonymous hidden service despite not setting
     HiddenServiceSingleHopMode and HiddenServiceNonAnonymousMode.
@@ -754,12 +734,11 @@ class TestController(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       self.assertEqual('Tor is in anonymous hidden service mode', str(controller.msg('ADD_ONION NEW:BEST Flags=NonAnonymous Port=4567')))
 
   @test.require.controller
-  @async_test
-  async def test_set_conf(self):
+  def test_set_conf(self):
     """
     Exercises set_conf(), reset_conf(), and set_options() methods with valid
     and invalid requests.
@@ -769,7 +748,7 @@ class TestController(unittest.TestCase):
 
     with tempfile.TemporaryDirectory() as tmpdir:
 
-      with await runner.get_tor_controller() as controller:
+      with runner.get_tor_controller() as controller:
         try:
           # successfully set a single option
           connlimit = int(controller.get_conf('ConnLimit'))
@@ -832,14 +811,13 @@ class TestController(unittest.TestCase):
           ), reset = True)
 
   @test.require.controller
-  @async_test
-  async def test_set_conf_for_usebridges(self):
+  def test_set_conf_for_usebridges(self):
     """
     Ensure we can set UseBridges=1 and also set a Bridge. This is a tor
     regression check (:trac:`31945`).
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       orport = controller.get_conf('ORPort')
 
       try:
@@ -856,26 +834,24 @@ class TestController(unittest.TestCase):
         ), reset = True)
 
   @test.require.controller
-  @async_test
-  async def test_set_conf_when_immutable(self):
+  def test_set_conf_when_immutable(self):
     """
     Issue a SETCONF for tor options that cannot be changed while running.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertRaisesWith(stem.InvalidArguments, "DisableAllSwap cannot be changed while tor's running", controller.set_conf, 'DisableAllSwap', '1')
       self.assertRaisesWith(stem.InvalidArguments, "DisableAllSwap, User cannot be changed while tor's running", controller.set_options, {'User': 'atagar', 'DisableAllSwap': '1'})
 
   @test.require.controller
-  @async_test
-  async def test_loadconf(self):
+  def test_loadconf(self):
     """
     Exercises Controller.load_conf with valid and invalid requests.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       oldconf = runner.get_torrc_contents()
 
       try:
@@ -905,13 +881,12 @@ class TestController(unittest.TestCase):
         controller.reset_conf('__OwningControllerProcess')
 
   @test.require.controller
-  @async_test
-  async def test_saveconf(self):
+  def test_saveconf(self):
     runner = test.runner.get_runner()
 
     # only testing for success, since we need to run out of disk space to test
     # for failure
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       oldconf = runner.get_torrc_contents()
 
       try:
@@ -926,15 +901,14 @@ class TestController(unittest.TestCase):
         controller.reset_conf('__OwningControllerProcess')
 
   @test.require.controller
-  @async_test
-  async def test_get_ports(self):
+  def test_get_ports(self):
     """
     Test Controller.get_ports against a running tor instance.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       self.assertEqual([test.runner.ORPORT], controller.get_ports(Listener.OR))
       self.assertEqual([], controller.get_ports(Listener.DIR))
       self.assertEqual([test.runner.SOCKS_PORT], controller.get_ports(Listener.SOCKS))
@@ -948,15 +922,14 @@ class TestController(unittest.TestCase):
         self.assertEqual([], controller.get_ports(Listener.CONTROL))
 
   @test.require.controller
-  @async_test
-  async def test_get_listeners(self):
+  def test_get_listeners(self):
     """
     Test Controller.get_listeners against a running tor instance.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       self.assertEqual([('0.0.0.0', test.runner.ORPORT)], controller.get_listeners(Listener.OR))
       self.assertEqual([], controller.get_listeners(Listener.DIR))
       self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], controller.get_listeners(Listener.SOCKS))
@@ -972,15 +945,14 @@ class TestController(unittest.TestCase):
   @test.require.controller
   @test.require.online
   @test.require.version(stem.version.Version('0.1.2.2-alpha'))
-  @async_test
-  async def test_enable_feature(self):
+  def test_enable_feature(self):
     """
     Test Controller.enable_feature with valid and invalid inputs.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       self.assertTrue(controller.is_feature_enabled('VERBOSE_NAMES'))
       self.assertRaises(stem.InvalidArguments, controller.enable_feature, ['NOT', 'A', 'FEATURE'])
 
@@ -992,13 +964,12 @@ class TestController(unittest.TestCase):
         self.fail()
 
   @test.require.controller
-  @async_test
-  async def test_signal(self):
+  def test_signal(self):
     """
     Test controller.signal with valid and invalid signals.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # valid signal
       controller.signal('CLEARDNSCACHE')
 
@@ -1006,13 +977,12 @@ class TestController(unittest.TestCase):
       self.assertRaises(stem.InvalidArguments, controller.signal, 'FOOBAR')
 
   @test.require.controller
-  @async_test
-  async def test_newnym_availability(self):
+  def test_newnym_availability(self):
     """
     Test the is_newnym_available and get_newnym_wait methods.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual(True, controller.is_newnym_available())
       self.assertEqual(0.0, controller.get_newnym_wait())
 
@@ -1023,9 +993,8 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_extendcircuit(self):
-    with await test.runner.get_runner().get_tor_controller() as controller:
+  def test_extendcircuit(self):
+    with test.runner.get_runner().get_tor_controller() as controller:
       circuit_id = controller.extend_circuit('0')
 
       # check if our circuit was created
@@ -1039,15 +1008,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_repurpose_circuit(self):
+  def test_repurpose_circuit(self):
     """
     Tests Controller.repurpose_circuit with valid and invalid input.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       circ_id = controller.new_circuit()
       controller.repurpose_circuit(circ_id, 'CONTROLLER')
       circuit = controller.get_circuit(circ_id)
@@ -1062,15 +1030,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_close_circuit(self):
+  def test_close_circuit(self):
     """
     Tests Controller.close_circuit with valid and invalid input.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       circuit_id = controller.new_circuit()
       controller.close_circuit(circuit_id)
       circuit_output = controller.get_info('circuit-status')
@@ -1089,8 +1056,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_streams(self):
+  def test_get_streams(self):
     """
     Tests Controller.get_streams().
     """
@@ -1099,7 +1065,7 @@ class TestController(unittest.TestCase):
     port = 443
 
     runner = test.runner.get_runner()
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # we only need one proxy port, so take the first
       socks_listener = controller.get_listeners(Listener.SOCKS)[0]
 
@@ -1115,15 +1081,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_close_stream(self):
+  def test_close_stream(self):
     """
     Tests Controller.close_stream with valid and invalid input.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # use the first socks listener
 
       socks_listener = controller.get_listeners(Listener.SOCKS)[0]
@@ -1155,12 +1120,11 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_mapaddress(self):
+  def test_mapaddress(self):
     self.skipTest('(https://trac.torproject.org/projects/tor/ticket/25611)')
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       controller.map_address({'1.2.1.2': 'ifconfig.me'})
 
       s = None
@@ -1194,11 +1158,10 @@ class TestController(unittest.TestCase):
       self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)), "'%s' isn't an address" % ip_addr)
 
   @test.require.controller
-  @async_test
-  async def test_mapaddress_offline(self):
+  def test_mapaddress_offline(self):
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # try mapping one element, ensuring results are as expected
 
       map1 = {'1.2.1.2': 'ifconfig.me'}
@@ -1274,13 +1237,12 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_microdescriptor(self):
+  def test_get_microdescriptor(self):
     """
     Basic checks for get_microdescriptor().
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
       self.assertRaises(ValueError, controller.get_microdescriptor, '')
       self.assertRaises(ValueError, controller.get_microdescriptor, 5)
@@ -1299,8 +1261,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_microdescriptors(self):
+  def test_get_microdescriptors(self):
     """
     Fetches a few descriptors via the get_microdescriptors() method.
     """
@@ -1310,7 +1271,7 @@ class TestController(unittest.TestCase):
     if not os.path.exists(runner.get_test_dir('cached-microdescs')):
       self.skipTest('(no cached microdescriptors)')
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       count = 0
 
       for desc in controller.get_microdescriptors():
@@ -1322,15 +1283,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_server_descriptor(self):
+  def test_get_server_descriptor(self):
     """
     Basic checks for get_server_descriptor().
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # we should balk at invalid content
       self.assertRaises(ValueError, controller.get_server_descriptor, '')
       self.assertRaises(ValueError, controller.get_server_descriptor, 5)
@@ -1349,15 +1309,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_server_descriptors(self):
+  def test_get_server_descriptors(self):
     """
     Fetches a few descriptors via the get_server_descriptors() method.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       count = 0
 
       for desc in controller.get_server_descriptors():
@@ -1375,13 +1334,12 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_network_status(self):
+  def test_get_network_status(self):
     """
     Basic checks for get_network_status().
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # we should balk at invalid content
       self.assertRaises(ValueError, controller.get_network_status, '')
       self.assertRaises(ValueError, controller.get_network_status, 5)
@@ -1400,15 +1358,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_network_statuses(self):
+  def test_get_network_statuses(self):
     """
     Fetches a few descriptors via the get_network_statuses() method.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       count = 0
 
       for desc in controller.get_network_statuses():
@@ -1424,15 +1381,14 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_hidden_service_descriptor(self):
+  def test_get_hidden_service_descriptor(self):
     """
     Fetches a few descriptors via the get_hidden_service_descriptor() method.
     """
 
     runner = test.runner.get_runner()
 
-    with await runner.get_tor_controller() as controller:
+    with runner.get_tor_controller() as controller:
       # fetch the descriptor for DuckDuckGo
 
       desc = controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m.onion')
@@ -1450,8 +1406,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_attachstream(self):
+  def test_attachstream(self):
     host = socket.gethostbyname('www.torproject.org')
     port = 80
 
@@ -1461,7 +1416,7 @@ class TestController(unittest.TestCase):
       if stream.status == 'NEW' and circuit_id:
         controller.attach_stream(stream.id, circuit_id)
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       # try 10 times to build a circuit we can connect through
       for i in range(10):
         controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
@@ -1491,26 +1446,24 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.online
-  @async_test
-  async def test_get_circuits(self):
+  def test_get_circuits(self):
     """
     Fetches circuits via the get_circuits() method.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       new_circ = controller.new_circuit()
       circuits = controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
   @test.require.controller
-  @async_test
-  async def test_transition_to_relay(self):
+  def test_transition_to_relay(self):
     """
     Transitions Tor to turn into a relay, then back to a client. This helps to
     catch transition issues such as the one cited in :trac:`14901`.
     """
 
-    with await test.runner.get_runner().get_tor_controller() as controller:
+    with test.runner.get_runner().get_tor_controller() as controller:
       try:
         controller.reset_conf('OrPort', 'DisableNetwork')
         self.assertEqual(None, controller.get_conf('OrPort'))
