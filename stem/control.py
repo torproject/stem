@@ -946,18 +946,18 @@ class BaseController(_BaseControllerSocketMixin):
 
         if control_message.content()[-1][0] == '650':
           # asynchronous message, adds to the event queue and wakes up its handler
-          await self._event_queue.put(control_message)
+          self._event_queue.put_nowait(control_message)
           self._event_notice.set()
         else:
           # response to a msg() call
-          await self._reply_queue.put(control_message)
+          self._reply_queue.put_nowait(control_message)
       except stem.ControllerError as exc:
         # Assume that all exceptions belong to the reader. This isn't always
         # true, but the msg() call can do a better job of sorting it out.
         #
         # Be aware that the msg() method relies on this to unblock callers.
 
-        await self._reply_queue.put(exc)
+        self._reply_queue.put_nowait(exc)
 
   async def _event_loop(self) -> None:
     """
@@ -2045,11 +2045,11 @@ class AsyncController(BaseController):
     start_time = time.time()
 
     if await_result:
-      async def hs_desc_listener(event: stem.response.events.Event) -> None:
-        await hs_desc_queue.put(event)
+      def hs_desc_listener(event: stem.response.events.Event) -> None:
+        hs_desc_queue.put_nowait(event)
 
-      async def hs_desc_content_listener(event: stem.response.events.Event) -> None:
-        await hs_desc_content_queue.put(event)
+      def hs_desc_content_listener(event: stem.response.events.Event) -> None:
+        hs_desc_content_queue.put_nowait(event)
 
       await asyncio.gather(
         self.add_event_listener(hs_desc_listener, EventType.HS_DESC),
@@ -2926,8 +2926,8 @@ class AsyncController(BaseController):
     start_time = time.time()
 
     if await_publication:
-      async def hs_desc_listener(event: stem.response.events.Event) -> None:
-        await hs_desc_queue.put(event)
+      def hs_desc_listener(event: stem.response.events.Event) -> None:
+        hs_desc_queue.put_nowait(event)
 
       await self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
 
@@ -3458,8 +3458,8 @@ class AsyncController(BaseController):
     start_time = time.time()
 
     if await_build:
-      async def circ_listener(event: stem.response.events.Event) -> None:
-        await circ_queue.put(event)
+      def circ_listener(event: stem.response.events.Event) -> None:
+        circ_queue.put_nowait(event)
 
       await self.add_event_listener(circ_listener, EventType.CIRC)
 
