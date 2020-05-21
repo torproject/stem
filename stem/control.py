@@ -989,6 +989,8 @@ class BaseController(_BaseControllerSocketMixin):
         try:
           await asyncio.wait_for(self._event_notice.wait(), timeout=0.05)
         except asyncio.TimeoutError:
+          pass
+        finally:
           self._event_notice.clear()
 
 
