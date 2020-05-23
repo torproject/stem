@@ -648,6 +648,8 @@ class BaseController(_BaseControllerSocketMixin):
 
     self._state_change_threads = []  # type: List[threading.Thread] # threads we've spawned to notify of state changes
 
+    self._reader_loop_task = None  # type: Optional[asyncio.Task]
+    self._event_loop_task = None  # type: Optional[asyncio.Task]
     if self._socket.is_alive():
       self._create_loop_tasks()
 
@@ -868,6 +870,15 @@ class BaseController(_BaseControllerSocketMixin):
     self._event_notice.set()
     self._is_authenticated = False
 
+    reader_loop_task = self._reader_loop_task
+    self._reader_loop_task = None
+    event_loop_task = self._event_loop_task
+    self._event_loop_task = None
+    if reader_loop_task and self.is_alive():
+      await reader_loop_task
+    if event_loop_task:
+      await event_loop_task
+
     self._notify_status_listeners(State.CLOSED)
 
     await self._socket_close()
@@ -923,12 +934,12 @@ class BaseController(_BaseControllerSocketMixin):
 
   def _create_loop_tasks(self) -> None:
     """
-    Initializes daemon threads. Threads can't be reused so we need to recreate
+    Initializes asyncio tasks. Tasks can't be reused so we need to recreate
     them if we're restarted.
     """
 
-    for coroutine in (self._reader_loop(), self._event_loop()):
-      self._asyncio_loop.create_task(coroutine)
+    self._reader_loop_task = self._asyncio_loop.create_task(self._reader_loop())
+    self._event_loop_task = self._asyncio_loop.create_task(self._event_loop())
 
   async def _reader_loop(self) -> None:
     """

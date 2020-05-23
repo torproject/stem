@@ -161,9 +161,14 @@ class TestBaseController(unittest.TestCase):
       await controller.msg('SETEVENTS')
       await controller.msg('RESETCONF NodeFamily')
 
-      await controller.close()
-      controller.receive_notice.set()
-      await asyncio.sleep(0)
+      # We need to set the receive notice and shut down the controller
+      # concurrently because the controller will block on the event handling,
+      # which in turn is currently blocking on the reveive_notice.
+
+      async def set_receive_notice():
+        controller.receive_notice.set()
+
+      await asyncio.gather(controller.close(), set_receive_notice())
 
       self.assertTrue(len(controller.received_events) >= 2)
 
