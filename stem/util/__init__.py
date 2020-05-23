@@ -10,7 +10,6 @@ import datetime
 import threading
 from concurrent.futures import Future
 
-from types import TracebackType
 from typing import Any, AsyncIterator, Iterator, Optional, Type, Union
 
 __all__ = [
@@ -143,34 +142,6 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
     setattr(obj, '_cached_hash', my_hash)
 
   return my_hash
-
-
-class CombinedReentrantAndAsyncioLock:
-  """
-  Lock that combines thread-safe reentrant and not thread-safe asyncio locks.
-  """
-
-  __slots__ = ('_r_lock', '_async_lock')
-
-  def __init__(self) -> None:
-    self._r_lock = threading.RLock()
-    self._async_lock = asyncio.Lock()
-
-  async def acquire(self) -> bool:
-    await self._async_lock.acquire()
-    self._r_lock.acquire()
-    return True
-
-  def release(self) -> None:
-    self._r_lock.release()
-    self._async_lock.release()
-
-  async def __aenter__(self) -> 'CombinedReentrantAndAsyncioLock':
-    await self.acquire()
-    return self
-
-  async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
-    self.release()
 
 
 class ThreadForWrappedAsyncClass(threading.Thread):

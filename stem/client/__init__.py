@@ -25,6 +25,7 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- close - closes this circuit
 """
 
+import asyncio
 import hashlib
 
 import stem
@@ -70,7 +71,7 @@ class Relay(object):
     self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
     self._orport_buffer = b''  # unread bytes
-    self._orport_lock = stem.util.CombinedReentrantAndAsyncioLock()
+    self._orport_lock = asyncio.Lock()
     self._circuits = {}  # type: Dict[int, stem.client.Circuit]
 
   @staticmethod

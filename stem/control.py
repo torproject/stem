@@ -623,7 +623,7 @@ class BaseController(_BaseControllerSocketMixin):
 
     self._asyncio_loop = asyncio.get_event_loop()
 
-    self._msg_lock = stem.util.CombinedReentrantAndAsyncioLock()
+    self._msg_lock = asyncio.Lock()
 
     self._status_listeners = []  # type: List[Tuple[Callable[[stem.control.BaseController, stem.control.State, float], None], bool]] # tuples of the form (callback, spawn_thread)
     self._status_listeners_lock = threading.RLock()
@@ -1062,7 +1062,7 @@ class AsyncController(BaseController):
     # mapping of event types to their listeners
 
     self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]]]
-    self._event_listeners_lock = stem.util.CombinedReentrantAndAsyncioLock()
+    self._event_listeners_lock = asyncio.Lock()
     self._enabled_features = []  # type: List[str]
 
     self._last_address_exc = None  # type: Optional[BaseException]
