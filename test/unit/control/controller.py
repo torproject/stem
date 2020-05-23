@@ -55,6 +55,9 @@ class TestControl(unittest.TestCase):
       self.malformed_listener = Mock()
       self.controller.add_event_listener(self.malformed_listener, MALFORMED_EVENTS)
 
+  def tearDown(self):
+    self.controller.close()
+
   def test_event_description(self):
     self.assertEqual("Logging at the debug runlevel. This is low level, high volume information about tor's internals that generally isn't useful to users.", stem.control.event_description('DEBUG'))
     self.assertEqual('Event emitted every second with the bytes sent and received by tor.', stem.control.event_description('BW'))
