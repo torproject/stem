@@ -858,7 +858,7 @@ class BaseController(_BaseControllerSocketMixin):
 
   async def _connect(self) -> None:
     self._create_loop_tasks()
-    self._notify_status_listeners(State.INIT)
+    await self._notify_status_listeners(State.INIT, acquire_send_lock=False)
     await self._socket_connect()
     self._is_authenticated = False
 
@@ -879,7 +879,7 @@ class BaseController(_BaseControllerSocketMixin):
     if event_loop_task:
       await event_loop_task
 
-    self._notify_status_listeners(State.CLOSED)
+    await self._notify_status_listeners(State.CLOSED, acquire_send_lock=False)
 
     await self._socket_close()
 
@@ -888,7 +888,7 @@ class BaseController(_BaseControllerSocketMixin):
 
     self._is_authenticated = True
 
-  def _notify_status_listeners(self, state: 'stem.control.State') -> None:
+  async def _notify_status_listeners(self, state: 'stem.control.State', acquire_send_lock: bool = True) -> None:
     """
     Informs our status listeners that a state change occurred.
 
@@ -898,7 +898,10 @@ class BaseController(_BaseControllerSocketMixin):
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
 
-    with self._socket._get_send_lock():
+    send_lock = self._socket._get_send_lock()
+    try:
+      if acquire_send_lock:
+        await send_lock.acquire()
       with self._status_listeners_lock:
         # States imply that our socket is either alive or not, which may not
         # hold true when multiple events occur in quick succession. For
@@ -931,6 +934,9 @@ class BaseController(_BaseControllerSocketMixin):
             self._state_change_threads.append(notice_thread)
           else:
             listener(self, state, change_timestamp)
+    finally:
+      if acquire_send_lock:
+        send_lock.release()
 
   def _create_loop_tasks(self) -> None:
     """
@@ -1064,10 +1070,10 @@ class AsyncController(BaseController):
 
     super(AsyncController, self).__init__(control_socket, is_authenticated)
 
-    def _sighup_listener(event: stem.response.events.SignalEvent) -> None:
+    async def _sighup_listener(event: stem.response.events.SignalEvent) -> None:
       if event.signal == Signal.RELOAD:
         self.clear_cache()
-        self._notify_status_listeners(State.RESET)
+        await self._notify_status_listeners(State.RESET)
 
     def _confchanged_listener(event: stem.response.events.ConfChangedEvent) -> None:
       if self.is_caching_enabled():
