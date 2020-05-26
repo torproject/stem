@@ -114,18 +114,12 @@ class BaseSocket(object):
     self._is_alive = False
     self._connection_time = 0.0  # time when we last connected or disconnected
 
-    # Tracks sending and receiving separately. This should be safe, and doing
-    # so prevents deadlock where we block writes because we're waiting to read
-    # a message that isn't coming.
-
     # The class is often initialized in a thread with an event loop different
-    # from one where it will be used. The asyncio locks are bound to the loop
-    # running in a thread where they are initialized. Therefore, we are
-    # creating them in _get_send_lock and _get_recv_lock when they are used the
-    # first time.
+    # from one where it will be used. The asyncio lock is bound to the loop
+    # running in a thread where it is initialized. Therefore, we are creating
+    # it in _get_send_lock when it is used the first time.
 
     self._send_lock = None  # type: Optional[asyncio.Lock]
-    self._recv_lock = None  # type: Optional[asyncio.Lock]
 
   def is_alive(self) -> bool:
     """
@@ -186,20 +180,19 @@ class BaseSocket(object):
       if self.is_alive():
         await self._close_wo_send_lock()
 
-      async with self._get_recv_lock():
-        self._reader, self._writer = await self._open_connection()
-        self._is_alive = True
-        self._connection_time = time.time()
+      self._reader, self._writer = await self._open_connection()
+      self._is_alive = True
+      self._connection_time = time.time()
 
-        # It's possible for this to have a transient failure...
-        # SocketError: [Errno 4] Interrupted system call
-        #
-        # It's safe to retry, so give it another try if it fails.
+      # It's possible for this to have a transient failure...
+      # SocketError: [Errno 4] Interrupted system call
+      #
+      # It's safe to retry, so give it another try if it fails.
 
-        try:
-          await self._connect()
-        except stem.SocketError:
-          await self._connect()  # single retry
+      try:
+        await self._connect()
+      except stem.SocketError:
+        await self._connect()  # single retry
 
   async def close(self) -> None:
     """
@@ -263,16 +256,15 @@ class BaseSocket(object):
     """
 
     try:
-      async with self._get_recv_lock():
-        # makes a temporary reference to the _reader because connect()
-        # and close() may set or unset it
+      # makes a temporary reference to the _reader because connect()
+      # and close() may set or unset it
 
-        my_reader = self._reader
+      my_reader = self._reader
 
-        if not my_reader:
-          raise stem.SocketClosed()
+      if not my_reader:
+        raise stem.SocketClosed()
 
-        return await handler(my_reader)
+      return await handler(my_reader)
     except stem.SocketClosed:
       if self.is_alive():
         await self.close()
@@ -293,11 +285,6 @@ class BaseSocket(object):
     if self._send_lock is None:
       self._send_lock = asyncio.Lock()
     return self._send_lock
-
-  def _get_recv_lock(self) -> asyncio.Lock:
-    if self._recv_lock is None:
-      self._recv_lock = asyncio.Lock()
-    return self._recv_lock
 
   async def __aenter__(self) -> 'stem.socket.BaseSocket':
     return self
