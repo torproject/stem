@@ -124,7 +124,7 @@ class TestAuthenticate(unittest.TestCase):
     with runner.get_tor_controller(False) as controller:
       asyncio.run_coroutine_threadsafe(
         stem.connection.authenticate(controller._wrapped_instance, test.runner.CONTROL_PASSWORD, runner.get_chroot()),
-        controller._thread_for_wrapped_class.loop,
+        controller._loop,
       ).result()
       await test.runner.exercise_controller(self, controller)
 

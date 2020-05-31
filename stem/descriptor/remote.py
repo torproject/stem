@@ -663,8 +663,11 @@ class Query(stem.util.AsyncClassWrapper):
   """
 
   def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence[stem.Endpoint]] = None, compression: Union[stem.descriptor._Compression, Sequence[stem.descriptor._Compression]] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: stem.descriptor.DocumentHandler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
-    self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
-    self._thread_for_wrapped_class.start()
+    self._loop = asyncio.get_event_loop()
+    self._loop_thread = threading.Thread(target = self._loop.run_forever, name = 'asyncio')
+    self._loop_thread.setDaemon(True)
+    self._loop_thread.start()
+
     self._wrapped_instance: AsyncQuery = self._init_async_class(  # type: ignore
       AsyncQuery,
       resource,

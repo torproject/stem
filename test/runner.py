@@ -488,16 +488,16 @@ class Runner(object):
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    async_controller_thread = stem.util.ThreadForWrappedAsyncClass()
-    async_controller_thread.start()
+    loop = asyncio.new_event_loop()
+    loop_thread = threading.Thread(target = loop.run_forever, name = 'get_tor_controller')
+    loop_thread.setDaemon(True)
+    loop_thread.start()
 
-    try:
-      control_socket = asyncio.run_coroutine_threadsafe(self.get_tor_socket(False), async_controller_thread.loop).result()
-      controller = stem.control.Controller(control_socket, started_async_controller_thread = async_controller_thread)
-    except Exception:
-      if async_controller_thread.is_alive():
-        async_controller_thread.join()
-      raise
+    async def wrapped_get_controller():
+      control_socket = await self.get_tor_socket(False)
+      return stem.control.Controller(control_socket)
+
+    controller = asyncio.run_coroutine_threadsafe(wrapped_get_controller(), loop).result()
 
     if authenticate:
       self._authenticate_controller(controller)

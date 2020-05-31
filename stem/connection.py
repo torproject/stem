@@ -159,7 +159,7 @@ import stem.util.str_tools
 import stem.util.system
 import stem.version
 
-from typing import Any, cast, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, List, Optional, Sequence, Tuple, Type, Union
 from stem.util import log
 
 AuthMethod = stem.util.enum.Enum('NONE', 'PASSWORD', 'COOKIE', 'SAFECOOKIE', 'UNKNOWN')
@@ -271,18 +271,24 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   if controller is None or not issubclass(controller, stem.control.Controller):
     raise ValueError('Controller should be a stem.control.Controller subclass.')
 
-  async_controller_thread = stem.util.ThreadForWrappedAsyncClass()
-  async_controller_thread.start()
+  loop = asyncio.new_event_loop()
+  loop_thread = threading.Thread(target = loop.run_forever, name = 'asyncio')
+  loop_thread.setDaemon(True)
+  loop_thread.start()
 
-  connect_coroutine = _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
   try:
-    connection = asyncio.run_coroutine_threadsafe(connect_coroutine, async_controller_thread.loop).result()
-    if connection is None and async_controller_thread.is_alive():
-      async_controller_thread.join()
+    connection = asyncio.run_coroutine_threadsafe(_connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller), loop).result()
+
+    if connection is None and loop_thread.is_alive():
+      loop.call_soon_threadsafe(loop.stop)
+      loop_thread.join()
+
     return connection
   except:
-    if async_controller_thread.is_alive():
-      async_controller_thread.join()
+    if loop_thread.is_alive():
+      loop.call_soon_threadsafe(loop.stop)
+      loop_thread.join()
+
     raise
 
 
@@ -399,10 +405,10 @@ async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str
 
     if controller is None:
       return control_socket
-    elif issubclass(controller, stem.control.BaseController):
+    elif issubclass(controller, stem.control.BaseController) or issubclass(controller, stem.control.Controller):
+      # TODO: Controller no longer extends BaseController (we'll probably change that)
+
       return controller(control_socket, is_authenticated = True)
-    elif issubclass(controller, stem.control.Controller):
-      return controller(control_socket, is_authenticated = True, started_async_controller_thread = cast(stem.util.ThreadForWrappedAsyncClass, threading.current_thread()))
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):
       print(CONNECT_MESSAGES['wrong_port_type'].format(port = control_socket.port))

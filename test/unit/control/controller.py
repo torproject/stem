@@ -751,7 +751,7 @@ class TestControl(unittest.TestCase):
     with patch('time.time', Mock(return_value = TEST_TIMESTAMP)):
       with patch('stem.control.AsyncController.is_alive') as is_alive_mock:
         is_alive_mock.return_value = True
-        loop = self.controller._thread_for_wrapped_class.loop
+        loop = self.controller._loop
         asyncio.run_coroutine_threadsafe(self.async_controller._event_loop(), loop)
 
         try:

@@ -3941,13 +3941,17 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
       self,
       control_socket: stem.socket.ControlSocket,
       is_authenticated: bool = False,
-      started_async_controller_thread: stem.util.ThreadForWrappedAsyncClass = None,
   ) -> None:
-    if started_async_controller_thread:
-      self._thread_for_wrapped_class = started_async_controller_thread
-    else:
-      self._thread_for_wrapped_class = stem.util.ThreadForWrappedAsyncClass()
-      self._thread_for_wrapped_class.start()
+    # if within an asyncio context use its loop, otherwise spawn our own
+
+    try:
+      self._loop = asyncio.get_running_loop()
+      self._loop_thread = threading.current_thread()
+    except RuntimeError:
+      self._loop = asyncio.new_event_loop()
+      self._loop_thread = threading.Thread(target = self._loop.run_forever, name = 'asyncio')
+      self._loop_thread.setDaemon(True)
+      self._loop_thread.start()
 
     self._wrapped_instance: AsyncController = self._init_async_class(AsyncController, control_socket, is_authenticated)  # type: ignore
     self._socket = self._wrapped_instance._socket
@@ -4211,11 +4215,6 @@ class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
   @_set_doc_from_async_controller
   def drop_guards(self) -> None:
     self._execute_async_method('drop_guards')
-
-  def __del__(self) -> None:
-    loop = self._thread_for_wrapped_class.loop
-    if loop.is_running():
-      loop.call_soon_threadsafe(loop.stop)
 
   def __enter__(self) -> 'stem.control.Controller':
     return self

@@ -10,7 +10,7 @@ import datetime
 import threading
 from concurrent.futures import Future
 
-from typing import Any, AsyncIterator, Iterator, Optional, Type, Union
+from typing import Any, AsyncIterator, Iterator, Type, Union
 
 __all__ = [
   'conf',
@@ -144,41 +144,26 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
   return my_hash
 
 
-class ThreadForWrappedAsyncClass(threading.Thread):
-  def __init__(self, *args: Any, **kwargs: Any) -> None:
-    super().__init__(*args, *kwargs)
-    self.loop = asyncio.new_event_loop()
-    self.setDaemon(True)
-
-  def run(self) -> None:
-    self.loop.run_forever()
-
-  def join(self, timeout: Optional[float] = None) -> None:
-    self.loop.call_soon_threadsafe(self.loop.stop)
-    super().join(timeout)
-    self.loop.close()
-
-
 class AsyncClassWrapper:
-  _thread_for_wrapped_class: ThreadForWrappedAsyncClass
+  _loop: asyncio.AbstractEventLoop
+  _loop_thread: threading.Thread
   _wrapped_instance: type
 
   def _init_async_class(self, async_class: Type, *args: Any, **kwargs: Any) -> Any:
-    thread = self._thread_for_wrapped_class
     # The asynchronous class should be initialized in the thread where
     # its methods will be executed.
-    if thread != threading.current_thread():
+    if self._loop_thread != threading.current_thread():
       async def init():
         return async_class(*args, **kwargs)
 
-      return asyncio.run_coroutine_threadsafe(init(), thread.loop).result()
+      return asyncio.run_coroutine_threadsafe(init(), self._loop).result()
 
     return async_class(*args, **kwargs)
 
   def _call_async_method_soon(self, method_name: str, *args: Any, **kwargs: Any) -> Future:
     return asyncio.run_coroutine_threadsafe(
       getattr(self._wrapped_instance, method_name)(*args, **kwargs),
-      self._thread_for_wrapped_class.loop,
+      self._loop,
     )
 
   def _execute_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
@@ -192,5 +177,9 @@ class AsyncClassWrapper:
       convert_async_generator(
         getattr(self._wrapped_instance, method_name)(*args, **kwargs),
       ),
-      self._thread_for_wrapped_class.loop,
+      self._loop,
     ).result()
+
+  def __del__(self) -> None:
+    self._loop.call_soon_threadsafe(self._loop.stop)
+    self._loop_thread.join()
