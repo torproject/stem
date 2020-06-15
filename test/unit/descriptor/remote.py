@@ -2,9 +2,6 @@
 Unit tests for stem.descriptor.remote.
 """
 
-import http.client
-import socket
-import time
 import unittest
 
 import stem
@@ -67,47 +64,13 @@ HEADER = '\r\n'.join([
 ])
 
 
-def _orport_mock(data, encoding = 'identity', response_code_header = None):
+def mock_download(descriptor, encoding = 'identity', response_code_header = None):
   if response_code_header is None:
     response_code_header = b'HTTP/1.0 200 OK\r\n'
 
-  data = response_code_header + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + data
-  cells = []
+  data = response_code_header + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + descriptor
 
-  for hunk in [data[i:i + 50] for i in range(0, len(data), 50)]:
-    cell = Mock()
-    cell.data = hunk
-    cells.append(cell)
-
-  class AsyncMock(Mock):
-    async def __aenter__(self):
-      return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-      return
-
-  circ_mock = AsyncMock()
-  circ_mock.directory.side_effect = coro_func_returning_value(data)
-
-  relay_mock = AsyncMock()
-  relay_mock.create_circuit.side_effect = coro_func_returning_value(circ_mock)
-
-  return coro_func_returning_value(relay_mock)
-
-
-def _dirport_mock(data, encoding = 'identity'):
-  dirport_mock = Mock()
-  dirport_mock().read.return_value = data
-
-  headers = http.client.HTTPMessage()
-
-  for line in HEADER.splitlines():
-    key, value = line.split(': ', 1)
-    headers.add_header(key, encoding if key == 'Content-Encoding' else value)
-
-  dirport_mock().headers = headers
-
-  return dirport_mock
+  return patch('stem.descriptor.remote.AsyncQuery._download_from', Mock(side_effect = coro_func_returning_value(data)))
 
 
 class TestDescriptorDownloader(unittest.TestCase):
@@ -115,10 +78,10 @@ class TestDescriptorDownloader(unittest.TestCase):
     # prevent our mocks from impacting other tests
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
-  @patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR))
-  def test_using_orport(self):
+  @mock_download(TEST_DESCRIPTOR)
+  def test_download(self):
     """
-    Download a descriptor through the ORPort.
+    Simply download and parse a descriptor.
     """
 
     reply = stem.descriptor.remote.their_server_descriptor(
@@ -128,10 +91,16 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     self.assertEqual(1, len(list(reply)))
-    self.assertEqual('moria1', list(reply)[0].nickname)
     self.assertEqual(5, len(reply.reply_headers))
 
-  def test_orport_response_code_headers(self):
+    desc = list(reply)[0]
+
+    self.assertEqual('moria1', desc.nickname)
+    self.assertEqual('128.31.0.34', desc.address)
+    self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
+    self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
+
+  def test_response_header_code(self):
     """
     When successful Tor provides a '200 OK' status, but we should accept other 2xx
     response codes, reason text, and recognize HTTP errors.
@@ -144,14 +113,14 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     for header in response_code_headers:
-      with patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR, response_code_header = header)):
+      with mock_download(TEST_DESCRIPTOR, response_code_header = header):
         stem.descriptor.remote.their_server_descriptor(
           endpoints = [stem.ORPort('12.34.56.78', 1100)],
           validate = True,
           skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
         ).run()
 
-    with patch('stem.client.Relay.connect', _orport_mock(TEST_DESCRIPTOR, response_code_header = b'HTTP/1.0 500 Kaboom\r\n')):
+    with mock_download(TEST_DESCRIPTOR, response_code_header = b'HTTP/1.0 500 Kaboom\r\n'):
       request = stem.descriptor.remote.their_server_descriptor(
         endpoints = [stem.ORPort('12.34.56.78', 1100)],
         validate = True,
@@ -160,28 +129,32 @@ class TestDescriptorDownloader(unittest.TestCase):
 
       self.assertRaisesRegexp(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
-  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
-  def test_using_dirport(self):
-    """
-    Download a descriptor through the DirPort.
-    """
+  @mock_download(TEST_DESCRIPTOR)
+  def test_reply_header_data(self):
+    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
+    self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
+    query.run()
 
-    reply = stem.descriptor.remote.their_server_descriptor(
-      endpoints = [stem.DirPort('12.34.56.78', 1100)],
-      validate = True,
-      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
-    )
+    self.assertEqual('Fri, 13 Apr 2018 16:35:50 GMT', query.reply_headers.get('Date'))
+    self.assertEqual('application/octet-stream', query.reply_headers.get('Content-Type'))
+    self.assertEqual('97.103.17.56', query.reply_headers.get('X-Your-Address-Is'))
+    self.assertEqual('no-cache', query.reply_headers.get('Pragma'))
+    self.assertEqual('identity', query.reply_headers.get('Content-Encoding'))
 
-    self.assertEqual(1, len(list(reply)))
-    self.assertEqual('moria1', list(reply)[0].nickname)
-    self.assertEqual(5, len(reply.reply_headers))
+    # request a header that isn't present
+    self.assertEqual(None, query.reply_headers.get('no-such-header'))
+    self.assertEqual('default', query.reply_headers.get('no-such-header', 'default'))
+
+    descriptors = list(query)
+    self.assertEqual(1, len(descriptors))
+    self.assertEqual('moria1', descriptors[0].nickname)
 
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
     self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
 
-  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_identity'), encoding = 'identity'))
+  @mock_download(read_resource('compressed_identity'), encoding = 'identity')
   def test_compression_plaintext(self):
     """
     Download a plaintext descriptor.
@@ -197,7 +170,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_gzip'), encoding = 'gzip'))
+  @mock_download(read_resource('compressed_gzip'), encoding = 'gzip')
   def test_compression_gzip(self):
     """
     Download a gip compressed descriptor.
@@ -213,7 +186,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_zstd'), encoding = 'x-zstd'))
+  @mock_download(read_resource('compressed_zstd'), encoding = 'x-zstd')
   def test_compression_zstd(self):
     """
     Download a zstd compressed descriptor.
@@ -231,7 +204,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch('urllib.request.urlopen', _dirport_mock(read_resource('compressed_lzma'), encoding = 'x-tor-lzma'))
+  @mock_download(read_resource('compressed_lzma'), encoding = 'x-tor-lzma')
   def test_compression_lzma(self):
     """
     Download a lzma compressed descriptor.
@@ -249,8 +222,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
 
-  @patch('urllib.request.urlopen')
-  def test_each_getter(self, dirport_mock):
+  @mock_download(TEST_DESCRIPTOR)
+  def test_each_getter(self):
     """
     Surface level exercising of each getter method for downloading descriptors.
     """
@@ -266,57 +239,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     downloader.get_bandwidth_file()
     downloader.get_detached_signatures()
 
-  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
-  def test_reply_headers(self):
-    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
-    self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
-    query.run()
-
-    self.assertEqual('Fri, 13 Apr 2018 16:35:50 GMT', query.reply_headers.get('date'))
-    self.assertEqual('application/octet-stream', query.reply_headers.get('content-type'))
-    self.assertEqual('97.103.17.56', query.reply_headers.get('x-your-address-is'))
-    self.assertEqual('no-cache', query.reply_headers.get('pragma'))
-    self.assertEqual('identity', query.reply_headers.get('content-encoding'))
-
-    # getting headers should be case insensitive
-    self.assertEqual('identity', query.reply_headers.get('CoNtEnT-ENCODING'))
-
-    # request a header that isn't present
-    self.assertEqual(None, query.reply_headers.get('no-such-header'))
-    self.assertEqual('default', query.reply_headers.get('no-such-header', 'default'))
-
-    descriptors = list(query)
-    self.assertEqual(1, len(descriptors))
-    self.assertEqual('moria1', descriptors[0].nickname)
-
-  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
-  def test_query_download(self):
-    """
-    Check Query functionality when we successfully download a descriptor.
-    """
-
-    query = stem.descriptor.remote.Query(
-      TEST_RESOURCE,
-      'server-descriptor 1.0',
-      endpoints = [stem.DirPort('128.31.0.39', 9131)],
-      compression = Compression.PLAINTEXT,
-      validate = True,
-      skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
-    )
-
-    self.assertEqual(stem.DirPort('128.31.0.39', 9131), query._wrapped_instance._pick_endpoint())
-
-    descriptors = list(query)
-    self.assertEqual(1, len(descriptors))
-    desc = descriptors[0]
-
-    self.assertEqual('moria1', desc.nickname)
-    self.assertEqual('128.31.0.34', desc.address)
-    self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
-    self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
-
-  @patch('urllib.request.urlopen', _dirport_mock(b'some malformed stuff'))
-  def test_query_with_malformed_content(self):
+  @mock_download(b'some malformed stuff')
+  def test_malformed_content(self):
     """
     Query with malformed descriptor content.
     """
@@ -340,29 +264,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(ValueError, query.run)
 
-  @patch('urllib.request.urlopen')
-  def test_query_with_timeout(self, dirport_mock):
-    def urlopen_call(*args, **kwargs):
-      time.sleep(0.06)
-      raise socket.timeout('connection timed out')
-
-    dirport_mock.side_effect = urlopen_call
-
-    query = stem.descriptor.remote.Query(
-      TEST_RESOURCE,
-      'server-descriptor 1.0',
-      endpoints = [stem.DirPort('128.31.0.39', 9131)],
-      fall_back_to_authority = False,
-      timeout = 0.1,
-      validate = True,
-    )
-
-    # After two requests we'll have reached our total permissable timeout.
-    # It would be nice to check that we don't make a third, but this
-    # assertion has proved unreliable so only checking for the exception.
-
-    self.assertRaises(stem.DownloadTimeout, query.run)
-
   def test_query_with_invalid_endpoints(self):
     invalid_endpoints = {
       'hello': "'h' is a str.",
@@ -375,7 +276,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       expected_error = 'Endpoints must be an stem.ORPort or stem.DirPort. ' + error_suffix
       self.assertRaisesWith(ValueError, expected_error, stem.descriptor.remote.Query, TEST_RESOURCE, 'server-descriptor 1.0', endpoints = endpoints)
 
-  @patch('urllib.request.urlopen', _dirport_mock(TEST_DESCRIPTOR))
+  @mock_download(TEST_DESCRIPTOR)
   def test_can_iterate_multiple_times(self):
     query = stem.descriptor.remote.Query(
       TEST_RESOURCE,
