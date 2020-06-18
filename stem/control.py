@@ -112,6 +112,10 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- create_ephemeral_hidden_service - create a new ephemeral hidden service
     |- remove_ephemeral_hidden_service - removes an ephemeral hidden service
     |
+    |- add_onion_client_auth - add Client Authentication for a v3 onion service
+    |- remove_onion_client_auth - remove Client Authentication for a v3 onion service
+    |- view_onion_client_auth - view Client Authentication for a v3 onion service
+    |
     |- add_event_listener - attaches an event listener to be notified of tor events
     |- remove_event_listener - removes a listener so it isn't notified of further events
     |
@@ -257,6 +261,7 @@ import stem.exit_policy
 import stem.response
 import stem.response.add_onion
 import stem.response.events
+import stem.response.onion_client_auth
 import stem.response.protocolinfo
 import stem.socket
 import stem.util
@@ -2841,6 +2846,12 @@ class Controller(BaseController):
     response. For instance, only bob can access using the given newly generated
     credentials...
 
+    Note that **basic_auth** only works for legacy (v2) onion services.
+    There is not yet any Control Port support for adding Client Auth to the
+    server side of a v3 onion service.
+
+    To add Client Authentication on the client side of a v3 onion, you can use
+    :func`~stem.control.Controller.add_onion_client_auth`.
     ::
 
       >>> response = controller.create_ephemeral_hidden_service(80, basic_auth = {'bob': None})
@@ -3014,6 +3025,78 @@ class Controller(BaseController):
       return False  # no hidden service to discontinue
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
+
+  def add_onion_client_auth(self, service_id: str, private_key_blob: str, key_type: str = 'x25519', client_name: Optional[str] = None, permanent: Optional[bool] = False) -> stem.response.onion_client_auth.OnionClientAuthAddResponse:
+    """
+    Adds Client Authentication for a v3 onion service.
+
+    :param service_id: hidden service address without the '.onion' suffix
+    :param key_type: the type of private key in use. x25519 is the only one supported right now
+    :param private_key_blob: base64 encoding of x25519 private key
+    :param client_name: optional nickname for this client
+    :param permanent: optionally flag that this client's credentials should be stored in the filesystem.
+      If this is not set, the client's credentials are epheremal and stored in memory.
+
+    :returns: **True* if the client authentication was added or replaced, **False** if it
+      was rejected by the Tor controller
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    request = 'ONION_CLIENT_AUTH_ADD %s %s:%s' % (service_id, key_type, private_key_blob)
+
+    if client_name:
+      request += ' ClientName=%s' % client_name
+
+    flags = []
+
+    if permanent:
+      flags.append('Permanent')
+
+    if flags:
+      request += ' Flags=%s' % ','.join(flags)
+
+    response = stem.response._convert_to_onion_client_auth_add(stem.response._convert_to_onion_client_auth_add(self.msg(request)))
+
+    return response
+
+  def remove_onion_client_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthRemoveResponse:
+    """
+    Removes Client Authentication for a v3 onion service.
+
+    :param service_id: hidden service address without the '.onion' suffix
+
+    :returns: **True* if the client authentication was removed, (or if no such
+      service ID existed), **False** if it was rejected by the Tor controller
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    request = 'ONION_CLIENT_AUTH_REMOVE %s' % service_id
+
+    response = stem.response._convert_to_onion_client_auth_remove(stem.response._convert_to_onion_client_auth_remove(self.msg(request)))
+
+    return response
+
+  def view_onion_client_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthViewResponse:
+    """
+    View Client Authentication for a v3 onion service.
+
+    :param service_id: hidden service address without the '.onion' suffix
+
+    :returns: :class:`~stem.response.onion_client_auth.OnionClientAuthViewResponse` with the
+      client_auth_credential if there were credentials to view, **True** if the service ID
+      was valid but no credentials existed, **False** if the service ID was invalid
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    request = 'ONION_CLIENT_AUTH_VIEW %s' % service_id
+
+    response = stem.response._convert_to_onion_client_auth_view(stem.response._convert_to_onion_client_auth_view(self.msg(request)))
+
+    return response
+
 
   def add_event_listener(self, listener: Callable[[stem.response.events.Event], None], *events: 'stem.control.EventType') -> None:
     """

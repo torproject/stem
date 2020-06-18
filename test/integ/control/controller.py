@@ -1494,3 +1494,43 @@ class TestController(unittest.TestCase):
         self.skipTest('(no named relays)')
 
     return TEST_ROUTER_STATUS_ENTRY
+
+  @test.require.controller
+  def test_client_auth_for_v3_onion(self):
+    """
+    Exercises adding, viewing and removing Client Auth for a v3 ephemeral hidden service.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      service_id = 'yvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+      # This is an invalid key, it should throw an error
+      private_key = 'XXXXXXXXXFCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
+      exc_msg = "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Failed to decode x25519 private key"
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.add_onion_client_auth, service_id, private_key)
+
+      # This is a valid key
+      private_key = 'FCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
+      response = controller.add_onion_client_auth(service_id, private_key)
+
+      # View the credential
+      response = controller.view_onion_client_auth(service_id)
+      self.assertEqual(response.client_auth_credential, '%s x25519:%s' % (service_id, private_key))
+
+      # Remove the credential
+      controller.remove_onion_client_auth(service_id)
+      response = controller.view_onion_client_auth(service_id)
+      self.assertTrue(response.client_auth_credential is None)
+
+      # Test that an invalid service ID throws the appropriate error for adding, removing or viewing client auth
+      service_id = 'xxxxxxxxyvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+      exc_msg = "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Invalid v3 address \"%s\"" % service_id
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.add_onion_client_auth, service_id, private_key)
+
+      exc_msg = "ONION_CLIENT_AUTH_REMOVE response didn't have an OK status: Invalid v3 address \"%s\"" % service_id
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.remove_onion_client_auth, service_id)
+
+      exc_msg = "ONION_CLIENT_AUTH_VIEW response didn't have an OK status: Invalid v3 addr \"%s\"" % service_id
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.view_onion_client_auth, service_id)
+
