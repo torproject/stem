@@ -7,6 +7,8 @@ Utility functions used by the stem library.
 
 import asyncio
 import datetime
+import functools
+import inspect
 import threading
 from concurrent.futures import Future
 
@@ -142,6 +144,93 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
     setattr(obj, '_cached_hash', my_hash)
 
   return my_hash
+
+
+class Synchronous(object):
+  """
+  Mixin that lets a class be called from both synchronous and asynchronous
+  contexts.
+
+  ::
+
+    class Example(Synchronous):
+      async def hello(self):
+        return 'hello'
+
+    def sync_demo():
+      instance = Example()
+      print('%s from a synchronous context' % instance.hello())
+      instance.close()
+
+    async def async_demo():
+      instance = Example()
+      print('%s from an asynchronous context' % await instance.hello())
+      instance.close()
+
+    sync_demo()
+    asyncio.run(async_demo())
+
+  Users are responsible for calling :func:`~stem.util.Synchronous.close` when
+  finished to clean up underlying resources.
+  """
+
+  def __init__(self):
+    self._loop = asyncio.new_event_loop()
+    self._loop_lock = threading.RLock()
+    self._loop_thread = threading.Thread(
+      name = '%s asyncio' % self.__class__.__name__,
+      target = self._loop.run_forever,
+      daemon = True,
+    )
+
+    self._is_closed = False
+
+    # overwrite asynchronous class methods with instance methods that can be
+    # called from either context
+
+    def wrap(func, *args, **kwargs):
+      if Synchronous.is_asyncio_context():
+        return func(*args, **kwargs)
+      else:
+        with self._loop_lock:
+          if self._is_closed:
+            raise RuntimeError('%s has been closed' % type(self).__name__)
+          elif not self._loop_thread.is_alive():
+            self._loop_thread.start()
+
+          return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self._loop).result()
+
+    for method_name, func in inspect.getmembers(self, predicate = inspect.ismethod):
+      if inspect.iscoroutinefunction(func):
+        setattr(self, method_name, functools.partial(wrap, func))
+
+  def close(self):
+    """
+    Terminate resources that permits this from being callable from synchronous
+    contexts. Once called any further synchronous invocations will fail with a
+    **RuntimeError**.
+    """
+
+    with self._loop_lock:
+      if self._loop_thread.is_alive():
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._loop_thread.join()
+
+      self._is_closed = True
+
+  @staticmethod
+  def is_asyncio_context():
+    """
+    Check if running within a synchronous or asynchronous context.
+
+    :returns: **True** if within an asyncio conext, **False** otherwise
+    """
+
+    try:
+      asyncio.get_running_loop()
+      return True
+    except RuntimeError:
+      return False
 
 
 class AsyncClassWrapper:
