@@ -21,11 +21,7 @@ from stem import ControllerError, DescriptorUnavailable, InvalidArguments, Inval
 from stem.control import MALFORMED_EVENTS, _parse_circ_path, Listener, Controller, EventType
 from stem.response import ControlMessage
 from stem.exit_policy import ExitPolicy
-from stem.util.test_tools import (
-  async_test,
-  coro_func_raising_exc,
-  coro_func_returning_value,
-)
+from stem.util.test_tools import coro_func_raising_exc, coro_func_returning_value
 
 NS_DESC = 'r %s %s u5lTXJKGsLKufRLnSyVqT7TdGYw 2012-12-30 22:02:49 77.223.43.54 9001 0\ns Fast Named Running Stable Valid\nw Bandwidth=75'
 TEST_TIMESTAMP = 12345
@@ -44,7 +40,6 @@ class TestControl(unittest.TestCase):
 
     with patch('stem.control.BaseController.msg', Mock(side_effect = coro_func_returning_value(None))):
       self.controller = Controller(socket)
-      self.async_controller = self.controller._wrapped_instance
 
       self.circ_listener = Mock()
       self.controller.add_event_listener(self.circ_listener, EventType.CIRC)
@@ -69,24 +64,23 @@ class TestControl(unittest.TestCase):
     for event in stem.control.EventType:
       self.assertTrue(stem.control.event_description(event) is not None)
 
-  @patch('stem.control.AsyncController.msg')
+  @patch('stem.control.Controller.msg')
   def test_get_info(self, msg_mock):
     message = ControlMessage.from_str('250-hello=hi right back!\r\n250 OK\r\n', 'GETINFO')
     msg_mock.side_effect = coro_func_returning_value(message)
     self.assertEqual('hi right back!', self.controller.get_info('hello'))
 
-  @patch('stem.control.AsyncController.msg')
-  @async_test
-  async def test_get_info_address_caching(self, msg_mock):
+  @patch('stem.control.Controller.msg')
+  def test_get_info_address_caching(self, msg_mock):
     def set_message(*args):
       message = ControlMessage.from_str(*args)
       msg_mock.side_effect = coro_func_returning_value(message)
 
     set_message('551 Address unknown\r\n')
 
-    self.assertEqual(None, self.async_controller._last_address_exc)
+    self.assertEqual(None, self.controller._last_address_exc)
     self.assertRaisesWith(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
-    self.assertEqual('Address unknown', str(self.async_controller._last_address_exc))
+    self.assertEqual('Address unknown', str(self.controller._last_address_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
@@ -98,26 +92,26 @@ class TestControl(unittest.TestCase):
 
     set_message('250-address=17.2.89.80\r\n250 OK\r\n', 'GETINFO')
     self.assertRaisesWith(stem.OperationFailed, 'Address unknown', self.controller.get_info, 'address')
-    await self.async_controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=17.2.89.80 METHOD=DIRSERV\r\n'))
+    self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=17.2.89.80 METHOD=DIRSERV\r\n'))
     self.assertEqual('17.2.89.80', self.controller.get_info('address'))
 
     # invalidates the cache, transitioning from one address to another
 
     set_message('250-address=80.89.2.17\r\n250 OK\r\n', 'GETINFO')
     self.assertEqual('17.2.89.80', self.controller.get_info('address'))
-    await self.async_controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=80.89.2.17 METHOD=DIRSERV\r\n'))
+    self.controller._handle_event(ControlMessage.from_str('650 STATUS_SERVER NOTICE EXTERNAL_ADDRESS ADDRESS=80.89.2.17 METHOD=DIRSERV\r\n'))
     self.assertEqual('80.89.2.17', self.controller.get_info('address'))
 
-  @patch('stem.control.AsyncController.msg')
-  @patch('stem.control.AsyncController.get_conf')
+  @patch('stem.control.Controller.msg')
+  @patch('stem.control.Controller.get_conf')
   def test_get_info_without_fingerprint(self, get_conf_mock, msg_mock):
     message = ControlMessage.from_str('551 Not running in server mode\r\n')
     msg_mock.side_effect = coro_func_returning_value(message)
-    get_conf_mock.return_value = None
+    get_conf_mock.side_effect = coro_func_returning_value(None)
 
-    self.assertEqual(None, self.async_controller._last_fingerprint_exc)
+    self.assertEqual(None, self.controller._last_fingerprint_exc)
     self.assertRaisesWith(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
-    self.assertEqual('Not running in server mode', str(self.async_controller._last_fingerprint_exc))
+    self.assertEqual('Not running in server mode', str(self.controller._last_fingerprint_exc))
     self.assertEqual(1, msg_mock.call_count)
 
     # now that we have a cached failure we should provide that back
@@ -127,11 +121,11 @@ class TestControl(unittest.TestCase):
 
     # ... but if we become a relay we'll call it again
 
-    get_conf_mock.return_value = '443'
+    get_conf_mock.side_effect = coro_func_returning_value('443')
     self.assertRaisesWith(stem.OperationFailed, 'Not running in server mode', self.controller.get_info, 'fingerprint')
     self.assertEqual(2, msg_mock.call_count)
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   def test_get_version(self, get_info_mock):
     """
     Exercises the get_version() method.
@@ -155,7 +149,7 @@ class TestControl(unittest.TestCase):
       self.assertEqual(version_2_1_object, self.controller.get_version())
 
       # Turn off caching.
-      self.async_controller._is_caching_enabled = False
+      self.controller._is_caching_enabled = False
       # Return a version without caching, so it will be the new version.
       self.assertEqual(version_2_2_object, self.controller.get_version())
 
@@ -184,13 +178,13 @@ class TestControl(unittest.TestCase):
       # Turn caching back on before we leave.
       self.controller._is_caching_enabled = True
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   def test_get_exit_policy(self, get_info_mock):
     """
     Exercises the get_exit_policy() method.
     """
 
-    async def get_info_mock_side_effect(param, default = None):
+    async def get_info_mock_side_effect(self, param, default = None):
       return {
         'exit-policy/full': 'reject *:25,reject *:119,reject *:135-139,reject *:445,reject *:563,reject *:1214,reject *:4661-4666,reject *:6346-6429,reject *:6699,reject *:6881-6999,accept *:*',
       }[param]
@@ -213,8 +207,8 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual(str(expected), str(self.controller.get_exit_policy()))
 
-  @patch('stem.control.AsyncController.get_info')
-  @patch('stem.control.AsyncController.get_conf')
+  @patch('stem.control.Controller.get_info')
+  @patch('stem.control.Controller.get_conf')
   def test_get_ports(self, get_conf_mock, get_info_mock):
     """
     Exercises the get_ports() and get_listeners() methods.
@@ -225,7 +219,7 @@ class TestControl(unittest.TestCase):
 
     get_info_mock.side_effect = coro_func_raising_exc(InvalidArguments)
 
-    async def get_conf_mock_side_effect(param, *args, **kwargs):
+    async def get_conf_mock_side_effect(self, param, *args, **kwargs):
       return {
         'ControlPort': '9050',
         'ControlListenAddress': ['127.0.0.1'],
@@ -239,7 +233,7 @@ class TestControl(unittest.TestCase):
 
     # non-local addresss
 
-    async def get_conf_mock_side_effect(param, *args, **kwargs):
+    async def get_conf_mock_side_effect(self, param, *args, **kwargs):
       return {
         'ControlPort': '9050',
         'ControlListenAddress': ['27.4.4.1'],
@@ -290,14 +284,14 @@ class TestControl(unittest.TestCase):
     self.assertEqual([], self.controller.get_listeners(Listener.CONTROL))
     self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   @patch('time.time', Mock(return_value = 1410723598.276578))
   def test_get_accounting_stats(self, get_info_mock):
     """
     Exercises the get_accounting_stats() method.
     """
 
-    async def get_info_mock_side_effect(param, **kwargs):
+    async def get_info_mock_side_effect(self, param, **kwargs):
       return {
         'accounting/enabled': '1',
         'accounting/hibernating': 'awake',
@@ -358,6 +352,7 @@ class TestControl(unittest.TestCase):
     self.assertRaises(ProtocolError, self.controller.get_protocolinfo)
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = False))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
   def test_get_user_remote(self):
     """
     Exercise the get_user() method for a non-local socket.
@@ -367,7 +362,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual(123, self.controller.get_user(123))
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.control.AsyncController.get_info', Mock(side_effect = coro_func_returning_value('atagar')))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value('atagar')))
   def test_get_user_by_getinfo(self):
     """
     Exercise the get_user() resolution via its getinfo option.
@@ -376,7 +371,8 @@ class TestControl(unittest.TestCase):
     self.assertEqual('atagar', self.controller.get_user())
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.util.system.pid_by_name', Mock(return_value = 432))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.get_pid', Mock(side_effect = coro_func_returning_value(432)))
   @patch('stem.util.system.user', Mock(return_value = 'atagar'))
   def test_get_user_by_system(self):
     """
@@ -386,6 +382,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual('atagar', self.controller.get_user())
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = False))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
   def test_get_pid_remote(self):
     """
     Exercise the get_pid() method for a non-local socket.
@@ -395,7 +392,7 @@ class TestControl(unittest.TestCase):
     self.assertEqual(123, self.controller.get_pid(123))
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.control.AsyncController.get_info', Mock(side_effect = coro_func_returning_value('321')))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value('321')))
   def test_get_pid_by_getinfo(self):
     """
     Exercise the get_pid() resolution via its getinfo option.
@@ -404,7 +401,8 @@ class TestControl(unittest.TestCase):
     self.assertEqual(321, self.controller.get_pid())
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.control.AsyncController.get_conf')
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.get_conf')
   @patch('stem.control.open', create = True)
   def test_get_pid_by_pid_file(self, open_mock, get_conf_mock):
     """
@@ -418,6 +416,8 @@ class TestControl(unittest.TestCase):
     open_mock.assert_called_once_with('/tmp/pid_file')
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.get_conf', Mock(side_effect = coro_func_returning_value(None)))
   @patch('stem.util.system.pid_by_name', Mock(return_value = 432))
   def test_get_pid_by_name(self):
     """
@@ -426,9 +426,9 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual(432, self.controller.get_pid())
 
-  @patch('stem.control.AsyncController.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.5.0.14'))))
+  @patch('stem.control.Controller.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.5.0.14'))))
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = False))
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   @patch('time.time', Mock(return_value = 1000.0))
   def test_get_uptime_by_getinfo(self, getinfo_mock):
     """
@@ -443,8 +443,9 @@ class TestControl(unittest.TestCase):
     self.assertRaisesWith(ValueError, "'GETINFO uptime' did not provide a valid numeric response: abc", self.controller.get_uptime)
 
   @patch('stem.socket.ControlSocket.is_localhost', Mock(return_value = True))
-  @patch('stem.control.AsyncController.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.1.0.14'))))
-  @patch('stem.control.AsyncController.get_pid', Mock(side_effect = coro_func_returning_value('12')))
+  @patch('stem.control.Controller.get_info', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.1.0.14'))))
+  @patch('stem.control.Controller.get_pid', Mock(side_effect = coro_func_returning_value('12')))
   @patch('stem.util.system.start_time', Mock(return_value = 5000.0))
   @patch('time.time', Mock(return_value = 5200.0))
   def test_get_uptime_by_process(self):
@@ -454,7 +455,7 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual(200.0, self.controller.get_uptime())
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   def test_get_network_status_for_ourselves(self, get_info_mock):
     """
     Exercises the get_network_status() method for getting our own relay.
@@ -472,7 +473,7 @@ class TestControl(unittest.TestCase):
 
     desc = NS_DESC % ('moria1', '/96bKo4soysolMgKn5Hex2nyFSY')
 
-    async def get_info_mock_side_effect(param, **kwargs):
+    async def get_info_mock_side_effect(self, param, **kwargs):
       return {
         'fingerprint': '9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'ns/id/9695DFC35FFEB861329B9F1AB04C46397020CE31': desc,
@@ -482,7 +483,7 @@ class TestControl(unittest.TestCase):
 
     self.assertEqual(stem.descriptor.router_status_entry.RouterStatusEntryV3(desc), self.controller.get_network_status())
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   def test_get_network_status_when_unavailable(self, get_info_mock):
     """
     Exercises the get_network_status() method.
@@ -494,7 +495,7 @@ class TestControl(unittest.TestCase):
     exc_msg = "Tor was unable to provide the descriptor for '5AC9C5AA75BA1F18D8459B326B4B8111A856D290'"
     self.assertRaisesWith(DescriptorUnavailable, exc_msg, self.controller.get_network_status, '5AC9C5AA75BA1F18D8459B326B4B8111A856D290')
 
-  @patch('stem.control.AsyncController.get_info')
+  @patch('stem.control.Controller.get_info')
   def test_get_network_status(self, get_info_mock):
     """
     Exercises the get_network_status() method.
@@ -540,15 +541,13 @@ class TestControl(unittest.TestCase):
 
     self.assertRaises(InvalidArguments, self.controller.get_network_status, nickname)
 
-  @patch('stem.control.AsyncController.is_authenticated', Mock(return_value = True))
-  @patch('stem.control.AsyncController._attach_listeners')
-  @patch('stem.control.AsyncController.get_version')
-  def test_add_event_listener(self, get_version_mock, attach_listeners_mock):
+  @patch('stem.control.Controller.is_authenticated', Mock(return_value = True))
+  @patch('stem.control.Controller._attach_listeners', Mock(side_effect = coro_func_returning_value(([], []))))
+  @patch('stem.control.Controller.get_version')
+  def test_add_event_listener(self, get_version_mock):
     """
     Exercises the add_event_listener and remove_event_listener methods.
     """
-
-    attach_listeners_mock.side_effect = coro_func_returning_value(([], []))
 
     def set_version(version_str):
       version = stem.version.Version(version_str)
@@ -621,10 +620,10 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
-  @patch('stem.control.AsyncController.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.5.0.14'))))
-  @patch('stem.control.AsyncController.msg', Mock(side_effect = coro_func_returning_value(ControlMessage.from_str('250 OK\r\n'))))
-  @patch('stem.control.AsyncController.add_event_listener', Mock(side_effect = coro_func_returning_value(None)))
-  @patch('stem.control.AsyncController.remove_event_listener', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.get_version', Mock(side_effect = coro_func_returning_value(stem.version.Version('0.5.0.14'))))
+  @patch('stem.control.Controller.msg', Mock(side_effect = coro_func_returning_value(ControlMessage.from_str('250 OK\r\n'))))
+  @patch('stem.control.Controller.add_event_listener', Mock(side_effect = coro_func_returning_value(None)))
+  @patch('stem.control.Controller.remove_event_listener', Mock(side_effect = coro_func_returning_value(None)))
   def test_timeout(self):
     """
     Methods that have an 'await' argument also have an optional timeout. Check
@@ -648,7 +647,7 @@ class TestControl(unittest.TestCase):
     response = ''.join(['%s\r\n' % ' '.join(entry) for entry in valid_streams])
     get_info_mock = Mock(side_effect = coro_func_returning_value(response))
 
-    with patch('stem.control.AsyncController.get_info', get_info_mock):
+    with patch('stem.control.Controller.get_info', get_info_mock):
       streams = self.controller.get_streams()
       self.assertEqual(len(valid_streams), len(streams))
 
@@ -669,7 +668,7 @@ class TestControl(unittest.TestCase):
     response = stem.response.ControlMessage.from_str('555 Connection is not managed by controller.\r\n')
     msg_mock = Mock(side_effect = coro_func_returning_value(response))
 
-    with patch('stem.control.AsyncController.msg', msg_mock):
+    with patch('stem.control.Controller.msg', msg_mock):
       self.assertRaises(UnsatisfiableRequest, self.controller.attach_stream, 'stream_id', 'circ_id')
 
   def test_parse_circ_path(self):
@@ -712,7 +711,7 @@ class TestControl(unittest.TestCase):
     for test_input in malformed_inputs:
       self.assertRaises(ProtocolError, _parse_circ_path, test_input)
 
-  @patch('stem.control.AsyncController.get_conf')
+  @patch('stem.control.Controller.get_conf')
   def test_get_effective_rate(self, get_conf_mock):
     """
     Exercise the get_effective_rate() method.
@@ -720,7 +719,7 @@ class TestControl(unittest.TestCase):
 
     # check default if nothing was set
 
-    async def get_conf_mock_side_effect(param, *args, **kwargs):
+    async def get_conf_mock_side_effect(self, param, *args, **kwargs):
       return {
         'BandwidthRate': '1073741824',
         'BandwidthBurst': '1073741824',
@@ -749,19 +748,19 @@ class TestControl(unittest.TestCase):
     #      with its work is to join on the thread.
 
     with patch('time.time', Mock(return_value = TEST_TIMESTAMP)):
-      with patch('stem.control.AsyncController.is_alive') as is_alive_mock:
+      with patch('stem.control.Controller.is_alive') as is_alive_mock:
         is_alive_mock.return_value = True
         loop = self.controller._loop
-        asyncio.run_coroutine_threadsafe(self.async_controller._event_loop(), loop)
+        asyncio.run_coroutine_threadsafe(Controller._event_loop(self.controller), loop)
 
         try:
           # Converting an event back into an uncast ControlMessage, then feeding it
           # into our controller's event queue.
 
           uncast_event = ControlMessage.from_str(event.raw_content())
-          event_queue = self.async_controller._event_queue
+          event_queue = self.controller._event_queue
           asyncio.run_coroutine_threadsafe(event_queue.put(uncast_event), loop).result()
           asyncio.run_coroutine_threadsafe(event_queue.join(), loop).result()  # block until the event is consumed
         finally:
           is_alive_mock.return_value = False
-          asyncio.run_coroutine_threadsafe(self.async_controller._close(), loop).result()
+          self.controller._close()

@@ -128,7 +128,7 @@ class ControlInterpreter(code.InteractiveConsole):
     # Intercept events our controller hears about at a pretty low level since
     # the user will likely be requesting them by direct 'SETEVENTS' calls.
 
-    handle_event_real = self._controller._wrapped_instance._handle_event
+    handle_event_real = self._controller._handle_event
 
     async def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
       await handle_event_real(event_message)
@@ -139,7 +139,7 @@ class ControlInterpreter(code.InteractiveConsole):
 
     # type check disabled due to https://github.com/python/mypy/issues/708
 
-    self._controller._wrapped_instance._handle_event = handle_event_wrapper  # type: ignore
+    self._controller._handle_event = handle_event_wrapper  # type: ignore
 
   def get_events(self, *event_types: stem.control.EventType) -> List[stem.response.events.Event]:
     events = list(self._received_events)

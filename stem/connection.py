@@ -89,7 +89,7 @@ fine-grained control over the authentication process. For instance...
 ::
 
   connect - Simple method for getting authenticated control connection for synchronous usage.
-  async_connect - Simple method for getting authenticated control connection  for asynchronous usage.
+  async_connect - Simple method for getting authenticated control connection for asynchronous usage.
 
   authenticate - Main method for authenticating to a control socket
   authenticate_none - Authenticates to an open control socket
@@ -292,7 +292,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
     raise
 
 
-async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.BaseController] = stem.control.AsyncController) -> Any:
+async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.BaseController] = stem.control.Controller) -> Any:
   """
   Convenience function for quickly getting a control connection for
   asynchronous usage. This is very handy for debugging or CLI setup, handling
@@ -364,6 +364,7 @@ async def _connect_async(control_port: Tuple[str, Union[str, int]], control_sock
         control_connection = _connection_for_default_port(address)
       else:
         control_connection = stem.socket.ControlPort(address, int(port))
+
       await control_connection.connect()
     except stem.SocketError as exc:
       error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
@@ -405,9 +406,7 @@ async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str
 
     if controller is None:
       return control_socket
-    elif issubclass(controller, stem.control.BaseController) or issubclass(controller, stem.control.Controller):
-      # TODO: Controller no longer extends BaseController (we'll probably change that)
-
+    else:
       return controller(control_socket, is_authenticated = True)
   except IncorrectSocketType:
     if isinstance(control_socket, stem.socket.ControlPort):

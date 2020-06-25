@@ -3,7 +3,6 @@ Integration tests for authenticating to the control socket via
 stem.connection.authenticate* functions.
 """
 
-import asyncio
 import os
 import unittest
 
@@ -121,11 +120,8 @@ class TestAuthenticate(unittest.TestCase):
 
     runner = test.runner.get_runner()
 
-    with runner.get_tor_controller(False) as controller:
-      asyncio.run_coroutine_threadsafe(
-        stem.connection.authenticate(controller._wrapped_instance, test.runner.CONTROL_PASSWORD, runner.get_chroot()),
-        controller._loop,
-      ).result()
+    async with await runner.get_tor_controller(False) as controller:
+      await stem.connection.authenticate(controller, test.runner.CONTROL_PASSWORD, runner.get_chroot())
       await test.runner.exercise_controller(self, controller)
 
   @test.require.controller
@@ -276,7 +272,8 @@ class TestAuthenticate(unittest.TestCase):
           await self._check_auth(auth_type, auth_value)
 
   @test.require.controller
-  def test_wrong_password_with_controller(self):
+  @async_test
+  async def test_wrong_password_with_controller(self):
     """
     We ran into a race condition where providing the wrong password to the
     Controller caused inconsistent responses. Checking for that...
@@ -290,7 +287,7 @@ class TestAuthenticate(unittest.TestCase):
       self.skipTest('(requires only password auth)')
 
     for i in range(10):
-      with runner.get_tor_controller(False) as controller:
+      async with await runner.get_tor_controller(False) as controller:
         with self.assertRaises(stem.connection.IncorrectPassword):
           controller.authenticate('wrong_password')
 

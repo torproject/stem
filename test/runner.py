@@ -88,7 +88,7 @@ class TorInaccessable(Exception):
 
 
 async def exercise_controller(test_case, controller):
-  """with await test.runner.get_runner().get_tor_socket
+  """
   Checks that we can now use the socket by issuing a 'GETINFO config-file'
   query. Controller can be either a :class:`stem.socket.ControlSocket` or
   :class:`stem.control.BaseController`.
@@ -102,11 +102,10 @@ async def exercise_controller(test_case, controller):
 
   if isinstance(controller, stem.socket.ControlSocket):
     await controller.send('GETINFO config-file')
+
     config_file_response = await controller.recv()
   else:
-    config_file_response = controller.msg('GETINFO config-file')
-    if asyncio.iscoroutine(config_file_response):
-      config_file_response = await config_file_response
+    config_file_response = await controller.msg('GETINFO config-file')
 
   test_case.assertEqual('config-file=%s\nOK' % torrc_path, str(config_file_response))
 
@@ -261,9 +260,19 @@ class Runner(object):
           stem.socket.recv_message = _chroot_recv_message
 
         if self.is_accessible():
-          self._owner_controller = stem.control.Controller(self._get_unconnected_socket(), False)
-          self._owner_controller.connect()
-          self._authenticate_controller(self._owner_controller)
+          # TODO: refactor so owner controller is less convoluted
+
+          loop = asyncio.new_event_loop()
+
+          self._owner_controller_thread = threading.Thread(
+            name = 'owning_controller',
+            target = loop.run_forever,
+            daemon = True,
+          )
+
+          self._owner_controller_thread.start()
+
+          self._owner_controller = asyncio.run_coroutine_threadsafe(self.get_tor_controller(True), loop).result()
 
         if test.Target.RELATIVE in self.attribute_targets:
           os.chdir(original_cwd)  # revert our cwd back to normal
@@ -279,7 +288,9 @@ class Runner(object):
       println('Shutting down tor... ', STATUS, NO_NL)
 
       if self._owner_controller:
-        self._owner_controller.close()
+        asyncio.run_coroutine_threadsafe(self._owner_controller.close(), self._owner_controller._loop).result()
+        self._owner_controller._loop.call_soon_threadsafe(self._owner_controller._loop.stop)
+        self._owner_controller_thread.join()
         self._owner_controller = None
 
       if self._tor_process:
@@ -445,16 +456,6 @@ class Runner(object):
     tor_process = self._get('_tor_process')
     return tor_process.pid
 
-  def _get_unconnected_socket(self):
-    if Torrc.PORT in self._custom_opts:
-      control_socket = stem.socket.ControlPort(port = CONTROL_PORT)
-    elif Torrc.SOCKET in self._custom_opts:
-      control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
-    else:
-      raise TorInaccessable('Unable to connect to tor')
-
-    return control_socket
-
   async def get_tor_socket(self, authenticate = True):
     """
     Provides a socket connected to our tor test instance.
@@ -466,7 +467,13 @@ class Runner(object):
     :raises: :class:`test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    control_socket = self._get_unconnected_socket()
+    if Torrc.PORT in self._custom_opts:
+      control_socket = stem.socket.ControlPort(port = CONTROL_PORT)
+    elif Torrc.SOCKET in self._custom_opts:
+      control_socket = stem.socket.ControlSocketFile(CONTROL_SOCKET_PATH)
+    else:
+      raise TorInaccessable('Unable to connect to tor')
+
     await control_socket.connect()
 
     if authenticate:
@@ -474,10 +481,7 @@ class Runner(object):
 
     return control_socket
 
-  def _authenticate_controller(self, controller):
-    controller.authenticate(password=CONTROL_PASSWORD, chroot_path=self.get_chroot())
-
-  def get_tor_controller(self, authenticate = True):
+  async def get_tor_controller(self, authenticate = True):
     """
     Provides a controller connected to our tor test instance.
 
@@ -488,19 +492,11 @@ class Runner(object):
     :raises: :class: `test.runner.TorInaccessable` if tor can't be connected to
     """
 
-    loop = asyncio.new_event_loop()
-    loop_thread = threading.Thread(target = loop.run_forever, name = 'get_tor_controller')
-    loop_thread.setDaemon(True)
-    loop_thread.start()
-
-    async def wrapped_get_controller():
-      control_socket = await self.get_tor_socket(False)
-      return stem.control.Controller(control_socket)
-
-    controller = asyncio.run_coroutine_threadsafe(wrapped_get_controller(), loop).result()
+    control_socket = await self.get_tor_socket(False)
+    controller = stem.control.Controller(control_socket)
 
     if authenticate:
-      self._authenticate_controller(controller)
+      await controller.authenticate(password = CONTROL_PASSWORD, chroot_path = self.get_chroot())
 
     return controller
 

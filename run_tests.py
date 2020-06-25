@@ -259,6 +259,10 @@ def main():
   # 2.7 or later because before that test results didn't have a 'skipped'
   # attribute.
 
+  # TODO: handling of earlier python versions is no longer necessary here
+  # TODO: this invokes all asynchronous tests, even if we have a --test or
+  #   --exclude-test argument
+
   skipped_tests = 0
 
   if args.run_integ:

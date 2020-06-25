@@ -696,11 +696,14 @@ def async_test(func: Callable) -> Callable:
   @functools.wraps(func)
   def wrapper(*args: Any, **kwargs: Any) -> Any:
     loop = asyncio.new_event_loop()
+
     try:
       result = loop.run_until_complete(func(*args, **kwargs))
     finally:
       loop.close()
+
     return result
+
   return wrapper
 
 

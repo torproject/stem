@@ -127,7 +127,7 @@ def main() -> None:
         async def handle_event(event_message: stem.response.ControlMessage) -> None:
           print(format(str(event_message), *STANDARD_OUTPUT))
 
-        controller._wrapped_instance._handle_event = handle_event  # type: ignore
+        controller._handle_event = handle_event  # type: ignore
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]

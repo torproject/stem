@@ -13,7 +13,6 @@ import threading
 import typing
 import unittest.mock
 
-from concurrent.futures import Future
 from types import TracebackType
 from typing import Any, AsyncIterator, Iterator, Optional, Type, Union
 
@@ -211,6 +210,7 @@ class Synchronous(object):
     self._no_op = Synchronous.is_asyncio_context()
 
     if self._no_op:
+      self._loop = asyncio.get_running_loop()
       self.__ainit__()  # this is already an asyncio context
     else:
       # Run coroutines through our loop. This calls methods by name rather than
@@ -361,44 +361,3 @@ class Synchronous(object):
 
   def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
     return self._run_async_method('__aexit__', exit_type, value, traceback)
-
-
-class AsyncClassWrapper:
-  _loop: asyncio.AbstractEventLoop
-  _loop_thread: threading.Thread
-  _wrapped_instance: type
-
-  def _init_async_class(self, async_class: Type, *args: Any, **kwargs: Any) -> Any:
-    # The asynchronous class should be initialized in the thread where
-    # its methods will be executed.
-    if self._loop_thread != threading.current_thread():
-      async def init():
-        return async_class(*args, **kwargs)
-
-      return asyncio.run_coroutine_threadsafe(init(), self._loop).result()
-
-    return async_class(*args, **kwargs)
-
-  def _call_async_method_soon(self, method_name: str, *args: Any, **kwargs: Any) -> Future:
-    return asyncio.run_coroutine_threadsafe(
-      getattr(self._wrapped_instance, method_name)(*args, **kwargs),
-      self._loop,
-    )
-
-  def _execute_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
-    return self._call_async_method_soon(method_name, *args, **kwargs).result()
-
-  def _execute_async_generator_method(self, method_name: str, *args: Any, **kwargs: Any) -> Iterator:
-    async def convert_async_generator(generator: AsyncIterator) -> Iterator:
-      return iter([d async for d in generator])
-
-    return asyncio.run_coroutine_threadsafe(
-      convert_async_generator(
-        getattr(self._wrapped_instance, method_name)(*args, **kwargs),
-      ),
-      self._loop,
-    ).result()
-
-  def __del__(self) -> None:
-    self._loop.call_soon_threadsafe(self._loop.stop)
-    self._loop_thread.join()

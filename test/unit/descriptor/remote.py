@@ -135,7 +135,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   def test_reply_header_data(self):
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
     self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
-    query.run(close = False)
+    query.run(stop = False)
 
     self.assertEqual('Fri, 13 Apr 2018 16:35:50 GMT', query.reply_headers.get('Date'))
     self.assertEqual('application/octet-stream', query.reply_headers.get('Content-Type'))

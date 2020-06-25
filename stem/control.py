@@ -269,9 +269,9 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import log
+from stem.util import Synchronous, log
 from types import TracebackType
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -553,56 +553,7 @@ def event_description(event: str) -> str:
   return EVENT_DESCRIPTIONS.get(event.lower())
 
 
-class _BaseControllerSocketMixin:
-  _socket: stem.socket.ControlSocket
-
-  def is_alive(self) -> bool:
-    """
-    Checks if our socket is currently connected. This is a pass-through for our
-    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
-
-    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
-    """
-
-    return self._socket.is_alive()
-
-  def is_localhost(self) -> bool:
-    """
-    Returns if the connection is for the local system or not.
-
-    .. versionadded:: 1.3.0
-
-    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
-    """
-
-    return self._socket.is_localhost()
-
-  def connection_time(self) -> float:
-    """
-    Provides the unix timestamp for when our socket was either connected or
-    disconnected. That is to say, the time we connected if we're currently
-    connected and the time we disconnected if we're not connected.
-
-    .. versionadded:: 1.3.0
-
-    :returns: **float** for when we last connected or disconnected, zero if
-      we've never connected
-    """
-
-    return self._socket.connection_time()
-
-  def get_socket(self) -> stem.socket.ControlSocket:
-    """
-    Provides the socket used to speak with the tor process. Communicating with
-    the socket directly isn't advised since it may confuse this controller.
-
-    :returns: :class:`~stem.socket.ControlSocket` we're communicating with
-    """
-
-    return self._socket
-
-
-class BaseController(_BaseControllerSocketMixin):
+class BaseController(Synchronous):
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
@@ -619,20 +570,12 @@ class BaseController(_BaseControllerSocketMixin):
   """
 
   def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
+    super(BaseController, self).__init__()
+
     self._socket = control_socket
-
-    self._asyncio_loop = asyncio.get_event_loop()
-
-    self._msg_lock = asyncio.Lock()
 
     self._status_listeners = []  # type: List[Tuple[Callable[[stem.control.BaseController, stem.control.State, float], None], bool]] # tuples of the form (callback, spawn_thread)
     self._status_listeners_lock = threading.RLock()
-
-    # queues where incoming messages are directed
-    self._reply_queue = asyncio.Queue()  # type: asyncio.Queue[Union[stem.response.ControlMessage, stem.ControllerError]]
-    self._event_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.ControlMessage]
-
-    self._event_notice = asyncio.Event()
 
     # saves our socket's prior _connect() and _close() methods so they can be
     # called along with ours
@@ -650,11 +593,22 @@ class BaseController(_BaseControllerSocketMixin):
 
     self._reader_loop_task = None  # type: Optional[asyncio.Task]
     self._event_loop_task = None  # type: Optional[asyncio.Task]
+
     if self._socket.is_alive():
       self._create_loop_tasks()
 
     if is_authenticated:
-      self._asyncio_loop.create_task(self._post_authentication())
+      self._loop.create_task(self._post_authentication())
+
+  def __ainit__(self) -> None:
+    self._msg_lock = asyncio.Lock()
+
+    # queues where incoming messages are directed
+
+    self._reply_queue = asyncio.Queue()  # type: asyncio.Queue[Union[stem.response.ControlMessage, stem.ControllerError]]
+    self._event_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.ControlMessage]
+
+    self._event_notice = asyncio.Event()
 
   async def msg(self, message: str) -> stem.response.ControlMessage:
     """
@@ -736,8 +690,43 @@ class BaseController(_BaseControllerSocketMixin):
         # provide an assurance to the caller that when we raise a SocketClosed
         # exception we are shut down afterward for realz.
 
-          await self.close()
-          raise
+        await self.close()
+        raise
+
+  def is_alive(self) -> bool:
+    """
+    Checks if our socket is currently connected. This is a pass-through for our
+    socket's :func:`~stem.socket.BaseSocket.is_alive` method.
+
+    :returns: **bool** that's **True** if our socket is connected and **False** otherwise
+    """
+
+    return self._socket.is_alive()
+
+  def is_localhost(self) -> bool:
+    """
+    Returns if the connection is for the local system or not.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **bool** that's **True** if the connection is for the local host and **False** otherwise
+    """
+
+    return self._socket.is_localhost()
+
+  def connection_time(self) -> float:
+    """
+    Provides the unix timestamp for when our socket was either connected or
+    disconnected. That is to say, the time we connected if we're currently
+    connected and the time we disconnected if we're not connected.
+
+    .. versionadded:: 1.3.0
+
+    :returns: **float** for when we last connected or disconnected, zero if
+      we've never connected
+    """
+
+    return self._socket.connection_time()
 
   def is_authenticated(self) -> bool:
     """
@@ -777,6 +766,18 @@ class BaseController(_BaseControllerSocketMixin):
     for t in self._state_change_threads:
       if t.is_alive() and threading.current_thread() != t:
         t.join()
+
+    self.stop()
+
+  def get_socket(self) -> stem.socket.ControlSocket:
+    """
+    Provides the socket used to speak with the tor process. Communicating with
+    the socket directly isn't advised since it may confuse this controller.
+
+    :returns: :class:`~stem.socket.ControlSocket` we're communicating with
+    """
+
+    return self._socket
 
   def get_latest_heartbeat(self) -> float:
     """
@@ -858,7 +859,7 @@ class BaseController(_BaseControllerSocketMixin):
 
   async def _connect(self) -> None:
     self._create_loop_tasks()
-    await self._notify_status_listeners(State.INIT, acquire_send_lock=False)
+    await self._notify_status_listeners(State.INIT, acquire_send_lock = False)
     await self._socket_connect()
     self._is_authenticated = False
 
@@ -874,13 +875,14 @@ class BaseController(_BaseControllerSocketMixin):
     self._reader_loop_task = None
     event_loop_task = self._event_loop_task
     self._event_loop_task = None
+
     if reader_loop_task and self.is_alive():
       await reader_loop_task
+
     if event_loop_task:
       await event_loop_task
 
-    await self._notify_status_listeners(State.CLOSED, acquire_send_lock=False)
-
+    await self._notify_status_listeners(State.CLOSED, acquire_send_lock = False)
     await self._socket_close()
 
   async def _post_authentication(self) -> None:
@@ -899,6 +901,7 @@ class BaseController(_BaseControllerSocketMixin):
     # need to have it to ensure it doesn't change beneath us.
 
     send_lock = self._socket._get_send_lock()
+
     try:
       if acquire_send_lock:
         await send_lock.acquire()
@@ -944,8 +947,8 @@ class BaseController(_BaseControllerSocketMixin):
     them if we're restarted.
     """
 
-    self._reader_loop_task = self._asyncio_loop.create_task(self._reader_loop())
-    self._event_loop_task = self._asyncio_loop.create_task(self._event_loop())
+    self._reader_loop_task = self._loop.create_task(self._reader_loop())
+    self._event_loop_task = self._loop.create_task(self._event_loop())
 
   async def _reader_loop(self) -> None:
     """
@@ -1011,20 +1014,23 @@ class BaseController(_BaseControllerSocketMixin):
           self._event_notice.clear()
 
 
-class AsyncController(BaseController):
+class Controller(BaseController):
   """
   Connection with Tor's control socket. This is built on top of the
   BaseController and provides a more user friendly API for library users.
   """
 
-  @classmethod
-  def from_port(cls, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'AsyncController':
+  @staticmethod
+  def from_port(address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
     """
-    Constructs a :class:`~stem.socket.ControlPort` based AsyncController.
+    Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
     If the **port** is **'default'** then this checks on both 9051 (default
     for relays) and 9151 (default for the Tor Browser). This default may change
     in the future.
+
+    .. versionchanged:: 1.5.0
+       Use both port 9051 and 9151 by default.
 
     :param address: ip address of the controller
     :param port: port number of the controller
@@ -1034,13 +1040,31 @@ class AsyncController(BaseController):
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    control_socket = _init_control_port(address, port)
-    return cls(control_socket)
+    import stem.connection
 
-  @classmethod
-  def from_socket_file(cls, path: str = '/var/run/tor/control') -> 'AsyncController':
+    if not stem.util.connection.is_valid_ipv4_address(address):
+      raise ValueError('Invalid IP address: %s' % address)
+    elif port != 'default' and not stem.util.connection.is_valid_port(port):
+      raise ValueError('Invalid port: %s' % port)
+
+    if port == 'default':
+      control_port = stem.connection._connection_for_default_port(address)
+    else:
+      control_port = stem.socket.ControlPort(address, int(port))
+
+    controller = Controller(control_port)
+
+    try:
+      controller.connect()
+      return controller
+    except:
+      controller.stop()
+      raise
+
+  @staticmethod
+  def from_socket_file(path: str = '/var/run/tor/control') -> 'stem.control.Controller':
     """
-    Constructs a :class:`~stem.socket.ControlSocketFile` based AsyncController.
+    Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
 
     :param path: path where the control socket is located
 
@@ -1049,8 +1073,15 @@ class AsyncController(BaseController):
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
 
-    control_socket = _init_control_socket_file(path)
-    return cls(control_socket)
+    control_socket = stem.socket.ControlSocketFile(path)
+    controller = Controller(control_socket)
+
+    try:
+      controller.connect()
+      return controller
+    except:
+      controller.stop()
+      raise
 
   def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
     self._is_caching_enabled = True
@@ -1062,13 +1093,12 @@ class AsyncController(BaseController):
     # mapping of event types to their listeners
 
     self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]]]
-    self._event_listeners_lock = asyncio.Lock()
     self._enabled_features = []  # type: List[str]
 
     self._last_address_exc = None  # type: Optional[BaseException]
     self._last_fingerprint_exc = None  # type: Optional[BaseException]
 
-    super(AsyncController, self).__init__(control_socket, is_authenticated)
+    super(Controller, self).__init__(control_socket, is_authenticated)
 
     async def _sighup_listener(event: stem.response.events.SignalEvent) -> None:
       if event.signal == Signal.RELOAD:
@@ -1101,11 +1131,16 @@ class AsyncController(BaseController):
         self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER),
       )
 
-    self._asyncio_loop.create_task(_add_event_listeners())
+    self._loop.create_task(_add_event_listeners())
+
+  def __ainit__(self):
+    super(Controller, self).__ainit__()
+
+    self._event_listeners_lock = asyncio.Lock()
 
   async def close(self) -> None:
     self.clear_cache()
-    await super(AsyncController, self).close()
+    await super(Controller, self).close()
 
   async def authenticate(self, *args: Any, **kwargs: Any) -> None:
     """
@@ -1186,7 +1221,7 @@ class AsyncController(BaseController):
         raise stem.ProtocolError('Tor geoip database is unavailable')
       elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
-      elif param == 'fingerprint' and self._last_fingerprint_exc and self.get_conf('ORPort', None) is None:
+      elif param == 'fingerprint' and self._last_fingerprint_exc and await self.get_conf('ORPort', None) is None:
         raise self._last_fingerprint_exc  # we already know we're not a relay
 
     # check for cached results
@@ -2082,7 +2117,6 @@ class AsyncController(BaseController):
         request += ' ' + ' '.join(['SERVER=%s' % s for s in servers])
 
       response = stem.response._convert_to_single_line(await self.msg(request))
-      stem.response.convert('SINGLELINE', response)
 
       if not response.is_ok():
         raise stem.ProtocolError('HSFETCH returned unexpected response code: %s' % response.code)
@@ -3778,7 +3812,7 @@ class AsyncController(BaseController):
     await self.msg('DROPGUARDS')
 
   async def _post_authentication(self) -> None:
-    await super(AsyncController, self)._post_authentication()
+    await super(Controller, self)._post_authentication()
 
     # try to re-attach event listeners to the new instance
 
@@ -3834,9 +3868,10 @@ class AsyncController(BaseController):
         if listener_type == event_type:
           for listener in event_listeners:
             try:
-              potential_coroutine = listener(event)
-              if asyncio.iscoroutine(potential_coroutine):
-                await potential_coroutine
+              listener_call = listener(event)
+
+              if asyncio.iscoroutine(listener_call):
+                await listener_call
             except Exception as exc:
               log.warn('Event listener raised an uncaught exception (%s): %s' % (exc, event))
 
@@ -3881,346 +3916,6 @@ class AsyncController(BaseController):
             failed_events.append(event)
 
     return (set_events, failed_events)
-
-
-def _set_doc_from_async_controller(func: Callable) -> Callable:
-  func.__doc__ = getattr(AsyncController, func.__name__).__doc__
-  return func
-
-
-class Controller(_BaseControllerSocketMixin, stem.util.AsyncClassWrapper):
-  """
-  Connection with Tor's control socket. This wraps
-  :class:`~stem.control.AsyncController` to provide a synchronous
-  interface and for backwards compatibility.
-  """
-
-  @classmethod
-  def from_port(cls, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'Controller':
-    """
-    Constructs a :class:`~stem.socket.ControlPort` based Controller.
-
-    If the **port** is **'default'** then this checks on both 9051 (default
-    for relays) and 9151 (default for the Tor Browser). This default may change
-    in the future.
-
-    .. versionchanged:: 1.5.0
-       Use both port 9051 and 9151 by default.
-
-    :param address: ip address of the controller
-    :param port: port number of the controller
-
-    :returns: :class:`~stem.control.Controller` attached to the given port
-
-    :raises: :class:`stem.SocketError` if we're unable to establish a connection
-    """
-
-    control_socket = _init_control_port(address, port)
-    controller = cls(control_socket)
-    controller.connect()
-    return controller
-
-  @classmethod
-  def from_socket_file(cls, path: str = '/var/run/tor/control') -> 'Controller':
-    """
-    Constructs a :class:`~stem.socket.ControlSocketFile` based Controller.
-
-    :param str path: path where the control socket is located
-
-    :returns: :class:`~stem.control.Controller` attached to the given socket file
-
-    :raises: :class:`stem.SocketError` if we're unable to establish a connection
-    """
-
-    control_socket = _init_control_socket_file(path)
-    controller = cls(control_socket)
-    controller.connect()
-    return controller
-
-  def __init__(
-      self,
-      control_socket: stem.socket.ControlSocket,
-      is_authenticated: bool = False,
-  ) -> None:
-    # if within an asyncio context use its loop, otherwise spawn our own
-
-    try:
-      self._loop = asyncio.get_running_loop()
-      self._loop_thread = threading.current_thread()
-    except RuntimeError:
-      self._loop = asyncio.new_event_loop()
-      self._loop_thread = threading.Thread(target = self._loop.run_forever, name = 'asyncio')
-      self._loop_thread.setDaemon(True)
-      self._loop_thread.start()
-
-    self._wrapped_instance: AsyncController = self._init_async_class(AsyncController, control_socket, is_authenticated)  # type: ignore
-    self._socket = self._wrapped_instance._socket
-
-  @_set_doc_from_async_controller
-  def msg(self, message: str) -> stem.response.ControlMessage:
-    return self._execute_async_method('msg', message)
-
-  @_set_doc_from_async_controller
-  def is_authenticated(self) -> bool:
-    return self._wrapped_instance.is_authenticated()
-
-  @_set_doc_from_async_controller
-  def connect(self) -> None:
-    self._execute_async_method('connect')
-
-  @_set_doc_from_async_controller
-  def reconnect(self, *args: Any, **kwargs: Any) -> None:
-    self._execute_async_method('reconnect', *args, **kwargs)
-
-  @_set_doc_from_async_controller
-  def close(self) -> None:
-    self._execute_async_method('close')
-
-  @_set_doc_from_async_controller
-  def get_latest_heartbeat(self) -> float:
-    return self._wrapped_instance.get_latest_heartbeat()
-
-  @_set_doc_from_async_controller
-  def add_status_listener(self, callback: Callable[['stem.control.BaseController', 'stem.control.State', float], None], spawn: bool = True) -> None:
-    self._wrapped_instance.add_status_listener(callback, spawn)
-
-  @_set_doc_from_async_controller
-  def remove_status_listener(self, callback: Callable[['stem.control.Controller', 'stem.control.State', float], None]) -> bool:
-    return self._wrapped_instance.remove_status_listener(callback)
-
-  @_set_doc_from_async_controller
-  def authenticate(self, *args: Any, **kwargs: Any) -> None:
-    self._execute_async_method('authenticate', *args, **kwargs)
-
-  @_set_doc_from_async_controller
-  def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
-    return self._execute_async_method('get_info', params, default, get_bytes)
-
-  @_set_doc_from_async_controller
-  def get_version(self, default: Any = UNDEFINED) -> stem.version.Version:
-    return self._execute_async_method('get_version', default)
-
-  @_set_doc_from_async_controller
-  def get_exit_policy(self, default: Any = UNDEFINED) -> stem.exit_policy.ExitPolicy:
-    return self._execute_async_method('get_exit_policy', default)
-
-  @_set_doc_from_async_controller
-  def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
-    return self._execute_async_method('get_ports', listener_type, default)
-
-  @_set_doc_from_async_controller
-  def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
-    return self._execute_async_method('get_listeners', listener_type, default)
-
-  @_set_doc_from_async_controller
-  def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
-    return self._execute_async_method('get_accounting_stats', default)
-
-  @_set_doc_from_async_controller
-  def get_protocolinfo(self, default: Any = UNDEFINED) -> stem.response.protocolinfo.ProtocolInfoResponse:
-    return self._execute_async_method('get_protocolinfo', default)
-
-  @_set_doc_from_async_controller
-  def get_user(self, default: Any = UNDEFINED) -> str:
-    return self._execute_async_method('get_user', default)
-
-  @_set_doc_from_async_controller
-  def get_pid(self, default: Any = UNDEFINED) -> int:
-    return self._execute_async_method('get_pid', default)
-
-  @_set_doc_from_async_controller
-  def get_start_time(self, default: Any = UNDEFINED) -> float:
-    return self._execute_async_method('get_start_time', default)
-
-  @_set_doc_from_async_controller
-  def get_uptime(self, default: Any = UNDEFINED) -> float:
-    return self._execute_async_method('get_uptime', default)
-
-  @_set_doc_from_async_controller
-  def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
-    return self._execute_async_method('is_user_traffic_allowed')
-
-  @_set_doc_from_async_controller
-  def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
-    return self._execute_async_method('get_microdescriptor', relay, default)
-
-  @_set_doc_from_async_controller
-  def get_microdescriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
-    return self._execute_async_generator_method('get_microdescriptors', default)
-
-  @_set_doc_from_async_controller
-  def get_server_descriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
-    return self._execute_async_method('get_server_descriptor', relay, default)
-
-  @_set_doc_from_async_controller
-  def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
-    return self._execute_async_generator_method('get_server_descriptors', default)
-
-  @_set_doc_from_async_controller
-  def get_network_status(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.router_status_entry.RouterStatusEntryV3:
-    return self._execute_async_method('get_network_status', relay, default)
-
-  @_set_doc_from_async_controller
-  def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
-    return self._execute_async_generator_method('get_network_statuses', default)
-
-  @_set_doc_from_async_controller
-  def get_hidden_service_descriptor(self, address: str, default: Any = UNDEFINED, servers: Optional[Sequence[str]] = None, await_result: bool = True, timeout: Optional[float] = None) -> stem.descriptor.hidden_service.HiddenServiceDescriptorV2:
-    return self._execute_async_method('get_hidden_service_descriptor', address, default, servers, await_result, timeout)
-
-  @_set_doc_from_async_controller
-  def get_conf(self, param: str, default: Any = UNDEFINED, multiple: bool = False) -> Union[str, Sequence[str]]:
-    return self._execute_async_method('get_conf', param, default, multiple)
-
-  @_set_doc_from_async_controller
-  def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
-    return self._execute_async_method('get_conf_map', params, default, multiple)
-
-  @_set_doc_from_async_controller
-  def is_set(self, param: str, default: Any = UNDEFINED) -> bool:
-    return self._execute_async_method('is_set', param, default)
-
-  @_set_doc_from_async_controller
-  def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
-    self._execute_async_method('set_conf', param, value)
-
-  @_set_doc_from_async_controller
-  def reset_conf(self, *params: str) -> None:
-    self._execute_async_method('reset_conf', *params)
-
-  @_set_doc_from_async_controller
-  def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
-    self._execute_async_method('set_options', params, reset)
-
-  @_set_doc_from_async_controller
-  def get_hidden_service_conf(self, default: Any = UNDEFINED) -> Dict[str, Any]:
-    return self._execute_async_method('get_hidden_service_conf', default)
-
-  @_set_doc_from_async_controller
-  def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
-    self._execute_async_method('set_hidden_service_conf', conf)
-
-  @_set_doc_from_async_controller
-  def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
-    return self._execute_async_method('create_hidden_service', path, port, target_address, target_port, auth_type, client_names)
-
-  @_set_doc_from_async_controller
-  def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
-    return self._execute_async_method('remove_hidden_service', path, port)
-
-  @_set_doc_from_async_controller
-  def list_ephemeral_hidden_services(self, default: Any = UNDEFINED, our_services: bool = True, detached: bool = False) -> Sequence[str]:
-    return self._execute_async_method('list_ephemeral_hidden_services', default, our_services, detached)
-
-  @_set_doc_from_async_controller
-  def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None) -> stem.response.add_onion.AddOnionResponse:
-    return self._execute_async_method('create_ephemeral_hidden_service', ports, key_type, key_content, discard_key, detached, await_publication, timeout, basic_auth, max_streams)
-
-  @_set_doc_from_async_controller
-  def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
-    return self._execute_async_method('remove_ephemeral_hidden_service', service_id)
-
-  @_set_doc_from_async_controller
-  def add_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]], *events: 'stem.control.EventType') -> None:
-    self._execute_async_method('add_event_listener', listener, *events)
-
-  @_set_doc_from_async_controller
-  def remove_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]) -> None:
-    self._execute_async_method('remove_event_listener', listener)
-
-  @_set_doc_from_async_controller
-  def is_caching_enabled(self) -> bool:
-    return self._wrapped_instance.is_caching_enabled()
-
-  @_set_doc_from_async_controller
-  def set_caching(self, enabled: bool) -> None:
-    self._wrapped_instance.set_caching(enabled)
-
-  @_set_doc_from_async_controller
-  def clear_cache(self) -> None:
-    self._wrapped_instance.clear_cache()
-
-  @_set_doc_from_async_controller
-  def load_conf(self, configtext: str) -> None:
-    self._execute_async_method('load_conf', configtext)
-
-  @_set_doc_from_async_controller
-  def save_conf(self, force: bool = False) -> None:
-    return self._execute_async_method('save_conf', force)
-
-  @_set_doc_from_async_controller
-  def is_feature_enabled(self, feature: str) -> bool:
-    return self._wrapped_instance.is_feature_enabled(feature)
-
-  @_set_doc_from_async_controller
-  def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
-    self._wrapped_instance.enable_feature(features)
-
-  @_set_doc_from_async_controller
-  def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
-    return self._execute_async_method('get_circuit', circuit_id, default)
-
-  @_set_doc_from_async_controller
-  def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
-    return self._execute_async_method('get_circuits', default)
-
-  @_set_doc_from_async_controller
-  def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
-    return self._execute_async_method('new_circuit', path, purpose, await_build, timeout)
-
-  @_set_doc_from_async_controller
-  def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
-    return self._execute_async_method('extend_circuit', circuit_id, path, purpose, await_build, timeout)
-
-  @_set_doc_from_async_controller
-  def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
-    self._execute_async_method('repurpose_circuit', circuit_id, purpose)
-
-  @_set_doc_from_async_controller
-  def close_circuit(self, circuit_id: str, flag: str = '') -> None:
-    self._execute_async_method('close_circuit', circuit_id, flag)
-
-  @_set_doc_from_async_controller
-  def get_streams(self, default: Any = UNDEFINED) -> List[stem.response.events.StreamEvent]:
-    return self._execute_async_method('get_streams', default)
-
-  @_set_doc_from_async_controller
-  def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
-    self._execute_async_method('attach_stream', stream_id, circuit_id, exiting_hop)
-
-  @_set_doc_from_async_controller
-  def close_stream(self, stream_id: str, reason: stem.RelayEndReason = stem.RelayEndReason.MISC, flag: str = '') -> None:
-    self._execute_async_method('close_stream', stream_id, reason, flag)
-
-  @_set_doc_from_async_controller
-  def signal(self, signal: stem.Signal) -> None:
-    self._execute_async_method('signal', signal)
-
-  @_set_doc_from_async_controller
-  def is_newnym_available(self) -> bool:
-    return self._wrapped_instance.is_newnym_available()
-
-  @_set_doc_from_async_controller
-  def get_newnym_wait(self) -> float:
-    return self._wrapped_instance.get_newnym_wait()
-
-  @_set_doc_from_async_controller
-  def get_effective_rate(self, default: Any = UNDEFINED, burst: bool = False) -> int:
-    return self._execute_async_method('get_effective_rate', default, burst)
-
-  @_set_doc_from_async_controller
-  def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
-    return self._execute_async_method('map_address', mapping)
-
-  @_set_doc_from_async_controller
-  def drop_guards(self) -> None:
-    self._execute_async_method('drop_guards')
-
-  def __enter__(self) -> 'stem.control.Controller':
-    return self
-
-  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
-    self.close()
 
 
 def _parse_circ_path(path: str) -> Sequence[Tuple[str, str]]:
@@ -4342,26 +4037,6 @@ async def _get_with_timeout(event_queue: asyncio.Queue, timeout: Optional[float]
     time_left = None
 
   try:
-    return await asyncio.wait_for(event_queue.get(), timeout=time_left)
+    return await asyncio.wait_for(event_queue.get(), timeout = time_left)
   except asyncio.TimeoutError:
     raise stem.Timeout('Reached our %0.1f second timeout' % timeout)
-
-
-def _init_control_port(address: str, port: Union[int, str]) -> stem.socket.ControlPort:
-  import stem.connection
-
-  if not stem.util.connection.is_valid_ipv4_address(address):
-    raise ValueError('Invalid IP address: %s' % address)
-  elif port != 'default' and not stem.util.connection.is_valid_port(port):
-    raise ValueError('Invalid port: %s' % port)
-
-  if port == 'default':
-    control_port = stem.connection._connection_for_default_port(address)
-  else:
-    control_port = stem.socket.ControlPort(address, int(port))
-
-  return control_port
-
-
-def _init_control_socket_file(path: str) -> stem.socket.ControlSocketFile:
-  return stem.socket.ControlSocketFile(path)

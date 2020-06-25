@@ -445,13 +445,13 @@ class Query(Synchronous):
         loop = asyncio.get_running_loop()
         self._downloader_task = loop.create_task(self._download_descriptors(self.retries, self.timeout))
 
-  async def run(self, suppress: bool = False, close: bool = True) -> List['stem.descriptor.Descriptor']:
+  async def run(self, suppress: bool = False, stop: bool = True) -> List['stem.descriptor.Descriptor']:
     """
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
 
     :param suppress: avoids raising exceptions if **True**
-    :param close: terminates the resources backing this query if **True**,
+    :param stop: terminates the resources backing this query if **True**,
       further method calls will raise a RuntimeError
 
     :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
@@ -465,14 +465,14 @@ class Query(Synchronous):
         * :class:`~stem.DownloadFailed` if our request fails
     """
 
-    # TODO: We should replace our 'close' argument with a new API design prior
+    # TODO: We should replace our 'stop' argument with a new API design prior
     # to release. Self-destructing this object by default for synchronous users
     # is quite a step backward, but is acceptable as we iterate on this.
 
     try:
       return [desc async for desc in self._run(suppress)]
     finally:
-      if close:
+      if stop:
         self._loop.call_soon_threadsafe(self._loop.stop)
 
   async def _run(self, suppress: bool) -> AsyncIterator[stem.descriptor.Descriptor]:
