@@ -70,7 +70,7 @@ def mock_download(descriptor, encoding = 'identity', response_code_header = None
 
   data = response_code_header + stem.util.str_tools._to_bytes(HEADER % encoding) + b'\r\n\r\n' + descriptor
 
-  return patch('stem.descriptor.remote.AsyncQuery._download_from', Mock(side_effect = coro_func_returning_value(data)))
+  return patch('stem.descriptor.remote.Query._download_from', Mock(side_effect = coro_func_returning_value(data)))
 
 
 class TestDescriptorDownloader(unittest.TestCase):
@@ -99,6 +99,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('128.31.0.34', desc.address)
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
+
+    reply.close()
 
   def test_response_header_code(self):
     """
@@ -133,7 +135,7 @@ class TestDescriptorDownloader(unittest.TestCase):
   def test_reply_header_data(self):
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
     self.assertEqual(None, query.reply_headers)  # initially we don't have a reply
-    query.run()
+    query.run(close = False)
 
     self.assertEqual('Fri, 13 Apr 2018 16:35:50 GMT', query.reply_headers.get('Date'))
     self.assertEqual('application/octet-stream', query.reply_headers.get('Content-Type'))
@@ -148,11 +150,13 @@ class TestDescriptorDownloader(unittest.TestCase):
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
+    query.close()
 
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
     self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
+    query.close()
 
   @mock_download(read_resource('compressed_identity'), encoding = 'identity')
   def test_compression_plaintext(self):
@@ -160,12 +164,15 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a plaintext descriptor.
     """
 
-    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+    query = stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.PLAINTEXT,
       validate = True,
       skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
-    ))
+    )
+
+    descriptors = list(query)
+    query.close()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -176,12 +183,15 @@ class TestDescriptorDownloader(unittest.TestCase):
     Download a gip compressed descriptor.
     """
 
-    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+    query = stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.GZIP,
       validate = True,
       skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
-    ))
+    )
+
+    descriptors = list(query)
+    query.close()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -195,11 +205,14 @@ class TestDescriptorDownloader(unittest.TestCase):
     if not Compression.ZSTD.available:
       self.skipTest('(requires zstd module)')
 
-    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+    query = stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.ZSTD,
       validate = True,
-    ))
+    )
+
+    descriptors = list(query)
+    query.close()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -213,11 +226,14 @@ class TestDescriptorDownloader(unittest.TestCase):
     if not Compression.LZMA.available:
       self.skipTest('(requires lzma module)')
 
-    descriptors = list(stem.descriptor.remote.get_server_descriptors(
+    query = stem.descriptor.remote.get_server_descriptors(
       '9695DFC35FFEB861329B9F1AB04C46397020CE31',
       compression = Compression.LZMA,
       validate = True,
-    ))
+    )
+
+    descriptors = list(query)
+    query.close()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -228,16 +244,21 @@ class TestDescriptorDownloader(unittest.TestCase):
     Surface level exercising of each getter method for downloading descriptors.
     """
 
+    queries = []
+
     downloader = stem.descriptor.remote.get_instance()
 
-    downloader.get_server_descriptors()
-    downloader.get_extrainfo_descriptors()
-    downloader.get_microdescriptors('test-hash')
-    downloader.get_consensus()
-    downloader.get_vote(stem.directory.Authority.from_cache()['moria1'])
-    downloader.get_key_certificates()
-    downloader.get_bandwidth_file()
-    downloader.get_detached_signatures()
+    queries.append(downloader.get_server_descriptors())
+    queries.append(downloader.get_extrainfo_descriptors())
+    queries.append(downloader.get_microdescriptors('test-hash'))
+    queries.append(downloader.get_consensus())
+    queries.append(downloader.get_vote(stem.directory.Authority.from_cache()['moria1']))
+    queries.append(downloader.get_key_certificates())
+    queries.append(downloader.get_bandwidth_file())
+    queries.append(downloader.get_detached_signatures())
+
+    for query in queries:
+      query.close()
 
   @mock_download(b'some malformed stuff')
   def test_malformed_content(self):
@@ -263,6 +284,8 @@ class TestDescriptorDownloader(unittest.TestCase):
     # check via the run() method
 
     self.assertRaises(ValueError, query.run)
+
+    query.close()
 
   def test_query_with_invalid_endpoints(self):
     invalid_endpoints = {
@@ -292,3 +315,5 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
+
+    query.close()

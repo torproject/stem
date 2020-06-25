@@ -12,7 +12,7 @@ import inspect
 import threading
 from concurrent.futures import Future
 
-from typing import Any, AsyncIterator, Iterator, Type, Union
+from typing import Any, AsyncIterator, Callable, Iterator, Type, Union
 
 __all__ = [
   'conf',
@@ -116,7 +116,7 @@ def _pubkey_bytes(key: Union['cryptography.hazmat.primitives.asymmetric.ed25519.
     raise ValueError('Key must be a string or cryptographic public/private key (was %s)' % type(key).__name__)
 
 
-def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
+def _hash_attr(obj: Any, *attributes: str, **kwargs: Any) -> int:
   """
   Provide a hash value for the given set of attributes.
 
@@ -124,6 +124,8 @@ def _hash_attr(obj: Any, *attributes: str, **kwargs: Any):
   :param attributes: attribute names to take into account
   :param cache: persists hash in a '_cached_hash' object attribute
   :param parent: include parent's hash value
+
+  :returns: **int** object hash
   """
 
   is_cached = kwargs.get('cache', False)
@@ -174,11 +176,11 @@ class Synchronous(object):
   finished to clean up underlying resources.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     self._loop = asyncio.new_event_loop()
     self._loop_lock = threading.RLock()
     self._loop_thread = threading.Thread(
-      name = '%s asyncio' % self.__class__.__name__,
+      name = '%s asyncio' % type(self).__name__,
       target = self._loop.run_forever,
       daemon = True,
     )
@@ -188,7 +190,7 @@ class Synchronous(object):
     # overwrite asynchronous class methods with instance methods that can be
     # called from either context
 
-    def wrap(func, *args, **kwargs):
+    def wrap(func: Callable, *args: Any, **kwargs: Any) -> Any:
       if Synchronous.is_asyncio_context():
         return func(*args, **kwargs)
       else:
@@ -204,7 +206,7 @@ class Synchronous(object):
       if inspect.iscoroutinefunction(func):
         setattr(self, method_name, functools.partial(wrap, func))
 
-  def close(self):
+  def close(self) -> None:
     """
     Terminate resources that permits this from being callable from synchronous
     contexts. Once called any further synchronous invocations will fail with a
@@ -219,7 +221,7 @@ class Synchronous(object):
       self._is_closed = True
 
   @staticmethod
-  def is_asyncio_context():
+  def is_asyncio_context() -> bool:
     """
     Check if running within a synchronous or asynchronous context.
 
@@ -231,6 +233,18 @@ class Synchronous(object):
       return True
     except RuntimeError:
       return False
+
+  def __iter__(self) -> Iterator:
+    async def convert_async_generator(generator: AsyncIterator) -> Iterator:
+      return iter([d async for d in generator])
+
+    iter_func = getattr(self, '__aiter__')
+
+    if iter_func:
+      with self._loop_lock:
+        return asyncio.run_coroutine_threadsafe(convert_async_generator(iter_func()), self._loop).result()
+    else:
+      raise TypeError("'%s' object is not iterable" % type(self).__name__)
 
 
 class AsyncClassWrapper:
