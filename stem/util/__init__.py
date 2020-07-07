@@ -199,14 +199,11 @@ class Synchronous(object):
   """
 
   def __init__(self) -> None:
-    ainit_func = getattr(self, '__ainit__', None)
-
     if Synchronous.is_asyncio_context():
       self._loop = asyncio.get_running_loop()
       self._loop_thread = None
 
-      if ainit_func:
-        ainit_func()
+      self.__ainit__()
     else:
       self._loop = asyncio.new_event_loop()
       self._loop_thread = threading.Thread(
@@ -231,11 +228,50 @@ class Synchronous(object):
         if inspect.iscoroutinefunction(func):
           setattr(self, method_name, functools.partial(call_async, func))
 
-      if ainit_func:
-        async def call_ainit():
-          ainit_func()
+      asyncio.run_coroutine_threadsafe(asyncio.coroutine(self.__ainit__)(), self._loop).result()
 
-        asyncio.run_coroutine_threadsafe(call_ainit(), self._loop).result()
+  def __ainit__(self):
+    """
+    Implicitly called during construction. This method is assured to have an
+    asyncio loop during its execution.
+    """
+
+    # This method should be async (so 'await' works), but apparently that
+    # is not possible.
+    #
+    # When our object is constructed our __init__() can be called from a
+    # synchronous or asynchronous context. If synchronous, it's trivial to
+    # run an asynchronous variant of this method because we fully control
+    # the execution of our loop...
+    #
+    #   asyncio.run_coroutine_threadsafe(self.__ainit__(), self._loop).result()
+    #
+    # However, when constructed from an asynchronous context the above will
+    # likely hang because our loop is already processing a task (namely,
+    # whatever is constructing us). While we can schedule tasks, we cannot
+    # invoke it during our construction.
+    #
+    # Finally, when this method is simple we could directly invoke it...
+    #
+    #   class Synchronous(object):
+    #     def __init__(self):
+    #       if Synchronous.is_asyncio_context():
+    #         try:
+    #           self.__ainit__().send(None)
+    #         except StopIteration:
+    #           pass
+    #       else:
+    #         asyncio.run_coroutine_threadsafe(self.__ainit__(), self._loop).result()
+    #
+    #     async def __ainit__(self):
+    #       # asynchronous construction
+    #
+    # However, this breaks if any 'await' suspends our execution. For more
+    # information see...
+    #
+    #   https://stackoverflow.com/questions/52783605/how-to-run-a-coroutine-outside-of-an-event-loop/52829325#52829325
+
+    pass
 
   def close(self) -> None:
     """
