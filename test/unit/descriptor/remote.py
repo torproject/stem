@@ -100,7 +100,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR, desc.get_bytes())
 
-    reply.close()
+    reply.stop()
 
   def test_response_header_code(self):
     """
@@ -150,13 +150,13 @@ class TestDescriptorDownloader(unittest.TestCase):
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
-    query.close()
+    query.stop()
 
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
     self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
-    query.close()
+    query.stop()
 
   @mock_download(read_resource('compressed_identity'), encoding = 'identity')
   def test_compression_plaintext(self):
@@ -172,7 +172,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.close()
+    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -191,7 +191,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.close()
+    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -212,7 +212,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.close()
+    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -233,7 +233,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.close()
+    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -258,7 +258,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     queries.append(downloader.get_detached_signatures())
 
     for query in queries:
-      query.close()
+      query.stop()
 
   @mock_download(b'some malformed stuff')
   def test_malformed_content(self):
@@ -285,7 +285,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(ValueError, query.run)
 
-    query.close()
+    query.stop()
 
   def test_query_with_invalid_endpoints(self):
     invalid_endpoints = {
@@ -316,4 +316,4 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
 
-    query.close()
+    query.stop()

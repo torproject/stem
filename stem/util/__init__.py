@@ -12,7 +12,7 @@ import inspect
 import threading
 from concurrent.futures import Future
 
-from typing import Any, AsyncIterator, Callable, Iterator, Type, Union
+from typing import Any, AsyncIterator, Callable, Iterator, Optional, Type, Union
 
 __all__ = [
   'conf',
@@ -162,12 +162,12 @@ class Synchronous(object):
     def sync_demo():
       instance = Example()
       print('%s from a synchronous context' % instance.hello())
-      instance.close()
+      instance.stop()
 
     async def async_demo():
       instance = Example()
       print('%s from an asynchronous context' % await instance.hello())
-      instance.close()
+      instance.stop()
 
     sync_demo()
     asyncio.run(async_demo())
@@ -194,35 +194,34 @@ class Synchronous(object):
         # asyncio.get_running_loop(), and construct objects that
         # require it (like asyncio.Queue and asyncio.Lock).
 
-  Users are responsible for calling :func:`~stem.util.Synchronous.close` when
+  Users are responsible for calling :func:`~stem.util.Synchronous.stop` when
   finished to clean up underlying resources.
   """
 
   def __init__(self) -> None:
+    self._loop_thread = None  # type: Optional[threading.Thread]
+    self._loop_thread_lock = threading.RLock()
+
     if Synchronous.is_asyncio_context():
       self._loop = asyncio.get_running_loop()
-      self._loop_thread = None
 
       self.__ainit__()
     else:
       self._loop = asyncio.new_event_loop()
-      self._loop_thread = threading.Thread(
-        name = '%s asyncio' % type(self).__name__,
-        target = self._loop.run_forever,
-        daemon = True,
-      )
 
-      self._loop_thread.start()
+      Synchronous.start(self)
 
       # call any coroutines through this loop
 
       def call_async(func: Callable, *args: Any, **kwargs: Any) -> Any:
         if Synchronous.is_asyncio_context():
           return func(*args, **kwargs)
-        elif not self._loop_thread.is_alive():
-          raise RuntimeError('%s has been closed' % type(self).__name__)
 
-        return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self._loop).result()
+        with self._loop_thread_lock:
+          if not self._loop_thread.is_alive():
+            raise RuntimeError('%s has been stopped' % type(self).__name__)
+
+          return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self._loop).result()
 
       for method_name, func in inspect.getmembers(self, predicate = inspect.ismethod):
         if inspect.iscoroutinefunction(func):
@@ -273,16 +272,31 @@ class Synchronous(object):
 
     pass
 
-  def close(self) -> None:
+  def start(self) -> None:
+    """
+    Initiate resources to make this object callable from synchronous contexts.
+    """
+
+    with self._loop_thread_lock:
+      self._loop_thread = threading.Thread(
+        name = '%s asyncio' % type(self).__name__,
+        target = self._loop.run_forever,
+        daemon = True,
+      )
+
+      self._loop_thread.start()
+
+  def stop(self) -> None:
     """
     Terminate resources that permits this from being callable from synchronous
     contexts. Once called any further synchronous invocations will fail with a
     **RuntimeError**.
     """
 
-    if self._loop_thread and self._loop_thread.is_alive():
-      self._loop.call_soon_threadsafe(self._loop.stop)
-      self._loop_thread.join()
+    with self._loop_thread_lock:
+      if self._loop_thread and self._loop_thread.is_alive():
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._loop_thread.join()
 
   @staticmethod
   def is_asyncio_context() -> bool:

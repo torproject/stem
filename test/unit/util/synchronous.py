@@ -31,12 +31,12 @@ class TestSynchronous(unittest.TestCase):
     def sync_demo():
       instance = Example()
       print('%s from a synchronous context' % instance.hello())
-      instance.close()
+      instance.stop()
 
     async def async_demo():
       instance = Example()
       print('%s from an asynchronous context' % await instance.hello())
-      instance.close()
+      instance.stop()
 
     sync_demo()
     asyncio.run(async_demo())
@@ -66,20 +66,33 @@ class TestSynchronous(unittest.TestCase):
     sync_demo()
     asyncio.run(async_demo())
 
-  def test_after_close(self):
+  def test_after_stop(self):
     """
-    Check that closed instances raise a RuntimeError to synchronous callers.
+    Check that stopped instances raise a RuntimeError to synchronous callers.
     """
 
-    # close a used instance
+    # stop a used instance
 
     instance = Example()
     self.assertEqual('hello', instance.hello())
-    instance.close()
+    instance.stop()
     self.assertRaises(RuntimeError, instance.hello)
 
-    # close an unused instance
+    # stop an unused instance
 
     instance = Example()
-    instance.close()
+    instance.stop()
     self.assertRaises(RuntimeError, instance.hello)
+
+  def test_resuming(self):
+    """
+    Resume a previously stopped instance.
+    """
+
+    instance = Example()
+    self.assertEqual('hello', instance.hello())
+    instance.stop()
+    self.assertRaises(RuntimeError, instance.hello)
+    instance.start()
+    self.assertEqual('hello', instance.hello())
+    instance.stop()
