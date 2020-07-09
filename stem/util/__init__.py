@@ -10,9 +10,11 @@ import datetime
 import functools
 import inspect
 import threading
+import unittest.mock
+
 from concurrent.futures import Future
 
-from typing import Any, AsyncIterator, Callable, Iterator, Optional, Type, Union
+from typing import Any, AsyncIterator, Iterator, Optional, Type, Union
 
 __all__ = [
   'conf',
@@ -213,19 +215,11 @@ class Synchronous(object):
 
       # call any coroutines through this loop
 
-      def call_async(func: Callable, *args: Any, **kwargs: Any) -> Any:
-        if Synchronous.is_asyncio_context():
-          return func(*args, **kwargs)
-
-        with self._loop_thread_lock:
-          if not self._loop_thread.is_alive():
-            raise RuntimeError('%s has been stopped' % type(self).__name__)
-
-          return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self._loop).result()
-
-      for method_name, func in inspect.getmembers(self, predicate = inspect.ismethod):
-        if inspect.iscoroutinefunction(func):
-          setattr(self, method_name, functools.partial(call_async, func))
+      for name, func in inspect.getmembers(self):
+        if isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
+          setattr(self, name, functools.partial(self._call_async_method, name))
+        elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
+          setattr(self, name, functools.partial(self._call_async_method, name))
 
       asyncio.run_coroutine_threadsafe(asyncio.coroutine(self.__ainit__)(), self._loop).result()
 
@@ -311,6 +305,33 @@ class Synchronous(object):
       return True
     except RuntimeError:
       return False
+
+  def _call_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
+    """
+    Run this async method from either a synchronous or asynchronous context.
+
+    :param method_name: name of the method to invoke
+    :param args: positional arguments
+    :param kwargs: keyword arguments
+
+    :returns: method's return value
+
+    :raises: **AttributeError** if this method doesn't exist
+    """
+
+    # Retrieving methods by name (rather than keeping a reference) so runtime
+    # replacements like test mocks work.
+
+    func = getattr(type(self), method_name)
+
+    if Synchronous.is_asyncio_context():
+      return func(self, *args, **kwargs)
+
+    with self._loop_thread_lock:
+      if self._loop_thread and not self._loop_thread.is_alive():
+        raise RuntimeError('%s has been closed' % type(self).__name__)
+
+      return asyncio.run_coroutine_threadsafe(func(self, *args, **kwargs), self._loop).result()
 
   def __iter__(self) -> Iterator:
     async def convert_generator(generator: AsyncIterator) -> Iterator:

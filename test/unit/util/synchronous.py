@@ -6,9 +6,10 @@ import asyncio
 import io
 import unittest
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from stem.util import Synchronous
+from stem.util.test_tools import coro_func_returning_value
 
 EXAMPLE_OUTPUT = """\
 hello from a synchronous context
@@ -20,6 +21,8 @@ class Example(Synchronous):
   async def hello(self):
     return 'hello'
 
+  def sync_hello(self):
+    return 'hello'
 
 class TestSynchronous(unittest.TestCase):
   @patch('sys.stdout', new_callable = io.StringIO)
@@ -45,7 +48,7 @@ class TestSynchronous(unittest.TestCase):
 
   def test_ainit(self):
     """
-    Check that our constructor runs __ainit__ if present.
+    Check that our constructor runs __ainit__ when present.
     """
 
     class AinitDemo(Synchronous):
@@ -95,4 +98,52 @@ class TestSynchronous(unittest.TestCase):
     self.assertRaises(RuntimeError, instance.hello)
     instance.start()
     self.assertEqual('hello', instance.hello())
+    instance.stop()
+
+  def test_asynchronous_mockability(self):
+    """
+    Check that method mocks are respected.
+    """
+
+    # mock prior to construction
+
+    with patch('test.unit.util.synchronous.Example.hello', Mock(side_effect = coro_func_returning_value('mocked hello'))):
+      instance = Example()
+      self.assertEqual('mocked hello', instance.hello())
+
+    self.assertEqual('hello', instance.hello())  # mock should now be reverted
+    instance.stop()
+
+    # mock after construction
+
+    instance = Example()
+
+    with patch('test.unit.util.synchronous.Example.hello', Mock(side_effect = coro_func_returning_value('mocked hello'))):
+      self.assertEqual('mocked hello', instance.hello())
+
+    self.assertEqual('hello', instance.hello())
+    instance.stop()
+
+  def test_synchronous_mockability(self):
+    """
+    Ensure we do not disrupt non-asynchronous method mocks.
+    """
+
+    # mock prior to construction
+
+    with patch('test.unit.util.synchronous.Example.sync_hello', Mock(return_value = 'mocked hello')):
+      instance = Example()
+      self.assertEqual('mocked hello', instance.sync_hello())
+
+    self.assertEqual('hello', instance.sync_hello())  # mock should now be reverted
+    instance.stop()
+
+    # mock after construction
+
+    instance = Example()
+
+    with patch('test.unit.util.synchronous.Example.sync_hello', Mock(return_value = 'mocked hello')):
+      self.assertEqual('mocked hello', instance.sync_hello())
+
+    self.assertEqual('hello', instance.sync_hello())
     instance.stop()
