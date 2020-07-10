@@ -10,10 +10,11 @@ import datetime
 import functools
 import inspect
 import threading
+import typing
 import unittest.mock
 
 from concurrent.futures import Future
-
+from types import TracebackType
 from typing import Any, AsyncIterator, Iterator, Optional, Type, Union
 
 __all__ = [
@@ -201,26 +202,31 @@ class Synchronous(object):
   """
 
   def __init__(self) -> None:
+    self._loop = None  # type: Optional[asyncio.AbstractEventLoop]
     self._loop_thread = None  # type: Optional[threading.Thread]
     self._loop_thread_lock = threading.RLock()
 
-    if Synchronous.is_asyncio_context():
-      self._loop = asyncio.get_running_loop()
+    # this class is a no-op when created from an asyncio context
 
-      self.__ainit__()
-    else:
+    self._no_op = Synchronous.is_asyncio_context()
+
+    if not self._no_op:
       self._loop = asyncio.new_event_loop()
-
       Synchronous.start(self)
 
-      # call any coroutines through this loop
+      # call any coroutines through our loop
 
       for name, func in inspect.getmembers(self):
-        if isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
-          setattr(self, name, functools.partial(self._call_async_method, name))
+        if name in ('__aiter__', '__aenter__', '__aexit__'):
+          pass  # async object methods with synchronous counterparts
+        elif isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
+          setattr(self, name, functools.partial(self._run_async_method, name))
         elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
-          setattr(self, name, functools.partial(self._call_async_method, name))
+          setattr(self, name, functools.partial(self._run_async_method, name))
 
+    if self._no_op:
+      self.__ainit__()  # this is already an asyncio context
+    else:
       asyncio.run_coroutine_threadsafe(asyncio.coroutine(self.__ainit__)(), self._loop).result()
 
   def __ainit__(self):
@@ -272,13 +278,14 @@ class Synchronous(object):
     """
 
     with self._loop_thread_lock:
-      self._loop_thread = threading.Thread(
-        name = '%s asyncio' % type(self).__name__,
-        target = self._loop.run_forever,
-        daemon = True,
-      )
+      if not self._no_op and self._loop_thread is None:
+        self._loop_thread = threading.Thread(
+          name = '%s asyncio' % type(self).__name__,
+          target = self._loop.run_forever,
+          daemon = True,
+        )
 
-      self._loop_thread.start()
+        self._loop_thread.start()
 
   def stop(self) -> None:
     """
@@ -288,9 +295,13 @@ class Synchronous(object):
     """
 
     with self._loop_thread_lock:
-      if self._loop_thread and self._loop_thread.is_alive():
+      if not self._no_op and self._loop_thread is not None:
         self._loop.call_soon_threadsafe(self._loop.stop)
-        self._loop_thread.join()
+
+        if threading.current_thread() != self._loop_thread:
+          self._loop_thread.join()
+
+        self._loop_thread = None
 
   @staticmethod
   def is_asyncio_context() -> bool:
@@ -306,7 +317,7 @@ class Synchronous(object):
     except RuntimeError:
       return False
 
-  def _call_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
+  def _run_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
     """
     Run this async method from either a synchronous or asynchronous context.
 
@@ -324,25 +335,33 @@ class Synchronous(object):
 
     func = getattr(type(self), method_name)
 
-    if Synchronous.is_asyncio_context():
+    if self._no_op or Synchronous.is_asyncio_context():
       return func(self, *args, **kwargs)
 
     with self._loop_thread_lock:
-      if self._loop_thread and not self._loop_thread.is_alive():
-        raise RuntimeError('%s has been closed' % type(self).__name__)
+      if self._loop_thread is None:
+        raise RuntimeError('%s has been stopped' % type(self).__name__)
+      elif not func:
+        raise TypeError("'%s' does not have a %s method" % (type(self).__name__, method_name))
 
-      return asyncio.run_coroutine_threadsafe(func(self, *args, **kwargs), self._loop).result()
+      # convert iterator if indicated by this method's name or type hint
+
+      if method_name == '__aiter__' or (inspect.ismethod(func) and typing.get_type_hints(func).get('return') == AsyncIterator):
+        async def convert_generator(generator: AsyncIterator) -> Iterator:
+          return iter([d async for d in generator])
+
+        return asyncio.run_coroutine_threadsafe(convert_generator(func(self, *args, **kwargs)), self._loop).result()
+      else:
+        return asyncio.run_coroutine_threadsafe(func(self, *args, **kwargs), self._loop).result()
 
   def __iter__(self) -> Iterator:
-    async def convert_generator(generator: AsyncIterator) -> Iterator:
-      return iter([d async for d in generator])
+    return self._run_async_method('__aiter__')
 
-    iter_func = getattr(self, '__aiter__', None)
+  def __enter__(self):
+    return self._run_async_method('__aenter__')
 
-    if iter_func:
-      return asyncio.run_coroutine_threadsafe(convert_generator(iter_func()), self._loop).result()
-    else:
-      raise TypeError("'%s' object is not iterable" % type(self).__name__)
+  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
+    return self._run_async_method('__aexit__', exit_type, value, traceback)
 
 
 class AsyncClassWrapper:

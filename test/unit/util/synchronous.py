@@ -17,12 +17,34 @@ hello from an asynchronous context
 """
 
 
-class Example(Synchronous):
-  async def hello(self):
-    return 'hello'
+class Demo(Synchronous):
+  def __init__(self):
+    super(Demo, self).__init__()
 
-  def sync_hello(self):
-    return 'hello'
+    self.called_enter = False
+    self.called_exit = False
+
+  def __ainit__(self):
+    self.ainit_loop = asyncio.get_running_loop()
+
+  async def async_method(self):
+    return 'async call'
+
+  def sync_method(self):
+    return 'sync call'
+
+  async def __aiter__(self):
+    for i in range(3):
+      yield i
+
+  async def __aenter__(self):
+    self.called_enter = True
+    return self
+
+  async def __aexit__(self, exit_type, value, traceback):
+    self.called_exit = True
+    return
+
 
 class TestSynchronous(unittest.TestCase):
   @patch('sys.stdout', new_callable = io.StringIO)
@@ -30,6 +52,10 @@ class TestSynchronous(unittest.TestCase):
     """
     Run the example from our pydoc.
     """
+
+    class Example(Synchronous):
+      async def hello(self):
+        return 'hello'
 
     def sync_demo():
       instance = Example()
@@ -48,102 +74,165 @@ class TestSynchronous(unittest.TestCase):
 
   def test_ainit(self):
     """
-    Check that our constructor runs __ainit__ when present.
+    Check that construction runs __ainit__ with a loop when present.
     """
 
-    class AinitDemo(Synchronous):
-      def __init__(self):
-        super(AinitDemo, self).__init__()
+    def sync_test():
+      instance = Demo()
+      self.assertTrue(isinstance(instance.ainit_loop, asyncio.AbstractEventLoop))
+      instance.stop()
 
-      def __ainit__(self):
-        self.ainit_loop = asyncio.get_running_loop()
+    async def async_test():
+      instance = Demo()
+      self.assertTrue(isinstance(instance.ainit_loop, asyncio.AbstractEventLoop))
+      instance.stop()
 
-    def sync_demo():
-      instance = AinitDemo()
-      self.assertTrue(hasattr(instance, 'ainit_loop'))
+    sync_test()
+    asyncio.run(async_test())
 
-    async def async_demo():
-      instance = AinitDemo()
-      self.assertTrue(hasattr(instance, 'ainit_loop'))
-
-    sync_demo()
-    asyncio.run(async_demo())
-
-  def test_after_stop(self):
+  def test_stop(self):
     """
-    Check that stopped instances raise a RuntimeError to synchronous callers.
+    Synchronous callers should receive a RuntimeError when stopped.
     """
 
-    # stop a used instance
+    def sync_test():
+      instance = Demo()
+      self.assertEqual('async call', instance.async_method())
+      instance.stop()
 
-    instance = Example()
-    self.assertEqual('hello', instance.hello())
-    instance.stop()
-    self.assertRaises(RuntimeError, instance.hello)
+      self.assertRaises(RuntimeError, instance.async_method)
 
-    # stop an unused instance
+      # synchronous methods still work
 
-    instance = Example()
-    instance.stop()
-    self.assertRaises(RuntimeError, instance.hello)
+      self.assertEqual('sync call', instance.sync_method())
+
+    async def async_test():
+      instance = Demo()
+      self.assertEqual('async call', await instance.async_method())
+      instance.stop()
+
+      # stop has no affect on async users
+
+      self.assertEqual('async call', await instance.async_method())
+
+    sync_test()
+    asyncio.run(async_test())
 
   def test_resuming(self):
     """
     Resume a previously stopped instance.
     """
 
-    instance = Example()
-    self.assertEqual('hello', instance.hello())
-    instance.stop()
-    self.assertRaises(RuntimeError, instance.hello)
-    instance.start()
-    self.assertEqual('hello', instance.hello())
-    instance.stop()
+    def sync_test():
+      instance = Demo()
+      self.assertEqual('async call', instance.async_method())
+      instance.stop()
 
-  def test_asynchronous_mockability(self):
+      self.assertRaises(RuntimeError, instance.async_method)
+
+      instance.start()
+      self.assertEqual('async call', instance.async_method())
+      instance.stop()
+
+    async def async_test():
+      instance = Demo()
+      self.assertEqual('async call', await instance.async_method())
+      instance.stop()
+
+      # start has no affect on async users
+
+      instance.start()
+      self.assertEqual('async call', await instance.async_method())
+      instance.stop()
+
+    sync_test()
+    asyncio.run(async_test())
+
+  def test_iteration(self):
     """
-    Check that method mocks are respected.
-    """
-
-    # mock prior to construction
-
-    with patch('test.unit.util.synchronous.Example.hello', Mock(side_effect = coro_func_returning_value('mocked hello'))):
-      instance = Example()
-      self.assertEqual('mocked hello', instance.hello())
-
-    self.assertEqual('hello', instance.hello())  # mock should now be reverted
-    instance.stop()
-
-    # mock after construction
-
-    instance = Example()
-
-    with patch('test.unit.util.synchronous.Example.hello', Mock(side_effect = coro_func_returning_value('mocked hello'))):
-      self.assertEqual('mocked hello', instance.hello())
-
-    self.assertEqual('hello', instance.hello())
-    instance.stop()
-
-  def test_synchronous_mockability(self):
-    """
-    Ensure we do not disrupt non-asynchronous method mocks.
+    Check that we can iterate in both contexts.
     """
 
-    # mock prior to construction
+    def sync_test():
+      instance = Demo()
+      result = []
 
-    with patch('test.unit.util.synchronous.Example.sync_hello', Mock(return_value = 'mocked hello')):
-      instance = Example()
-      self.assertEqual('mocked hello', instance.sync_hello())
+      for val in instance:
+        result.append(val)
 
-    self.assertEqual('hello', instance.sync_hello())  # mock should now be reverted
-    instance.stop()
+      self.assertEqual([0, 1, 2], result)
+      instance.stop()
 
-    # mock after construction
+    async def async_test():
+      instance = Demo()
+      result = []
 
-    instance = Example()
+      async for val in instance:
+        result.append(val)
 
-    with patch('test.unit.util.synchronous.Example.sync_hello', Mock(return_value = 'mocked hello')):
-      self.assertEqual('mocked hello', instance.sync_hello())
+      self.assertEqual([0, 1, 2], result)
+      instance.stop()
 
-    self.assertEqual('hello', instance.sync_hello())
-    instance.stop()
+    sync_test()
+    asyncio.run(async_test())
+
+  def test_context_management(self):
+    """
+    Exercise context management via 'with' statements.
+    """
+
+    def sync_test():
+      instance = Demo()
+
+      self.assertFalse(instance.called_enter)
+      self.assertFalse(instance.called_exit)
+
+      with instance:
+        self.assertTrue(instance.called_enter)
+        self.assertFalse(instance.called_exit)
+
+      self.assertTrue(instance.called_enter)
+      self.assertTrue(instance.called_exit)
+
+    async def async_test():
+      instance = Demo()
+
+      self.assertFalse(instance.called_enter)
+      self.assertFalse(instance.called_exit)
+
+      async with instance:
+        self.assertTrue(instance.called_enter)
+        self.assertFalse(instance.called_exit)
+
+      self.assertTrue(instance.called_enter)
+      self.assertTrue(instance.called_exit)
+
+    sync_test()
+    asyncio.run(async_test())
+
+  def test_mockability(self):
+    """
+    Check that method mocks are respected for both previously constructed
+    instances and those made after the mock.
+    """
+
+    pre_constructed = Demo()
+
+    with patch('test.unit.util.synchronous.Demo.async_method', Mock(side_effect = coro_func_returning_value('mocked call'))):
+      post_constructed = Demo()
+
+      self.assertEqual('mocked call', pre_constructed.async_method())
+      self.assertEqual('mocked call', post_constructed.async_method())
+
+    self.assertEqual('async call', pre_constructed.async_method())
+    self.assertEqual('async call', post_constructed.async_method())
+
+    # synchronous methods are unaffected
+
+    with patch('test.unit.util.synchronous.Demo.sync_method', Mock(return_value = 'mocked call')):
+      self.assertEqual('mocked call', pre_constructed.sync_method())
+
+    self.assertEqual('sync call', pre_constructed.sync_method())
+
+    pre_constructed.stop()
+    post_constructed.stop()
