@@ -120,15 +120,20 @@ class TestSynchronous(unittest.TestCase):
 
   def test_stop_from_async(self):
     """
-    Ensure we can stop our instance from within an async method without
-    deadlock.
+    Ensure we can start and stop our instance from within an async method
+    without deadlock.
     """
 
     class AsyncStop(Synchronous):
+      async def restart(self):
+        self.stop()
+        self.start()
+
       async def call_stop(self):
         self.stop()
 
     instance = AsyncStop()
+    instance.restart()
     instance.call_stop()
     self.assertRaises(RuntimeError, instance.call_stop)
 
