@@ -350,9 +350,11 @@ class Synchronous(object):
         async def convert_generator(generator: AsyncIterator) -> Iterator:
           return iter([d async for d in generator])
 
-        return asyncio.run_coroutine_threadsafe(convert_generator(func(self, *args, **kwargs)), self._loop).result()
+        future = asyncio.run_coroutine_threadsafe(convert_generator(func(self, *args, **kwargs)), self._loop)
       else:
-        return asyncio.run_coroutine_threadsafe(func(self, *args, **kwargs), self._loop).result()
+        future = asyncio.run_coroutine_threadsafe(func(self, *args, **kwargs), self._loop)
+
+    return future.result()
 
   def __iter__(self) -> Iterator:
     return self._run_async_method('__aiter__')

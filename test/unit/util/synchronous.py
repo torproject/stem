@@ -118,6 +118,20 @@ class TestSynchronous(unittest.TestCase):
     sync_test()
     asyncio.run(async_test())
 
+  def test_stop_from_async(self):
+    """
+    Ensure we can stop our instance from within an async method without
+    deadlock.
+    """
+
+    class AsyncStop(Synchronous):
+      async def call_stop(self):
+        self.stop()
+
+    instance = AsyncStop()
+    instance.call_stop()
+    self.assertRaises(RuntimeError, instance.call_stop)
+
   def test_resuming(self):
     """
     Resume a previously stopped instance.
