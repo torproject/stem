@@ -92,7 +92,7 @@ class TestSynchronous(unittest.TestCase):
 
   def test_stop(self):
     """
-    Synchronous callers should receive a RuntimeError when stopped.
+    Stop and resume our instances.
     """
 
     def sync_test():
@@ -100,11 +100,17 @@ class TestSynchronous(unittest.TestCase):
       self.assertEqual('async call', instance.async_method())
       instance.stop()
 
-      self.assertRaises(RuntimeError, instance.async_method)
-
-      # synchronous methods still work
+      # synchronous methods won't resume us
 
       self.assertEqual('sync call', instance.sync_method())
+      self.assertTrue(instance._loop is None)
+
+      # ... but async methods will
+
+      self.assertEqual('async call', instance.async_method())
+      self.assertTrue(isinstance(instance._loop, asyncio.AbstractEventLoop))
+
+      instance.stop()
 
     async def async_test():
       instance = Demo()
@@ -120,7 +126,7 @@ class TestSynchronous(unittest.TestCase):
 
   def test_stop_from_async(self):
     """
-    Ensure we can start and stop our instance from within an async method
+    Ensure we can restart and stop our instance from within an async method
     without deadlock.
     """
 
@@ -135,37 +141,7 @@ class TestSynchronous(unittest.TestCase):
     instance = AsyncStop()
     instance.restart()
     instance.call_stop()
-    self.assertRaises(RuntimeError, instance.call_stop)
-
-  def test_resuming(self):
-    """
-    Resume a previously stopped instance.
-    """
-
-    def sync_test():
-      instance = Demo()
-      self.assertEqual('async call', instance.async_method())
-      instance.stop()
-
-      self.assertRaises(RuntimeError, instance.async_method)
-
-      instance.start()
-      self.assertEqual('async call', instance.async_method())
-      instance.stop()
-
-    async def async_test():
-      instance = Demo()
-      self.assertEqual('async call', await instance.async_method())
-      instance.stop()
-
-      # start has no affect on async users
-
-      instance.start()
-      self.assertEqual('async call', await instance.async_method())
-      instance.stop()
-
-    sync_test()
-    asyncio.run(async_test())
+    self.assertTrue(instance._loop is None)
 
   def test_iteration(self):
     """

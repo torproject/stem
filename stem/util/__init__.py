@@ -213,8 +213,6 @@ class Synchronous(object):
     if self._no_op:
       self.__ainit__()  # this is already an asyncio context
     else:
-      Synchronous.start(self)
-
       # Run coroutines through our loop. This calls methods by name rather than
       # reference so runtime replacements (like mocks) work.
 
@@ -226,6 +224,7 @@ class Synchronous(object):
         elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
           setattr(self, name, functools.partial(self._run_async_method, name))
 
+      Synchronous.start(self)
       asyncio.run_coroutine_threadsafe(asyncio.coroutine(self.__ainit__)(), self._loop).result()
 
   def __ainit__(self):
@@ -246,8 +245,8 @@ class Synchronous(object):
     #
     # However, when constructed from an asynchronous context the above will
     # likely hang because our loop is already processing a task (namely,
-    # whatever is constructing us). While we can schedule tasks, we cannot
-    # invoke it during our construction.
+    # whatever is constructing us). While we can schedule a follow-up task, we
+    # cannot invoke it during our construction.
     #
     # Finally, when this method is simple we could directly invoke it...
     #
@@ -290,8 +289,8 @@ class Synchronous(object):
   def stop(self) -> None:
     """
     Terminate resources that permits this from being callable from synchronous
-    contexts. Once called any further synchronous invocations will fail with a
-    **RuntimeError**.
+    contexts. Calling either :func:`~stem.util.Synchronous.start` or any async
+    method will resume us.
     """
 
     with self._loop_lock:
@@ -340,7 +339,7 @@ class Synchronous(object):
 
     with self._loop_lock:
       if self._loop is None:
-        raise RuntimeError('%s has been stopped' % type(self).__name__)
+        Synchronous.start(self)
 
       # convert iterator if indicated by this method's name or type hint
 
