@@ -321,18 +321,15 @@ def main():
         integ_runner.stop()
         println()
 
-        # We should have joined on all threads. If not then that indicates a
-        # leak that could both likely be a bug and disrupt further targets.
+  # ensure that we join all our threads
 
-        active_threads = threading.enumerate()
+  active_threads = threading.enumerate()
 
-        if len(active_threads) > 1:
-          println('Threads lingering after test run:', ERROR)
+  if len(active_threads) > 1:
+    println('Threads lingering after test run:', ERROR)
 
-          for lingering_thread in active_threads:
-            println('  %s' % lingering_thread, ERROR)
-
-          break
+    for lingering_thread in active_threads:
+      println('  %s' % lingering_thread, ERROR)
 
   static_check_issues = {}
 

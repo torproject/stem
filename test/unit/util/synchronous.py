@@ -189,6 +189,8 @@ class TestSynchronous(unittest.TestCase):
       self.assertTrue(instance.called_enter)
       self.assertTrue(instance.called_exit)
 
+      instance.stop()
+
     async def async_test():
       instance = Demo()
 
@@ -201,6 +203,8 @@ class TestSynchronous(unittest.TestCase):
 
       self.assertTrue(instance.called_enter)
       self.assertTrue(instance.called_exit)
+
+      instance.stop()
 
     sync_test()
     asyncio.run(async_test())

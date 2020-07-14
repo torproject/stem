@@ -369,6 +369,7 @@ class Query(Synchronous):
     super(Query, self).__init__()
 
     if not resource.startswith('/'):
+      self.stop()
       raise ValueError("Resources should start with a '/': %s" % resource)
 
     if resource.endswith('.z'):
@@ -379,6 +380,7 @@ class Query(Synchronous):
     elif isinstance(compression, stem.descriptor._Compression):
       compression = [compression]  # caller provided only a single option
     else:
+      self.stop()
       raise ValueError('Compression should be a list of stem.descriptor.Compression, was %s (%s)' % (compression, type(compression).__name__))
 
     if Compression.ZSTD in compression and not Compression.ZSTD.available:
@@ -402,6 +404,7 @@ class Query(Synchronous):
         if isinstance(endpoint, (stem.ORPort, stem.DirPort)):
           self.endpoints.append(endpoint)
         else:
+          self.stop()
           raise ValueError("Endpoints must be an stem.ORPort or stem.DirPort. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
