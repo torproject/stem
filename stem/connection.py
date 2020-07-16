@@ -257,8 +257,8 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   :param password_prompt: prompt for the controller password if it wasn't
     supplied
   :param chroot_path: path prefix if in a chroot environment
-  :param controller: :class:`~stem.control.Controller` subclass to be
-    returned
+  :param controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
 
@@ -267,9 +267,8 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   """
 
   # TODO: change this function's API so we can provide a concrete type
-
-  if controller is None or not issubclass(controller, stem.control.Controller):
-    raise ValueError('Controller should be a stem.control.Controller subclass.')
+  # TODO: 'loop_thread' gets orphaned, causing the thread to linger until we
+  #   change this function's API
 
   loop = asyncio.new_event_loop()
   loop_thread = threading.Thread(target = loop.run_forever, name = 'asyncio')
@@ -277,7 +276,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   loop_thread.start()
 
   try:
-    connection = asyncio.run_coroutine_threadsafe(_connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller), loop).result()
+    connection = asyncio.run_coroutine_threadsafe(connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller), loop).result()
 
     if connection is None and loop_thread.is_alive():
       loop.call_soon_threadsafe(loop.stop)
@@ -319,7 +318,7 @@ async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1'
     supplied
   :param chroot_path: path prefix if in a chroot environment
   :param controller: :class:`~stem.control.BaseController` subclass to be
-    returned
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
 
@@ -327,12 +326,6 @@ async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1'
     **control_port** and **control_socket** are **None**
   """
 
-  if controller and not issubclass(controller, stem.control.BaseController):
-    raise ValueError('The provided controller should be a stem.control.BaseController subclass.')
-  return await _connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller)
-
-
-async def _connect_async(control_port: Tuple[str, Union[str, int]], control_socket: str, password: Optional[str], password_prompt: bool, chroot_path: Optional[str], controller: Type[Union[stem.control.BaseController, stem.control.Controller]]) -> Any:
   if control_port is None and control_socket is None:
     raise ValueError('Neither a control port nor control socket were provided. Nothing to connect to.')
   elif control_port:
@@ -394,9 +387,8 @@ async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str
   :param password_prompt: prompt for the controller password if it wasn't
     supplied
   :param chroot_path: path prefix if in a chroot environment
-  :param controller: :class:`~stem.control.BaseController` or
-    :class:`~stem.control.Controller` subclass to be returned, this provides a
-    :class:`~stem.socket.ControlSocket` if **None**
+  :param controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
 
   :returns: authenticated control connection, the type based on the controller argument
   """

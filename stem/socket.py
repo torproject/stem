@@ -687,6 +687,9 @@ def recv_message_from_bytes_io(reader: BinaryIO, arrived_at: Optional[float] = N
       a complete message
   """
 
+  # TODO: We should deduplicate this with recv_message(), but separating IO
+  # from the low level aspects of this parsing will be difficult.
+
   parsed_content = []  # type: List[Tuple[str, str, bytes]]
   raw_content = bytearray()
   first_line = True
