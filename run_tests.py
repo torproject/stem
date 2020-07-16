@@ -259,6 +259,10 @@ def main():
   # 2.7 or later because before that test results didn't have a 'skipped'
   # attribute.
 
+  # TODO: handling of earlier python versions is no longer necessary here
+  # TODO: this invokes all asynchronous tests, even if we have a --test or
+  #   --exclude-test argument
+
   skipped_tests = 0
 
   if args.run_integ:
@@ -321,18 +325,15 @@ def main():
         integ_runner.stop()
         println()
 
-        # We should have joined on all threads. If not then that indicates a
-        # leak that could both likely be a bug and disrupt further targets.
+  # ensure that we join all our threads
 
-        active_threads = threading.enumerate()
+  active_threads = threading.enumerate()
 
-        if len(active_threads) > 1:
-          println('Threads lingering after test run:', ERROR)
+  if len(active_threads) > 1:
+    println('Threads lingering after test run:', ERROR)
 
-          for lingering_thread in active_threads:
-            println('  %s' % lingering_thread, ERROR)
-
-          break
+    for lingering_thread in active_threads:
+      println('  %s' % lingering_thread, ERROR)
 
   static_check_issues = {}
 

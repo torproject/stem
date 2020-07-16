@@ -11,7 +11,7 @@ import stem.control
 import stem.util.conf
 
 from stem.interpreter import uses_settings
-from typing import List, Optional
+from typing import cast, List, Optional
 
 
 @uses_settings
@@ -28,7 +28,7 @@ def _get_commands(controller: stem.control.Controller, config: stem.util.conf.Co
   # GETINFO commands. Lines are of the form '[option] -- [description]'. This
   # strips '*' from options that accept values.
 
-  results = controller.get_info('info/names', None)
+  results = cast(str, controller.get_info('info/names', None))
 
   if results:
     for line in results.splitlines():
@@ -40,7 +40,7 @@ def _get_commands(controller: stem.control.Controller, config: stem.util.conf.Co
   # GETCONF, SETCONF, and RESETCONF commands. Lines are of the form
   # '[option] [type]'.
 
-  results = controller.get_info('config/names', None)
+  results = cast(str, controller.get_info('config/names', None))
 
   if results:
     for line in results.splitlines():
@@ -62,7 +62,7 @@ def _get_commands(controller: stem.control.Controller, config: stem.util.conf.Co
   )
 
   for prefix, getinfo_cmd in options:
-    results = controller.get_info(getinfo_cmd, None)
+    results = cast(str, controller.get_info(getinfo_cmd, None))
 
     if results:
       commands += [prefix + value for value in results.split()]

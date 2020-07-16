@@ -13,23 +13,25 @@ import test
 import test.integ.util.system
 import test.require
 import test.runner
+from stem.util.test_tools import async_test
 
 from unittest.mock import Mock, patch
 
 
 class TestProtocolInfo(unittest.TestCase):
   @test.require.controller
-  def test_parsing(self):
+  @async_test
+  async def test_parsing(self):
     """
     Makes a PROTOCOLINFO query and processes the response for our control
     connection.
     """
 
-    control_socket = test.runner.get_runner().get_tor_socket(False)
-    control_socket.send('PROTOCOLINFO 1')
-    protocolinfo_response = control_socket.recv()
+    control_socket = await test.runner.get_runner().get_tor_socket(False)
+    await control_socket.send('PROTOCOLINFO 1')
+    protocolinfo_response = await control_socket.recv()
     stem.response.convert('PROTOCOLINFO', protocolinfo_response)
-    control_socket.close()
+    await control_socket.close()
 
     # according to the control spec the following _could_ differ or be
     # undefined but if that actually happens then it's gonna make people sad
@@ -43,7 +45,8 @@ class TestProtocolInfo(unittest.TestCase):
   @test.require.controller
   @patch('stem.util.proc.is_available', Mock(return_value = False))
   @patch('stem.util.system.is_available', Mock(return_value = True))
-  def test_get_protocolinfo_path_expansion(self):
+  @async_test
+  async def test_get_protocolinfo_path_expansion(self):
     """
     If we're running with the 'RELATIVE' target then test_parsing() will
     exercise cookie path expansion when we're able to query the pid by our
@@ -71,47 +74,51 @@ class TestProtocolInfo(unittest.TestCase):
 
       control_socket = stem.socket.ControlSocketFile(test.runner.CONTROL_SOCKET_PATH)
 
+    await control_socket.connect()
+
     call_replacement = test.integ.util.system.filter_system_call(lookup_prefixes)
 
     with patch('stem.util.system.call') as call_mock:
       call_mock.side_effect = call_replacement
 
-      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+      protocolinfo_response = await stem.connection.get_protocolinfo(control_socket)
       self.assert_matches_test_config(protocolinfo_response)
 
       # we should have a usable socket at this point
       self.assertTrue(control_socket.is_alive())
-      control_socket.close()
+      await control_socket.close()
 
   @test.require.controller
-  def test_multiple_protocolinfo_calls(self):
+  @async_test
+  async def test_multiple_protocolinfo_calls(self):
     """
     Tests making repeated PROTOCOLINFO queries. This use case is interesting
     because tor will shut down the socket and stem should transparently
     re-establish it.
     """
 
-    with test.runner.get_runner().get_tor_socket(False) as control_socket:
+    async with await test.runner.get_runner().get_tor_socket(False) as control_socket:
       for _ in range(5):
-        protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+        protocolinfo_response = await stem.connection.get_protocolinfo(control_socket)
         self.assert_matches_test_config(protocolinfo_response)
 
   @test.require.controller
-  def test_pre_disconnected_query(self):
+  @async_test
+  async def test_pre_disconnected_query(self):
     """
     Tests making a PROTOCOLINFO query when previous use of the socket had
     already disconnected it.
     """
 
-    with test.runner.get_runner().get_tor_socket(False) as control_socket:
+    async with await test.runner.get_runner().get_tor_socket(False) as control_socket:
       # makes a couple protocolinfo queries outside of get_protocolinfo first
-      control_socket.send('PROTOCOLINFO 1')
-      control_socket.recv()
+      await control_socket.send('PROTOCOLINFO 1')
+      await control_socket.recv()
 
-      control_socket.send('PROTOCOLINFO 1')
-      control_socket.recv()
+      await control_socket.send('PROTOCOLINFO 1')
+      await control_socket.recv()
 
-      protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+      protocolinfo_response = await stem.connection.get_protocolinfo(control_socket)
       self.assert_matches_test_config(protocolinfo_response)
 
   def assert_matches_test_config(self, protocolinfo_response):

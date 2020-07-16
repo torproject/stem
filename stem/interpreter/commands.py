@@ -21,7 +21,7 @@ import stem.util.tor_tools
 
 from stem.interpreter import STANDARD_OUTPUT, BOLD_OUTPUT, ERROR_OUTPUT, uses_settings, msg
 from stem.util.term import format
-from typing import Iterator, List, TextIO
+from typing import cast, Iterator, List, TextIO
 
 MAX_EVENTS = 100
 
@@ -45,7 +45,7 @@ def _get_fingerprint(arg: str, controller: stem.control.Controller) -> str:
 
   if not arg:
     try:
-      return controller.get_info('fingerprint')
+      return cast(str, controller.get_info('fingerprint'))
     except:
       raise ValueError("We aren't a relay, no information to provide")
   elif stem.util.tor_tools.is_valid_fingerprint(arg):
@@ -130,8 +130,8 @@ class ControlInterpreter(code.InteractiveConsole):
 
     handle_event_real = self._controller._handle_event
 
-    def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
-      handle_event_real(event_message)
+    async def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
+      await handle_event_real(event_message)
       self._received_events.insert(0, event_message)  # type: ignore
 
       if len(self._received_events) > MAX_EVENTS:
@@ -207,7 +207,7 @@ class ControlInterpreter(code.InteractiveConsole):
     extrainfo_desc_query = downloader.get_extrainfo_descriptors(fingerprint)
 
     for desc in server_desc_query:
-      server_desc = desc
+      server_desc = cast(stem.descriptor.server_descriptor.RelayDescriptor, desc)
 
     for desc in extrainfo_desc_query:
       extrainfo_desc = desc
@@ -220,7 +220,7 @@ class ControlInterpreter(code.InteractiveConsole):
       pass
 
     try:
-      address_extrainfo.append(self._controller.get_info('ip-to-country/%s' % ns_desc.address))
+      address_extrainfo.append(cast(str, self._controller.get_info('ip-to-country/%s' % ns_desc.address)))
     except:
       pass
 

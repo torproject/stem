@@ -15,31 +15,42 @@ Tor...
 
 ::
 
-  import stem
+  import asyncio
+  import sys
+
   import stem.connection
   import stem.socket
 
-  if __name__ == '__main__':
+  async def print_version() -> None:
     try:
       control_socket = stem.socket.ControlPort(port = 9051)
-      stem.connection.authenticate(control_socket)
+      await control_socket.connect()
+      await stem.connection.authenticate(control_socket)
     except stem.SocketError as exc:
-      print 'Unable to connect to tor on port 9051: %s' % exc
+      print(f'Unable to connect to tor on port 9051: {exc}')
       sys.exit(1)
     except stem.connection.AuthenticationFailure as exc:
-      print 'Unable to authenticate: %s' % exc
+      print(f'Unable to authenticate: {exc}')
       sys.exit(1)
 
-    print "Issuing 'GETINFO version' query...\\n"
-    control_socket.send('GETINFO version')
-    print control_socket.recv()
+    print("Issuing 'GETINFO version' query...\\n")
+    await control_socket.send('GETINFO version')
+    print(await control_socket.recv())
+
+
+  if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    try:
+      loop.run_until_complete(print_version())
+    finally:
+      loop.close()
 
 ::
 
   % python example.py
   Issuing 'GETINFO version' query...
 
-  version=0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+  version=0.4.3.5
   OK
 
 **Module Overview:**
@@ -66,13 +77,15 @@ Tor...
 
   send_message - Writes a message to a control socket.
   recv_message - Reads a ControlMessage from a control socket.
+  recv_message_from_bytes_io - Reads a ControlMessage from an I/O stream.
   send_formatting - Performs the formatting expected from sent messages.
 """
 
+import asyncio
 import re
 import socket
 import ssl
-import threading
+import sys
 import time
 
 import stem.response
@@ -80,7 +93,7 @@ import stem.util.str_tools
 
 from stem.util import log
 from types import TracebackType
-from typing import BinaryIO, Callable, List, Optional, Tuple, Type, Union, overload
+from typing import Awaitable, BinaryIO, Callable, List, Optional, Tuple, Type, Union, overload
 
 MESSAGE_PREFIX = re.compile(b'^[a-zA-Z0-9]{3}[-+ ]')
 ERROR_MSG = 'Error while receiving a control message (%s): %s'
@@ -96,17 +109,17 @@ class BaseSocket(object):
   """
 
   def __init__(self) -> None:
-    self._socket = None  # type: Optional[Union[socket.socket, ssl.SSLSocket]]
-    self._socket_file = None  # type: Optional[BinaryIO]
+    self._reader = None  # type: Optional[asyncio.StreamReader]
+    self._writer = None  # type: Optional[asyncio.StreamWriter]
     self._is_alive = False
     self._connection_time = 0.0  # time when we last connected or disconnected
 
-    # Tracks sending and receiving separately. This should be safe, and doing
-    # so prevents deadlock where we block writes because we're waiting to read
-    # a message that isn't coming.
+    # The class is often initialized in a thread with an event loop different
+    # from one where it will be used. The asyncio lock is bound to the loop
+    # running in a thread where it is initialized. Therefore, we are creating
+    # it in _get_send_lock when it is used the first time.
 
-    self._send_lock = threading.RLock()
-    self._recv_lock = threading.RLock()
+    self._send_lock = None  # type: Optional[asyncio.Lock]
 
   def is_alive(self) -> bool:
     """
@@ -151,7 +164,7 @@ class BaseSocket(object):
 
     return self._connection_time
 
-  def connect(self) -> None:
+  async def connect(self) -> None:
     """
     Connects to a new socket, closing our previous one if we're already
     attached.
@@ -159,184 +172,141 @@ class BaseSocket(object):
     :raises: :class:`stem.SocketError` if unable to make a socket
     """
 
-    with self._send_lock:
+    async with self._get_send_lock():
       # Closes the socket if we're currently attached to one. Once we're no
       # longer alive it'll be safe to acquire the recv lock because recv()
       # calls no longer block (raising SocketClosed instead).
 
       if self.is_alive():
-        self.close()
+        await self._close_wo_send_lock()
 
-      with self._recv_lock:
-        self._socket = self._make_socket()
-        self._socket_file = self._socket.makefile(mode = 'rwb')
-        self._is_alive = True
-        self._connection_time = time.time()
+      self._reader, self._writer = await self._open_connection()
+      self._is_alive = True
+      self._connection_time = time.time()
 
-        # It's possible for this to have a transient failure...
-        # SocketError: [Errno 4] Interrupted system call
-        #
-        # It's safe to retry, so give it another try if it fails.
+      # It's possible for this to have a transient failure...
+      # SocketError: [Errno 4] Interrupted system call
+      #
+      # It's safe to retry, so give it another try if it fails.
 
-        try:
-          self._connect()
-        except stem.SocketError:
-          self._connect()  # single retry
+      try:
+        await self._connect()
+      except stem.SocketError:
+        await self._connect()  # single retry
 
-  def close(self) -> None:
+  async def close(self) -> None:
     """
     Shuts down the socket. If it's already closed then this is a no-op.
     """
 
-    with self._send_lock:
-      # Function is idempotent with one exception: we notify _close() if this
-      # is causing our is_alive() state to change.
+    async with self._get_send_lock():
+      await self._close_wo_send_lock()
 
-      is_change = self.is_alive()
+  async def _close_wo_send_lock(self) -> None:
+    # Function is idempotent with one exception: we notify _close() if this
+    # is causing our is_alive() state to change.
 
-      if self._socket:
-        # if we haven't yet established a connection then this raises an error
-        # socket.error: [Errno 107] Transport endpoint is not connected
+    is_change = self.is_alive()
 
-        try:
-          self._socket.shutdown(socket.SHUT_RDWR)
-        except socket.error:
-          pass
+    if self._writer:
+      self._writer.close()
+      # `StreamWriter.wait_closed` was added in Python 3.7.
+      if sys.version_info >= (3, 7):
+        await self._writer.wait_closed()
 
-        self._socket.close()
+    self._reader = None
+    self._writer = None
+    self._is_alive = False
+    self._connection_time = time.time()
 
-      if self._socket_file:
-        try:
-          self._socket_file.close()
-        except BrokenPipeError:
-          pass
+    if is_change:
+      await self._close()
 
-      self._socket = None
-      self._socket_file = None
-      self._is_alive = False
-      self._connection_time = time.time()
-
-      if is_change:
-        self._close()
-
-  def _send(self, message: Union[bytes, str], handler: Callable[[Union[socket.socket, ssl.SSLSocket], BinaryIO, Union[bytes, str]], None]) -> None:
+  async def _send(self, message: Union[bytes, str], handler: Callable[[asyncio.StreamWriter, Union[bytes, str]], Awaitable[None]]) -> None:
     """
-    Send message in a thread safe manner. Handler is expected to be of the form...
-
-    ::
-
-      my_handler(socket, socket_file, message)
+    Send message in a thread safe manner.
     """
 
-    with self._send_lock:
+    async with self._get_send_lock():
       try:
         if not self.is_alive():
           raise stem.SocketClosed()
 
-        handler(self._socket, self._socket_file, message)
+        await handler(self._writer, message)
       except stem.SocketClosed:
         # if send_message raises a SocketClosed then we should properly shut
         # everything down
 
         if self.is_alive():
-          self.close()
+          await self._close_wo_send_lock()
 
         raise
 
   @overload
-  def _recv(self, handler: Callable[[ssl.SSLSocket, BinaryIO], bytes]) -> bytes:
+  async def _recv(self, handler: Callable[[asyncio.StreamReader], Awaitable[bytes]]) -> bytes:
     ...
 
   @overload
-  def _recv(self, handler: Callable[[socket.socket, BinaryIO], stem.response.ControlMessage]) -> stem.response.ControlMessage:
+  async def _recv(self, handler: Callable[[asyncio.StreamReader], Awaitable[stem.response.ControlMessage]]) -> stem.response.ControlMessage:
     ...
 
-  def _recv(self, handler):
+  async def _recv(self, handler):
     """
-    Receives a message in a thread safe manner. Handler is expected to be of the form...
-
-    ::
-
-      my_handler(socket, socket_file)
+    Receives a message in a thread safe manner.
     """
 
-    with self._recv_lock:
-      try:
-        # makes a temporary reference to the _socket_file because connect()
-        # and close() may set or unset it
+    try:
+      # makes a temporary reference to the _reader because connect()
+      # and close() may set or unset it
 
-        my_socket, my_socket_file = self._socket, self._socket_file
+      my_reader = self._reader
 
-        if not my_socket or not my_socket_file:
-          raise stem.SocketClosed()
+      if not my_reader:
+        raise stem.SocketClosed()
 
-        return handler(my_socket, my_socket_file)
-      except stem.SocketClosed:
-        # If recv_message raises a SocketClosed then we should properly shut
-        # everything down. However, there's a couple cases where this will
-        # cause deadlock...
-        #
-        # * This SocketClosed was *caused by* a close() call, which is joining
-        #   on our thread.
-        #
-        # * A send() call that's currently in flight is about to call close(),
-        #   also attempting to join on us.
-        #
-        # To resolve this we make a non-blocking call to acquire the send lock.
-        # If we get it then great, we can close safely. If not then one of the
-        # above are in progress and we leave the close to them.
+      return await handler(my_reader)
+    except stem.SocketClosed:
+      if self.is_alive():
+        await self.close()
 
-        if self.is_alive():
-          if self._send_lock.acquire(False):
-            self.close()
-            self._send_lock.release()
+      raise
 
-        raise
-
-  def _get_send_lock(self) -> threading.RLock:
+  def _get_send_lock(self) -> asyncio.Lock:
     """
     The send lock is useful to classes that interact with us at a deep level
     because it's used to lock :func:`stem.socket.ControlSocket.connect` /
     :func:`stem.socket.BaseSocket.close`, and by extension our
     :func:`stem.socket.BaseSocket.is_alive` state changes.
 
-    :returns: **threading.RLock** that governs sending messages to our socket
+    :returns: **asyncio.Lock** that governs sending messages to our socket
       and state changes
     """
 
+    if self._send_lock is None:
+      self._send_lock = asyncio.Lock()
     return self._send_lock
 
-  def __enter__(self) -> 'stem.socket.BaseSocket':
+  async def __aenter__(self) -> 'stem.socket.BaseSocket':
     return self
 
-  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
-    self.close()
+  async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]):
+    await self.close()
 
-  def _connect(self) -> None:
+  async def _connect(self) -> None:
     """
     Connection callback that can be overwritten by subclasses and wrappers.
     """
 
     pass
 
-  def _close(self) -> None:
+  async def _close(self) -> None:
     """
     Disconnection callback that can be overwritten by subclasses and wrappers.
     """
 
     pass
 
-  def _make_socket(self) -> Union[socket.socket, ssl.SSLSocket]:
-    """
-    Constructs and connects new socket. This is implemented by subclasses.
-
-    :returns: **socket.socket** for our configuration
-
-    :raises:
-      * :class:`stem.SocketError` if unable to make a socket
-      * **NotImplementedError** if not implemented by a subclass
-    """
-
+  async def _open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     raise NotImplementedError('Unsupported Operation: this should be implemented by the BaseSocket subclass')
 
 
@@ -352,26 +322,19 @@ class RelaySocket(BaseSocket):
   :var int port: ORPort our socket connects to
   """
 
-  def __init__(self, address: str = '127.0.0.1', port: int = 9050, connect: bool = True) -> None:
+  def __init__(self, address: str = '127.0.0.1', port: int = 9050) -> None:
     """
     RelaySocket constructor.
 
     :param address: ip address of the relay
     :param port: orport of the relay
-    :param connect: connects to the socket if True, leaves it unconnected otherwise
-
-    :raises: :class:`stem.SocketError` if connect is **True** and we're
-      unable to establish a connection
     """
 
     super(RelaySocket, self).__init__()
     self.address = address
     self.port = port
 
-    if connect:
-      self.connect()
-
-  def send(self, message: Union[str, bytes]) -> None:
+  async def send(self, message: Union[str, bytes]) -> None:
     """
     Sends a message to the relay's ORPort.
 
@@ -382,9 +345,9 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
 
-    self._send(message, lambda s, sf, msg: _write_to_socket(sf, msg))
+    await self._send(message, _write_to_socket)
 
-  def recv(self, timeout: Optional[float] = None) -> bytes:
+  async def recv(self, timeout: Optional[float] = None) -> bytes:
     """
     Receives a message from the relay.
 
@@ -398,30 +361,24 @@ class RelaySocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    def wrapped_recv(s: ssl.SSLSocket, sf: BinaryIO) -> bytes:
+    async def wrapped_recv(reader: asyncio.StreamReader) -> Optional[bytes]:
+      read_coroutine = reader.read(1024)
       if timeout is None:
-        return s.recv(1024)
+        return await read_coroutine
       else:
-        s.setblocking(False)
-        s.settimeout(timeout)
-
         try:
-          return s.recv(1024)
-        except (socket.timeout, ssl.SSLError, ssl.SSLWantReadError):
+          return await asyncio.wait_for(read_coroutine, timeout)
+        except (asyncio.TimeoutError, ssl.SSLError, ssl.SSLWantReadError):
           return None
-        finally:
-          s.setblocking(True)
 
-    return self._recv(wrapped_recv)
+    return await self._recv(wrapped_recv)
 
   def is_localhost(self) -> bool:
     return self.address == '127.0.0.1'
 
-  def _make_socket(self) -> ssl.SSLSocket:
+  async def _open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     try:
-      relay_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      relay_socket.connect((self.address, self.port))
-      return ssl.wrap_socket(relay_socket)
+      return await asyncio.open_connection(self.address, self.port, ssl=ssl.SSLContext())
     except socket.error as exc:
       raise stem.SocketError(exc)
 
@@ -433,13 +390,13 @@ class ControlSocket(BaseSocket):
   receiving complete messages.
 
   Callers should not instantiate this class directly, but rather use subclasses
-  which are expected to implement the **_make_socket()** method.
+  which are expected to implement the **_open_connection()** method.
   """
 
   def __init__(self) -> None:
     super(ControlSocket, self).__init__()
 
-  def send(self, message: Union[bytes, str]) -> None:
+  async def send(self, message: Union[bytes, str]) -> None:
     """
     Formats and sends a message to the control socket. For more information see
     the :func:`~stem.socket.send_message` function.
@@ -451,9 +408,9 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket is known to be shut down
     """
 
-    self._send(message, lambda s, sf, msg: send_message(sf, msg))
+    await self._send(message, send_message)
 
-  def recv(self) -> stem.response.ControlMessage:
+  async def recv(self) -> stem.response.ControlMessage:
     """
     Receives a message from the control socket, blocking until we've received
     one. For more information see the :func:`~stem.socket.recv_message` function.
@@ -465,7 +422,7 @@ class ControlSocket(BaseSocket):
       * :class:`stem.SocketClosed` if the socket closes before we receive a complete message
     """
 
-    return self._recv(lambda s, sf: recv_message(sf))
+    return await self._recv(recv_message)
 
 
 class ControlPort(ControlSocket):
@@ -477,33 +434,24 @@ class ControlPort(ControlSocket):
   :var int port: ControlPort our socket connects to
   """
 
-  def __init__(self, address: str = '127.0.0.1', port: int = 9051, connect: bool = True) -> None:
+  def __init__(self, address: str = '127.0.0.1', port: int = 9051) -> None:
     """
     ControlPort constructor.
 
     :param address: ip address of the controller
     :param port: port number of the controller
-    :param connect: connects to the socket if True, leaves it unconnected otherwise
-
-    :raises: :class:`stem.SocketError` if connect is **True** and we're
-      unable to establish a connection
     """
 
     super(ControlPort, self).__init__()
     self.address = address
     self.port = port
 
-    if connect:
-      self.connect()
-
   def is_localhost(self) -> bool:
     return self.address == '127.0.0.1'
 
-  def _make_socket(self) -> socket.socket:
+  async def _open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     try:
-      control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-      control_socket.connect((self.address, self.port))
-      return control_socket
+      return await asyncio.open_connection(self.address, self.port)
     except socket.error as exc:
       raise stem.SocketError(exc)
 
@@ -516,36 +464,27 @@ class ControlSocketFile(ControlSocket):
   :var str path: filesystem path of the socket we connect to
   """
 
-  def __init__(self, path: str = '/var/run/tor/control', connect: bool = True) -> None:
+  def __init__(self, path: str = '/var/run/tor/control') -> None:
     """
     ControlSocketFile constructor.
 
-    :param socket_path: path where the control socket is located
-    :param connect: connects to the socket if True, leaves it unconnected otherwise
-
-    :raises: :class:`stem.SocketError` if connect is **True** and we're
-      unable to establish a connection
+    :param path: path where the control socket is located
     """
 
     super(ControlSocketFile, self).__init__()
     self.path = path
 
-    if connect:
-      self.connect()
-
   def is_localhost(self) -> bool:
     return True
 
-  def _make_socket(self) -> socket.socket:
+  async def _open_connection(self) -> Tuple[asyncio.StreamReader, asyncio.StreamWriter]:
     try:
-      control_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-      control_socket.connect(self.path)
-      return control_socket
+      return await asyncio.open_unix_connection(self.path)
     except socket.error as exc:
       raise stem.SocketError(exc)
 
 
-def send_message(control_file: BinaryIO, message: Union[bytes, str], raw: bool = False) -> None:
+async def send_message(writer: asyncio.StreamWriter, message: Union[bytes, str], raw: bool = False) -> None:
   """
   Sends a message to the control socket, adding the expected formatting for
   single verses multi-line messages. Neither message type should contain an
@@ -566,8 +505,7 @@ def send_message(control_file: BinaryIO, message: Union[bytes, str], raw: bool =
     <line 3>\\r\\n
     .\\r\\n
 
-  :param control_file: file derived from the control socket (see the
-    socket's makefile() method for more information)
+  :param writer: writer object
   :param message: message to be sent on the control socket
   :param raw: leaves the message formatting untouched, passing it to the
     socket as-is
@@ -582,7 +520,7 @@ def send_message(control_file: BinaryIO, message: Union[bytes, str], raw: bool =
   if not raw:
     message = send_formatting(message)
 
-  _write_to_socket(control_file, message)
+  await _write_to_socket(writer, message)
 
   if log.is_tracing():
     log_message = message.replace('\r\n', '\n').rstrip()
@@ -590,10 +528,10 @@ def send_message(control_file: BinaryIO, message: Union[bytes, str], raw: bool =
     log.trace('Sent to tor:%s%s' % (msg_div, log_message))
 
 
-def _write_to_socket(socket_file: BinaryIO, message: Union[str, bytes]) -> None:
+async def _write_to_socket(writer: asyncio.StreamWriter, message: Union[str, bytes]) -> None:
   try:
-    socket_file.write(stem.util.str_tools._to_bytes(message))
-    socket_file.flush()
+    writer.write(stem.util.str_tools._to_bytes(message))
+    await writer.drain()
   except socket.error as exc:
     log.info('Failed to send: %s' % exc)
 
@@ -613,13 +551,12 @@ def _write_to_socket(socket_file: BinaryIO, message: Union[str, bytes]) -> None:
     raise stem.SocketClosed('file has been closed')
 
 
-def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> stem.response.ControlMessage:
+async def recv_message(reader: asyncio.StreamReader, arrived_at: Optional[float] = None) -> stem.response.ControlMessage:
   """
   Pulls from a control socket until we either have a complete message or
   encounter a problem.
 
-  :param control_file: file derived from the control socket (see the
-    socket's makefile() method for more information)
+  :param reader: reader object
 
   :returns: :class:`~stem.response.ControlMessage` read from the socket
 
@@ -635,7 +572,7 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
 
   while True:
     try:
-      line = control_file.readline()
+      line = await reader.readline()
     except AttributeError:
       # if the control_file has been closed then we will receive:
       # AttributeError: 'NoneType' object has no attribute 'recv'
@@ -701,7 +638,131 @@ def recv_message(control_file: BinaryIO, arrived_at: Optional[float] = None) -> 
 
       while True:
         try:
-          line = control_file.readline()
+          line = await reader.readline()
+          raw_content += line
+        except socket.error as exc:
+          log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content).decode('utf-8')))))
+          raise stem.SocketClosed(exc)
+
+        if not line.endswith(b'\r\n'):
+          log.info(ERROR_MSG % ('ProtocolError', 'CRLF linebreaks missing from a data reply, "%s"' % log.escape(bytes(raw_content).decode('utf-8'))))
+          raise stem.ProtocolError('All lines should end with CRLF')
+        elif line == b'.\r\n':
+          break  # data block termination
+
+        line = line[:-2]  # strips off the CRLF
+
+        # lines starting with a period are escaped by a second period (as per
+        # section 2.4 of the control-spec)
+
+        if line.startswith(b'..'):
+          line = line[1:]
+
+        content_block += b'\n' + line
+
+      # joins the content using a newline rather than CRLF separator (more
+      # conventional for multi-line string content outside the windows world)
+
+      parsed_content.append((status_code, divider, bytes(content_block)))
+    else:
+      # this should never be reached due to the prefix regex, but might as well
+      # be safe...
+
+      log.warn(ERROR_MSG % ('ProtocolError', "\"%s\" isn't a recognized divider type" % divider))
+      raise stem.ProtocolError("Unrecognized divider type '%s': %s" % (divider, stem.util.str_tools._to_unicode(line)))
+
+
+def recv_message_from_bytes_io(reader: BinaryIO, arrived_at: Optional[float] = None) -> stem.response.ControlMessage:
+  """
+  Pulls from an I/O stream until we either have a complete message or
+  encounter a problem.
+
+  :param file reader: I/O stream
+
+  :returns: :class:`~stem.response.ControlMessage` read from the socket
+
+  :raises:
+    * :class:`stem.ProtocolError` the content from the socket is malformed
+    * :class:`stem.SocketClosed` if the socket closes before we receive
+      a complete message
+  """
+
+  # TODO: We should deduplicate this with recv_message(), but separating IO
+  # from the low level aspects of this parsing will be difficult.
+
+  parsed_content = []  # type: List[Tuple[str, str, bytes]]
+  raw_content = bytearray()
+  first_line = True
+
+  while True:
+    try:
+      line = reader.readline()
+    except AttributeError:
+      # if the control_file has been closed then we will receive:
+      # AttributeError: 'NoneType' object has no attribute 'recv'
+
+      log.info(ERROR_MSG % ('SocketClosed', 'socket file has been closed'))
+      raise stem.SocketClosed('socket file has been closed')
+    except (OSError, ValueError) as exc:
+      # when disconnected this errors with...
+      #
+      #   * ValueError: I/O operation on closed file
+      #   * OSError: [Errno 107] Transport endpoint is not connected
+      #   * OSError: [Errno 9] Bad file descriptor
+
+      log.info(ERROR_MSG % ('SocketClosed', 'received exception "%s"' % exc))
+      raise stem.SocketClosed(exc)
+
+    # Parses the tor control lines. These are of the form...
+    # <status code><divider><content>\r\n
+
+    if not line:
+      # if the socket is disconnected then the readline() method will provide
+      # empty content
+
+      log.info(ERROR_MSG % ('SocketClosed', 'empty socket content'))
+      raise stem.SocketClosed('Received empty socket content.')
+    elif not MESSAGE_PREFIX.match(line):
+      log.info(ERROR_MSG % ('ProtocolError', 'malformed status code/divider, "%s"' % log.escape(line.decode('utf-8'))))
+      raise stem.ProtocolError('Badly formatted reply line: beginning is malformed')
+    elif not line.endswith(b'\r\n'):
+      log.info(ERROR_MSG % ('ProtocolError', 'no CRLF linebreak, "%s"' % log.escape(line.decode('utf-8'))))
+      raise stem.ProtocolError('All lines should end with CRLF')
+
+    status_code, divider, content = line[:3], line[3:4], line[4:-2]  # strip CRLF off content
+
+    status_code = stem.util.str_tools._to_unicode(status_code)
+    divider = stem.util.str_tools._to_unicode(divider)
+
+    # Most controller responses are single lines, in which case we don't need
+    # so much overhead.
+
+    if first_line:
+      if divider == ' ':
+        _log_trace(line)
+        return stem.response.ControlMessage([(status_code, divider, content)], line, arrived_at = arrived_at)
+      else:
+        parsed_content, raw_content, first_line = [], bytearray(), False
+
+    raw_content += line
+
+    if divider == '-':
+      # mid-reply line, keep pulling for more content
+      parsed_content.append((status_code, divider, content))
+    elif divider == ' ':
+      # end of the message, return the message
+      parsed_content.append((status_code, divider, content))
+      _log_trace(bytes(raw_content))
+      return stem.response.ControlMessage(parsed_content, bytes(raw_content), arrived_at = arrived_at)
+    elif divider == '+':
+      # data entry, all of the following lines belong to the content until we
+      # get a line with just a period
+
+      content_block = bytearray(content)
+
+      while True:
+        try:
+          line = reader.readline()
           raw_content += line
         except socket.error as exc:
           log.info(ERROR_MSG % ('SocketClosed', 'received an exception while mid-way through a data reply (exception: "%s", read content: "%s")' % (exc, log.escape(bytes(raw_content).decode('utf-8')))))

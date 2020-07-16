@@ -22,60 +22,74 @@ exceptions, etc).
     if not controller:
       sys.exit(1)  # unable to get a connection
 
-    print 'Tor is running version %s' % controller.get_version()
+    print(f'Tor is running version {controller.get_version()}')
     controller.close()
 
 ::
 
   % python example.py
-  Tor is running version 0.2.4.10-alpha-dev (git-8be6058d8f31e578)
+  Tor is running version 0.4.3.5
 
 ... or if Tor isn't running...
 
 ::
 
   % python example.py
-  [Errno 111] Connection refused
+  [Errno 111] Connect call failed
 
 The :func:`~stem.connection.authenticate` function, however, gives easy but
 fine-grained control over the authentication process. For instance...
 
 ::
 
-  import sys
+  import asyncio
   import getpass
+  import sys
+
   import stem.connection
   import stem.socket
 
-  try:
-    control_socket = stem.socket.ControlPort(port = 9051)
-  except stem.SocketError as exc:
-    print 'Unable to connect to port 9051 (%s)' % exc
-    sys.exit(1)
 
-  try:
-    stem.connection.authenticate(control_socket)
-  except stem.connection.IncorrectSocketType:
-    print 'Please check in your torrc that 9051 is the ControlPort.'
-    print 'Maybe you configured it to be the ORPort or SocksPort instead?'
-    sys.exit(1)
-  except stem.connection.MissingPassword:
-    controller_password = getpass.getpass('Controller password: ')
+  async def authenticate() -> None:
+    try:
+      control_socket = stem.socket.ControlPort(port=9051)
+      await control_socket.connect()
+    except stem.SocketError as exc:
+      print(f'Unable to connect to port 9051 ({exc})')
+      sys.exit(1)
 
     try:
-      stem.connection.authenticate_password(control_socket, controller_password)
-    except stem.connection.PasswordAuthFailed:
-      print 'Unable to authenticate, password is incorrect'
+      await stem.connection.authenticate(control_socket)
+    except stem.connection.IncorrectSocketType:
+      print('Please check in your torrc that 9051 is the ControlPort.')
+      print('Maybe you configured it to be the ORPort or SocksPort instead?')
       sys.exit(1)
-  except stem.connection.AuthenticationFailure as exc:
-    print 'Unable to authenticate: %s' % exc
-    sys.exit(1)
+    except stem.connection.MissingPassword:
+      controller_password = getpass.getpass('Controller password: ')
+
+      try:
+        await stem.connection.authenticate_password(control_socket, controller_password)
+      except stem.connection.PasswordAuthFailed:
+        print('Unable to authenticate, password is incorrect')
+        sys.exit(1)
+    except stem.connection.AuthenticationFailure as exc:
+      print(f'Unable to authenticate: {exc}')
+      sys.exit(1)
+
+
+  if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    try:
+      loop.run_until_complete(authenticate())
+    finally:
+      loop.close()
 
 **Module Overview:**
 
 ::
 
-  connect - Simple method for getting authenticated control connection
+  connect - Simple method for getting authenticated control connection for synchronous usage.
+  async_connect - Simple method for getting authenticated control connection for asynchronous usage.
 
   authenticate - Main method for authenticating to a control socket
   authenticate_none - Authenticates to an open control socket
@@ -127,11 +141,13 @@ fine-grained control over the authentication process. For instance...
   ============== ===========
 """
 
+import asyncio
 import binascii
 import getpass
 import hashlib
 import hmac
 import os
+import threading
 
 import stem.control
 import stem.response
@@ -211,12 +227,12 @@ COMMON_TOR_COMMANDS = (
 )
 
 
-def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type = stem.control.Controller) -> Any:
+def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.Controller] = stem.control.Controller) -> Any:
   """
-  Convenience function for quickly getting a control connection. This is very
-  handy for debugging or CLI setup, handling setup and prompting for a password
-  if necessary (and none is provided). If any issues arise this prints a
-  description of the problem and returns **None**.
+  Convenience function for quickly getting a control connection for synchronous
+  usage. This is very handy for debugging or CLI setup, handling setup and
+  prompting for a password if necessary (and none is provided). If any issues
+  arise this prints a description of the problem and returns **None**.
 
   If both a **control_port** and **control_socket** are provided then the
   **control_socket** is tried first, and this provides a generic error message
@@ -251,6 +267,64 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   """
 
   # TODO: change this function's API so we can provide a concrete type
+  # TODO: 'loop_thread' gets orphaned, causing the thread to linger until we
+  #   change this function's API
+
+  loop = asyncio.new_event_loop()
+  loop_thread = threading.Thread(target = loop.run_forever, name = 'asyncio')
+  loop_thread.setDaemon(True)
+  loop_thread.start()
+
+  try:
+    connection = asyncio.run_coroutine_threadsafe(connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller), loop).result()
+
+    if connection is None and loop_thread.is_alive():
+      loop.call_soon_threadsafe(loop.stop)
+      loop_thread.join()
+
+    return connection
+  except:
+    if loop_thread.is_alive():
+      loop.call_soon_threadsafe(loop.stop)
+      loop_thread.join()
+
+    raise
+
+
+async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default'), control_socket: str = '/var/run/tor/control', password: Optional[str] = None, password_prompt: bool = False, chroot_path: Optional[str] = None, controller: Type[stem.control.BaseController] = stem.control.Controller) -> Any:
+  """
+  Convenience function for quickly getting a control connection for
+  asynchronous usage. This is very handy for debugging or CLI setup, handling
+  setup and prompting for a password if necessary (and none is provided). If
+  any issues arise this prints a description of the problem and returns
+  **None**.
+
+  If both a **control_port** and **control_socket** are provided then the
+  **control_socket** is tried first, and this provides a generic error message
+  if they're both unavailable.
+
+  In much the same vein as git porcelain commands, users should not rely on
+  details of how this works. Messages and details of this function's behavior
+  could change in the future.
+
+  If the **port** is **'default'** then this checks on both 9051 (default for
+  relays) and 9151 (default for the Tor Browser). This default may change in
+  the future.
+
+  :param contol_port: address and port tuple, for instance **('127.0.0.1', 9051)**
+  :param control_socket: path where the control socket is located
+  :param password: passphrase to authenticate to the socket
+  :param password_prompt: prompt for the controller password if it wasn't
+    supplied
+  :param chroot_path: path prefix if in a chroot environment
+  :param controller: :class:`~stem.control.BaseController` subclass to be
+    returned, this provides a :class:`~stem.socket.ControlSocket` if **None**
+
+  :returns: authenticated control connection, the type based on the controller argument
+
+  :raises: **ValueError** if given an invalid control_port, or both
+    **control_port** and **control_socket** are **None**
+  """
 
   if control_port is None and control_socket is None:
     raise ValueError('Neither a control port nor control socket were provided. Nothing to connect to.')
@@ -269,6 +343,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
     if os.path.exists(control_socket):
       try:
         control_connection = stem.socket.ControlSocketFile(control_socket)
+        await control_connection.connect()
       except stem.SocketError as exc:
         error_msg = CONNECT_MESSAGES['unable_to_use_socket'].format(path = control_socket, error = exc)
     else:
@@ -282,6 +357,8 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
         control_connection = _connection_for_default_port(address)
       else:
         control_connection = stem.socket.ControlPort(address, int(port))
+
+      await control_connection.connect()
     except stem.SocketError as exc:
       error_msg = CONNECT_MESSAGES['unable_to_use_port'].format(address = address, port = port, error = exc)
 
@@ -297,10 +374,10 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
     print(error_msg)
     return None
 
-  return _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
+  return await _connect_auth(control_connection, password, password_prompt, chroot_path, controller)
 
 
-def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[stem.control.BaseController]]) -> Any:
+async def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, password_prompt: bool, chroot_path: str, controller: Optional[Type[Union[stem.control.BaseController, stem.control.Controller]]]) -> Any:
   """
   Helper for the connect_* functions that authenticates the socket and
   constructs the controller.
@@ -317,7 +394,7 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
   """
 
   try:
-    authenticate(control_socket, password, chroot_path)
+    await authenticate(control_socket, password, chroot_path)
 
     if controller is None:
       return control_socket
@@ -329,44 +406,44 @@ def _connect_auth(control_socket: stem.socket.ControlSocket, password: str, pass
     else:
       print(CONNECT_MESSAGES['wrong_socket_type'])
 
-    control_socket.close()
+    await control_socket.close()
     return None
   except UnrecognizedAuthMethods as exc:
     print(CONNECT_MESSAGES['uncrcognized_auth_type'].format(auth_methods = ', '.join(exc.unknown_auth_methods)))
-    control_socket.close()
+    await control_socket.close()
     return None
   except IncorrectPassword:
     print(CONNECT_MESSAGES['incorrect_password'])
-    control_socket.close()
+    await control_socket.close()
     return None
   except MissingPassword:
     if password is not None:
-      control_socket.close()
+      await control_socket.close()
       raise ValueError(CONNECT_MESSAGES['missing_password_bug'])
 
     if password_prompt:
       try:
         password = getpass.getpass(CONNECT_MESSAGES['password_prompt'] + ' ')
       except KeyboardInterrupt:
-        control_socket.close()
+        await control_socket.close()
         return None
 
-      return _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
+      return await _connect_auth(control_socket, password, password_prompt, chroot_path, controller)
     else:
       print(CONNECT_MESSAGES['needs_password'])
-      control_socket.close()
+      await control_socket.close()
       return None
   except UnreadableCookieFile as exc:
     print(CONNECT_MESSAGES['unreadable_cookie_file'].format(path = exc.cookie_path, issue = str(exc)))
-    control_socket.close()
+    await control_socket.close()
     return None
   except AuthenticationFailure as exc:
     print(CONNECT_MESSAGES['general_auth_failure'].format(error = exc))
-    control_socket.close()
+    await control_socket.close()
     return None
 
 
-def authenticate(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], password: Optional[str] = None, chroot_path: Optional[str] = None, protocolinfo_response: Optional[stem.response.protocolinfo.ProtocolInfoResponse] = None) -> None:
+async def authenticate(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], password: Optional[str] = None, chroot_path: Optional[str] = None, protocolinfo_response: Optional[stem.response.protocolinfo.ProtocolInfoResponse] = None) -> None:
   """
   Authenticates to a control socket using the information provided by a
   PROTOCOLINFO response. In practice this will often be all we need to
@@ -477,7 +554,7 @@ def authenticate(controller: Union[stem.control.BaseController, stem.socket.Cont
 
   if not protocolinfo_response:
     try:
-      protocolinfo_response = get_protocolinfo(controller)
+      protocolinfo_response = await get_protocolinfo(controller)
     except stem.ProtocolError:
       raise IncorrectSocketType('unable to use the control socket')
     except stem.SocketError as exc:
@@ -524,9 +601,9 @@ def authenticate(controller: Union[stem.control.BaseController, stem.socket.Cont
 
     try:
       if auth_type == AuthMethod.NONE:
-        authenticate_none(controller, False)
+        await authenticate_none(controller, False)
       elif auth_type == AuthMethod.PASSWORD:
-        authenticate_password(controller, password, False)
+        await authenticate_password(controller, password, False)
       elif auth_type in (AuthMethod.COOKIE, AuthMethod.SAFECOOKIE):
         cookie_path = protocolinfo_response.cookie_path
 
@@ -534,12 +611,12 @@ def authenticate(controller: Union[stem.control.BaseController, stem.socket.Cont
           cookie_path = os.path.join(chroot_path, cookie_path.lstrip(os.path.sep))
 
         if auth_type == AuthMethod.SAFECOOKIE:
-          authenticate_safecookie(controller, cookie_path, False)
+          await authenticate_safecookie(controller, cookie_path, False)
         else:
-          authenticate_cookie(controller, cookie_path, False)
+          await authenticate_cookie(controller, cookie_path, False)
 
       if isinstance(controller, stem.control.BaseController):
-        controller._post_authentication()
+        await controller._post_authentication()
 
       return  # success!
     except OpenAuthRejected as exc:
@@ -580,7 +657,7 @@ def authenticate(controller: Union[stem.control.BaseController, stem.socket.Cont
   raise AssertionError('BUG: Authentication failed without providing a recognized exception: %s' % str(auth_exceptions))
 
 
-def authenticate_none(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], suppress_ctl_errors: bool = True) -> None:
+async def authenticate_none(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], suppress_ctl_errors: bool = True) -> None:
   """
   Authenticates to an open control socket. All control connections need to
   authenticate before they can be used, even if tor hasn't been configured to
@@ -605,19 +682,19 @@ def authenticate_none(controller: Union[stem.control.BaseController, stem.socket
   """
 
   try:
-    auth_response = _msg(controller, 'AUTHENTICATE')
+    auth_response = await _msg(controller, 'AUTHENTICATE')
 
     # if we got anything but an OK response then error
     if str(auth_response) != 'OK':
       try:
-        controller.connect()
+        await controller.connect()
       except:
         pass
 
       raise OpenAuthRejected(str(auth_response), auth_response)
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -627,7 +704,7 @@ def authenticate_none(controller: Union[stem.control.BaseController, stem.socket
       raise OpenAuthRejected('Socket failed (%s)' % exc)
 
 
-def authenticate_password(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], password: str, suppress_ctl_errors: bool = True) -> None:
+async def authenticate_password(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], password: str, suppress_ctl_errors: bool = True) -> None:
   """
   Authenticates to a control socket that uses a password (via the
   HashedControlPassword torrc option). Quotes in the password are escaped.
@@ -668,12 +745,12 @@ def authenticate_password(controller: Union[stem.control.BaseController, stem.so
   password = password.replace('"', '\\"')
 
   try:
-    auth_response = _msg(controller, 'AUTHENTICATE "%s"' % password)
+    auth_response = await _msg(controller, 'AUTHENTICATE "%s"' % password)
 
     # if we got anything but an OK response then error
     if str(auth_response) != 'OK':
       try:
-        controller.connect()
+        await controller.connect()
       except:
         pass
 
@@ -687,7 +764,7 @@ def authenticate_password(controller: Union[stem.control.BaseController, stem.so
         raise PasswordAuthRejected(str(auth_response), auth_response)
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -697,7 +774,7 @@ def authenticate_password(controller: Union[stem.control.BaseController, stem.so
       raise PasswordAuthRejected('Socket failed (%s)' % exc)
 
 
-def authenticate_cookie(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], cookie_path: str, suppress_ctl_errors: bool = True) -> None:
+async def authenticate_cookie(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], cookie_path: str, suppress_ctl_errors: bool = True) -> None:
   """
   Authenticates to a control socket that uses the contents of an authentication
   cookie (generated via the CookieAuthentication torrc option). This does basic
@@ -757,12 +834,12 @@ def authenticate_cookie(controller: Union[stem.control.BaseController, stem.sock
 
     auth_token_hex = binascii.b2a_hex(stem.util.str_tools._to_bytes(cookie_data))
     msg = 'AUTHENTICATE %s' % stem.util.str_tools._to_unicode(auth_token_hex)
-    auth_response = _msg(controller, msg)
+    auth_response = await _msg(controller, msg)
 
     # if we got anything but an OK response then error
     if str(auth_response) != 'OK':
       try:
-        controller.connect()
+        await controller.connect()
       except:
         pass
 
@@ -777,7 +854,7 @@ def authenticate_cookie(controller: Union[stem.control.BaseController, stem.sock
         raise CookieAuthRejected(str(auth_response), cookie_path, False, auth_response)
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -787,7 +864,7 @@ def authenticate_cookie(controller: Union[stem.control.BaseController, stem.sock
       raise CookieAuthRejected('Socket failed (%s)' % exc, cookie_path, False)
 
 
-def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], cookie_path: str, suppress_ctl_errors: bool = True) -> None:
+async def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], cookie_path: str, suppress_ctl_errors: bool = True) -> None:
   """
   Authenticates to a control socket using the safe cookie method, which is
   enabled by setting the CookieAuthentication torrc option on Tor client's which
@@ -853,11 +930,11 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
 
   try:
     client_nonce_hex = stem.util.str_tools._to_unicode(binascii.b2a_hex(client_nonce))
-    authchallenge_response = _msg(controller, 'AUTHCHALLENGE SAFECOOKIE %s' % client_nonce_hex)  # type: ignore
+    authchallenge_response = await _msg(controller, 'AUTHCHALLENGE SAFECOOKIE %s' % client_nonce_hex)  # type: ignore
 
     if not authchallenge_response.is_ok():
       try:
-        controller.connect()
+        await controller.connect()
       except:
         pass
 
@@ -880,7 +957,7 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
         raise AuthChallengeFailed(authchallenge_response_str, cookie_path)
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -912,10 +989,10 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
       CLIENT_HASH_CONSTANT,
       cookie_data + client_nonce + authchallenge_response.server_nonce)
 
-    auth_response = _msg(controller, 'AUTHENTICATE %s' % stem.util.str_tools._to_unicode(binascii.b2a_hex(client_hash)))
+    auth_response = await _msg(controller, 'AUTHENTICATE %s' % stem.util.str_tools._to_unicode(binascii.b2a_hex(client_hash)))
   except stem.ControllerError as exc:
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -927,7 +1004,7 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
   # if we got anything but an OK response then err
   if not auth_response.is_ok():
     try:
-      controller.connect()
+      await controller.connect()
     except:
       pass
 
@@ -942,7 +1019,7 @@ def authenticate_safecookie(controller: Union[stem.control.BaseController, stem.
       raise CookieAuthRejected(str(auth_response), cookie_path, True, auth_response)
 
 
-def get_protocolinfo(controller: Union[stem.control.BaseController, stem.socket.ControlSocket]) -> stem.response.protocolinfo.ProtocolInfoResponse:
+async def get_protocolinfo(controller: Union[stem.control.BaseController, stem.socket.ControlSocket]) -> stem.response.protocolinfo.ProtocolInfoResponse:
   """
   Issues a PROTOCOLINFO query to a control socket, getting information about
   the tor process running on it. If the socket is already closed then it is
@@ -963,7 +1040,7 @@ def get_protocolinfo(controller: Union[stem.control.BaseController, stem.socket.
   """
 
   try:
-    protocolinfo_response = _msg(controller, 'PROTOCOLINFO 1')
+    protocolinfo_response = await _msg(controller, 'PROTOCOLINFO 1')
   except:
     protocolinfo_response = None
 
@@ -971,10 +1048,10 @@ def get_protocolinfo(controller: Union[stem.control.BaseController, stem.socket.
   # next followed by authentication. Transparently reconnect if that happens.
 
   if not protocolinfo_response or str(protocolinfo_response) == 'Authentication required.':
-    controller.connect()
+    await controller.connect()
 
     try:
-      protocolinfo_response = _msg(controller, 'PROTOCOLINFO 1')
+      protocolinfo_response = await _msg(controller, 'PROTOCOLINFO 1')
     except stem.SocketClosed as exc:
       raise stem.SocketError(exc)
 
@@ -982,17 +1059,17 @@ def get_protocolinfo(controller: Union[stem.control.BaseController, stem.socket.
   return protocolinfo_response  # type: ignore
 
 
-def _msg(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], message: str) -> stem.response.ControlMessage:
+async def _msg(controller: Union[stem.control.BaseController, stem.socket.ControlSocket], message: str) -> stem.response.ControlMessage:
   """
   Sends and receives a message with either a
   :class:`~stem.socket.ControlSocket` or :class:`~stem.control.BaseController`.
   """
 
   if isinstance(controller, stem.socket.ControlSocket):
-    controller.send(message)
-    return controller.recv()
+    await controller.send(message)
+    return await controller.recv()
   else:
-    return controller.msg(message)
+    return await controller.msg(message)
 
 
 def _connection_for_default_port(address: str) -> stem.socket.ControlPort:

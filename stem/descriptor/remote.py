@@ -83,13 +83,12 @@ content. For example...
   hashes.
 """
 
+import asyncio
 import io
 import random
-import socket
 import sys
 import threading
 import time
-import urllib.request
 
 import stem
 import stem.client
@@ -100,8 +99,8 @@ import stem.util.enum
 import stem.util.tor_tools
 
 from stem.descriptor import Compression
-from stem.util import log, str_tools
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+from stem.util import Synchronous, log, str_tools
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple, Union
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
 # fingerprint or hashes due to a limit on the url length by squid proxies.
@@ -227,7 +226,7 @@ def get_detached_signatures(**query_args: Any) -> 'stem.descriptor.remote.Query'
   return get_instance().get_detached_signatures(**query_args)
 
 
-class Query(object):
+class Query(Synchronous):
   """
   Asynchronous request for descriptor content from a directory authority or
   mirror. These can either be made through the
@@ -243,15 +242,10 @@ class Query(object):
 
     from stem.descriptor.remote import Query
 
-    query = Query(
-      '/tor/server/all',
-      timeout = 30,
-    )
-
     print('Current relays:')
 
     try:
-      for desc in Query('/tor/server/all', 'server-descriptor 1.0').run():
+      for desc in await Query('/tor/server/all', 'server-descriptor 1.0').run():
         print(desc.fingerprint)
     except Exception as exc:
       print('Unable to retrieve the server descriptors: %s' % exc)
@@ -262,7 +256,7 @@ class Query(object):
 
     print('Current relays:')
 
-    for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
+    async for desc in Query('/tor/server/all', 'server-descriptor 1.0'):
       print(desc.fingerprint)
 
   In either case exceptions are available via our 'error' attribute.
@@ -348,7 +342,7 @@ class Query(object):
   :var bool is_done: flag that indicates if our request has finished
 
   :var float start_time: unix timestamp when we first started running
-  :var http.client.HTTPMessage reply_headers: headers provided in the response,
+  :var dict reply_headers: headers provided in the response,
     **None** if we haven't yet made our request
   :var float runtime: time our query took, this is **None** if it's not yet
     finished
@@ -372,7 +366,10 @@ class Query(object):
   """
 
   def __init__(self, resource: str, descriptor_type: Optional[str] = None, endpoints: Optional[Sequence[stem.Endpoint]] = None, compression: Union[stem.descriptor._Compression, Sequence[stem.descriptor._Compression]] = (Compression.GZIP,), retries: int = 2, fall_back_to_authority: bool = False, timeout: Optional[float] = None, start: bool = True, block: bool = False, validate: bool = False, document_handler: stem.descriptor.DocumentHandler = stem.descriptor.DocumentHandler.ENTRIES, **kwargs: Any) -> None:
+    super(Query, self).__init__()
+
     if not resource.startswith('/'):
+      self.stop()
       raise ValueError("Resources should start with a '/': %s" % resource)
 
     if resource.endswith('.z'):
@@ -383,6 +380,7 @@ class Query(object):
     elif isinstance(compression, stem.descriptor._Compression):
       compression = [compression]  # caller provided only a single option
     else:
+      self.stop()
       raise ValueError('Compression should be a list of stem.descriptor.Compression, was %s (%s)' % (compression, type(compression).__name__))
 
     if Compression.ZSTD in compression and not Compression.ZSTD.available:
@@ -406,6 +404,7 @@ class Query(object):
         if isinstance(endpoint, (stem.ORPort, stem.DirPort)):
           self.endpoints.append(endpoint)
         else:
+          self.stop()
           raise ValueError("Endpoints must be an stem.ORPort or stem.DirPort. '%s' is a %s." % (endpoint, type(endpoint).__name__))
 
     self.resource = resource
@@ -427,8 +426,8 @@ class Query(object):
     self.reply_headers = None  # type: Optional[Dict[str, str]]
     self.kwargs = kwargs
 
-    self._downloader_thread = None  # type: Optional[threading.Thread]
-    self._downloader_thread_lock = threading.RLock()
+    self._downloader_task = None  # type: Optional[asyncio.Task]
+    self._downloader_lock = threading.RLock()
 
     if start:
       self.start()
@@ -436,28 +435,24 @@ class Query(object):
     if block:
       self.run(True)
 
-  def start(self) -> None:
+  async def start(self) -> None:
     """
     Starts downloading the scriptors if we haven't started already.
     """
 
-    with self._downloader_thread_lock:
-      if self._downloader_thread is None:
-        self._downloader_thread = threading.Thread(
-          name = 'Descriptor query',
-          target = self._download_descriptors,
-          args = (self.retries, self.timeout)
-        )
+    with self._downloader_lock:
+      if self._downloader_task is None:
+        loop = asyncio.get_running_loop()
+        self._downloader_task = loop.create_task(self._download_descriptors(self.retries, self.timeout))
 
-        self._downloader_thread.setDaemon(True)
-        self._downloader_thread.start()
-
-  def run(self, suppress: bool = False) -> List['stem.descriptor.Descriptor']:
+  async def run(self, suppress: bool = False, stop: bool = True) -> List['stem.descriptor.Descriptor']:
     """
     Blocks until our request is complete then provides the descriptors. If we
     haven't yet started our request then this does so.
 
     :param suppress: avoids raising exceptions if **True**
+    :param stop: terminates the resources backing this query if **True**,
+      further method calls will raise a RuntimeError
 
     :returns: list for the requested :class:`~stem.descriptor.__init__.Descriptor` instances
 
@@ -470,12 +465,20 @@ class Query(object):
         * :class:`~stem.DownloadFailed` if our request fails
     """
 
-    return list(self._run(suppress))
+    # TODO: We should replace our 'stop' argument with a new API design prior
+    # to release. Self-destructing this object by default for synchronous users
+    # is quite a step backward, but is acceptable as we iterate on this.
 
-  def _run(self, suppress: bool) -> Iterator[stem.descriptor.Descriptor]:
-    with self._downloader_thread_lock:
-      self.start()
-      self._downloader_thread.join()
+    try:
+      return [desc async for desc in self._run(suppress)]
+    finally:
+      if stop:
+        self._loop.call_soon_threadsafe(self._loop.stop)
+
+  async def _run(self, suppress: bool) -> AsyncIterator[stem.descriptor.Descriptor]:
+    with self._downloader_lock:
+      await self.start()
+      await self._downloader_task
 
       if self.error:
         if suppress:
@@ -508,8 +511,8 @@ class Query(object):
 
           raise self.error
 
-  def __iter__(self) -> Iterator[stem.descriptor.Descriptor]:
-    for desc in self._run(True):
+  async def __aiter__(self) -> AsyncIterator[stem.descriptor.Descriptor]:
+    async for desc in self._run(True):
       yield desc
 
   def _pick_endpoint(self, use_authority: bool = False) -> stem.Endpoint:
@@ -530,37 +533,72 @@ class Query(object):
     else:
       return random.choice(self.endpoints)
 
-  def _download_descriptors(self, retries: int, timeout: Optional[float]) -> None:
-    try:
-      self.start_time = time.time()
+  async def _download_descriptors(self, retries: int, timeout: Optional[float]) -> None:
+    self.start_time = time.time()
+
+    retries = self.retries
+    time_remaining = self.timeout
+
+    while True:
       endpoint = self._pick_endpoint(use_authority = retries == 0 and self.fall_back_to_authority)
 
       if isinstance(endpoint, stem.ORPort):
         downloaded_from = 'ORPort %s:%s (resource %s)' % (endpoint.address, endpoint.port, self.resource)
-        self.content, self.reply_headers = _download_from_orport(endpoint, self.compression, self.resource)
       elif isinstance(endpoint, stem.DirPort):
-        self.download_url = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
-        downloaded_from = self.download_url
-        self.content, self.reply_headers = _download_from_dirport(self.download_url, self.compression, timeout)
+        downloaded_from = 'http://%s:%i/%s' % (endpoint.address, endpoint.port, self.resource.lstrip('/'))
+        self.download_url = downloaded_from
       else:
         raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
 
-      self.runtime = time.time() - self.start_time
-      log.trace('Descriptors retrieved from %s in %0.2fs' % (downloaded_from, self.runtime))
-    except:
-      exc = sys.exc_info()[1]
+      try:
+        response = await asyncio.wait_for(self._download_from(endpoint), time_remaining)
+        self.content, self.reply_headers = _http_body_and_headers(response)
 
-      if timeout is not None:
-        timeout -= time.time() - self.start_time
+        self.is_done = True
+        self.runtime = time.time() - self.start_time
 
-      if retries > 0 and (timeout is None or timeout > 0):
-        log.debug("Unable to download descriptors from '%s' (%i retries remaining): %s" % (self.download_url, retries, exc))
-        return self._download_descriptors(retries - 1, timeout)
-      else:
-        log.debug("Unable to download descriptors from '%s': %s" % (self.download_url, exc))
-        self.error = exc
-    finally:
-      self.is_done = True
+        log.trace('Descriptors retrieved from %s in %0.2fs' % (downloaded_from, self.runtime))
+        return
+      except asyncio.TimeoutError as exc:
+        self.is_done = True
+        self.error = stem.DownloadTimeout(downloaded_from, exc, sys.exc_info()[2], self.timeout)
+        return
+      except:
+        exception = sys.exc_info()[1]
+        retries -= 1
+
+        if time_remaining is not None:
+          time_remaining -= time.time() - self.start_time
+
+        if retries > 0:
+          log.debug("Failed to download descriptors from '%s' (%i retries remaining): %s" % (downloaded_from, retries, exception))
+        else:
+          log.debug("Failed to download descriptors from '%s': %s" % (self.download_url, exception))
+
+          self.is_done = True
+          self.error = exception
+          return
+
+  async def _download_from(self, endpoint: stem.Endpoint) -> bytes:
+    http_request = '\r\n'.join((
+      'GET %s HTTP/1.0' % self.resource,
+      'Accept-Encoding: %s' % ', '.join(map(lambda c: c.encoding, self.compression)),
+      'User-Agent: %s' % stem.USER_AGENT,
+    )) + '\r\n\r\n'
+
+    if isinstance(endpoint, stem.ORPort):
+      link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
+
+      async with await stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
+        async with await relay.create_circuit() as circ:
+          return await circ.directory(http_request, stream_id = 1)
+    elif isinstance(endpoint, stem.DirPort):
+      reader, writer = await asyncio.open_connection(endpoint.address, endpoint.port)
+      writer.write(str_tools._to_bytes(http_request))
+
+      return await reader.read()
+    else:
+      raise ValueError("BUG: endpoints can only be ORPorts or DirPorts, '%s' was a %s" % (endpoint, type(endpoint).__name__))
 
 
 class DescriptorDownloader(object):
@@ -602,7 +640,7 @@ class DescriptorDownloader(object):
     directories = [auth for auth in stem.directory.Authority.from_cache().values() if auth.nickname not in DIR_PORT_BLACKLIST]
     new_endpoints = set([stem.DirPort(directory.address, directory.dir_port) for directory in directories])
 
-    consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]
+    consensus = list(self.get_consensus(document_handler = stem.descriptor.DocumentHandler.DOCUMENT).run())[0]  # type: ignore
 
     for desc in consensus.routers.values():
       if stem.Flag.V2DIR in desc.flags and desc.dir_port:
@@ -612,7 +650,7 @@ class DescriptorDownloader(object):
 
     self._endpoints = list(new_endpoints)
 
-    return consensus  # type: ignore
+    return consensus
 
   def their_server_descriptor(self, **query_args: Any) -> 'stem.descriptor.remote.Query':
     """
@@ -767,7 +805,7 @@ class DescriptorDownloader(object):
     # authority key certificates
 
     if consensus_query.validate and consensus_query.document_handler == stem.descriptor.DocumentHandler.DOCUMENT:
-      consensus = list(consensus_query.run())[0]
+      consensus = list(consensus_query.run())[0]  # type: ignore
       key_certs = self.get_key_certificates(**query_args).run()
 
       try:
@@ -925,10 +963,9 @@ class DescriptorDownloader(object):
     return Query(resource, **args)
 
 
-def _download_from_orport(endpoint: stem.ORPort, compression: Sequence[stem.descriptor._Compression], resource: str) -> Tuple[bytes, Dict[str, str]]:
+def _http_body_and_headers(data: bytes) -> Tuple[bytes, Dict[str, str]]:
   """
-  Downloads descriptors from the given orport. Payload is just like an http
-  response (headers and all)...
+  Parse the headers and decompressed body from a HTTP response, such as...
 
   ::
 
@@ -943,110 +980,41 @@ def _download_from_orport(endpoint: stem.ORPort, compression: Sequence[stem.desc
     identity-ed25519
     ... rest of the descriptor content...
 
-  :param endpoint: endpoint to download from
-  :param compression: compression methods for the request
-  :param resource: descriptor resource to download
+  :param data: HTTP response
 
-  :returns: two value tuple of the form (data, reply_headers)
+  :returns: **tuple** with the decompressed data and headers
 
   :raises:
-    * :class:`stem.ProtocolError` if not a valid descriptor response
-    * :class:`stem.SocketError` if unable to establish a connection
-  """
-
-  link_protocols = endpoint.link_protocols if endpoint.link_protocols else [3]
-
-  with stem.client.Relay.connect(endpoint.address, endpoint.port, link_protocols) as relay:
-    with relay.create_circuit() as circ:
-      request = '\r\n'.join((
-        'GET %s HTTP/1.0' % resource,
-        'Accept-Encoding: %s' % ', '.join(map(lambda c: c.encoding, compression)),
-        'User-Agent: %s' % stem.USER_AGENT,
-      )) + '\r\n\r\n'
-
-      response = circ.directory(request, stream_id = 1)
-      first_line, data = response.split(b'\r\n', 1)
-      header_data, body_data = data.split(b'\r\n\r\n', 1)
-
-      if not first_line.startswith(b'HTTP/1.0 2'):
-        raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % str_tools._to_unicode(first_line))
-
-      headers = {}
-
-      for line in str_tools._to_unicode(header_data).splitlines():
-        if ': ' not in line:
-          raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % (line, header_data.decode('utf-8')))
-
-        key, value = line.split(': ', 1)
-        headers[key] = value
-
-      return _decompress(body_data, headers.get('Content-Encoding')), headers
-
-
-def _download_from_dirport(url: str, compression: Sequence[stem.descriptor._Compression], timeout: Optional[float]) -> Tuple[bytes, Dict[str, str]]:
-  """
-  Downloads descriptors from the given url.
-
-  :param url: dirport url from which to download from
-  :param compression: compression methods for the request
-  :param timeout: duration before we'll time out our request
-
-  :returns: two value tuple of the form (data, reply_headers)
-
-  :raises:
-    * :class:`~stem.DownloadTimeout` if our request timed out
-    * :class:`~stem.DownloadFailed` if our request fails
-  """
-
-  try:
-    response = urllib.request.urlopen(
-      urllib.request.Request(
-        url,
-        headers = {
-          'Accept-Encoding': ', '.join(map(lambda c: c.encoding, compression)),
-          'User-Agent': stem.USER_AGENT,
-        }
-      ),
-      timeout = timeout,
-    )
-  except socket.timeout as exc:
-    raise stem.DownloadTimeout(url, exc, sys.exc_info()[2], timeout)
-  except:
-    exception, stacktrace = sys.exc_info()[1:3]
-    raise stem.DownloadFailed(url, exception, stacktrace)
-
-  return _decompress(response.read(), response.headers.get('Content-Encoding')), response.headers
-
-
-def _decompress(data: bytes, encoding: str) -> bytes:
-  """
-  Decompresses descriptor data.
-
-  Tor doesn't include compression headers. As such when using gzip we
-  need to include '32' for automatic header detection...
-
-    https://stackoverflow.com/questions/3122145/zlib-error-error-3-while-decompressing-incorrect-header-check/22310760#22310760
-
-  ... and with zstd we need to use the streaming API.
-
-  :param data: data we received
-  :param encoding: 'Content-Encoding' header of the response
-
-  :returns: **bytes** with the decompressed data
-
-  :raises:
+    * **stem.ProtocolError** if response was unsuccessful or malformed
     * **ValueError** if encoding is unrecognized
     * **ImportError** if missing the decompression module
   """
 
+  first_line, data = data.split(b'\r\n', 1)
+  header_data, body_data = data.split(b'\r\n\r\n', 1)
+
+  if not first_line.startswith(b'HTTP/1.0 2'):
+    raise stem.ProtocolError("Response should begin with HTTP success, but was '%s'" % str_tools._to_unicode(first_line))
+
+  headers = {}
+
+  for line in str_tools._to_unicode(header_data).splitlines():
+    if ': ' not in line:
+      raise stem.ProtocolError("'%s' is not a HTTP header:\n\n%s" % (line, header_data.decode('utf-8')))
+
+    key, value = line.split(': ', 1)
+    headers[key] = value
+
+  encoding = headers.get('Content-Encoding')
+
   if encoding == 'deflate':
-    return stem.descriptor.Compression.GZIP.decompress(data)
+    return stem.descriptor.Compression.GZIP.decompress(body_data), headers
 
   for compression in stem.descriptor.Compression:
     if encoding == compression.encoding:
-      return compression.decompress(data)
+      return compression.decompress(body_data), headers
 
-  raise ValueError("'%s' isn't a recognized type of encoding" % encoding)
+  raise ValueError("'%s' is an unrecognized encoding" % encoding)
 
 
 def _guess_descriptor_type(resource: str) -> str:

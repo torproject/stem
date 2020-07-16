@@ -14,41 +14,52 @@ import unittest
 import stem.connection
 import test
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from stem.response import ControlMessage
 from stem.util import log
+from stem.util.test_tools import (
+  async_test,
+  coro_func_raising_exc,
+  coro_func_returning_value,
+)
 
 
 class TestAuthenticate(unittest.TestCase):
   @patch('stem.connection.get_protocolinfo')
-  @patch('stem.connection.authenticate_none', Mock())
-  def test_with_get_protocolinfo(self, get_protocolinfo_mock):
+  @patch('stem.connection.authenticate_none')
+  @async_test
+  async def test_with_get_protocolinfo(self, authenticate_none_mock, get_protocolinfo_mock):
     """
     Tests the authenticate() function when it needs to make a get_protocolinfo.
     """
 
     # tests where get_protocolinfo succeeds
 
+    authenticate_none_mock.side_effect = coro_func_returning_value(None)
+
     protocolinfo_message = ControlMessage.from_str('250-PROTOCOLINFO 1\r\n250 OK\r\n', 'PROTOCOLINFO')
     protocolinfo_message.auth_methods = (stem.connection.AuthMethod.NONE, )
-    get_protocolinfo_mock.return_value = protocolinfo_message
+    get_protocolinfo_mock.side_effect = coro_func_returning_value(protocolinfo_message)
 
-    stem.connection.authenticate(None)
+    await stem.connection.authenticate(None)
 
     # tests where get_protocolinfo raises an exception
 
     get_protocolinfo_mock.side_effect = stem.ProtocolError
-    self.assertRaises(stem.connection.IncorrectSocketType, stem.connection.authenticate, None)
+    with self.assertRaises(stem.connection.IncorrectSocketType):
+      await stem.connection.authenticate(None)
 
     get_protocolinfo_mock.side_effect = stem.SocketError
-    self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None)
+    with self.assertRaises(stem.connection.AuthenticationFailure):
+      await stem.connection.authenticate(None)
 
   @patch('stem.connection.authenticate_none')
   @patch('stem.connection.authenticate_password')
   @patch('stem.connection.authenticate_cookie')
   @patch('stem.connection.authenticate_safecookie')
-  def test_all_use_cases(self, authenticate_safecookie_mock, authenticate_cookie_mock, authenticate_password_mock, authenticate_none_mock):
+  @async_test
+  async def test_all_use_cases(self, authenticate_safecookie_mock, authenticate_cookie_mock, authenticate_password_mock, authenticate_none_mock):
     """
     Does basic validation that all valid use cases for the PROTOCOLINFO input
     and dependent functions result in either success or a AuthenticationFailed
@@ -133,15 +144,16 @@ class TestAuthenticate(unittest.TestCase):
                 auth_mock, raised_exc = authenticate_safecookie_mock, auth_cookie_exc
 
               if raised_exc:
-                auth_mock.side_effect = raised_exc
+                auth_mock.side_effect = coro_func_raising_exc(raised_exc)
               else:
-                auth_mock.side_effect = None
+                auth_mock.side_effect = coro_func_returning_value(None)
                 expect_success = True
 
             if expect_success:
-              stem.connection.authenticate(None, 'blah', None, protocolinfo)
+              await stem.connection.authenticate(None, 'blah', None, protocolinfo)
             else:
-              self.assertRaises(stem.connection.AuthenticationFailure, stem.connection.authenticate, None, 'blah', None, protocolinfo)
+              with self.assertRaises(stem.connection.AuthenticationFailure):
+                await stem.connection.authenticate(None, 'blah', None, protocolinfo)
 
     # revert logging back to normal
     stem_logger.setLevel(log.logging_level(log.TRACE))

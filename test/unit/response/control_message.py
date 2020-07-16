@@ -126,7 +126,7 @@ class TestControlMessage(unittest.TestCase):
       # replace the CRLF for the line
       infonames_lines[index] = line.rstrip('\r\n') + '\n'
       test_socket_file = io.BytesIO(stem.util.str_tools._to_bytes(''.join(infonames_lines)))
-      self.assertRaises(stem.ProtocolError, stem.socket.recv_message, test_socket_file)
+      self.assertRaises(stem.ProtocolError, stem.socket.recv_message_from_bytes_io, test_socket_file)
 
       # puts the CRLF back
       infonames_lines[index] = infonames_lines[index].rstrip('\n') + '\r\n'
@@ -151,8 +151,8 @@ class TestControlMessage(unittest.TestCase):
         # - this is part of the message prefix
         # - this is disrupting the line ending
 
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, io.BytesIO(stem.util.str_tools._to_bytes(removal_test_input)))
-        self.assertRaises(stem.ProtocolError, stem.socket.recv_message, io.BytesIO(stem.util.str_tools._to_bytes(replacement_test_input)))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message_from_bytes_io, io.BytesIO(stem.util.str_tools._to_bytes(removal_test_input)))
+        self.assertRaises(stem.ProtocolError, stem.socket.recv_message_from_bytes_io, io.BytesIO(stem.util.str_tools._to_bytes(replacement_test_input)))
       else:
         # otherwise the data will be malformed, but this goes undetected
         self._assert_message_parses(removal_test_input)
@@ -166,7 +166,7 @@ class TestControlMessage(unittest.TestCase):
 
     control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     control_socket_file = control_socket.makefile()
-    self.assertRaises(stem.SocketClosed, stem.socket.recv_message, control_socket_file)
+    self.assertRaises(stem.SocketClosed, stem.socket.recv_message_from_bytes_io, control_socket_file)
 
   def test_equality(self):
     msg = stem.response.ControlMessage.from_str(EVENT_BW)
@@ -200,7 +200,7 @@ class TestControlMessage(unittest.TestCase):
       stem.response.ControlMessage for the given input
     """
 
-    message = stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes(controller_reply)))
+    message = stem.socket.recv_message_from_bytes_io(io.BytesIO(stem.util.str_tools._to_bytes(controller_reply)))
 
     # checks that the raw_content equals the input value
     self.assertEqual(controller_reply, message.raw_content())

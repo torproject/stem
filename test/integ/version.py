@@ -8,6 +8,7 @@ import unittest
 import stem.version
 import test.require
 import test.runner
+from stem.util.test_tools import async_test
 
 
 class TestVersion(unittest.TestCase):
@@ -30,16 +31,17 @@ class TestVersion(unittest.TestCase):
     self.assertRaises(IOError, stem.version.get_system_tor_version, 'blarg')
 
   @test.require.controller
-  def test_getinfo_version_parsing(self):
+  @async_test
+  async def test_getinfo_version_parsing(self):
     """
     Issues a 'GETINFO version' query to our test instance and makes sure that
     we can parse it.
     """
 
-    control_socket = test.runner.get_runner().get_tor_socket()
-    control_socket.send('GETINFO version')
-    version_response = control_socket.recv()
-    control_socket.close()
+    control_socket = await test.runner.get_runner().get_tor_socket()
+    await control_socket.send('GETINFO version')
+    version_response = await control_socket.recv()
+    await control_socket.close()
 
     # the getinfo response looks like...
     # 250-version=0.2.3.10-alpha-dev (git-65420e4cb5edcd02)

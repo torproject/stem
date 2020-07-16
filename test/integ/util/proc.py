@@ -10,6 +10,7 @@ import test.require
 import test.runner
 
 from stem.util import proc
+from stem.util.test_tools import async_test
 
 
 class TestProc(unittest.TestCase):
@@ -63,7 +64,8 @@ class TestProc(unittest.TestCase):
 
   @test.require.proc
   @test.require.ptrace
-  def test_connections(self):
+  @async_test
+  async def test_connections(self):
     """
     Checks for our control port in the stem.util.proc.connections output if
     we have one.
@@ -78,7 +80,7 @@ class TestProc(unittest.TestCase):
       self.skipTest('(proc lacks read permissions)')
 
     # making a controller connection so that we have something to query for
-    with runner.get_tor_socket():
+    async with await runner.get_tor_socket():
       tor_pid = test.runner.get_runner().get_pid()
 
       for conn in proc.connections(tor_pid):

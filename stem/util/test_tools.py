@@ -30,7 +30,9 @@ to match just against the prefix or suffix. For instance...
   type_issues - checks for type problems
 """
 
+import asyncio
 import collections
+import functools
 import linecache
 import multiprocessing
 import os
@@ -44,7 +46,7 @@ import stem.util.conf
 import stem.util.enum
 import stem.util.system
 
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Awaitable, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 CONFIG = stem.util.conf.config_dict('test', {
   'pycodestyle.ignore': [],
@@ -249,7 +251,7 @@ class TimedTestRunner(unittest.TextTestRunner):
           TEST_RUNTIMES[self.id()] = time.time() - start_time
           return result
 
-        def assertRaisesWith(self, exc_type: Type[Exception], exc_msg: str, func: Callable, *args: Any, **kwargs: Any) -> None:
+        def assertRaisesWith(self, exc_type: Type[Exception], exc_msg: str, *args: Any, **kwargs: Any) -> None:
           """
           Asserts the given invokation raises the expected excepiton. This is
           similar to unittest's assertRaises and assertRaisesRegexp, but checks
@@ -260,7 +262,7 @@ class TimedTestRunner(unittest.TextTestRunner):
           vended API then please let us know.
           """
 
-          return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), func, *args, **kwargs)
+          return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), *args, **kwargs)
 
         def id(self) -> str:
           return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
@@ -680,3 +682,56 @@ def _is_ignored(config: Mapping[str, Sequence[str]], path: str, issue: str) -> b
             return True  # suffix match
 
   return False
+
+
+def async_test(func: Callable) -> Callable:
+  """
+  Decorator for asynchronous test functions.
+
+  :param func: function that will be decorated
+
+  :return: decorated function
+  """
+
+  @functools.wraps(func)
+  def wrapper(*args: Any, **kwargs: Any) -> Any:
+    loop = asyncio.new_event_loop()
+
+    try:
+      result = loop.run_until_complete(func(*args, **kwargs))
+    finally:
+      loop.close()
+
+    return result
+
+  return wrapper
+
+
+def coro_func_returning_value(return_value: Any) -> Callable[..., Awaitable]:
+  """
+  Creates and returns a coroutine function that returns the specified
+  value and is used for mocking asynchronous functions.
+
+  :param return_value: return value for the coroutine function
+
+  :return: coroutine function returning the specified value
+  """
+
+  async def coroutine_func(*args, **kwargs):
+    return return_value
+  return coroutine_func
+
+
+def coro_func_raising_exc(exc: Exception) -> Callable[..., Awaitable]:
+  """
+  Creates and returns a coroutine function that raises the specified
+  exception and is used for mocking asynchronous functions.
+
+  :param exc: exception for the coroutine function
+
+  :return: coroutine function raising the specified exception
+  """
+
+  async def coroutine_func(*args, **kwargs):
+    raise exc
+  return coroutine_func

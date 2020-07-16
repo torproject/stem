@@ -240,13 +240,13 @@ If you're fine with allowing your script to raise exceptions then this can be mo
   =============== ===========
 """
 
+import asyncio
 import calendar
 import collections
 import functools
 import inspect
 import io
 import os
-import queue
 import threading
 import time
 
@@ -269,9 +269,9 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import log
+from stem.util import Synchronous, log
 from types import TracebackType
-from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Type, Union
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -467,7 +467,34 @@ def with_default(yields: bool = False) -> Callable:
       else:
         return kwargs.get('default', UNDEFINED)
 
-    if not yields:
+    if asyncio.iscoroutinefunction(func) and not yields:
+      @functools.wraps(func)
+      async def wrapped(self, *args: Any, **kwargs: Any) -> Any:
+        try:
+          return await func(self, *args, **kwargs)
+        except:
+          default = get_default(func, args, kwargs)
+
+          if default == UNDEFINED:
+            raise
+          else:
+            return default
+    elif inspect.isasyncgenfunction(func) and yields:
+      @functools.wraps(func)
+      async def wrapped(self, *args: Any, **kwargs: Any) -> Any:
+        try:
+          async for val in func(self, *args, **kwargs):
+            yield val
+        except:
+          default = get_default(func, args, kwargs)
+
+          if default == UNDEFINED:
+            raise
+          else:
+            if default is not None:
+              for val in default:
+                yield val
+    elif not yields:
       @functools.wraps(func)
       def wrapped(self, *args: Any, **kwargs: Any) -> Any:
         try:
@@ -526,7 +553,7 @@ def event_description(event: str) -> str:
   return EVENT_DESCRIPTIONS.get(event.lower())
 
 
-class BaseController(object):
+class BaseController(Synchronous):
   """
   Controller for the tor process. This is a minimal base class for other
   controllers, providing basic process communication and event listing. Don't
@@ -543,22 +570,12 @@ class BaseController(object):
   """
 
   def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
+    super(BaseController, self).__init__()
+
     self._socket = control_socket
-    self._msg_lock = threading.RLock()
 
     self._status_listeners = []  # type: List[Tuple[Callable[[stem.control.BaseController, stem.control.State, float], None], bool]] # tuples of the form (callback, spawn_thread)
     self._status_listeners_lock = threading.RLock()
-
-    # queues where incoming messages are directed
-    self._reply_queue = queue.Queue()  # type: queue.Queue[Union[stem.response.ControlMessage, stem.ControllerError]]
-    self._event_queue = queue.Queue()  # type: queue.Queue[stem.response.ControlMessage]
-
-    # thread to continually pull from the control socket
-    self._reader_thread = None  # type: Optional[threading.Thread]
-
-    # thread to pull from the _event_queue and call handle_event
-    self._event_notice = threading.Event()
-    self._event_thread = None  # type: Optional[threading.Thread]
 
     # saves our socket's prior _connect() and _close() methods so they can be
     # called along with ours
@@ -574,13 +591,26 @@ class BaseController(object):
 
     self._state_change_threads = []  # type: List[threading.Thread] # threads we've spawned to notify of state changes
 
+    self._reader_loop_task = None  # type: Optional[asyncio.Task]
+    self._event_loop_task = None  # type: Optional[asyncio.Task]
+
     if self._socket.is_alive():
-      self._launch_threads()
+      self._create_loop_tasks()
 
     if is_authenticated:
-      self._post_authentication()
+      self._loop.create_task(self._post_authentication())
 
-  def msg(self, message: str) -> stem.response.ControlMessage:
+  def __ainit__(self) -> None:
+    self._msg_lock = asyncio.Lock()
+
+    # queues where incoming messages are directed
+
+    self._reply_queue = asyncio.Queue()  # type: asyncio.Queue[Union[stem.response.ControlMessage, stem.ControllerError]]
+    self._event_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.ControlMessage]
+
+    self._event_notice = asyncio.Event()
+
+  async def msg(self, message: str) -> stem.response.ControlMessage:
     """
     Sends a message to our control socket and provides back its reply.
 
@@ -596,7 +626,7 @@ class BaseController(object):
       * :class:`stem.SocketClosed` if the socket is shut down
     """
 
-    with self._msg_lock:
+    async with self._msg_lock:
       # If our _reply_queue isn't empty then one of a few things happened...
       #
       # - Our connection was closed and probably re-restablished. This was
@@ -637,15 +667,15 @@ class BaseController(object):
             log.info('Socket experienced a problem (%s)' % response)
           elif isinstance(response, stem.response.ControlMessage):
             log.info('Failed to deliver a response: %s' % response)
-        except queue.Empty:
+        except asyncio.QueueEmpty:
           # the empty() method is documented to not be fully reliable so this
           # isn't entirely surprising
 
           break
 
       try:
-        self._socket.send(message)
-        response = self._reply_queue.get()
+        await self._socket.send(message)
+        response = await self._reply_queue.get()
 
         # If the message we received back had an exception then re-raise it to the
         # caller. Otherwise return the response.
@@ -660,7 +690,7 @@ class BaseController(object):
         # provide an assurance to the caller that when we raise a SocketClosed
         # exception we are shut down afterward for realz.
 
-        self.close()
+        await self.close()
         raise
 
   def is_alive(self) -> bool:
@@ -708,7 +738,7 @@ class BaseController(object):
 
     return self._is_authenticated if self.is_alive() else False
 
-  def connect(self) -> None:
+  async def connect(self) -> None:
     """
     Reconnects our control socket. This is a pass-through for our socket's
     :func:`~stem.socket.ControlSocket.connect` method.
@@ -716,15 +746,15 @@ class BaseController(object):
     :raises: :class:`stem.SocketError` if unable to make a socket
     """
 
-    self._socket.connect()
+    await self._socket.connect()
 
-  def close(self) -> None:
+  async def close(self) -> None:
     """
     Closes our socket connection. This is a pass-through for our socket's
     :func:`~stem.socket.BaseSocket.close` method.
     """
 
-    self._socket.close()
+    await self._socket.close()
 
     # Join on any outstanding state change listeners. Closing is a state change
     # of its own, so if we have any listeners it's quite likely there's some
@@ -736,6 +766,8 @@ class BaseController(object):
     for t in self._state_change_threads:
       if t.is_alive() and threading.current_thread() != t:
         t.join()
+
+    self.stop()
 
   def get_socket(self) -> stem.socket.ControlSocket:
     """
@@ -809,13 +841,13 @@ class BaseController(object):
       self._status_listeners = new_listeners
       return is_changed
 
-  def __enter__(self) -> 'stem.control.BaseController':
+  async def __aenter__(self) -> 'stem.control.BaseController':
     return self
 
-  def __exit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
-    self.close()
+  async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
+    await self.close()
 
-  def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
+  async def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
     """
     Callback to be overwritten by subclasses for event listening. This is
     notified whenever we receive an event from the control socket.
@@ -825,13 +857,13 @@ class BaseController(object):
 
     pass
 
-  def _connect(self) -> None:
-    self._launch_threads()
-    self._notify_status_listeners(State.INIT)
-    self._socket_connect()
+  async def _connect(self) -> None:
+    self._create_loop_tasks()
+    await self._notify_status_listeners(State.INIT, acquire_send_lock = False)
+    await self._socket_connect()
     self._is_authenticated = False
 
-  def _close(self) -> None:
+  async def _close(self) -> None:
     # Our is_alive() state is now false. Our reader thread should already be
     # awake from recv() raising a closure exception. Wake up the event thread
     # too so it can end.
@@ -839,22 +871,26 @@ class BaseController(object):
     self._event_notice.set()
     self._is_authenticated = False
 
-    # joins on our threads if it's safe to do so
+    reader_loop_task = self._reader_loop_task
+    self._reader_loop_task = None
+    event_loop_task = self._event_loop_task
+    self._event_loop_task = None
 
-    for t in (self._reader_thread, self._event_thread):
-      if t and t.is_alive() and threading.current_thread() != t:
-        t.join()
+    if reader_loop_task and self.is_alive():
+      await reader_loop_task
 
-    self._notify_status_listeners(State.CLOSED)
+    if event_loop_task:
+      await event_loop_task
 
-    self._socket_close()
+    await self._notify_status_listeners(State.CLOSED, acquire_send_lock = False)
+    await self._socket_close()
 
-  def _post_authentication(self) -> None:
+  async def _post_authentication(self) -> None:
     # actions to be taken after we have a newly authenticated connection
 
     self._is_authenticated = True
 
-  def _notify_status_listeners(self, state: 'stem.control.State') -> None:
+  async def _notify_status_listeners(self, state: 'stem.control.State', acquire_send_lock: bool = True) -> None:
     """
     Informs our status listeners that a state change occurred.
 
@@ -864,7 +900,11 @@ class BaseController(object):
     # Any changes to our is_alive() state happen under the send lock, so we
     # need to have it to ensure it doesn't change beneath us.
 
-    with self._socket._get_send_lock():
+    send_lock = self._socket._get_send_lock()
+
+    try:
+      if acquire_send_lock:
+        await send_lock.acquire()
       with self._status_listeners_lock:
         # States imply that our socket is either alive or not, which may not
         # hold true when multiple events occur in quick succession. For
@@ -897,28 +937,20 @@ class BaseController(object):
             self._state_change_threads.append(notice_thread)
           else:
             listener(self, state, change_timestamp)
+    finally:
+      if acquire_send_lock:
+        send_lock.release()
 
-  def _launch_threads(self) -> None:
+  def _create_loop_tasks(self) -> None:
     """
-    Initializes daemon threads. Threads can't be reused so we need to recreate
+    Initializes asyncio tasks. Tasks can't be reused so we need to recreate
     them if we're restarted.
     """
 
-    # In theory concurrent calls could result in multiple start() calls on a
-    # single thread, which would cause an unexpected exception. Best be safe.
+    self._reader_loop_task = self._loop.create_task(self._reader_loop())
+    self._event_loop_task = self._loop.create_task(self._event_loop())
 
-    with self._socket._get_send_lock():
-      if not self._reader_thread or not self._reader_thread.is_alive():
-        self._reader_thread = threading.Thread(target = self._reader_loop, name = 'Tor listener')
-        self._reader_thread.setDaemon(True)
-        self._reader_thread.start()
-
-      if not self._event_thread or not self._event_thread.is_alive():
-        self._event_thread = threading.Thread(target = self._event_loop, name = 'Event notifier')
-        self._event_thread.setDaemon(True)
-        self._event_thread.start()
-
-  def _reader_loop(self) -> None:
+  async def _reader_loop(self) -> None:
     """
     Continually pulls from the control socket, directing the messages into
     queues based on their type. Controller messages come in two varieties...
@@ -929,25 +961,25 @@ class BaseController(object):
 
     while self.is_alive():
       try:
-        control_message = self._socket.recv()
+        control_message = await self._socket.recv()
         self._last_heartbeat = time.time()
 
         if control_message.content()[-1][0] == '650':
           # asynchronous message, adds to the event queue and wakes up its handler
-          self._event_queue.put(control_message)
+          self._event_queue.put_nowait(control_message)
           self._event_notice.set()
         else:
           # response to a msg() call
-          self._reply_queue.put(control_message)
+          self._reply_queue.put_nowait(control_message)
       except stem.ControllerError as exc:
         # Assume that all exceptions belong to the reader. This isn't always
         # true, but the msg() call can do a better job of sorting it out.
         #
         # Be aware that the msg() method relies on this to unblock callers.
 
-        self._reply_queue.put(exc)
+        self._reply_queue.put_nowait(exc)
 
-  def _event_loop(self) -> None:
+  async def _event_loop(self) -> None:
     """
     Continually pulls messages from the _event_queue and sends them to our
     handle_event callback. This is done via its own thread so subclasses with a
@@ -960,7 +992,7 @@ class BaseController(object):
     while True:
       try:
         event_message = self._event_queue.get_nowait()
-        self._handle_event(event_message)
+        await self._handle_event(event_message)
         self._event_queue.task_done()
 
         # Attempt to finish processing enqueued events when our controller closes
@@ -970,12 +1002,16 @@ class BaseController(object):
             socket_closed_at = time.time()
           elif time.time() - socket_closed_at > EVENTS_LISTENING_TIMEOUT:
             break
-      except queue.Empty:
+      except asyncio.queues.QueueEmpty:
         if not self.is_alive():
           break
 
-        self._event_notice.wait(0.05)
-        self._event_notice.clear()
+        try:
+          await asyncio.wait_for(self._event_notice.wait(), timeout=0.05)
+        except asyncio.TimeoutError:
+          pass
+        finally:
+          self._event_notice.clear()
 
 
 class Controller(BaseController):
@@ -1016,7 +1052,14 @@ class Controller(BaseController):
     else:
       control_port = stem.socket.ControlPort(address, int(port))
 
-    return Controller(control_port)
+    controller = Controller(control_port)
+
+    try:
+      controller.connect()
+      return controller
+    except:
+      controller.stop()
+      raise
 
   @staticmethod
   def from_socket_file(path: str = '/var/run/tor/control') -> 'stem.control.Controller':
@@ -1031,7 +1074,14 @@ class Controller(BaseController):
     """
 
     control_socket = stem.socket.ControlSocketFile(path)
-    return Controller(control_socket)
+    controller = Controller(control_socket)
+
+    try:
+      controller.connect()
+      return controller
+    except:
+      controller.stop()
+      raise
 
   def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
     self._is_caching_enabled = True
@@ -1042,8 +1092,7 @@ class Controller(BaseController):
 
     # mapping of event types to their listeners
 
-    self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], None]]]
-    self._event_listeners_lock = threading.RLock()
+    self._event_listeners = {}  # type: Dict[stem.control.EventType, List[Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]]]
     self._enabled_features = []  # type: List[str]
 
     self._last_address_exc = None  # type: Optional[BaseException]
@@ -1051,12 +1100,10 @@ class Controller(BaseController):
 
     super(Controller, self).__init__(control_socket, is_authenticated)
 
-    def _sighup_listener(event: stem.response.events.SignalEvent) -> None:
+    async def _sighup_listener(event: stem.response.events.SignalEvent) -> None:
       if event.signal == Signal.RELOAD:
         self.clear_cache()
-        self._notify_status_listeners(State.RESET)
-
-    self.add_event_listener(_sighup_listener, EventType.SIGNAL)  # type: ignore
+        await self._notify_status_listeners(State.RESET)
 
     def _confchanged_listener(event: stem.response.events.ConfChangedEvent) -> None:
       if self.is_caching_enabled():
@@ -1071,30 +1118,40 @@ class Controller(BaseController):
 
         self._confchanged_cache_invalidation(to_cache)
 
-    self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED)  # type: ignore
-
     def _address_changed_listener(event: stem.response.events.StatusEvent) -> None:
       if event.action in ('EXTERNAL_ADDRESS', 'DNS_USELESS'):
         self._set_cache({'exit_policy': None})
         self._set_cache({'address': None}, 'getinfo')
         self._last_address_exc = None
 
-    self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER)  # type: ignore
+    async def _add_event_listeners():
+      await asyncio.gather(
+        self.add_event_listener(_sighup_listener, EventType.SIGNAL),
+        self.add_event_listener(_confchanged_listener, EventType.CONF_CHANGED),
+        self.add_event_listener(_address_changed_listener, EventType.STATUS_SERVER),
+      )
 
-  def close(self) -> None:
+    self._loop.create_task(_add_event_listeners())
+
+  def __ainit__(self):
+    super(Controller, self).__ainit__()
+
+    self._event_listeners_lock = asyncio.Lock()
+
+  async def close(self) -> None:
     self.clear_cache()
-    super(Controller, self).close()
+    await super(Controller, self).close()
 
-  def authenticate(self, *args: Any, **kwargs: Any) -> None:
+  async def authenticate(self, *args: Any, **kwargs: Any) -> None:
     """
     A convenience method to authenticate the controller. This is just a
     pass-through to :func:`stem.connection.authenticate`.
     """
 
     import stem.connection
-    stem.connection.authenticate(self, *args, **kwargs)
+    await stem.connection.authenticate(self, *args, **kwargs)
 
-  def reconnect(self, *args: Any, **kwargs: Any) -> None:
+  async def reconnect(self, *args: Any, **kwargs: Any) -> None:
     """
     Reconnects and authenticates to our control socket.
 
@@ -1105,13 +1162,13 @@ class Controller(BaseController):
       * :class:`stem.connection.AuthenticationFailure` if unable to authenticate
     """
 
-    with self._msg_lock:
-      self.connect()
+    async with self._msg_lock:
+      await self.connect()
       self.clear_cache()
-      self.authenticate(*args, **kwargs)
+      await self.authenticate(*args, **kwargs)
 
   @with_default()
-  def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
+  async def get_info(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, get_bytes: bool = False) -> Union[str, Dict[str, str]]:
     """
     get_info(params, default = UNDEFINED, get_bytes = False)
 
@@ -1164,7 +1221,7 @@ class Controller(BaseController):
         raise stem.ProtocolError('Tor geoip database is unavailable')
       elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
-      elif param == 'fingerprint' and self._last_fingerprint_exc and self.get_conf('ORPort', None) is None:
+      elif param == 'fingerprint' and self._last_fingerprint_exc and await self.get_conf('ORPort', None) is None:
         raise self._last_fingerprint_exc  # we already know we're not a relay
 
     # check for cached results
@@ -1188,7 +1245,7 @@ class Controller(BaseController):
         return list(reply.values())[0]
 
     try:
-      response = stem.response._convert_to_getinfo(self.msg('GETINFO %s' % ' '.join(param_set)))
+      response = stem.response._convert_to_getinfo(await self.msg('GETINFO %s' % ' '.join(param_set)))
       response._assert_matches(param_set)
 
       # usually we want unicode values under python 3.x
@@ -1234,7 +1291,7 @@ class Controller(BaseController):
       raise
 
   @with_default()
-  def get_version(self, default: Any = UNDEFINED) -> stem.version.Version:
+  async def get_version(self, default: Any = UNDEFINED) -> stem.version.Version:
     """
     get_version(default = UNDEFINED)
 
@@ -1256,14 +1313,14 @@ class Controller(BaseController):
     version = self._get_cache('version')
 
     if not version:
-      version_str = self.get_info('version')
+      version_str = await self.get_info('version')
       version = stem.version.Version(version_str[4:] if version_str.startswith('Tor ') else version_str)
       self._set_cache({'version': version})
 
     return version
 
   @with_default()
-  def get_exit_policy(self, default: Any = UNDEFINED) -> stem.exit_policy.ExitPolicy:
+  async def get_exit_policy(self, default: Any = UNDEFINED) -> stem.exit_policy.ExitPolicy:
     """
     get_exit_policy(default = UNDEFINED)
 
@@ -1289,13 +1346,13 @@ class Controller(BaseController):
     policy = self._get_cache('exit_policy')
 
     if not policy:
-      policy = stem.exit_policy.ExitPolicy(*self.get_info('exit-policy/full').splitlines())
+      policy = stem.exit_policy.ExitPolicy(*(await self.get_info('exit-policy/full')).splitlines())
       self._set_cache({'exit_policy': policy})
 
     return policy
 
   @with_default()
-  def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
+  async def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
     """
     get_ports(listener_type, default = UNDEFINED)
 
@@ -1328,10 +1385,10 @@ class Controller(BaseController):
         log.info("Request for %s ports got an address that's neither IPv4 or IPv6: %s" % (listener_type, address))
         return False
 
-    return [port for (addr, port) in self.get_listeners(listener_type) if is_localhost(addr)]
+    return [port for (addr, port) in (await self.get_listeners(listener_type)) if is_localhost(addr)]
 
   @with_default()
-  def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
+  async def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
     """
     get_listeners(listener_type, default = UNDEFINED)
 
@@ -1362,7 +1419,7 @@ class Controller(BaseController):
       query = 'net/listeners/%s' % str(listener_type).lower()
 
       try:
-        for listener in self.get_info(query).split():
+        for listener in (await self.get_info(query)).split():
           if not (listener.startswith('"') and listener.endswith('"')):
             raise stem.ProtocolError("'GETINFO %s' responses are expected to be quoted: %s" % (query, listener))
           elif ':' not in listener:
@@ -1409,9 +1466,9 @@ class Controller(BaseController):
           Listener.CONTROL: 'ControlListenAddress',
         }[listener_type]
 
-        port_value = self._get_conf_single(port_option).split()[0]
+        port_value = (await self._get_conf_single(port_option)).split()[0]
 
-        for listener in self.get_conf(listener_option, multiple = True):
+        for listener in (await self.get_conf(listener_option, multiple = True)):
           if ':' in listener:
             addr, port = listener.rsplit(':', 1)
 
@@ -1436,7 +1493,7 @@ class Controller(BaseController):
     return listeners
 
   @with_default()
-  def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
+  async def get_accounting_stats(self, default: Any = UNDEFINED) -> 'stem.control.AccountingStats':
     """
     get_accounting_stats(default = UNDEFINED)
 
@@ -1453,14 +1510,16 @@ class Controller(BaseController):
       and no default was provided
     """
 
-    if self.get_info('accounting/enabled') != '1':
+    if await self.get_info('accounting/enabled') != '1':
       raise stem.ControllerError("Accounting isn't enabled")
 
     retrieved = time.time()
-    status = self.get_info('accounting/hibernating')
-    interval_end = self.get_info('accounting/interval-end')
-    used = self.get_info('accounting/bytes')
-    left = self.get_info('accounting/bytes-left')
+    status, interval_end, used, left = await asyncio.gather(
+      self.get_info('accounting/hibernating'),
+      self.get_info('accounting/interval-end'),
+      self.get_info('accounting/bytes'),
+      self.get_info('accounting/bytes-left'),
+    )
 
     interval_end = stem.util.str_tools._parse_timestamp(interval_end)
     used_read, used_written = [int(val) for val in used.split(' ', 1)]
@@ -1480,7 +1539,7 @@ class Controller(BaseController):
     )
 
   @with_default()
-  def get_protocolinfo(self, default: Any = UNDEFINED) -> stem.response.protocolinfo.ProtocolInfoResponse:
+  async def get_protocolinfo(self, default: Any = UNDEFINED) -> stem.response.protocolinfo.ProtocolInfoResponse:
     """
     get_protocolinfo(default = UNDEFINED)
 
@@ -1500,10 +1559,10 @@ class Controller(BaseController):
     """
 
     import stem.connection
-    return stem.connection.get_protocolinfo(self)
+    return await stem.connection.get_protocolinfo(self)
 
   @with_default()
-  def get_user(self, default: Any = UNDEFINED) -> str:
+  async def get_user(self, default: Any = UNDEFINED) -> str:
     """
     get_user(default = UNDEFINED)
 
@@ -1523,10 +1582,10 @@ class Controller(BaseController):
     if user:
       return user
 
-    user = self.get_info('process/user', None)
+    user = await self.get_info('process/user', None)
 
     if not user and self.is_localhost():
-      pid = self.get_pid(None)
+      pid = await self.get_pid(None)
 
       if pid:
         user = stem.util.system.user(pid)
@@ -1538,7 +1597,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's user" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_pid(self, default: Any = UNDEFINED) -> int:
+  async def get_pid(self, default: Any = UNDEFINED) -> int:
     """
     get_pid(default = UNDEFINED)
 
@@ -1561,13 +1620,13 @@ class Controller(BaseController):
     if pid:
       return pid
 
-    getinfo_pid = self.get_info('process/pid', None)
+    getinfo_pid = await self.get_info('process/pid', None)
 
     if getinfo_pid and getinfo_pid.isdigit():
       pid = int(getinfo_pid)
 
     if not pid and self.is_localhost():
-      pid_file_path = self._get_conf_single('PidFile', None)
+      pid_file_path = await self._get_conf_single('PidFile', None)
 
       if pid_file_path is not None:
         with open(pid_file_path) as pid_file:
@@ -1594,7 +1653,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve tor's pid" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_start_time(self, default: Any = UNDEFINED) -> float:
+  async def get_start_time(self, default: Any = UNDEFINED) -> float:
     """
     get_start_time(default = UNDEFINED)
 
@@ -1615,7 +1674,7 @@ class Controller(BaseController):
     if start_time:
       return start_time
 
-    uptime = self.get_info('uptime', None)
+    uptime = await self.get_info('uptime', None)
 
     if uptime:
       if not uptime.isdigit():
@@ -1630,7 +1689,7 @@ class Controller(BaseController):
       if not self.is_localhost():
         raise ValueError('Unable to determine the uptime when tor is not running locally')
 
-      pid = self.get_pid(None)
+      pid = await self.get_pid(None)
 
       if not pid:
         raise ValueError('Unable to determine the pid of the tor process')
@@ -1644,7 +1703,7 @@ class Controller(BaseController):
       raise ValueError("Unable to resolve when tor began" if self.is_localhost() else "Tor isn't running locally")
 
   @with_default()
-  def get_uptime(self, default: Any = UNDEFINED) -> float:
+  async def get_uptime(self, default: Any = UNDEFINED) -> float:
     """
     get_uptime(default = UNDEFINED)
 
@@ -1660,9 +1719,9 @@ class Controller(BaseController):
       was provided
     """
 
-    return time.time() - self.get_start_time()
+    return time.time() - (await self.get_start_time())
 
-  def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
+  async def is_user_traffic_allowed(self) -> 'stem.control.UserTrafficAllowed':
     """
     Checks if we're likely to service direct user traffic. This essentially
     boils down to...
@@ -1690,21 +1749,21 @@ class Controller(BaseController):
 
     inbound_allowed, outbound_allowed = False, False
 
-    if self.get_conf('BridgeRelay', None) == '1':
+    if (await self.get_conf('BridgeRelay', None)) == '1':
       inbound_allowed = True
 
-    if self.get_conf('ORPort', None):
+    if await self.get_conf('ORPort', None):
       if not inbound_allowed:
-        consensus_entry = self.get_network_status(default = None)
+        consensus_entry = await self.get_network_status(default = None)
         inbound_allowed = consensus_entry and 'Guard' in consensus_entry.flags
 
-      exit_policy = self.get_exit_policy(None)
+      exit_policy = await self.get_exit_policy(None)
       outbound_allowed = exit_policy and exit_policy.is_exiting_allowed()
 
     return UserTrafficAllowed(inbound_allowed, outbound_allowed)
 
   @with_default()
-  def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
+  async def get_microdescriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.microdescriptor.Microdescriptor:
     """
     get_microdescriptor(relay = None, default = UNDEFINED)
 
@@ -1737,7 +1796,7 @@ class Controller(BaseController):
 
     if relay is None:
       try:
-        relay = self.get_info('fingerprint')
+        relay = await self.get_info('fingerprint')
       except stem.ControllerError as exc:
         raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
@@ -1749,7 +1808,7 @@ class Controller(BaseController):
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
     try:
-      desc_content = self.get_info(query, get_bytes = True)
+      desc_content = await self.get_info(query, get_bytes = True)
     except stem.InvalidArguments as exc:
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
@@ -1762,7 +1821,7 @@ class Controller(BaseController):
     return stem.descriptor.microdescriptor.Microdescriptor(desc_content)
 
   @with_default(yields = True)
-  def get_microdescriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.microdescriptor.Microdescriptor]:
+  async def get_microdescriptors(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.microdescriptor.Microdescriptor]:
     """
     get_microdescriptors(default = UNDEFINED)
 
@@ -1784,7 +1843,7 @@ class Controller(BaseController):
       default was provided
     """
 
-    desc_content = self.get_info('md/all', get_bytes = True)
+    desc_content = await self.get_info('md/all', get_bytes = True)
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -1793,7 +1852,7 @@ class Controller(BaseController):
       yield desc
 
   @with_default()
-  def get_server_descriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
+  async def get_server_descriptor(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.server_descriptor.RelayDescriptor:
     """
     get_server_descriptor(relay = None, default = UNDEFINED)
 
@@ -1831,7 +1890,7 @@ class Controller(BaseController):
 
     if relay is None:
       try:
-        relay = self.get_info('fingerprint')
+        relay = await self.get_info('fingerprint')
       except stem.ControllerError as exc:
         raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
@@ -1843,7 +1902,7 @@ class Controller(BaseController):
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
     try:
-      desc_content = self.get_info(query, get_bytes = True)
+      desc_content = await self.get_info(query, get_bytes = True)
     except stem.InvalidArguments as exc:
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
@@ -1856,7 +1915,7 @@ class Controller(BaseController):
     return stem.descriptor.server_descriptor.RelayDescriptor(desc_content)
 
   @with_default(yields = True)
-  def get_server_descriptors(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.server_descriptor.RelayDescriptor]:
+  async def get_server_descriptors(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.server_descriptor.RelayDescriptor]:
     """
     get_server_descriptors(default = UNDEFINED)
 
@@ -1883,7 +1942,7 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/8248
 
-    desc_content = self.get_info('desc/all-recent', get_bytes = True)
+    desc_content = await self.get_info('desc/all-recent', get_bytes = True)
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -1892,7 +1951,7 @@ class Controller(BaseController):
       yield desc  # type: ignore
 
   @with_default()
-  def get_network_status(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.router_status_entry.RouterStatusEntryV3:
+  async def get_network_status(self, relay: Optional[str] = None, default: Any = UNDEFINED) -> stem.descriptor.router_status_entry.RouterStatusEntryV3:
     """
     get_network_status(relay = None, default = UNDEFINED)
 
@@ -1926,7 +1985,7 @@ class Controller(BaseController):
 
     if relay is None:
       try:
-        relay = self.get_info('fingerprint')
+        relay = await self.get_info('fingerprint')
       except stem.ControllerError as exc:
         raise stem.ControllerError('Unable to determine our own fingerprint: %s' % exc)
 
@@ -1938,7 +1997,7 @@ class Controller(BaseController):
       raise ValueError("'%s' isn't a valid fingerprint or nickname" % relay)
 
     try:
-      desc_content = self.get_info(query, get_bytes = True)
+      desc_content = await self.get_info(query, get_bytes = True)
     except stem.InvalidArguments as exc:
       if str(exc).startswith('GETINFO request contained unrecognized keywords:'):
         raise stem.DescriptorUnavailable("Tor was unable to provide the descriptor for '%s'" % relay)
@@ -1951,7 +2010,7 @@ class Controller(BaseController):
     return stem.descriptor.router_status_entry.RouterStatusEntryV3(desc_content)
 
   @with_default(yields = True)
-  def get_network_statuses(self, default: Any = UNDEFINED) -> Iterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
+  async def get_network_statuses(self, default: Any = UNDEFINED) -> AsyncIterator[stem.descriptor.router_status_entry.RouterStatusEntryV3]:
     """
     get_network_statuses(default = UNDEFINED)
 
@@ -1973,7 +2032,7 @@ class Controller(BaseController):
     #
     # https://trac.torproject.org/8248
 
-    desc_content = self.get_info('ns/all', get_bytes = True)
+    desc_content = await self.get_info('ns/all', get_bytes = True)
 
     if not desc_content:
       raise stem.DescriptorUnavailable('Descriptor information is unavailable, tor might still be downloading it')
@@ -1988,7 +2047,7 @@ class Controller(BaseController):
       yield desc  # type: ignore
 
   @with_default()
-  def get_hidden_service_descriptor(self, address: str, default: Any = UNDEFINED, servers: Optional[Sequence[str]] = None, await_result: bool = True, timeout: Optional[float] = None) -> stem.descriptor.hidden_service.HiddenServiceDescriptorV2:
+  async def get_hidden_service_descriptor(self, address: str, default: Any = UNDEFINED, servers: Optional[Sequence[str]] = None, await_result: bool = True, timeout: Optional[float] = None) -> stem.descriptor.hidden_service.HiddenServiceDescriptorV2:
     """
     get_hidden_service_descriptor(address, default = UNDEFINED, servers = None, await_result = True)
 
@@ -2031,23 +2090,25 @@ class Controller(BaseController):
     if not stem.util.tor_tools.is_valid_hidden_service_address(address):
       raise ValueError("'%s.onion' isn't a valid hidden service address" % address)
 
-    hs_desc_queue = queue.Queue()  # type: queue.Queue[stem.response.events.Event]
+    hs_desc_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.events.Event]
     hs_desc_listener = None
 
-    hs_desc_content_queue = queue.Queue()  # type: queue.Queue[stem.response.events.Event]
+    hs_desc_content_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.events.Event]
     hs_desc_content_listener = None
 
     start_time = time.time()
 
     if await_result:
       def hs_desc_listener(event: stem.response.events.Event) -> None:
-        hs_desc_queue.put(event)
+        hs_desc_queue.put_nowait(event)
 
       def hs_desc_content_listener(event: stem.response.events.Event) -> None:
-        hs_desc_content_queue.put(event)
+        hs_desc_content_queue.put_nowait(event)
 
-      self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
-      self.add_event_listener(hs_desc_content_listener, EventType.HS_DESC_CONTENT)
+      await asyncio.gather(
+        self.add_event_listener(hs_desc_listener, EventType.HS_DESC),
+        self.add_event_listener(hs_desc_content_listener, EventType.HS_DESC_CONTENT),
+      )
 
     try:
       request = 'HSFETCH %s' % address
@@ -2055,7 +2116,7 @@ class Controller(BaseController):
       if servers:
         request += ' ' + ' '.join(['SERVER=%s' % s for s in servers])
 
-      response = stem.response._convert_to_single_line(self.msg(request))
+      response = stem.response._convert_to_single_line(await self.msg(request))
 
       if not response.is_ok():
         raise stem.ProtocolError('HSFETCH returned unexpected response code: %s' % response.code)
@@ -2064,7 +2125,7 @@ class Controller(BaseController):
         return None  # not waiting, so nothing to provide back
       else:
         while True:
-          event = _get_with_timeout(hs_desc_content_queue, timeout, start_time)
+          event = await _get_with_timeout(hs_desc_content_queue, timeout, start_time)
 
           if event.address == address:
             if event.descriptor:
@@ -2073,7 +2134,7 @@ class Controller(BaseController):
               # no descriptor, looking through HS_DESC to figure out why
 
               while True:
-                event = _get_with_timeout(hs_desc_queue, timeout, start_time)
+                event = await _get_with_timeout(hs_desc_queue, timeout, start_time)
 
                 if event.address == address and event.action == stem.HSDescAction.FAILED:
                   if event.reason == stem.HSDescReason.NOT_FOUND:
@@ -2081,13 +2142,17 @@ class Controller(BaseController):
                   else:
                     raise stem.DescriptorUnavailable('Unable to retrieve the descriptor for %s.onion (retrieved from %s): %s' % (address, event.directory_fingerprint, event.reason))
     finally:
+      awaitable_removals = []
+
       if hs_desc_listener:
-        self.remove_event_listener(hs_desc_listener)
+        awaitable_removals.append(self.remove_event_listener(hs_desc_listener))
 
       if hs_desc_content_listener:
-        self.remove_event_listener(hs_desc_content_listener)
+        awaitable_removals.append(self.remove_event_listener(hs_desc_content_listener))
 
-  def get_conf(self, param: str, default: Any = UNDEFINED, multiple: bool = False) -> Union[str, Sequence[str]]:
+      await asyncio.gather(*awaitable_removals)
+
+  async def get_conf(self, param: str, default: Any = UNDEFINED, multiple: bool = False) -> Union[str, Sequence[str]]:
     """
     get_conf(param, default = UNDEFINED, multiple = False)
 
@@ -2133,18 +2198,18 @@ class Controller(BaseController):
     if not param:
       return default if default != UNDEFINED else None
 
-    entries = self.get_conf_map(param, default, multiple)
+    entries = await self.get_conf_map(param, default, multiple)
     return _case_insensitive_lookup(entries, param, default)
 
   # TODO: temporary aliases until we have better type support in our API
 
-  def _get_conf_single(self, param: str, default: Any = UNDEFINED) -> str:
-    return self.get_conf(param, default)  # type: ignore
+  async def _get_conf_single(self, param: str, default: Any = UNDEFINED) -> str:
+    return await self.get_conf(param, default)  # type: ignore
 
-  def _get_conf_multiple(self, param: str, default: Any = UNDEFINED) -> List[str]:
-    return self.get_conf(param, default, multiple = True)  # type: ignore
+  async def _get_conf_multiple(self, param: str, default: Any = UNDEFINED) -> List[str]:
+    return await self.get_conf(param, default, multiple = True)  # type: ignore
 
-  def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
+  async def get_conf_map(self, params: Union[str, Sequence[str]], default: Any = UNDEFINED, multiple: bool = True) -> Dict[str, Union[str, Sequence[str]]]:
     """
     get_conf_map(params, default = UNDEFINED, multiple = True)
 
@@ -2225,7 +2290,7 @@ class Controller(BaseController):
       return self._get_conf_dict_to_response(reply, default, multiple)
 
     try:
-      response = stem.response._convert_to_getconf(self.msg('GETCONF %s' % ' '.join(lookup_params)))
+      response = stem.response._convert_to_getconf(await self.msg('GETCONF %s' % ' '.join(lookup_params)))
       reply.update(response.entries)
 
       if self.is_caching_enabled():
@@ -2283,7 +2348,7 @@ class Controller(BaseController):
     return return_dict
 
   @with_default()
-  def is_set(self, param: str, default: Any = UNDEFINED) -> bool:
+  async def is_set(self, param: str, default: Any = UNDEFINED) -> bool:
     """
     is_set(param, default = UNDEFINED)
 
@@ -2301,13 +2366,13 @@ class Controller(BaseController):
       provided a default response
     """
 
-    return param in self._get_custom_options()
+    return param in await self._get_custom_options()
 
-  def _get_custom_options(self) -> Dict[str, str]:
+  async def _get_custom_options(self) -> Dict[str, str]:
     result = self._get_cache('get_custom_options')
 
     if not result:
-      config_lines = self.get_info('config-text').splitlines()
+      config_lines = (await self.get_info('config-text')).splitlines()
 
       # Tor provides some config options even if they haven't been set...
       #
@@ -2317,7 +2382,7 @@ class Controller(BaseController):
       default_lines = (
         'Log notice stdout',
         'Log notice file /var/log/tor/log',
-        'DataDirectory /home/%s/.tor' % self.get_user('undefined'),
+        'DataDirectory /home/%s/.tor' % await self.get_user('undefined'),
         'HiddenServiceStatistics 0',
       )
 
@@ -2330,7 +2395,7 @@ class Controller(BaseController):
 
     return result
 
-  def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
+  async def set_conf(self, param: str, value: Union[str, Sequence[str]]) -> None:
     """
     Changes the value of a tor configuration option. Our value can be any of
     the following...
@@ -2350,9 +2415,9 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
 
-    self.set_options({param: value}, False)
+    await self.set_options({param: value}, False)
 
-  def reset_conf(self, *params: str) -> None:
+  async def reset_conf(self, *params: str) -> None:
     """
     Reverts one or more parameters to their default values.
 
@@ -2365,9 +2430,9 @@ class Controller(BaseController):
         impossible or if there's a syntax error in the configuration values
     """
 
-    self.set_options(dict([(entry, None) for entry in params]), True)
+    await self.set_options(dict([(entry, None) for entry in params]), True)
 
-  def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
+  async def set_options(self, params: Union[Mapping[str, Union[str, Sequence[str]]], Sequence[Tuple[str, Union[str, Sequence[str]]]]], reset: bool = False) -> None:
     """
     Changes multiple tor configuration options via either a SETCONF or
     RESETCONF query. Both behave identically unless our value is None, in which
@@ -2420,7 +2485,7 @@ class Controller(BaseController):
         raise ValueError('Cannot set %s to %s since the value was a %s but we only accept strings' % (param, value, type(value).__name__))
 
     query = ' '.join(query_comp)
-    response = stem.response._convert_to_single_line(self.msg(query))
+    response = stem.response._convert_to_single_line(await self.msg(query))
 
     if response.is_ok():
       log.debug('%s (runtime: %0.4f)' % (query, time.time() - start_time))
@@ -2448,7 +2513,7 @@ class Controller(BaseController):
         raise stem.ProtocolError('Returned unexpected status code: %s' % response.code)
 
   @with_default()
-  def get_hidden_service_conf(self, default: Any = UNDEFINED) -> Dict[str, Any]:
+  async def get_hidden_service_conf(self, default: Any = UNDEFINED) -> Dict[str, Any]:
     """
     get_hidden_service_conf(default = UNDEFINED)
 
@@ -2494,7 +2559,7 @@ class Controller(BaseController):
     start_time = time.time()
 
     try:
-      response = stem.response._convert_to_getconf(self.msg('GETCONF HiddenServiceOptions'))
+      response = stem.response._convert_to_getconf(await self.msg('GETCONF HiddenServiceOptions'))
       log.debug('GETCONF HiddenServiceOptions (runtime: %0.4f)' %
                 (time.time() - start_time))
     except stem.ControllerError as exc:
@@ -2542,7 +2607,7 @@ class Controller(BaseController):
     self._set_cache({'hidden_service_conf': service_dir_map})
     return service_dir_map
 
-  def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
+  async def set_hidden_service_conf(self, conf: Mapping[str, Any]) -> None:
     """
     Update all the configured hidden services from a dictionary having
     the same format as
@@ -2580,7 +2645,7 @@ class Controller(BaseController):
     # so we drop existing values. Otherwise calling SETCONF is a no-op.
 
     if not conf:
-      self.reset_conf('HiddenServiceDir')
+      await self.reset_conf('HiddenServiceDir')
       return
 
     # Convert conf dictionary into a list of ordered config tuples
@@ -2605,9 +2670,9 @@ class Controller(BaseController):
         else:
           hidden_service_options.append((k, str(v)))
 
-    self.set_options(hidden_service_options)
+    await self.set_options(hidden_service_options)
 
-  def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
+  async def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
@@ -2652,7 +2717,7 @@ class Controller(BaseController):
     target_address = target_address if target_address else '127.0.0.1'
     target_port = port if target_port is None else int(target_port)
 
-    conf = self.get_hidden_service_conf()
+    conf = await self.get_hidden_service_conf()
 
     if path in conf and (port, target_address, target_port) in conf[path]['HiddenServicePort']:
       return None
@@ -2674,7 +2739,7 @@ class Controller(BaseController):
       if 'HiddenServiceAuthorizeClient' in conf[path] or 'RendPostPeriod' in conf[path]:
         conf[path]['HiddenServiceVersion'] = '2'
 
-    self.set_hidden_service_conf(conf)
+    await self.set_hidden_service_conf(conf)
 
     hostname, hostname_for_client = None, {}
 
@@ -2682,7 +2747,7 @@ class Controller(BaseController):
       hostname_path = os.path.join(path, 'hostname')
 
       if not os.path.isabs(hostname_path):
-        cwd = stem.util.system.cwd(self.get_pid(None))
+        cwd = stem.util.system.cwd(await self.get_pid(None))
 
         if cwd:
           hostname_path = stem.util.system.expand_path(hostname_path, cwd)
@@ -2696,7 +2761,7 @@ class Controller(BaseController):
           if wait_time >= 3:
             break
           else:
-            time.sleep(0.05)
+            await asyncio.sleep(0.05)
 
         try:
           with open(hostname_path) as hostname_file:
@@ -2725,7 +2790,7 @@ class Controller(BaseController):
       config = conf,
     )
 
-  def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
+  async def remove_hidden_service(self, path: str, port: Optional[int] = None) -> bool:
     """
     Discontinues a given hidden service.
 
@@ -2744,7 +2809,7 @@ class Controller(BaseController):
       raise ValueError("%s isn't a valid port number" % port)
 
     port = int(port) if port else None
-    conf = self.get_hidden_service_conf()
+    conf = await self.get_hidden_service_conf()
 
     if path not in conf:
       return False
@@ -2763,11 +2828,11 @@ class Controller(BaseController):
       if not conf[path]['HiddenServicePort']:
         del conf[path]  # no ports left
 
-    self.set_hidden_service_conf(conf)
+    await self.set_hidden_service_conf(conf)
     return True
 
   @with_default()
-  def list_ephemeral_hidden_services(self, default: Any = UNDEFINED, our_services: bool = True, detached: bool = False) -> Sequence[str]:
+  async def list_ephemeral_hidden_services(self, default: Any = UNDEFINED, our_services: bool = True, detached: bool = False) -> Sequence[str]:
     """
     list_ephemeral_hidden_services(default = UNDEFINED, our_services = True, detached = False)
 
@@ -2796,18 +2861,18 @@ class Controller(BaseController):
     result = []
 
     if our_services:
-      result += self.get_info('onions/current').split('\n')
+      result += (await self.get_info('onions/current')).split('\n')
 
     if detached:
       try:
-        result += self.get_info('onions/detached').split('\n')
+        result += (await self.get_info('onions/detached')).split('\n')
       except (stem.ProtocolError, stem.OperationFailed) as exc:
         if 'No onion services of the specified type.' not in str(exc):
           raise
 
     return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
-  def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None) -> stem.response.add_onion.AddOnionResponse:
+  async def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None) -> stem.response.add_onion.AddOnionResponse:
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2909,15 +2974,15 @@ class Controller(BaseController):
       * :class:`stem.Timeout` if **timeout** was reached
     """
 
-    hs_desc_queue = queue.Queue()  # type: queue.Queue[stem.response.events.Event]
+    hs_desc_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.events.Event]
     hs_desc_listener = None
     start_time = time.time()
 
     if await_publication:
       def hs_desc_listener(event: stem.response.events.Event) -> None:
-        hs_desc_queue.put(event)
+        hs_desc_queue.put_nowait(event)
 
-      self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
+      await self.add_event_listener(hs_desc_listener, EventType.HS_DESC)
 
     request = 'ADD_ONION %s:%s' % (key_type, key_content)
 
@@ -2935,7 +3000,7 @@ class Controller(BaseController):
     if max_streams is not None:
       flags.append('MaxStreamsCloseCircuit')
 
-    if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
+    if (await self.get_conf('HiddenServiceSingleHopMode', None)) == '1' and (await self.get_conf('HiddenServiceNonAnonymousMode', None)) == '1':
       flags.append('NonAnonymous')
 
     if flags:
@@ -2962,7 +3027,7 @@ class Controller(BaseController):
         else:
           request += ' ClientAuth=%s' % client_name
 
-    response = stem.response._convert_to_add_onion(stem.response._convert_to_add_onion(self.msg(request)))
+    response = stem.response._convert_to_add_onion(stem.response._convert_to_add_onion(await self.msg(request)))
 
     if await_publication:
       # We should receive five UPLOAD events, followed by up to another five
@@ -2975,7 +3040,7 @@ class Controller(BaseController):
 
       try:
         while True:
-          event = _get_with_timeout(hs_desc_queue, timeout, start_time)
+          event = await _get_with_timeout(hs_desc_queue, timeout, start_time)
 
           if event.action == stem.HSDescAction.UPLOAD and event.address == response.service_id:
             directories_uploaded_to.append(event.directory_fingerprint)
@@ -2987,11 +3052,11 @@ class Controller(BaseController):
             if len(directories_uploaded_to) == len(failures):
               raise stem.OperationFailed(message = 'Failed to upload our hidden service descriptor to %s' % ', '.join(failures))
       finally:
-        self.remove_event_listener(hs_desc_listener)
+        await self.remove_event_listener(hs_desc_listener)
 
     return response
 
-  def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
+  async def remove_ephemeral_hidden_service(self, service_id: str) -> bool:
     """
     Discontinues a given hidden service that was created with
     :func:`~stem.control.Controller.create_ephemeral_hidden_service`.
@@ -3006,7 +3071,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    response = stem.response._convert_to_single_line(self.msg('DEL_ONION %s' % service_id))
+    response = stem.response._convert_to_single_line(await self.msg('DEL_ONION %s' % service_id))
 
     if response.is_ok():
       return True
@@ -3015,7 +3080,7 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
-  def add_event_listener(self, listener: Callable[[stem.response.events.Event], None], *events: 'stem.control.EventType') -> None:
+  async def add_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]], *events: 'stem.control.EventType') -> None:
     """
     Directs further tor controller events to a given function. The function is
     expected to take a single argument, which is a
@@ -3053,18 +3118,18 @@ class Controller(BaseController):
 
     # first checking that tor supports these event types
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       if self.is_authenticated():
         for event_type in events:
           event_type = stem.response.events.EVENT_TYPE_TO_CLASS.get(event_type)
 
-          if event_type and (self.get_version() < event_type._VERSION_ADDED):
+          if event_type and (await self.get_version() < event_type._VERSION_ADDED):
             raise stem.InvalidRequest('552', '%s event requires Tor version %s or later' % (event_type, event_type._VERSION_ADDED))
 
       for event_type in events:
         self._event_listeners.setdefault(event_type, []).append(listener)
 
-      failed_events = self._attach_listeners()[1]
+      failed_events = (await self._attach_listeners())[1]
 
       # restricted the failures to just things we requested
 
@@ -3073,7 +3138,7 @@ class Controller(BaseController):
       if failed_events:
         raise stem.ProtocolError('SETEVENTS rejected %s' % ', '.join(failed_events))
 
-  def remove_event_listener(self, listener: Callable[[stem.response.events.Event], None]) -> None:
+  async def remove_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]]) -> None:
     """
     Stops a listener from being notified of further tor events.
 
@@ -3082,7 +3147,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ProtocolError` if unable to set the events
     """
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       event_types_changed = False
 
       for event_type, event_listeners in list(self._event_listeners.items()):
@@ -3094,7 +3159,7 @@ class Controller(BaseController):
             del self._event_listeners[event_type]
 
       if event_types_changed:
-        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
+        response = await self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
         if not response.is_ok():
           raise stem.ProtocolError('SETEVENTS received unexpected response\n%s' % response)
@@ -3234,7 +3299,7 @@ class Controller(BaseController):
       self._request_cache = {}
       self._last_newnym = 0.0
 
-  def load_conf(self, configtext: str) -> None:
+  async def load_conf(self, configtext: str) -> None:
     """
     Sends the configuration text to Tor and loads it as if it has been read from
     the torrc.
@@ -3244,7 +3309,7 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    response = stem.response._convert_to_single_line(self.msg('LOADCONF\n%s' % configtext))
+    response = stem.response._convert_to_single_line(await self.msg('LOADCONF\n%s' % configtext))
 
     if response.code in ('552', '553'):
       if response.code == '552' and response.message.startswith('Invalid config file: Failed to parse/validate config: Unknown option'):
@@ -3253,7 +3318,7 @@ class Controller(BaseController):
     elif not response.is_ok():
       raise stem.ProtocolError('+LOADCONF Received unexpected response\n%s' % str(response))
 
-  def save_conf(self, force: bool = False) -> None:
+  async def save_conf(self, force: bool = False) -> None:
     """
     Saves the current configuration options into the active torrc file.
 
@@ -3269,7 +3334,7 @@ class Controller(BaseController):
         the configuration file
     """
 
-    response = stem.response._convert_to_single_line(self.msg('SAVECONF FORCE' if force else 'SAVECONF'))
+    response = stem.response._convert_to_single_line(await self.msg('SAVECONF FORCE' if force else 'SAVECONF'))
 
     if response.is_ok():
       pass
@@ -3295,7 +3360,7 @@ class Controller(BaseController):
 
     return feature in self._enabled_features
 
-  def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
+  async def enable_feature(self, features: Union[str, Sequence[str]]) -> None:
     """
     Enables features that are disabled by default to maintain backward
     compatibility. Once enabled, a feature cannot be disabled and a new
@@ -3312,7 +3377,7 @@ class Controller(BaseController):
     if isinstance(features, (bytes, str)):
       features = [features]
 
-    response = stem.response._convert_to_single_line(self.msg('USEFEATURE %s' % ' '.join(features)))
+    response = stem.response._convert_to_single_line(await self.msg('USEFEATURE %s' % ' '.join(features)))
 
     if not response.is_ok():
       if response.code == '552':
@@ -3328,7 +3393,7 @@ class Controller(BaseController):
     self._enabled_features += [entry.upper() for entry in features]
 
   @with_default()
-  def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
+  async def get_circuit(self, circuit_id: int, default: Any = UNDEFINED) -> stem.response.events.CircuitEvent:
     """
     get_circuit(circuit_id, default = UNDEFINED)
 
@@ -3346,14 +3411,14 @@ class Controller(BaseController):
       An exception is only raised if we weren't provided a default response.
     """
 
-    for circ in self.get_circuits():
+    for circ in await self.get_circuits():
       if circ.id == circuit_id:
         return circ
 
     raise ValueError("Tor currently does not have a circuit with the id of '%s'" % circuit_id)
 
   @with_default()
-  def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
+  async def get_circuits(self, default: Any = UNDEFINED) -> List[stem.response.events.CircuitEvent]:
     """
     get_circuits(default = UNDEFINED)
 
@@ -3367,15 +3432,15 @@ class Controller(BaseController):
     """
 
     circuits = []  # type: List[stem.response.events.CircuitEvent]
-    response = self.get_info('circuit-status')
+    response = await self.get_info('circuit-status')
 
     for circ in response.splitlines():
-      circ_message = stem.response._convert_to_event(stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
+      circ_message = stem.response._convert_to_event(stem.socket.recv_message_from_bytes_io(io.BytesIO(stem.util.str_tools._to_bytes('650 CIRC %s\r\n' % circ))))
       circuits.append(circ_message)  # type: ignore
 
     return circuits
 
-  def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+  async def new_circuit(self, path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Requests a new circuit. If the path isn't provided, one is automatically
     selected.
@@ -3395,9 +3460,9 @@ class Controller(BaseController):
       * :class:`stem.Timeout` if **timeout** was reached
     """
 
-    return self.extend_circuit('0', path, purpose, await_build, timeout)
+    return await self.extend_circuit('0', path, purpose, await_build, timeout)
 
-  def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
+  async def extend_circuit(self, circuit_id: str = '0', path: Union[None, str, Sequence[str]] = None, purpose: str = 'general', await_build: bool = False, timeout: Optional[float] = None) -> str:
     """
     Either requests the creation of a new circuit or extends an existing one.
 
@@ -3441,15 +3506,15 @@ class Controller(BaseController):
     # to build. This is icky, but we can't reliably do this via polling since
     # we then can't get the failure if it can't be created.
 
-    circ_queue = queue.Queue()  # type: queue.Queue[stem.response.events.Event]
+    circ_queue = asyncio.Queue()  # type: asyncio.Queue[stem.response.events.Event]
     circ_listener = None
     start_time = time.time()
 
     if await_build:
       def circ_listener(event: stem.response.events.Event) -> None:
-        circ_queue.put(event)
+        circ_queue.put_nowait(event)
 
-      self.add_event_listener(circ_listener, EventType.CIRC)
+      await self.add_event_listener(circ_listener, EventType.CIRC)
 
     try:
       args = [str(circuit_id)]
@@ -3463,7 +3528,7 @@ class Controller(BaseController):
       if purpose:
         args.append('purpose=%s' % purpose)
 
-      response = stem.response._convert_to_single_line(self.msg('EXTENDCIRCUIT %s' % ' '.join(args)))
+      response = stem.response._convert_to_single_line(await self.msg('EXTENDCIRCUIT %s' % ' '.join(args)))
 
       if response.code in ('512', '552'):
         raise stem.InvalidRequest(response.code, response.message)
@@ -3477,7 +3542,7 @@ class Controller(BaseController):
 
       if await_build:
         while True:
-          circ = _get_with_timeout(circ_queue, timeout, start_time)
+          circ = await _get_with_timeout(circ_queue, timeout, start_time)
 
           if circ.id == new_circuit:
             if circ.status == CircStatus.BUILT:
@@ -3490,9 +3555,9 @@ class Controller(BaseController):
       return new_circuit
     finally:
       if circ_listener:
-        self.remove_event_listener(circ_listener)
+        await self.remove_event_listener(circ_listener)
 
-  def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
+  async def repurpose_circuit(self, circuit_id: str, purpose: str) -> None:
     """
     Changes a circuit's purpose. Currently, two purposes are recognized...
       * general
@@ -3504,7 +3569,7 @@ class Controller(BaseController):
     :raises: :class:`stem.InvalidArguments` if the circuit doesn't exist or if the purpose was invalid
     """
 
-    response = stem.response._convert_to_single_line(self.msg('SETCIRCUITPURPOSE %s purpose=%s' % (circuit_id, purpose)))
+    response = stem.response._convert_to_single_line(await self.msg('SETCIRCUITPURPOSE %s purpose=%s' % (circuit_id, purpose)))
 
     if not response.is_ok():
       if response.code == '552':
@@ -3512,7 +3577,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('SETCIRCUITPURPOSE returned unexpected response code: %s' % response.code)
 
-  def close_circuit(self, circuit_id: str, flag: str = '') -> None:
+  async def close_circuit(self, circuit_id: str, flag: str = '') -> None:
     """
     Closes the specified circuit.
 
@@ -3525,7 +3590,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidRequest` if not enough information is provided
     """
 
-    response = stem.response._convert_to_single_line(self.msg('CLOSECIRCUIT %s %s' % (circuit_id, flag)))
+    response = stem.response._convert_to_single_line(await self.msg('CLOSECIRCUIT %s %s' % (circuit_id, flag)))
 
     if not response.is_ok():
       if response.code in ('512', '552'):
@@ -3536,7 +3601,7 @@ class Controller(BaseController):
         raise stem.ProtocolError('CLOSECIRCUIT returned unexpected response code: %s' % response.code)
 
   @with_default()
-  def get_streams(self, default: Any = UNDEFINED) -> List[stem.response.events.StreamEvent]:
+  async def get_streams(self, default: Any = UNDEFINED) -> List[stem.response.events.StreamEvent]:
     """
     get_streams(default = UNDEFINED)
 
@@ -3551,15 +3616,15 @@ class Controller(BaseController):
     """
 
     streams = []  # type: List[stem.response.events.StreamEvent]
-    response = self.get_info('stream-status')
+    response = await self.get_info('stream-status')
 
     for stream in response.splitlines():
-      message = stem.response._convert_to_event(stem.socket.recv_message(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream))))
+      message = stem.response._convert_to_event(stem.socket.recv_message_from_bytes_io(io.BytesIO(stem.util.str_tools._to_bytes('650 STREAM %s\r\n' % stream))))
       streams.append(message)  # type: ignore
 
     return streams
 
-  def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
+  async def attach_stream(self, stream_id: str, circuit_id: str, exiting_hop: Optional[int] = None) -> None:
     """
     Attaches a stream to a circuit.
 
@@ -3581,7 +3646,7 @@ class Controller(BaseController):
     if exiting_hop:
       query += ' HOP=%s' % exiting_hop
 
-    response = stem.response._convert_to_single_line(self.msg(query))
+    response = stem.response._convert_to_single_line(await self.msg(query))
 
     if not response.is_ok():
       if response.code == '552':
@@ -3593,7 +3658,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('ATTACHSTREAM returned unexpected response code: %s' % response.code)
 
-  def close_stream(self, stream_id: str, reason: stem.RelayEndReason = stem.RelayEndReason.MISC, flag: str = '') -> None:
+  async def close_stream(self, stream_id: str, reason: stem.RelayEndReason = stem.RelayEndReason.MISC, flag: str = '') -> None:
     """
     Closes the specified stream.
 
@@ -3609,7 +3674,7 @@ class Controller(BaseController):
     # there's a single value offset between RelayEndReason.index_of() and the
     # value that tor expects since tor's value starts with the index of one
 
-    response = stem.response._convert_to_single_line(self.msg('CLOSESTREAM %s %s %s' % (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag)))
+    response = stem.response._convert_to_single_line(await self.msg('CLOSESTREAM %s %s %s' % (stream_id, stem.RelayEndReason.index_of(reason) + 1, flag)))
 
     if not response.is_ok():
       if response.code in ('512', '552'):
@@ -3621,7 +3686,7 @@ class Controller(BaseController):
       else:
         raise stem.ProtocolError('CLOSESTREAM returned unexpected response code: %s' % response.code)
 
-  def signal(self, signal: stem.Signal) -> None:
+  async def signal(self, signal: stem.Signal) -> None:
     """
     Sends a signal to the Tor client.
 
@@ -3632,7 +3697,7 @@ class Controller(BaseController):
       * :class:`stem.InvalidArguments` if signal provided wasn't recognized
     """
 
-    response = stem.response._convert_to_single_line(self.msg('SIGNAL %s' % signal))
+    response = stem.response._convert_to_single_line(await self.msg('SIGNAL %s' % signal))
 
     if response.is_ok():
       if signal == stem.Signal.NEWNYM:
@@ -3673,7 +3738,7 @@ class Controller(BaseController):
     return max(0.0, self._last_newnym + 10 - time.time())
 
   @with_default()
-  def get_effective_rate(self, default: Any = UNDEFINED, burst: bool = False) -> int:
+  async def get_effective_rate(self, default: Any = UNDEFINED, burst: bool = False) -> int:
     """
     get_effective_rate(default = UNDEFINED, burst = False)
 
@@ -3703,7 +3768,7 @@ class Controller(BaseController):
     value = None
 
     for attr in attributes:
-      attr_value = int(self._get_conf_single(attr))
+      attr_value = int(await self._get_conf_single(attr))
 
       if attr_value == 0 and attr.startswith('Relay'):
         continue  # RelayBandwidthRate and RelayBandwidthBurst default to zero
@@ -3712,7 +3777,7 @@ class Controller(BaseController):
 
     return value
 
-  def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
+  async def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
     """
     Map addresses to replacement addresses. Tor replaces subseqent connections
     to the original addresses with the replacement addresses.
@@ -3732,10 +3797,10 @@ class Controller(BaseController):
     """
 
     mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in list(mapping.items())])
-    response = self.msg('MAPADDRESS %s' % mapaddress_arg)
+    response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
     return stem.response._convert_to_mapaddress(response).entries
 
-  def drop_guards(self) -> None:
+  async def drop_guards(self) -> None:
     """
     Drops our present guard nodes and picks a new set.
 
@@ -3744,16 +3809,16 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
     """
 
-    self.msg('DROPGUARDS')
+    await self.msg('DROPGUARDS')
 
-  def _post_authentication(self) -> None:
-    super(Controller, self)._post_authentication()
+  async def _post_authentication(self) -> None:
+    await super(Controller, self)._post_authentication()
 
     # try to re-attach event listeners to the new instance
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       try:
-        failed_events = self._attach_listeners()[1]
+        failed_events = (await self._attach_listeners())[1]
 
         if failed_events:
           # remove our listeners for these so we don't keep failing
@@ -3767,23 +3832,23 @@ class Controller(BaseController):
 
     # issue TAKEOWNERSHIP if we're the owning process for this tor instance
 
-    owning_pid = self.get_conf('__OwningControllerProcess', None)
+    owning_pid = await self.get_conf('__OwningControllerProcess', None)
 
     if owning_pid == str(os.getpid()) and self.is_localhost():
-      response = stem.response._convert_to_single_line(self.msg('TAKEOWNERSHIP'))
+      response = stem.response._convert_to_single_line(await self.msg('TAKEOWNERSHIP'))
 
       if response.is_ok():
         # Now that tor is tracking our ownership of the process via the control
         # connection, we can stop having it check for us via our pid.
 
         try:
-          self.reset_conf('__OwningControllerProcess')
+          await self.reset_conf('__OwningControllerProcess')
         except stem.ControllerError as exc:
           log.warn("We were unable to reset tor's __OwningControllerProcess configuration. It will continue to periodically check if our pid exists. (%s)" % exc)
       else:
         log.warn('We were unable assert ownership of tor through TAKEOWNERSHIP, despite being configured to be the owning process through __OwningControllerProcess. (%s)' % response)
 
-  def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
+  async def _handle_event(self, event_message: stem.response.ControlMessage) -> None:
     event = None  # type: Optional[stem.response.events.Event]
 
     try:
@@ -3798,16 +3863,19 @@ class Controller(BaseController):
       log.error('Tor sent a malformed event (%s): %s' % (exc, event_message))
       event_type = MALFORMED_EVENTS
 
-    with self._event_listeners_lock:
+    async with self._event_listeners_lock:
       for listener_type, event_listeners in list(self._event_listeners.items()):
         if listener_type == event_type:
           for listener in event_listeners:
             try:
-              listener(event)
+              listener_call = listener(event)
+
+              if asyncio.iscoroutine(listener_call):
+                await listener_call
             except Exception as exc:
               log.warn('Event listener raised an uncaught exception (%s): %s' % (exc, event))
 
-  def _attach_listeners(self) -> Tuple[Sequence[str], Sequence[str]]:
+  async def _attach_listeners(self) -> Tuple[Sequence[str], Sequence[str]]:
     """
     Attempts to subscribe to the self._event_listeners events from tor. This is
     a no-op if we're not currently authenticated.
@@ -3819,34 +3887,33 @@ class Controller(BaseController):
 
     set_events, failed_events = [], []
 
-    with self._event_listeners_lock:
-      if self.is_authenticated():
-        # try to set them all
-        response = self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
+    if self.is_authenticated():
+      # try to set them all
+      response = await self.msg('SETEVENTS %s' % ' '.join(self._event_listeners.keys()))
 
-        if response.is_ok():
-          set_events = list(self._event_listeners.keys())
-        else:
-          # One of the following likely happened...
-          #
-          # * Our user attached listeners before having an authenticated
-          #   connection, so we couldn't check if we met the version
-          #   requirement.
-          #
-          # * User attached listeners to one tor instance, then connected us to
-          #   an older tor instancce.
-          #
-          # * Some other controller hiccup (far less likely).
-          #
-          # See if we can set some subset of our events.
+      if response.is_ok():
+        set_events = list(self._event_listeners.keys())
+      else:
+        # One of the following likely happened...
+        #
+        # * Our user attached listeners before having an authenticated
+        #   connection, so we couldn't check if we met the version
+        #   requirement.
+        #
+        # * User attached listeners to one tor instance, then connected us to
+        #   an older tor instancce.
+        #
+        # * Some other controller hiccup (far less likely).
+        #
+        # See if we can set some subset of our events.
 
-          for event in list(self._event_listeners.keys()):
-            response = self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
+        for event in list(self._event_listeners.keys()):
+          response = await self.msg('SETEVENTS %s' % ' '.join(set_events + [event]))
 
-            if response.is_ok():
-              set_events.append(event)
-            else:
-              failed_events.append(event)
+          if response.is_ok():
+            set_events.append(event)
+          else:
+            failed_events.append(event)
 
     return (set_events, failed_events)
 
@@ -3959,20 +4026,17 @@ def _case_insensitive_lookup(entries: Union[Sequence[str], Mapping[str, Any]], k
   raise ValueError("key '%s' doesn't exist in dict: %s" % (key, entries))
 
 
-def _get_with_timeout(event_queue: queue.Queue, timeout: float, start_time: float) -> Any:
+async def _get_with_timeout(event_queue: asyncio.Queue, timeout: Optional[float], start_time: float) -> Any:
   """
   Pulls an item from a queue with a given timeout.
   """
 
   if timeout:
     time_left = timeout - (time.time() - start_time)
-
-    if time_left <= 0:
-      raise stem.Timeout('Reached our %0.1f second timeout' % timeout)
-
-    try:
-      return event_queue.get(True, time_left)
-    except queue.Empty:
-      raise stem.Timeout('Reached our %0.1f second timeout' % timeout)
   else:
-    return event_queue.get()
+    time_left = None
+
+  try:
+    return await asyncio.wait_for(event_queue.get(), timeout = time_left)
+  except asyncio.TimeoutError:
+    raise stem.Timeout('Reached our %0.1f second timeout' % timeout)

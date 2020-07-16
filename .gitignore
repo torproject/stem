@@ -2,6 +2,9 @@
 *.pyc
 *.swp
 *.swo
+.editorconfig
 .tox
+.idea/
+.mypy_cache/
 test/data/
 docs/_build/
