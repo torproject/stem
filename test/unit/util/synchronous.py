@@ -72,6 +72,20 @@ class TestSynchronous(unittest.TestCase):
 
     self.assertEqual(EXAMPLE_OUTPUT, stdout_mock.getvalue())
 
+  def test_is_asyncio_context(self):
+    """
+    Check that we can differentiate a synchronous from an async context.
+    """
+
+    def sync_test():
+      self.assertFalse(Synchronous.is_asyncio_context())
+
+    async def async_test():
+      self.assertTrue(Synchronous.is_asyncio_context())
+
+    sync_test()
+    asyncio.run(async_test())
+
   def test_ainit(self):
     """
     Check that construction runs __ainit__ with a loop when present.

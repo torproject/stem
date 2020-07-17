@@ -442,7 +442,9 @@ class Query(Synchronous):
 
     with self._downloader_lock:
       if self._downloader_task is None:
-        loop = asyncio.get_running_loop()
+        # TODO: replace with get_running_loop() when we remove python 3.6 support
+
+        loop = asyncio.get_event_loop()
         self._downloader_task = loop.create_task(self._download_descriptors(self.retries, self.timeout))
 
   async def run(self, suppress: bool = False, stop: bool = True) -> List['stem.descriptor.Descriptor']:

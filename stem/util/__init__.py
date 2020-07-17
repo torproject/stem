@@ -210,7 +210,9 @@ class Synchronous(object):
     self._no_op = Synchronous.is_asyncio_context()
 
     if self._no_op:
-      self._loop = asyncio.get_running_loop()
+      # TODO: replace with get_running_loop() when we remove python 3.6 support
+
+      self._loop = asyncio.get_event_loop()
       self.__ainit__()  # this is already an asyncio context
     else:
       # Run coroutines through our loop. This calls methods by name rather than
@@ -316,6 +318,13 @@ class Synchronous(object):
       return True
     except RuntimeError:
       return False
+    except AttributeError:
+      # TODO: drop when we remove python 3.6 support
+
+      try:
+        return asyncio._get_running_loop() is not None
+      except AttributeError:
+        return False  # python 3.5.3 or below
 
   def _run_async_method(self, method_name: str, *args: Any, **kwargs: Any) -> Any:
     """
