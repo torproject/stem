@@ -583,6 +583,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
+  @patch('stem.util.log.warn', Mock())
   def test_event_listing_with_error(self):
     """
     Raise an exception in an event listener to confirm it doesn't break our
@@ -599,6 +600,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
+  @patch('stem.util.log.error', Mock())
   def test_event_listing_with_malformed_event(self):
     """
     Attempt to parse a malformed event emitted from Tor. It's important this
