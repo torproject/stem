@@ -14,6 +14,7 @@ import test
 import test.runner
 
 from stem.manual import Category
+from stem.util.test_tools import async_test
 
 EXPECTED_CATEGORIES = set([
   'NAME',
@@ -23,7 +24,11 @@ EXPECTED_CATEGORIES = set([
   'THE CONFIGURATION FILE FORMAT',
   'GENERAL OPTIONS',
   'CLIENT OPTIONS',
+  'CIRCUIT TIMEOUT OPTIONS',
+  'DORMANT MODE OPTIONS',
+  'NODE SELECTION OPTIONS',
   'SERVER OPTIONS',
+  'STATISTICS OPTIONS',
   'DIRECTORY SERVER OPTIONS',
   'DIRECTORY AUTHORITY SERVER OPTIONS',
   'HIDDEN SERVICE OPTIONS',
@@ -38,7 +43,30 @@ EXPECTED_CATEGORIES = set([
   'AUTHORS',
 ])
 
-EXPECTED_CLI_OPTIONS = set(['-f FILE', '--hash-password PASSWORD', '--ignore-missing-torrc', '--defaults-torrc FILE', '--key-expiration [purpose]', '--list-fingerprint', '--list-deprecated-options', '--allow-missing-torrc', '--nt-service', '--verify-config', '--dump-config short|full|non-builtin', '--service remove|start|stop', '--passphrase-fd FILEDES', '--keygen [--newpass]', '--list-torrc-options', '--service install [--options command-line options]', '--list-modules', '--quiet|--hush', '--version', '-h, --help'])
+EXPECTED_CLI_OPTIONS = set([
+  '--allow-missing-torrc',
+  '--dbg-...',
+  '--defaults-torrc FILE',
+  '--dump-config short|full',
+  '--hash-password PASSWORD',
+  '--ignore-missing-torrc',
+  '--key-expiration [purpose]',
+  '--keygen [--newpass]',
+  '--list-deprecated-options',
+  '--list-fingerprint',
+  '--list-modules',
+  '--list-torrc-options',
+  '--nt-service',
+  '--passphrase-fd FILEDES',
+  '--quiet|--hush',
+  '--service install [--options command-line options]',
+  '--service remove|start|stop',
+  '--verify-config',
+  '--version',
+  '-f FILE',
+  '-h, --help',
+])
+
 EXPECTED_SIGNALS = set(['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGUSR1', 'SIGUSR2', 'SIGCHLD', 'SIGPIPE', 'SIGXFSZ'])
 
 EXPECTED_DESCRIPTION = """
@@ -216,20 +244,22 @@ class TestManual(unittest.TestCase):
     self.assertEqual(['tor - The second-generation onion router'], categories['NAME'])
     self.assertEqual(['tor [OPTION value]...'], categories['SYNOPSIS'])
 
-  def test_has_all_tor_config_options(self):
+  @async_test
+  async def test_has_all_tor_config_options(self):
     """
     Check that all the configuration options tor supports are in the man page.
     """
 
     self.requires_downloaded_manual()
 
-    with test.runner.get_runner().get_tor_controller() as controller:
-      config_options_in_tor = set([line.split()[0] for line in controller.get_info('config/names').splitlines() if line.split()[1] != 'Virtual'])
+    async with await test.runner.get_runner().get_tor_controller() as controller:
+      config_options_in_tor = set([line.split()[0] for line in (await controller.get_info('config/names')).splitlines() if line.split()[1] != 'Virtual'])
 
-      # options starting with an underscore are hidden by convention
+      # options starting with an underscore are hidden by convention, but the
+      # manual includes OwningControllerProcess
 
       for name in list(config_options_in_tor):
-        if name.startswith('_'):
+        if name.startswith('_') and name != '__OwningControllerProcess':
           config_options_in_tor.remove(name)
 
     manual = stem.manual.Manual.from_man(self.man_path)

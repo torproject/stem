@@ -14,12 +14,12 @@ import stem.manual
 import stem.util.system
 
 GITWEB_MAN_LOG = 'https://gitweb.torproject.org/tor.git/log/doc/tor.1.txt'
-MAN_LOG_LINK = "href='/tor.git/commit/doc/tor.1.txt\\?id=([^']*)'"
+MAN_LOG_LINK = b"href='/tor.git/commit/doc/tor.1.txt\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
     man_log_page = urllib.request.urlopen(GITWEB_MAN_LOG).read()
-    man_commit = re.search(MAN_LOG_LINK, man_log_page).group(1)
+    man_commit = re.search(MAN_LOG_LINK, man_log_page).group(1).decode('utf-8')
   except:
     print("Unable to determine the latest commit to edit tor's man page: %s" % sys.exc_info()[1])
     sys.exit(1)
