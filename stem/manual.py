@@ -67,7 +67,7 @@ import stem.util.system
 from typing import Any, BinaryIO, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
-GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
+GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/man/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_manual.sqlite')
 DATABASE = None  # cache database connections
 HAS_ENCODING_ARG = not stem.util.system.is_mac() and not stem.util.system.is_bsd() and not stem.util.system.is_slackware()
