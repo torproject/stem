@@ -550,7 +550,7 @@ def _fallback_directory_differences(previous_directories: Mapping[str, 'stem.dir
     new_directory = new_directories[fp]
 
     if previous_directory != new_directory:
-      for attr in ('address', 'or_port', 'dir_port', 'fingerprint', 'orport_v6'):
+      for attr in ('address', 'or_port', 'dir_port', 'fingerprint', 'orport_v6', 'header'):
         old_attr = getattr(previous_directory, attr)
         new_attr = getattr(new_directory, attr)
 

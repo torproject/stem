@@ -14,12 +14,12 @@ import stem.directory
 import stem.util.system
 
 GITWEB_FALLBACK_LOG = 'https://gitweb.torproject.org/tor.git/log/src/app/config/fallback_dirs.inc'
-FALLBACK_DIR_LINK = "href='/tor.git/commit/src/app/config/fallback_dirs.inc\\?id=([^']*)'"
+FALLBACK_DIR_LINK = b"href='/tor.git/commit/src/app/config/fallback_dirs.inc\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
     fallback_dir_page = urllib.request.urlopen(GITWEB_FALLBACK_LOG).read()
-    fallback_dir_commit = re.search(FALLBACK_DIR_LINK, fallback_dir_page).group(1)
+    fallback_dir_commit = re.search(FALLBACK_DIR_LINK, fallback_dir_page).group(1).decode('utf-8')
   except:
     print("Unable to determine the latest commit to edit tor's fallback directories: %s" % sys.exc_info()[1])
     sys.exit(1)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
   # all fallbacks have the same header metadata, so just picking one
 
-  headers = latest_fallback_directories.values()[0].header if latest_fallback_directories else None
+  headers = list(latest_fallback_directories.values())[0].header if latest_fallback_directories else None
 
   print('Differences detected...\n')
   print(stem.directory._fallback_directory_differences(cached_fallback_directories, latest_fallback_directories))
