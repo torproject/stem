@@ -7,6 +7,7 @@ import os
 import shutil
 import socket
 import tempfile
+import threading
 import time
 import unittest
 
@@ -1127,8 +1128,6 @@ class TestController(unittest.TestCase):
     Tests Controller.get_streams().
     """
 
-    self.skipTest('asyncio unsupported by test.network')
-
     host = socket.gethostbyname('www.torproject.org')
     port = 443
 
@@ -1157,8 +1156,6 @@ class TestController(unittest.TestCase):
     Tests Controller.close_stream with valid and invalid input.
     """
 
-    self.skipTest('asyncio unsupported by test.network')
-
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
@@ -1172,7 +1169,7 @@ class TestController(unittest.TestCase):
 
         # There's only one stream right now.  Right?
 
-        built_stream = await controller.get_streams()[0]
+        built_stream = (await controller.get_streams())[0]
 
         # Make sure we have the stream for which we asked, otherwise
         # the next assertion would be a false positive.
@@ -1196,7 +1193,6 @@ class TestController(unittest.TestCase):
   @test.require.online
   @async_test
   async def test_mapaddress(self):
-    self.skipTest('asyncio unsupported by test.network')
     self.skipTest('(https://trac.torproject.org/projects/tor/ticket/25611)')
     runner = test.runner.get_runner()
 
@@ -1523,16 +1519,16 @@ class TestController(unittest.TestCase):
   @test.require.online
   @async_test
   async def test_attachstream(self):
-    self.skipTest('asyncio unsupported by test.network')
-
     host = socket.gethostbyname('www.torproject.org')
     port = 80
 
     circuit_id, streams = None, []
+    stream_attached = asyncio.Event()
 
     async def handle_streamcreated(stream):
       if stream.status == 'NEW' and circuit_id:
         await controller.attach_stream(stream.id, circuit_id)
+        stream_attached.set()
 
     async with await test.runner.get_runner().get_tor_controller() as controller:
       # try 10 times to build a circuit we can connect through
@@ -1546,9 +1542,16 @@ class TestController(unittest.TestCase):
           socks_listener = (await controller.get_listeners(Listener.SOCKS))[0]
 
           with test.network.Socks(socks_listener) as s:
-            s.settimeout(30)
-            s.connect((host, port))
+            s.settimeout(5)
+
+            t = threading.Thread(target = s.connect, args = ((host, port),))
+            t.start()
+
+            await asyncio.wait_for(stream_attached.wait(), timeout = 6)
             streams = await controller.get_streams()
+
+            t.join()
+
             break
         except (stem.CircuitExtensionFailed, socket.timeout):
           continue
