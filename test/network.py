@@ -20,10 +20,6 @@ import stem
 import stem.util.connection
 import stem.util.str_tools
 
-# Store a reference to the original class so we can find it after
-# monkey patching.
-_socket_socket = socket.socket
-
 SOCKS5_NOAUTH_GREETING = (0x05, 0x01, 0x00)
 SOCKS5_NOAUTH_RESPONSE = (0x05, 0x00)
 SOCKS5_CONN_BY_IPV4 = (0x05, 0x01, 0x00, 0x01)
@@ -78,7 +74,7 @@ class SocksError(ProxyError):
     return '[%s] %s' % (code, self._ERROR_MESSAGE[code])
 
 
-class Socks(_socket_socket):
+class Socks(socket.socket):
   """
   A **socket.socket**-like interface through a SOCKS5 proxy connection.
   Tor does not support proxy authentication, so neither does this class.
@@ -111,7 +107,7 @@ class Socks(_socket_socket):
     :returns: :class:`~test.network.Socks`
     """
 
-    _socket_socket.__init__(self, family, type_, proto, _sock)
+    socket.socket.__init__(self, family, type_, proto, _sock)
     self._proxy_addr = proxy_addr
 
   def __enter__(self, *args, **kwargs):
@@ -187,7 +183,7 @@ class Socks(_socket_socket):
     :raises: :class:`test.SocksError` for any errors
     """
 
-    _socket_socket.connect(self, (self._proxy_addr[0], self._proxy_addr[1]))
+    socket.socket.connect(self, (self._proxy_addr[0], self._proxy_addr[1]))
 
     # ask for non-authenticated connection
 
