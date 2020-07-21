@@ -1533,31 +1533,26 @@ class TestController(unittest.TestCase):
     async with await test.runner.get_runner().get_tor_controller() as controller:
       # try 10 times to build a circuit we can connect through
 
-      for i in range(10):
-        await controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
-        await controller.set_conf('__LeaveStreamsUnattached', '1')
+      await controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+      await controller.set_conf('__LeaveStreamsUnattached', '1')
 
-        try:
-          circuit_id = await controller.new_circuit(await_build = True)
-          socks_listener = (await controller.get_listeners(Listener.SOCKS))[0]
+      try:
+        circuit_id = await controller.new_circuit(await_build = True)
+        socks_listener = (await controller.get_listeners(Listener.SOCKS))[0]
 
-          with test.network.Socks(socks_listener) as s:
-            s.settimeout(5)
+        with test.network.Socks(socks_listener) as s:
+          s.settimeout(5)
 
-            t = threading.Thread(target = s.connect, args = ((host, port),))
-            t.start()
+          t = threading.Thread(target = s.connect, args = ((host, port),))
+          t.start()
 
-            await asyncio.wait_for(stream_attached.wait(), timeout = 6)
-            streams = await controller.get_streams()
+          await asyncio.wait_for(stream_attached.wait(), timeout = 6)
+          streams = await controller.get_streams()
 
-            t.join()
-
-            break
-        except (stem.CircuitExtensionFailed, socket.timeout):
-          continue
-        finally:
-          await controller.remove_event_listener(handle_streamcreated)
-          await controller.reset_conf('__LeaveStreamsUnattached')
+          t.join()
+      finally:
+        await controller.remove_event_listener(handle_streamcreated)
+        await controller.reset_conf('__LeaveStreamsUnattached')
 
     our_stream = [stream for stream in streams if stream.target_address == host][0]
 
