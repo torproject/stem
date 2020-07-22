@@ -1003,11 +1003,11 @@ def _http_body_and_headers(data: bytes) -> Tuple[bytes, Dict[str, str]]:
   encoding = headers.get('Content-Encoding')
 
   if encoding == 'deflate':
-    return stem.descriptor.Compression.GZIP.decompress(body_data), headers
+    return stem.descriptor.Compression.GZIP.decompress(body_data).rstrip(), headers
 
   for compression in stem.descriptor.Compression:
     if encoding == compression.encoding:
-      return compression.decompress(body_data), headers
+      return compression.decompress(body_data).rstrip(), headers
 
   raise ValueError("'%s' is an unrecognized encoding" % encoding)
 
