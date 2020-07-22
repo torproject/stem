@@ -108,7 +108,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',
-        endpoints = [(authority.address, authority.dir_port)],
+        endpoints = [stem.DirPort(authority.address, authority.dir_port)],
         timeout = 30,
         validate = True,
       ), authority))
