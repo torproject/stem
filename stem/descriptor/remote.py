@@ -475,7 +475,7 @@ class Query(Synchronous):
       return [desc async for desc in self._run(suppress)]
     finally:
       if stop:
-        self._loop.call_soon_threadsafe(self._loop.stop)
+        self.stop()
 
   async def _run(self, suppress: bool) -> AsyncIterator[stem.descriptor.Descriptor]:
     with self._downloader_lock:
