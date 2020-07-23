@@ -25,8 +25,8 @@ a wrapper for :class:`~stem.socket.RelaySocket`, much the same way as
     +- close - closes this circuit
 """
 
-import asyncio
 import hashlib
+import threading
 
 import stem
 import stem.client.cell
@@ -71,7 +71,7 @@ class Relay(object):
     self.link_protocol = LinkProtocol(link_protocol)
     self._orport = orport
     self._orport_buffer = b''  # unread bytes
-    self._orport_lock = asyncio.Lock()
+    self._orport_lock = threading.RLock()
     self._circuits = {}  # type: Dict[int, stem.client.Circuit]
 
   @staticmethod
@@ -162,7 +162,7 @@ class Relay(object):
     :returns: next :class:`~stem.client.cell.Cell`
     """
 
-    async with self._orport_lock:
+    with self._orport_lock:
       # cells begin with [circ_id][cell_type][...]
 
       circ_id_size = self.link_protocol.circ_id_size.size
@@ -253,7 +253,7 @@ class Relay(object):
     :func:`~stem.socket.BaseSocket.close` method.
     """
 
-    async with self._orport_lock:
+    with self._orport_lock:
       return await self._orport.close()
 
   async def create_circuit(self) -> 'stem.client.Circuit':
@@ -261,7 +261,7 @@ class Relay(object):
     Establishes a new circuit.
     """
 
-    async with self._orport_lock:
+    with self._orport_lock:
       circ_id = max(self._circuits) + 1 if self._circuits else self.link_protocol.first_circ_id
 
       create_fast_cell = stem.client.cell.CreateFastCell(circ_id)
@@ -286,7 +286,7 @@ class Relay(object):
       return circ
 
   async def __aiter__(self) -> AsyncIterator['stem.client.Circuit']:
-    async with self._orport_lock:
+    with self._orport_lock:
       for circ in self._circuits.values():
         yield circ
 
@@ -338,7 +338,7 @@ class Circuit(object):
     :returns: **str** with the requested descriptor data
     """
 
-    async with self.relay._orport_lock:
+    with self.relay._orport_lock:
       await self._send(RelayCommand.BEGIN_DIR, stream_id = stream_id)
       await self._send(RelayCommand.DATA, request, stream_id = stream_id)
 
@@ -372,7 +372,7 @@ class Circuit(object):
     :param stream_id: specific stream this concerns
     """
 
-    async with self.relay._orport_lock:
+    with self.relay._orport_lock:
       # Encrypt and send the cell. Our digest/key only updates if the cell is
       # successfully sent.
 
@@ -384,7 +384,7 @@ class Circuit(object):
       self.forward_key = forward_key
 
   async def close(self) -> None:
-    async with self.relay._orport_lock:
+    with self.relay._orport_lock:
       await self.relay._orport.send(stem.client.cell.DestroyCell(self.id).pack(self.relay.link_protocol))
       del self.relay._circuits[self.id]
 

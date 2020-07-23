@@ -362,13 +362,12 @@ class RelaySocket(BaseSocket):
     """
 
     async def wrapped_recv(reader: asyncio.StreamReader) -> Optional[bytes]:
-      read_coroutine = reader.read(1024)
       if timeout is None:
-        return await read_coroutine
+        return await reader.read(1024)
       else:
         try:
-          return await asyncio.wait_for(read_coroutine, timeout)
-        except (asyncio.TimeoutError, ssl.SSLError, ssl.SSLWantReadError):
+          return await asyncio.wait_for(reader.read(1024), max(timeout, 0.0001))
+        except asyncio.TimeoutError:
           return None
 
     return await self._recv(wrapped_recv)
