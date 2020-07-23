@@ -82,7 +82,7 @@ class TestFallback(unittest.TestCase):
   def test_from_cache(self):
     fallbacks = stem.directory.Fallback.from_cache()
     self.assertTrue(len(fallbacks) > 10)
-    self.assertEqual('185.13.39.197', fallbacks['001524DD403D729F08F7E5D77813EF12756CFA8D'].address)
+    self.assertEqual('193.11.114.43', fallbacks['12AD30E5D25AA67F519780E2111E611A455FDC89'].address)
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(FALLBACK_GITWEB_CONTENT)))
   def test_from_remote(self):
