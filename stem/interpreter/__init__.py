@@ -43,12 +43,6 @@ def msg(message: str, config: 'stem.util.conf.Config', **attr: str) -> str:
 
 
 def main() -> None:
-  try:
-    import readline
-  except ImportError:
-    print('tor-prompt requires the readline module')
-    sys.exit(1)
-
   import stem.interpreter.arguments
   import stem.interpreter.autocomplete
   import stem.interpreter.commands
@@ -148,8 +142,13 @@ def main() -> None:
       except IOError as exc:
         print(format(msg('msg.unable_to_read_file', path = args.run_path, error = exc), *ERROR_OUTPUT))
         sys.exit(1)
-
     else:
+      try:
+        import readline
+      except ImportError:
+        print('tor-prompt requires the readline module')
+        sys.exit(1)
+
       autocompleter = stem.interpreter.autocomplete.Autocompleter(controller)
       readline.parse_and_bind('tab: complete')
       readline.set_completer(autocompleter.complete)
