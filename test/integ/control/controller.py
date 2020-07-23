@@ -951,17 +951,17 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      self.assertEqual([test.runner.ORPORT], await controller.get_ports(Listener.OR))
-      self.assertEqual([], await controller.get_ports(Listener.DIR))
-      self.assertEqual([test.runner.SOCKS_PORT], await controller.get_ports(Listener.SOCKS))
-      self.assertEqual([], await controller.get_ports(Listener.TRANS))
-      self.assertEqual([], await controller.get_ports(Listener.NATD))
-      self.assertEqual([], await controller.get_ports(Listener.DNS))
+      self.assertEqual(set([test.runner.ORPORT]), await controller.get_ports(Listener.OR))
+      self.assertEqual(set(), await controller.get_ports(Listener.DIR))
+      self.assertEqual(set([test.runner.SOCKS_PORT]), await controller.get_ports(Listener.SOCKS))
+      self.assertEqual(set(), await controller.get_ports(Listener.TRANS))
+      self.assertEqual(set(), await controller.get_ports(Listener.NATD))
+      self.assertEqual(set(), await controller.get_ports(Listener.DNS))
 
       if test.runner.Torrc.PORT in runner.get_options():
-        self.assertEqual([test.runner.CONTROL_PORT], await controller.get_ports(Listener.CONTROL))
+        self.assertEqual(set([test.runner.CONTROL_PORT]), await controller.get_ports(Listener.CONTROL))
       else:
-        self.assertEqual([], await controller.get_ports(Listener.CONTROL))
+        self.assertEqual(set(), await controller.get_ports(Listener.CONTROL))
 
   @test.require.controller
   @async_test
@@ -973,7 +973,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      self.assertEqual([('0.0.0.0', test.runner.ORPORT)], await controller.get_listeners(Listener.OR))
+      self.assertEqual([('0.0.0.0', test.runner.ORPORT), ('::', test.runner.ORPORT)], await controller.get_listeners(Listener.OR))
       self.assertEqual([], await controller.get_listeners(Listener.DIR))
       self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], await controller.get_listeners(Listener.SOCKS))
       self.assertEqual([], await controller.get_listeners(Listener.TRANS))
