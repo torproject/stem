@@ -143,11 +143,14 @@ fine-grained control over the authentication process. For instance...
 
 import asyncio
 import binascii
+import functools
 import getpass
 import hashlib
 import hmac
+import inspect
 import os
 import threading
+import unittest
 
 import stem.control
 import stem.response
@@ -266,6 +269,9 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
     **control_port** and **control_socket** are **None**
   """
 
+  if controller is None:
+    raise ValueError('Sockets can only be created within an asyncio context. Please use connect_async() instead.')
+
   # TODO: change this function's API so we can provide a concrete type
   # TODO: 'loop_thread' gets orphaned, causing the thread to linger until we
   #   change this function's API
@@ -278,9 +284,29 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
   try:
     connection = asyncio.run_coroutine_threadsafe(connect_async(control_port, control_socket, password, password_prompt, chroot_path, controller), loop).result()
 
-    if connection is None and loop_thread.is_alive():
-      loop.call_soon_threadsafe(loop.stop)
-      loop_thread.join()
+    # if connecting failed then clean up and return
+
+    if connection is None:
+      if loop_thread.is_alive():
+        loop.call_soon_threadsafe(loop.stop)
+        loop_thread.join()
+
+      return None
+
+    # Convert our controller into a synchronous instance. This is hoirribly
+    # hacky, and prior to our next release I plan to redesign much of this
+    # module...
+
+    connection._no_op = False
+    connection._loop_thread = loop_thread
+
+    for name, func in inspect.getmembers(connection):
+      if name in ('_socket_connect', '_socket_close', '__aiter__', '__aenter__', '__aexit__'):
+        pass
+      elif isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
+        setattr(connection, name, functools.partial(connection._run_async_method, name))
+      elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
+        setattr(connection, name, functools.partial(connection._run_async_method, name))
 
     return connection
   except:

@@ -118,10 +118,7 @@ def main() -> None:
 
     if args.run_cmd:
       if args.run_cmd.upper().startswith('SETEVENTS '):
-        async def handle_event(event_message: stem.response.ControlMessage) -> None:
-          print(format(str(event_message), *STANDARD_OUTPUT))
-
-        controller._handle_event = handle_event  # type: ignore
+        controller._handle_event = lambda event_message: print(format(str(event_message), *STANDARD_OUTPUT))  # type: ignore
 
         if sys.stdout.isatty():
           events = args.run_cmd.upper().split(' ', 1)[1]
