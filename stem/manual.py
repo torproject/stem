@@ -66,8 +66,8 @@ import stem.util.system
 
 from typing import Any, BinaryIO, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
-Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'RELAY', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
-GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt'
+Category = stem.util.enum.Enum('GENERAL', 'CLIENT', 'CIRCUIT_TIMEOUT', 'DORMANT_MODE', 'NODE_SELECTION', 'RELAY', 'STATISTIC', 'DIRECTORY', 'AUTHORITY', 'HIDDEN_SERVICE', 'DENIAL_OF_SERVICE', 'TESTING', 'UNKNOWN')
+GITWEB_MANUAL_URL = 'https://gitweb.torproject.org/tor.git/plain/doc/man/tor.1.txt'
 CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_manual.sqlite')
 DATABASE = None  # cache database connections
 HAS_ENCODING_ARG = not stem.util.system.is_mac() and not stem.util.system.is_bsd() and not stem.util.system.is_slackware()
@@ -87,7 +87,11 @@ SCHEMA = (
 CATEGORY_SECTIONS = collections.OrderedDict((
   ('GENERAL OPTIONS', Category.GENERAL),
   ('CLIENT OPTIONS', Category.CLIENT),
+  ('CIRCUIT TIMEOUT OPTIONS', Category.CIRCUIT_TIMEOUT),
+  ('DORMANT MODE OPTIONS', Category.DORMANT_MODE),
+  ('NODE SELECTION OPTIONS', Category.NODE_SELECTION),
   ('SERVER OPTIONS', Category.RELAY),
+  ('STATISTICS OPTIONS', Category.STATISTIC),
   ('DIRECTORY SERVER OPTIONS', Category.DIRECTORY),
   ('DIRECTORY AUTHORITY SERVER OPTIONS', Category.AUTHORITY),
   ('HIDDEN SERVICE OPTIONS', Category.HIDDEN_SERVICE),

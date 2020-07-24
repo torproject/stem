@@ -7,6 +7,7 @@ import os
 import shutil
 import socket
 import tempfile
+import threading
 import time
 import unittest
 
@@ -950,17 +951,17 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      self.assertEqual([test.runner.ORPORT], await controller.get_ports(Listener.OR))
-      self.assertEqual([], await controller.get_ports(Listener.DIR))
-      self.assertEqual([test.runner.SOCKS_PORT], await controller.get_ports(Listener.SOCKS))
-      self.assertEqual([], await controller.get_ports(Listener.TRANS))
-      self.assertEqual([], await controller.get_ports(Listener.NATD))
-      self.assertEqual([], await controller.get_ports(Listener.DNS))
+      self.assertEqual(set([test.runner.ORPORT]), await controller.get_ports(Listener.OR))
+      self.assertEqual(set(), await controller.get_ports(Listener.DIR))
+      self.assertEqual(set([test.runner.SOCKS_PORT]), await controller.get_ports(Listener.SOCKS))
+      self.assertEqual(set(), await controller.get_ports(Listener.TRANS))
+      self.assertEqual(set(), await controller.get_ports(Listener.NATD))
+      self.assertEqual(set(), await controller.get_ports(Listener.DNS))
 
       if test.runner.Torrc.PORT in runner.get_options():
-        self.assertEqual([test.runner.CONTROL_PORT], await controller.get_ports(Listener.CONTROL))
+        self.assertEqual(set([test.runner.CONTROL_PORT]), await controller.get_ports(Listener.CONTROL))
       else:
-        self.assertEqual([], await controller.get_ports(Listener.CONTROL))
+        self.assertEqual(set(), await controller.get_ports(Listener.CONTROL))
 
   @test.require.controller
   @async_test
@@ -972,7 +973,7 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      self.assertEqual([('0.0.0.0', test.runner.ORPORT)], await controller.get_listeners(Listener.OR))
+      self.assertEqual([('0.0.0.0', test.runner.ORPORT), ('::', test.runner.ORPORT)], await controller.get_listeners(Listener.OR))
       self.assertEqual([], await controller.get_listeners(Listener.DIR))
       self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], await controller.get_listeners(Listener.SOCKS))
       self.assertEqual([], await controller.get_listeners(Listener.TRANS))
@@ -1002,7 +1003,7 @@ class TestController(unittest.TestCase):
         await controller.enable_feature(['NOT', 'A', 'FEATURE'])
 
       try:
-        controller.enable_feature(['NOT', 'A', 'FEATURE'])
+        await controller.enable_feature(['NOT', 'A', 'FEATURE'])
       except stem.InvalidArguments as exc:
         self.assertEqual(['NOT'], exc.arguments)
       else:
@@ -1045,13 +1046,13 @@ class TestController(unittest.TestCase):
   @async_test
   async def test_extendcircuit(self):
     async with await test.runner.get_runner().get_tor_controller() as controller:
-      circuit_id = controller.extend_circuit('0')
+      circuit_id = await controller.extend_circuit('0')
 
       # check if our circuit was created
 
-      self.assertNotEqual(None, controller.get_circuit(circuit_id, None))
-      circuit_id = controller.new_circuit()
-      self.assertNotEqual(None, controller.get_circuit(circuit_id, None))
+      self.assertNotEqual(None, await controller.get_circuit(circuit_id, None))
+      circuit_id = await controller.new_circuit()
+      self.assertNotEqual(None, await controller.get_circuit(circuit_id, None))
 
       with self.assertRaises(stem.InvalidRequest):
         await controller.extend_circuit('foo')
@@ -1073,13 +1074,13 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      circ_id = controller.new_circuit()
-      controller.repurpose_circuit(circ_id, 'CONTROLLER')
-      circuit = controller.get_circuit(circ_id)
+      circ_id = await controller.new_circuit()
+      await controller.repurpose_circuit(circ_id, 'CONTROLLER')
+      circuit = await controller.get_circuit(circ_id)
       self.assertTrue(circuit.purpose == 'CONTROLLER')
 
-      controller.repurpose_circuit(circ_id, 'GENERAL')
-      circuit = controller.get_circuit(circ_id)
+      await controller.repurpose_circuit(circ_id, 'GENERAL')
+      circuit = await controller.get_circuit(circ_id)
       self.assertTrue(circuit.purpose == 'GENERAL')
 
       with self.assertRaises(stem.InvalidRequest):
@@ -1099,19 +1100,19 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id)
+      circuit_id = await controller.new_circuit()
+      await controller.close_circuit(circuit_id)
       circuit_output = await controller.get_info('circuit-status')
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circuit_id in circ)
 
-      circuit_id = controller.new_circuit()
-      controller.close_circuit(circuit_id, 'IfUnused')
+      circuit_id = await controller.new_circuit()
+      await controller.close_circuit(circuit_id, 'IfUnused')
       circuit_output = await controller.get_info('circuit-status')
       circ = [x.split()[0] for x in circuit_output.splitlines()]
       self.assertFalse(circuit_id in circ)
 
-      circuit_id = controller.new_circuit()
+      circuit_id = await controller.new_circuit()
 
       with self.assertRaises(stem.InvalidArguments):
         await controller.close_circuit(circuit_id + '1024')
@@ -1140,7 +1141,7 @@ class TestController(unittest.TestCase):
       with test.network.Socks(socks_listener) as s:
         s.settimeout(30)
         s.connect((host, port))
-        streams = controller.get_streams()
+        streams = await controller.get_streams()
 
     # Because we do not get a stream id when opening a stream,
     #  try to match the target for which we asked a stream.
@@ -1168,20 +1169,20 @@ class TestController(unittest.TestCase):
 
         # There's only one stream right now.  Right?
 
-        built_stream = controller.get_streams()[0]
+        built_stream = (await controller.get_streams())[0]
 
         # Make sure we have the stream for which we asked, otherwise
         # the next assertion would be a false positive.
 
-        self.assertTrue(built_stream.id in [stream.id for stream in controller.get_streams()])
+        self.assertTrue(built_stream.id in [stream.id for stream in await controller.get_streams()])
 
         # Try to close our stream...
 
-        controller.close_stream(built_stream.id)
+        await controller.close_stream(built_stream.id)
 
         # ... after which the stream should no longer be present.
 
-        self.assertFalse(built_stream.id in [stream.id for stream in controller.get_streams()])
+        self.assertFalse(built_stream.id in [stream.id for stream in await controller.get_streams()])
 
       # unknown stream
 
@@ -1336,10 +1337,10 @@ class TestController(unittest.TestCase):
       with self.assertRaises(stem.ControllerError):
         await controller.get_microdescriptor('5' * 40)
 
-      test_relay = self._get_router_status_entry(controller)
+      test_relay = await self._get_router_status_entry(controller)
 
-      md_by_fingerprint = controller.get_microdescriptor(test_relay.fingerprint)
-      md_by_nickname = controller.get_microdescriptor(test_relay.nickname)
+      md_by_fingerprint = await controller.get_microdescriptor(test_relay.fingerprint)
+      md_by_nickname = await controller.get_microdescriptor(test_relay.nickname)
 
       self.assertEqual(md_by_fingerprint, md_by_nickname)
 
@@ -1359,7 +1360,7 @@ class TestController(unittest.TestCase):
     async with await runner.get_tor_controller() as controller:
       count = 0
 
-      for desc in controller.get_microdescriptors():
+      async for desc in controller.get_microdescriptors():
         self.assertTrue(desc.onion_key is not None)
 
         count += 1
@@ -1396,10 +1397,10 @@ class TestController(unittest.TestCase):
       with self.assertRaises(stem.ControllerError):
         await controller.get_server_descriptor('5' * 40)
 
-      test_relay = self._get_router_status_entry(controller)
+      test_relay = await self._get_router_status_entry(controller)
 
-      desc_by_fingerprint = controller.get_server_descriptor(test_relay.fingerprint)
-      desc_by_nickname = controller.get_server_descriptor(test_relay.nickname)
+      desc_by_fingerprint = await controller.get_server_descriptor(test_relay.fingerprint)
+      desc_by_nickname = await controller.get_server_descriptor(test_relay.nickname)
 
       self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
@@ -1416,7 +1417,7 @@ class TestController(unittest.TestCase):
     async with await runner.get_tor_controller() as controller:
       count = 0
 
-      for desc in controller.get_server_descriptors():
+      async for desc in controller.get_server_descriptors():
         self.assertTrue(desc.fingerprint is not None)
         self.assertTrue(desc.nickname is not None)
 
@@ -1457,10 +1458,10 @@ class TestController(unittest.TestCase):
       with self.assertRaises(stem.ControllerError):
         await controller.get_network_status('5' * 40)
 
-      test_relay = self._get_router_status_entry(controller)
+      test_relay = await self._get_router_status_entry(controller)
 
-      desc_by_fingerprint = controller.get_network_status(test_relay.fingerprint)
-      desc_by_nickname = controller.get_network_status(test_relay.nickname)
+      desc_by_fingerprint = await controller.get_network_status(test_relay.fingerprint)
+      desc_by_nickname = await controller.get_network_status(test_relay.nickname)
 
       self.assertEqual(desc_by_fingerprint, desc_by_nickname)
 
@@ -1477,7 +1478,7 @@ class TestController(unittest.TestCase):
     async with await runner.get_tor_controller() as controller:
       count = 0
 
-      for desc in controller.get_network_statuses():
+      async for desc in controller.get_network_statuses():
         self.assertTrue(desc.fingerprint is not None)
         self.assertTrue(desc.nickname is not None)
 
@@ -1501,7 +1502,7 @@ class TestController(unittest.TestCase):
     async with await runner.get_tor_controller() as controller:
       # fetch the descriptor for DuckDuckGo
 
-      desc = controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m.onion')
+      desc = await controller.get_hidden_service_descriptor('3g2upl4pq6kufc4m.onion')
       self.assertTrue('MIGJAoGBAJ' in desc.permanent_key)
 
       # try to fetch something that doesn't exist
@@ -1511,8 +1512,8 @@ class TestController(unittest.TestCase):
 
       # ... but shouldn't fail if we have a default argument or aren't awaiting the descriptor
 
-      self.assertEqual('pop goes the weasel', controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', 'pop goes the weasel'))
-      self.assertEqual(None, controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', await_result = False))
+      self.assertEqual('pop goes the weasel', await controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', 'pop goes the weasel'))
+      self.assertEqual(None, await controller.get_hidden_service_descriptor('m4cfuk6qp4lpu2g5', await_result = False))
 
   @test.require.controller
   @test.require.online
@@ -1522,32 +1523,36 @@ class TestController(unittest.TestCase):
     port = 80
 
     circuit_id, streams = None, []
+    stream_attached = asyncio.Event()
 
-    def handle_streamcreated(stream):
+    async def handle_streamcreated(stream):
       if stream.status == 'NEW' and circuit_id:
-        controller.attach_stream(stream.id, circuit_id)
+        await controller.attach_stream(stream.id, circuit_id)
+        stream_attached.set()
 
     async with await test.runner.get_runner().get_tor_controller() as controller:
       # try 10 times to build a circuit we can connect through
 
-      for i in range(10):
-        await controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
-        await controller.set_conf('__LeaveStreamsUnattached', '1')
+      await controller.add_event_listener(handle_streamcreated, stem.control.EventType.STREAM)
+      await controller.set_conf('__LeaveStreamsUnattached', '1')
 
-        try:
-          circuit_id = controller.new_circuit(await_build = True)
-          socks_listener = (await controller.get_listeners(Listener.SOCKS))[0]
+      try:
+        circuit_id = await controller.new_circuit(await_build = True)
+        socks_listener = (await controller.get_listeners(Listener.SOCKS))[0]
 
-          with test.network.Socks(socks_listener) as s:
-            s.settimeout(30)
-            s.connect((host, port))
-            streams = controller.get_streams()
-            break
-        except (stem.CircuitExtensionFailed, socket.timeout):
-          continue
-        finally:
-          controller.remove_event_listener(handle_streamcreated)
-          await controller.reset_conf('__LeaveStreamsUnattached')
+        with test.network.Socks(socks_listener) as s:
+          s.settimeout(5)
+
+          t = threading.Thread(target = s.connect, args = ((host, port),))
+          t.start()
+
+          await asyncio.wait_for(stream_attached.wait(), timeout = 6)
+          streams = await controller.get_streams()
+
+          t.join()
+      finally:
+        await controller.remove_event_listener(handle_streamcreated)
+        await controller.reset_conf('__LeaveStreamsUnattached')
 
     our_stream = [stream for stream in streams if stream.target_address == host][0]
 
@@ -1565,8 +1570,8 @@ class TestController(unittest.TestCase):
     """
 
     async with await test.runner.get_runner().get_tor_controller() as controller:
-      new_circ = controller.new_circuit()
-      circuits = controller.get_circuits()
+      new_circ = await controller.new_circuit()
+      circuits = await controller.get_circuits()
       self.assertTrue(new_circ in [circ.id for circ in circuits])
 
   @test.require.controller
@@ -1593,7 +1598,7 @@ class TestController(unittest.TestCase):
       finally:
         await controller.set_conf('OrPort', str(test.runner.ORPORT))
 
-  def _get_router_status_entry(self, controller):
+  async def _get_router_status_entry(self, controller):
     """
     Provides a router status entry for a relay with a nickname other than
     'Unnamed'. This fails the test if unable to find one.
@@ -1602,7 +1607,7 @@ class TestController(unittest.TestCase):
     global TEST_ROUTER_STATUS_ENTRY
 
     if TEST_ROUTER_STATUS_ENTRY is None:
-      for desc in controller.get_network_statuses():
+      async for desc in controller.get_network_statuses():
         if desc.nickname != 'Unnamed' and Flag.NAMED in desc.flags:
           TEST_ROUTER_STATUS_ENTRY = desc
           break

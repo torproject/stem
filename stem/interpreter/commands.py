@@ -130,8 +130,8 @@ class ControlInterpreter(code.InteractiveConsole):
 
     handle_event_real = self._controller._handle_event
 
-    async def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
-      await handle_event_real(event_message)
+    def handle_event_wrapper(event_message: stem.response.ControlMessage) -> None:
+      handle_event_real(event_message)
       self._received_events.insert(0, event_message)  # type: ignore
 
       if len(self._received_events) > MAX_EVENTS:

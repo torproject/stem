@@ -228,7 +228,7 @@ class TestControl(unittest.TestCase):
     get_conf_mock.side_effect = get_conf_mock_side_effect
 
     self.assertEqual([('127.0.0.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
-    self.assertEqual([9050], self.controller.get_ports(Listener.CONTROL))
+    self.assertEqual(set([9050]), self.controller.get_ports(Listener.CONTROL))
     self.controller.clear_cache()
 
     # non-local addresss
@@ -242,7 +242,7 @@ class TestControl(unittest.TestCase):
     get_conf_mock.side_effect = get_conf_mock_side_effect
 
     self.assertEqual([('27.4.4.1', 9050)], self.controller.get_listeners(Listener.CONTROL))
-    self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
+    self.assertEqual(set(), self.controller.get_ports(Listener.CONTROL))
     self.controller.clear_cache()
 
     # exercise via the GETINFO option
@@ -255,7 +255,7 @@ class TestControl(unittest.TestCase):
       self.controller.get_listeners(Listener.CONTROL)
     )
 
-    self.assertEqual([1112, 1114], self.controller.get_ports(Listener.CONTROL))
+    self.assertEqual(set([1112, 1114]), self.controller.get_ports(Listener.CONTROL))
     self.controller.clear_cache()
 
     # with all localhost addresses, including a couple that aren't
@@ -263,7 +263,7 @@ class TestControl(unittest.TestCase):
     listeners = '"27.4.4.1:1113" "127.0.0.5:1114" "0.0.0.0:1115" "[::]:1116" "[::1]:1117" "[10::]:1118"'
     get_info_mock.side_effect = coro_func_returning_value(listeners)
 
-    self.assertEqual([1114, 1115, 1116, 1117], self.controller.get_ports(Listener.OR))
+    self.assertEqual(set([1114, 1115, 1116, 1117]), self.controller.get_ports(Listener.OR))
     self.controller.clear_cache()
 
     # IPv6 address
@@ -282,7 +282,7 @@ class TestControl(unittest.TestCase):
     get_info_mock.side_effect = coro_func_returning_value('"unix:/tmp/tor/socket"')
 
     self.assertEqual([], self.controller.get_listeners(Listener.CONTROL))
-    self.assertEqual([], self.controller.get_ports(Listener.CONTROL))
+    self.assertEqual(set(), self.controller.get_ports(Listener.CONTROL))
 
   @patch('stem.control.Controller.get_info')
   @patch('time.time', Mock(return_value = 1410723598.276578))
@@ -583,6 +583,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
+  @patch('stem.util.log.warn', Mock())
   def test_event_listing_with_error(self):
     """
     Raise an exception in an event listener to confirm it doesn't break our
@@ -599,6 +600,7 @@ class TestControl(unittest.TestCase):
     self._emit_event(BW_EVENT)
     self.bw_listener.assert_called_once_with(BW_EVENT)
 
+  @patch('stem.util.log.error', Mock())
   def test_event_listing_with_malformed_event(self):
     """
     Attempt to parse a malformed event emitted from Tor. It's important this

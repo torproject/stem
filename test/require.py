@@ -21,6 +21,8 @@ run.
   +- online - skips unless targets allow for online tests
 """
 
+import importlib
+
 import stem.util.system
 import stem.version
 import test
@@ -105,9 +107,9 @@ def module(module_name):
   """
 
   try:
-    import module_name
+    importlib.import_module(module_name)
     available = True
-  except ImportError:
+  except:
     available = False
 
   return needs(lambda: available, '%s unavailable' % module_name)

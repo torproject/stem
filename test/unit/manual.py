@@ -91,8 +91,8 @@ def _cached_manual():
 class TestManual(unittest.TestCase):
   @test.require.module('sqlite3')
   def test_query(self):
-    self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name="CookieAuthFile"').fetchone()[0])
-    self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication above.)", stem.manual.query('SELECT description FROM torrc WHERE name=?', 'CookieAuthFile').fetchone()[0])
+    self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication.)", stem.manual.query('SELECT description FROM torrc WHERE name="CookieAuthFile"').fetchone()[0])
+    self.assertEqual("If set, this option overrides the default location and file name for Tor's cookie file. (See CookieAuthentication.)", stem.manual.query('SELECT description FROM torrc WHERE name=?', 'CookieAuthFile').fetchone()[0])
 
   @test.require.module('sqlite3')
   def test_query_on_failure(self):
@@ -244,7 +244,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
-    exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
+    exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/man/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
     self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))

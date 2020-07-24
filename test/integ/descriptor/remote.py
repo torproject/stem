@@ -57,7 +57,7 @@ class TestDescriptorDownloader(unittest.TestCase):
     desc = list(stem.descriptor.remote.get_extrainfo_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31').run())[0]
     self.assertEqual('moria1', desc.nickname)
 
-    consensus = list(stem.descriptor.remote.get_consensus())
+    consensus = list(stem.descriptor.remote.get_consensus().run())
     self.assertTrue(len(consensus) > 50)
 
   @test.require.only_run_once
@@ -108,7 +108,7 @@ class TestDescriptorDownloader(unittest.TestCase):
       queries.append((stem.descriptor.remote.Query(
         '/tor/server/fp/9695DFC35FFEB861329B9F1AB04C46397020CE31',
         'server-descriptor 1.0',
-        endpoints = [(authority.address, authority.dir_port)],
+        endpoints = [stem.DirPort(authority.address, authority.dir_port)],
         timeout = 30,
         validate = True,
       ), authority))
@@ -117,7 +117,12 @@ class TestDescriptorDownloader(unittest.TestCase):
       try:
         descriptors = list(query.run())
       except Exception as exc:
+        for query, _ in queries:
+          query.stop()
+
         self.fail('Unable to use %s (%s:%s, %s): %s' % (authority.nickname, authority.address, authority.dir_port, type(exc), exc))
+      finally:
+        query.stop()
 
       self.assertEqual(1, len(descriptors))
       self.assertEqual('moria1', descriptors[0].nickname)
@@ -153,18 +158,22 @@ class TestDescriptorDownloader(unittest.TestCase):
       '847B1F850344D7876491A54892F904934E4EB85D',
     ])
 
-    # Explicitly running the queries so they'll provide a useful error if
-    # unsuccessful.
+    try:
+      # Explicitly running the queries so they'll provide a useful error if
+      # unsuccessful.
 
-    single_query.run()
-    multiple_query.run()
+      single_query.run()
+      multiple_query.run()
 
-    single_query_results = list(single_query)
-    self.assertEqual(1, len(single_query_results))
-    self.assertEqual('moria1', single_query_results[0].nickname)
-    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.server_descriptor.ServerDescriptor))
+      single_query_results = list(single_query)
+      self.assertEqual(1, len(single_query_results))
+      self.assertEqual('moria1', single_query_results[0].nickname)
+      self.assertTrue(isinstance(single_query_results[0], stem.descriptor.server_descriptor.ServerDescriptor))
 
-    self.assertEqual(2, len(list(multiple_query)))
+      self.assertEqual(2, len(list(multiple_query)))
+    finally:
+      single_query.stop()
+      multiple_query.stop()
 
   @test.require.only_run_once
   @test.require.online
@@ -182,15 +191,19 @@ class TestDescriptorDownloader(unittest.TestCase):
       '847B1F850344D7876491A54892F904934E4EB85D',
     ])
 
-    single_query.run()
-    multiple_query.run()
+    try:
+      single_query.run()
+      multiple_query.run()
 
-    single_query_results = list(single_query)
-    self.assertEqual(1, len(single_query_results))
-    self.assertEqual('moria1', single_query_results[0].nickname)
-    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor))
+      single_query_results = list(single_query)
+      self.assertEqual(1, len(single_query_results))
+      self.assertEqual('moria1', single_query_results[0].nickname)
+      self.assertTrue(isinstance(single_query_results[0], stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor))
 
-    self.assertEqual(2, len(list(multiple_query)))
+      self.assertEqual(2, len(list(multiple_query)))
+    finally:
+      single_query.stop()
+      multiple_query.stop()
 
   @test.require.only_run_once
   @test.require.online
@@ -200,13 +213,16 @@ class TestDescriptorDownloader(unittest.TestCase):
     """
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
-
     consensus_query = downloader.get_consensus()
-    consensus_query.run()
 
-    consensus = list(consensus_query)
-    self.assertTrue(len(consensus) > 50)
-    self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))
+    try:
+      consensus_query.run()
+
+      consensus = list(consensus_query)
+      self.assertTrue(len(consensus) > 50)
+      self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryV3))
+    finally:
+      consensus_query.stop()
 
   @test.require.only_run_once
   @test.require.online
@@ -217,13 +233,16 @@ class TestDescriptorDownloader(unittest.TestCase):
     """
 
     downloader = stem.descriptor.remote.DescriptorDownloader(validate = True)
-
     consensus_query = downloader.get_consensus(microdescriptor = True)
-    consensus_query.run()
 
-    consensus = list(consensus_query)
-    self.assertTrue(len(consensus) > 50)
-    self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryMicroV3))
+    try:
+      consensus_query.run()
+
+      consensus = list(consensus_query)
+      self.assertTrue(len(consensus) > 50)
+      self.assertTrue(isinstance(consensus[0], stem.descriptor.router_status_entry.RouterStatusEntryMicroV3))
+    finally:
+      consensus_query.stop()
 
   @test.require.only_run_once
   @test.require.online
@@ -241,12 +260,16 @@ class TestDescriptorDownloader(unittest.TestCase):
       '14C131DFC5C6F93646BE72FA1401C02A8DF2E8B4',
     ])
 
-    single_query.run()
-    multiple_query.run()
+    try:
+      single_query.run()
+      multiple_query.run()
 
-    single_query_results = list(single_query)
-    self.assertEqual(1, len(single_query_results))
-    self.assertEqual('D586D18309DED4CD6D57C18FDB97EFA96D330566', single_query_results[0].fingerprint)
-    self.assertTrue(isinstance(single_query_results[0], stem.descriptor.networkstatus.KeyCertificate))
+      single_query_results = list(single_query)
+      self.assertEqual(1, len(single_query_results))
+      self.assertEqual('D586D18309DED4CD6D57C18FDB97EFA96D330566', single_query_results[0].fingerprint)
+      self.assertTrue(isinstance(single_query_results[0], stem.descriptor.networkstatus.KeyCertificate))
 
-    self.assertEqual(2, len(list(multiple_query)))
+      self.assertEqual(2, len(list(multiple_query)))
+    finally:
+      single_query.stop()
+      multiple_query.stop()

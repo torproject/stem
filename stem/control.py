@@ -271,7 +271,7 @@ import stem.version
 from stem import UNDEFINED, CircStatus, Signal
 from stem.util import Synchronous, log
 from types import TracebackType
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Type, Union
+from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type, Union
 
 # When closing the controller we attempt to finish processing enqueued events,
 # but if it takes longer than this we terminate.
@@ -1352,7 +1352,7 @@ class Controller(BaseController):
     return policy
 
   @with_default()
-  async def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[int]:
+  async def get_ports(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Set[int]:
     """
     get_ports(listener_type, default = UNDEFINED)
 
@@ -1366,7 +1366,7 @@ class Controller(BaseController):
     :param listener_type: connection type being handled by the ports we return
     :param default: response if the query fails
 
-    :returns: **list** of **ints** for the local ports where tor handles
+    :returns: **set** of **ints** for the local ports where tor handles
       connections of the given type
 
     :raises: :class:`stem.ControllerError` if unable to determine the ports
@@ -1385,7 +1385,7 @@ class Controller(BaseController):
         log.info("Request for %s ports got an address that's neither IPv4 or IPv6: %s" % (listener_type, address))
         return False
 
-    return [port for (addr, port) in (await self.get_listeners(listener_type)) if is_localhost(addr)]
+    return set([port for (addr, port) in (await self.get_listeners(listener_type)) if is_localhost(addr)])
 
   @with_default()
   async def get_listeners(self, listener_type: 'stem.control.Listener', default: Any = UNDEFINED) -> Sequence[Tuple[str, int]]:
