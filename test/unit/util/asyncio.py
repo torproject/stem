@@ -1,5 +1,5 @@
 """
-Unit tests for the stem.util.Synchronous class.
+Unit tests for the stem.util.asyncio module.
 """
 
 import asyncio
@@ -8,7 +8,7 @@ import unittest
 
 from unittest.mock import patch, Mock
 
-from stem.util import Synchronous
+from stem.util.asyncio import Synchronous
 from stem.util.test_tools import coro_func_returning_value
 
 EXAMPLE_OUTPUT = """\
@@ -231,7 +231,7 @@ class TestSynchronous(unittest.TestCase):
 
     pre_constructed = Demo()
 
-    with patch('test.unit.util.synchronous.Demo.async_method', Mock(side_effect = coro_func_returning_value('mocked call'))):
+    with patch('test.unit.util.asyncio.Demo.async_method', Mock(side_effect = coro_func_returning_value('mocked call'))):
       post_constructed = Demo()
 
       self.assertEqual('mocked call', pre_constructed.async_method())
@@ -242,7 +242,7 @@ class TestSynchronous(unittest.TestCase):
 
     # synchronous methods are unaffected
 
-    with patch('test.unit.util.synchronous.Demo.sync_method', Mock(return_value = 'mocked call')):
+    with patch('test.unit.util.asyncio.Demo.sync_method', Mock(return_value = 'mocked call')):
       self.assertEqual('mocked call', pre_constructed.sync_method())
 
     self.assertEqual('sync call', pre_constructed.sync_method())

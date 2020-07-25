@@ -9,6 +9,7 @@ import unittest
 from stem.util import datetime_to_unix
 
 __all__ = [
+  'asyncio',
   'conf',
   'connection',
   'enum',

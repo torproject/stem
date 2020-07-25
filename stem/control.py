@@ -269,7 +269,8 @@ import stem.util.tor_tools
 import stem.version
 
 from stem import UNDEFINED, CircStatus, Signal
-from stem.util import Synchronous, log
+from stem.util import log
+from stem.util.asyncio import Synchronous
 from types import TracebackType
 from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type, Union
 

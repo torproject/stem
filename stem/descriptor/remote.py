@@ -99,7 +99,8 @@ import stem.util.enum
 import stem.util.tor_tools
 
 from stem.descriptor import Compression
-from stem.util import Synchronous, log, str_tools
+from stem.util import log, str_tools
+from stem.util.asyncio import Synchronous
 from typing import Any, AsyncIterator, Dict, List, Optional, Sequence, Tuple, Union
 
 # Tor has a limited number of descriptors we can fetch explicitly by their
