@@ -216,7 +216,7 @@ class TestAuthenticate(unittest.TestCase):
     async with await runner.get_tor_socket(False) as control_socket:
       if is_cookie_only:
         for method in (stem.connection.AuthMethod.COOKIE, stem.connection.AuthMethod.SAFECOOKIE):
-          protocolinfo_response = stem.connection.get_protocolinfo(control_socket)
+          protocolinfo_response = await stem.connection.get_protocolinfo(control_socket)
 
           if method in protocolinfo_response.auth_methods:
             # narrow to *only* use cookie auth or safecooke, so we exercise
@@ -289,7 +289,7 @@ class TestAuthenticate(unittest.TestCase):
     for i in range(10):
       async with await runner.get_tor_controller(False) as controller:
         with self.assertRaises(stem.connection.IncorrectPassword):
-          controller.authenticate('wrong_password')
+          await controller.authenticate('wrong_password')
 
   @test.require.controller
   @async_test
