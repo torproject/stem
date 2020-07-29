@@ -843,6 +843,13 @@ class BaseController(Synchronous):
       return is_changed
 
   async def __aenter__(self) -> 'stem.control.BaseController':
+    if not self.is_alive():
+      try:
+        await self.connect()
+      except:
+        self.stop()
+        raise
+
     return self
 
   async def __aexit__(self, exit_type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> None:
@@ -1053,14 +1060,7 @@ class Controller(BaseController):
     else:
       control_port = stem.socket.ControlPort(address, int(port))
 
-    controller = Controller(control_port)
-
-    try:
-      controller.connect()
-      return controller
-    except:
-      controller.stop()
-      raise
+    return Controller(control_port)
 
   @staticmethod
   def from_socket_file(path: str = '/var/run/tor/control') -> 'stem.control.Controller':
@@ -1075,14 +1075,7 @@ class Controller(BaseController):
     """
 
     control_socket = stem.socket.ControlSocketFile(path)
-    controller = Controller(control_socket)
-
-    try:
-      controller.connect()
-      return controller
-    except:
-      controller.stop()
-      raise
+    return Controller(control_socket)
 
   def __init__(self, control_socket: stem.socket.ControlSocket, is_authenticated: bool = False) -> None:
     self._is_caching_enabled = True

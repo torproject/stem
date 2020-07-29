@@ -610,6 +610,7 @@ class TestProcess(unittest.TestCase):
       # We're the controlling process. Just need to connect then disconnect.
 
       controller = stem.control.Controller.from_port(port = int(control_port))
+      controller.connect()
       controller.authenticate()
       controller.close()
 

@@ -69,7 +69,9 @@ class TestController(unittest.TestCase):
       with stem.control.Controller.from_port(port = test.runner.CONTROL_PORT) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
-      self.assertRaises(stem.SocketError, stem.control.Controller.from_port, '127.0.0.1', test.runner.CONTROL_PORT)
+      with self.assertRaises(stem.SocketError):
+        with stem.control.Controller.from_port(port = test.runner.CONTROL_PORT) as controller:
+          pass
 
   def test_from_socket_file(self):
     """
@@ -80,7 +82,9 @@ class TestController(unittest.TestCase):
       with stem.control.Controller.from_socket_file(path = test.runner.CONTROL_SOCKET_PATH) as controller:
         self.assertTrue(isinstance(controller, stem.control.Controller))
     else:
-      self.assertRaises(stem.SocketError, stem.control.Controller.from_socket_file, test.runner.CONTROL_SOCKET_PATH)
+      with self.assertRaises(stem.SocketError):
+        with stem.control.Controller.from_socket_file(path = test.runner.CONTROL_SOCKET_PATH) as controller:
+          pass
 
   @test.require.controller
   @async_test
