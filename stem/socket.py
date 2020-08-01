@@ -85,7 +85,6 @@ import asyncio
 import re
 import socket
 import ssl
-import sys
 import time
 
 import stem.response
@@ -210,9 +209,13 @@ class BaseSocket(object):
 
     if self._writer:
       self._writer.close()
-      # `StreamWriter.wait_closed` was added in Python 3.7.
-      if sys.version_info >= (3, 7):
+
+      try:
         await self._writer.wait_closed()
+      except AttributeError:
+        pass  # StreamWriter.wait_closed was added in python 3.7
+      except BrokenPipeError:
+        pass  # can arise while closing underlying unix socket
 
     self._reader = None
     self._writer = None
@@ -538,7 +541,7 @@ async def _write_to_socket(writer: asyncio.StreamWriter, message: Union[str, byt
     # distinguishing between failures from a disconnect verses other things.
     # Just accounting for known disconnection responses.
 
-    if str(exc) == '[Errno 32] Broken pipe':
+    if str(exc) == 'Connection lost':
       raise stem.SocketClosed(exc)
     else:
       raise stem.SocketError(exc)
