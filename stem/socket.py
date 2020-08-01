@@ -541,7 +541,7 @@ async def _write_to_socket(writer: asyncio.StreamWriter, message: Union[str, byt
     # distinguishing between failures from a disconnect verses other things.
     # Just accounting for known disconnection responses.
 
-    if str(exc) == '[Errno 32] Broken pipe':
+    if str(exc) == 'Connection lost':
       raise stem.SocketClosed(exc)
     else:
       raise stem.SocketError(exc)
