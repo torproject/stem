@@ -325,7 +325,7 @@ class File(object):
     # check if this file already exists with the correct checksum
 
     if os.path.exists(path):
-      with open(path, 'b') as prior_file:
+      with open(path, 'rb') as prior_file:
         expected_hash = binascii.hexlify(base64.b64decode(self.sha256)).decode('utf-8')
         actual_hash = hashlib.sha256(prior_file.read()).hexdigest()
 
