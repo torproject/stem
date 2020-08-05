@@ -112,9 +112,9 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- create_ephemeral_hidden_service - create a new ephemeral hidden service
     |- remove_ephemeral_hidden_service - removes an ephemeral hidden service
     |
-    |- add_onion_client_auth - add Client Authentication for a v3 onion service
-    |- remove_onion_client_auth - remove Client Authentication for a v3 onion service
-    |- view_onion_client_auth - view Client Authentication for a v3 onion service
+    |- add_hidden_service_auth - authenticate to a v3 hidden service
+    |- remove_hidden_service_auth - revoke authentication to a v3 hidden service
+    |- list_hidden_service_auth - list v3 hidden services we authenticate with
     |
     |- add_event_listener - attaches an event listener to be notified of tor events
     |- remove_event_listener - removes a listener so it isn't notified of further events
@@ -2905,12 +2905,6 @@ class Controller(BaseController):
     response. For instance, only bob can access using the given newly generated
     credentials...
 
-    Note that **basic_auth** only works for legacy (v2) onion services.
-    There is not yet any Control Port support for adding Client Auth to the
-    server side of a v3 onion service.
-
-    To add Client Authentication on the client side of a v3 onion, you can use
-    :func`~stem.control.Controller.add_onion_client_auth`.
     ::
 
       >>> response = controller.create_ephemeral_hidden_service(80, basic_auth = {'bob': None})
@@ -2926,6 +2920,10 @@ class Controller(BaseController):
         'alice': 'l4BT016McqV2Oail+Bwe6w',
         'bob': 'vGnNRpWYiMBFTWD2gbBlcA',
       })
+
+    Please note that **basic_auth** only works for legacy (v2) hidden services.
+    Version 3 can't enable service authentication through the control protocol
+    (`ticket <https://gitlab.torproject.org/tpo/core/tor/-/issues/40084>`_).
 
     To create a **version 3** service simply specify **ED25519-V3** as the
     our key type, and to create a **version 2** service use **RSA1024**. The
@@ -3085,9 +3083,9 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
-  async def add_onion_client_auth(self, service_id: str, private_key_blob: str, key_type: str = 'x25519', client_name: Optional[str] = None, permanent: Optional[bool] = False) -> stem.response.onion_client_auth.OnionClientAuthAddResponse:
+  async def add_hidden_service_auth(self, service_id: str, private_key_blob: str, key_type: str = 'x25519', client_name: Optional[str] = None, permanent: Optional[bool] = False) -> stem.response.onion_client_auth.OnionClientAuthAddResponse:
     """
-    Adds Client Authentication for a v3 onion service.
+    Authenticate with a v3 hidden service.
 
     :param service_id: hidden service address without the '.onion' suffix
     :param key_type: the type of private key in use. x25519 is the only one supported right now
@@ -3119,9 +3117,9 @@ class Controller(BaseController):
 
     return response
 
-  async def remove_onion_client_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthRemoveResponse:
+  async def remove_hidden_service_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthRemoveResponse:
     """
-    Removes Client Authentication for a v3 onion service.
+    Revoke authentication with a v3 hidden service.
 
     :param service_id: hidden service address without the '.onion' suffix
 
@@ -3137,7 +3135,7 @@ class Controller(BaseController):
 
     return response
 
-  async def view_onion_client_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthViewResponse:
+  async def list_hidden_service_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthViewResponse:
     """
     View Client Authentication for a v3 onion service.
 
