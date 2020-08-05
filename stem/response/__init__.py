@@ -161,17 +161,21 @@ def _convert_to_add_onion(message: 'stem.response.ControlMessage', **kwargs: Any
   stem.response.convert('ADD_ONION', message)
   return message  # type: ignore
 
+
 def _convert_to_onion_client_auth_add(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthAddResponse':
   stem.response.convert('ONION_CLIENT_AUTH_ADD', message)
   return message  # type: ignore
+
 
 def _convert_to_onion_client_auth_remove(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthRemoveResponse':
   stem.response.convert('ONION_CLIENT_AUTH_REMOVE', message)
   return message  # type: ignore
 
+
 def _convert_to_onion_client_auth_view(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthViewResponse':
   stem.response.convert('ONION_CLIENT_AUTH_VIEW', message)
   return message  # type: ignore
+
 
 def _convert_to_mapaddress(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.mapaddress.MapAddressResponse':
   stem.response.convert('MAPADDRESS', message)

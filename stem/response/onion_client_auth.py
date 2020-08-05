@@ -4,6 +4,7 @@
 import stem.response
 from stem.util import log
 
+
 class OnionClientAuthAddResponse(stem.response.ControlMessage):
   """
   ONION_CLIENT_AUTH_ADD response.
@@ -20,6 +21,7 @@ class OnionClientAuthAddResponse(stem.response.ControlMessage):
     if not self.is_ok():
       raise stem.ProtocolError("ONION_CLIENT_AUTH_ADD response didn't have an OK status: %s" % self)
 
+
 class OnionClientAuthRemoveResponse(stem.response.ControlMessage):
   """
   ONION_CLIENT_AUTH_REMOVE response.
@@ -27,12 +29,13 @@ class OnionClientAuthRemoveResponse(stem.response.ControlMessage):
 
   def _parse_message(self) -> None:
     # ONION_CLIENT_AUTH_REMOVE responds with:
-    # '250 OK', 
+    # '250 OK',
     # '251 No credentials for [service id]',
     # '512 Invalid v3 address [service id]'
 
     if not self.is_ok():
       raise stem.ProtocolError("ONION_CLIENT_AUTH_REMOVE response didn't have an OK status: %s" % self)
+
 
 class OnionClientAuthViewResponse(stem.response.ControlMessage):
   """
