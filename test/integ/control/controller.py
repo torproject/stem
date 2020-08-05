@@ -1610,46 +1610,42 @@ class TestController(unittest.TestCase):
     service.
     """
 
-    runner = test.runner.get_runner()
-
-    async with await runner.get_tor_controller() as controller:
+    async with await test.runner.get_runner().get_tor_controller() as controller:
       service_id = 'yvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
-      # This is an invalid key, it should throw an error
-      private_key = 'XXXXXXXXXFCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
-      exc_msg = "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Failed to decode x25519 private key"
-
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg):
-        await controller.add_hidden_service_auth(service_id, private_key)
-
-      # This is a valid key
       private_key = 'FCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
-      response = await controller.add_hidden_service_auth(service_id, private_key)
 
-      # View the credential
+      # register authentication credentials
+
+      await controller.add_hidden_service_auth(service_id, private_key)
+
       response = await controller.list_hidden_service_auth(service_id)
-      self.assertEqual(response.client_auth_credential, '%s x25519:%s' % (service_id, private_key))
+      self.assertEqual('%s x25519:%s' % (service_id, private_key), response.client_auth_credential)
 
-      # Remove the credential
+      # deregister authentication credentials
+
       await controller.remove_hidden_service_auth(service_id)
+
       response = await controller.list_hidden_service_auth(service_id)
-      self.assertTrue(response.client_auth_credential is None)
+      self.assertEqual(None, response.client_auth_credential)
 
-      # Test that an invalid service ID throws the appropriate error for adding, removing or viewing client auth
-      service_id = 'xxxxxxxxyvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
-      exc_msg = "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Invalid v3 address \"%s\"" % service_id
+      # exercise with an invalid address
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg):
-        await controller.add_hidden_service_auth(service_id, private_key)
+      invalid_service_id = 'xxxxxxxxyvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+      exc_msg = "%%s response didn't have an OK status: Invalid v3 address \"%s\"" % invalid_service_id
 
-      exc_msg = "ONION_CLIENT_AUTH_REMOVE response didn't have an OK status: Invalid v3 address \"%s\"" % service_id
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_ADD'):
+        await controller.add_hidden_service_auth(invalid_service_id, private_key)
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg):
-        await controller.remove_hidden_service_auth(service_id)
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_REMOVE'):
+        await controller.remove_hidden_service_auth(invalid_service_id)
 
-      exc_msg = "ONION_CLIENT_AUTH_VIEW response didn't have an OK status: Invalid v3 address \"%s\"" % service_id
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_VIEW'):
+        await controller.list_hidden_service_auth(invalid_service_id)
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg):
-        await controller.list_hidden_service_auth(service_id)
+      # register with an invalid key
+
+      with self.assertRaisesWith(stem.ProtocolError, "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Failed to decode x25519 private key"):
+        await controller.add_hidden_service_auth(service_id, 'XXXXXXXXXFCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ=')
 
   async def _get_router_status_entry(self, controller):
     """
