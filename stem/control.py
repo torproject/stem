@@ -457,6 +457,18 @@ class CreateHiddenServiceOutput(collections.namedtuple('CreateHiddenServiceOutpu
   """
 
 
+class HiddenServiceCredential(collections.namedtuple('HiddenServiceCredential', ['service_id', 'private_key', 'key_type', 'client_name', 'flags'])):
+  """
+  Credentials for authenticating with a v3 hidden service.
+
+  :var str service_id: hidden service id without its '.onion' suffix
+  :var str private_key: base64 encoded credential
+  :var str key_type: encryption type being used
+  :var str client_name: optional nickname for our client
+  :var list flags: flags associated with this credential
+  """
+
+
 def with_default(yields: bool = False) -> Callable:
   """
   Provides a decorator to support having a default value. This should be
@@ -3083,76 +3095,83 @@ class Controller(BaseController):
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
 
-  async def add_hidden_service_auth(self, service_id: str, private_key_blob: str, key_type: str = 'x25519', client_name: Optional[str] = None, permanent: Optional[bool] = False) -> stem.response.onion_client_auth.OnionClientAuthAddResponse:
+  async def add_hidden_service_auth(self, service_id: str, private_key: str, key_type: str = 'x25519', client_name: Optional[str] = None, write: bool = False) -> None:
     """
     Authenticate with a v3 hidden service.
 
-    :param service_id: hidden service address without the '.onion' suffix
-    :param key_type: the type of private key in use. x25519 is the only one supported right now
-    :param private_key_blob: base64 encoding of x25519 private key
-    :param client_name: optional nickname for this client
-    :param permanent: optionally flag that this client's credentials should be stored in the filesystem.
-      If this is not set, the client's credentials are epheremal and stored in memory.
+    .. versionadded:: 2.0.0
 
-    :returns: **True* if the client authentication was added or replaced, **False** if it
-      was rejected by the Tor controller
+    :param service_id: hidden service address without the '.onion' suffix
+    :param private_key: base64 encoded private key to authenticate with
+    :param key_type: type of private key in use
+    :param client_name: optional nickname for this client
+    :param write: persists these credentials to disk if **True**, only resides
+      in memory otherwise
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    request = 'ONION_CLIENT_AUTH_ADD %s %s:%s' % (service_id, key_type, private_key_blob)
+    request = 'ONION_CLIENT_AUTH_ADD %s %s:%s' % (service_id, key_type, private_key)
 
     if client_name:
       request += ' ClientName=%s' % client_name
 
-    flags = []
+    if write:
+      request += ' Flags=Permanent'
 
-    if permanent:
-      flags.append('Permanent')
+    response = stem.response._convert_to_single_line(await self.msg(request))
 
-    if flags:
-      request += ' Flags=%s' % ','.join(flags)
+    if not response.is_ok():
+      raise stem.ProtocolError("ONION_CLIENT_AUTH_ADD response didn't have an OK status: %s" % response.message)
 
-    response = stem.response._convert_to_onion_client_auth_add(stem.response._convert_to_onion_client_auth_add(await self.msg(request)))
-
-    return response
-
-  async def remove_hidden_service_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthRemoveResponse:
+  async def remove_hidden_service_auth(self, service_id: str) -> None:
     """
     Revoke authentication with a v3 hidden service.
 
-    :param service_id: hidden service address without the '.onion' suffix
+    .. versionadded:: 2.0.0
 
-    :returns: **True* if the client authentication was removed, (or if no such
-      service ID existed), **False** if it was rejected by the Tor controller
+    :param service_id: hidden service address without the '.onion' suffix
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    request = 'ONION_CLIENT_AUTH_REMOVE %s' % service_id
+    response = stem.response._convert_to_single_line(await self.msg('ONION_CLIENT_AUTH_REMOVE %s' % service_id))
 
-    response = stem.response._convert_to_onion_client_auth_remove(stem.response._convert_to_onion_client_auth_remove(await self.msg(request)))
+    if not response.is_ok():
+      raise stem.ProtocolError("ONION_CLIENT_AUTH_REMOVE response didn't have an OK status: %s" % response.message)
 
-    return response
-
-  async def list_hidden_service_auth(self, service_id: str) -> stem.response.onion_client_auth.OnionClientAuthViewResponse:
+  async def list_hidden_service_auth(self, service_id: Optional[str] = None) -> Union['stem.control.HiddenServiceCredential', Dict[str, 'stem.control.HiddenServiceCredential']]:
     """
     View Client Authentication for a v3 onion service.
 
-    :param service_id: hidden service address without the '.onion' suffix
+    .. versionadded:: 2.0.0
 
-    :returns: :class:`~stem.response.onion_client_auth.OnionClientAuthViewResponse` with the
-      client_auth_credential if there were credentials to view, **True** if the service ID
-      was valid but no credentials existed, **False** if the service ID was invalid
+    :param service_id: restrict query to this service, otherwise provides all
+      credentials
+
+    :returns: single :class:`~stem.control.HiddenServiceCredential` if called
+      with a **service_id**, otherwise this provides a **dict** mapping hidden
+      service ids with their credential
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
-    request = 'ONION_CLIENT_AUTH_VIEW %s' % service_id
+    request = 'ONION_CLIENT_AUTH_VIEW'
 
-    response = stem.response._convert_to_onion_client_auth_view(stem.response._convert_to_onion_client_auth_view(await self.msg(request)))
+    if service_id:
+      request += ' %s' % service_id
 
-    return response
+    response = stem.response._convert_to_onion_client_auth_view(await self.msg(request))
+
+    if service_id:
+      if service_id not in response.credentials:
+        raise stem.ProtocolError('ONION_CLIENT_AUTH_VIEW failed to provide a credential for %s: %s' % (service_id, response))
+      elif len(response.credentials) != 1:
+        raise stem.ProtocolError('ONION_CLIENT_AUTH_VIEW should only contain credentials for %s but had %s' % (service_id, ', '.join(response.credentials.keys())))
+
+      return response.credentials[service_id]
+    else:
+      return response.credentials
 
   async def add_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]], *events: 'stem.control.EventType') -> None:
     """

@@ -73,8 +73,6 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
   **GETCONF**                  :class:`stem.response.getconf.GetConfResponse`
   **GETINFO**                  :class:`stem.response.getinfo.GetInfoResponse`
   **MAPADDRESS**               :class:`stem.response.mapaddress.MapAddressResponse`
-  **ONION_CLIENT_AUTH_ADD**    :class:`stem.response.onion_client_auth.OnionClientAuthAddResponse`
-  **ONION_CLIENT_AUTH_REMOVE** :class:`stem.response.onion_client_auth.OnionClientAuthRemoveResponse`
   **ONION_CLIENT_AUTH_VIEW**   :class:`stem.response.onion_client_auth.OnionClientAuthViewResponse`
   **PROTOCOLINFO**             :class:`stem.response.protocolinfo.ProtocolInfoResponse`
   **SINGLELINE**               :class:`stem.response.SingleLineResponse`
@@ -118,8 +116,6 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
     'GETCONF': stem.response.getconf.GetConfResponse,
     'GETINFO': stem.response.getinfo.GetInfoResponse,
     'MAPADDRESS': stem.response.mapaddress.MapAddressResponse,
-    'ONION_CLIENT_AUTH_ADD': stem.response.onion_client_auth.OnionClientAuthAddResponse,
-    'ONION_CLIENT_AUTH_REMOVE': stem.response.onion_client_auth.OnionClientAuthRemoveResponse,
     'ONION_CLIENT_AUTH_VIEW': stem.response.onion_client_auth.OnionClientAuthViewResponse,
     'PROTOCOLINFO': stem.response.protocolinfo.ProtocolInfoResponse,
     'SINGLELINE': SingleLineResponse,
@@ -159,16 +155,6 @@ def _convert_to_getconf(message: 'stem.response.ControlMessage', **kwargs: Any) 
 
 def _convert_to_add_onion(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.add_onion.AddOnionResponse':
   stem.response.convert('ADD_ONION', message)
-  return message  # type: ignore
-
-
-def _convert_to_onion_client_auth_add(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthAddResponse':
-  stem.response.convert('ONION_CLIENT_AUTH_ADD', message)
-  return message  # type: ignore
-
-
-def _convert_to_onion_client_auth_remove(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthRemoveResponse':
-  stem.response.convert('ONION_CLIENT_AUTH_REMOVE', message)
   return message  # type: ignore
 
 
