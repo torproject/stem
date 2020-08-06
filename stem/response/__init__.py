@@ -45,6 +45,7 @@ __all__ = [
   'events',
   'getinfo',
   'getconf',
+  'onion_client_auth',
   'protocolinfo',
   'authchallenge',
   'convert',
@@ -66,14 +67,15 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
   =================== =====
   response_type       Class
   =================== =====
-  **ADD_ONION**       :class:`stem.response.add_onion.AddOnionResponse`
-  **AUTHCHALLENGE**   :class:`stem.response.authchallenge.AuthChallengeResponse`
-  **EVENT**           :class:`stem.response.events.Event` subclass
-  **GETCONF**         :class:`stem.response.getconf.GetConfResponse`
-  **GETINFO**         :class:`stem.response.getinfo.GetInfoResponse`
-  **MAPADDRESS**      :class:`stem.response.mapaddress.MapAddressResponse`
-  **PROTOCOLINFO**    :class:`stem.response.protocolinfo.ProtocolInfoResponse`
-  **SINGLELINE**      :class:`stem.response.SingleLineResponse`
+  **ADD_ONION**                :class:`stem.response.add_onion.AddOnionResponse`
+  **AUTHCHALLENGE**            :class:`stem.response.authchallenge.AuthChallengeResponse`
+  **EVENT**                    :class:`stem.response.events.Event` subclass
+  **GETCONF**                  :class:`stem.response.getconf.GetConfResponse`
+  **GETINFO**                  :class:`stem.response.getinfo.GetInfoResponse`
+  **MAPADDRESS**               :class:`stem.response.mapaddress.MapAddressResponse`
+  **ONION_CLIENT_AUTH_VIEW**   :class:`stem.response.onion_client_auth.OnionClientAuthViewResponse`
+  **PROTOCOLINFO**             :class:`stem.response.protocolinfo.ProtocolInfoResponse`
+  **SINGLELINE**               :class:`stem.response.SingleLineResponse`
   =================== =====
 
   :param response_type: type of tor response to convert to
@@ -101,6 +103,7 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
   import stem.response.getinfo
   import stem.response.getconf
   import stem.response.mapaddress
+  import stem.response.onion_client_auth
   import stem.response.protocolinfo
 
   if not isinstance(message, ControlMessage):
@@ -113,6 +116,7 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
     'GETCONF': stem.response.getconf.GetConfResponse,
     'GETINFO': stem.response.getinfo.GetInfoResponse,
     'MAPADDRESS': stem.response.mapaddress.MapAddressResponse,
+    'ONION_CLIENT_AUTH_VIEW': stem.response.onion_client_auth.OnionClientAuthViewResponse,
     'PROTOCOLINFO': stem.response.protocolinfo.ProtocolInfoResponse,
     'SINGLELINE': SingleLineResponse,
   }
@@ -151,6 +155,11 @@ def _convert_to_getconf(message: 'stem.response.ControlMessage', **kwargs: Any) 
 
 def _convert_to_add_onion(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.add_onion.AddOnionResponse':
   stem.response.convert('ADD_ONION', message)
+  return message  # type: ignore
+
+
+def _convert_to_onion_client_auth_view(message: 'stem.response.ControlMessage', **kwargs: Any) -> 'stem.response.onion_client_auth.OnionClientAuthViewResponse':
+  stem.response.convert('ONION_CLIENT_AUTH_VIEW', message)
   return message  # type: ignore
 
 
@@ -226,13 +235,13 @@ class ControlMessage(object):
 
   def is_ok(self) -> bool:
     """
-    Checks if any of our lines have a 250 response.
+    Checks if any of our lines have a 250, 251 or 252 response.
 
-    :returns: **True** if any lines have a 250 response code, **False** otherwise
+    :returns: **True** if any lines have a 250, 251 or 252 response code, **False** otherwise
     """
 
     for code, _, _ in self._parsed_content:
-      if code == '250':
+      if code in ['250', '251', '252']:
         return True
 
     return False

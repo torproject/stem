@@ -29,6 +29,9 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.util.test_tools import async_test
 
+SERVICE_ID = 'yvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+PRIVATE_KEY = 'FCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
+
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
 
@@ -1601,6 +1604,71 @@ class TestController(unittest.TestCase):
         self.assertEqual(None, await controller.get_conf('OrPort'))
       finally:
         await controller.set_conf('OrPort', str(test.runner.ORPORT))
+
+  @test.require.controller
+  @async_test
+  async def test_hidden_service_auth(self):
+    """
+    Exercises adding, viewing and removing authentication credentials for a v3
+    service.
+    """
+
+    async with await test.runner.get_runner().get_tor_controller() as controller:
+      # register authentication credentials
+
+      await controller.add_hidden_service_auth(SERVICE_ID, PRIVATE_KEY, client_name = 'StemInteg')
+
+      credential = await controller.list_hidden_service_auth(SERVICE_ID)
+
+      self.assertEqual(SERVICE_ID, credential.service_id)
+      self.assertEqual(PRIVATE_KEY, credential.private_key)
+      self.assertEqual('x25519', credential.key_type)
+      self.assertEqual([], credential.flags)
+
+      # TODO: We should assert our client_name's value...
+      #
+      #   self.assertEqual('StemInteg', credential.client_name)
+      #
+      # ... but that's broken within tor...
+      #
+      #   https://gitlab.torproject.org/tpo/core/tor/-/issues/40089
+
+      # deregister authentication credentials
+
+      await controller.remove_hidden_service_auth(SERVICE_ID)
+      self.assertEqual({}, await controller.list_hidden_service_auth())
+
+      # TODO: We should add a persistance test (calling with 'write = True')
+      # but that doesn't look to be working...
+      #
+      #   https://gitlab.torproject.org/tpo/core/tor/-/issues/40090
+
+  @test.require.controller
+  @async_test
+  async def test_hidden_service_auth_invalid(self):
+    """
+    Exercises hidden service authentication with invalid data.
+    """
+
+    async with await test.runner.get_runner().get_tor_controller() as controller:
+      invalid_service_id = 'xxxxxxxxyvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+      exc_msg = "%%s response didn't have an OK status: Invalid v3 address \"%s\"" % invalid_service_id
+
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_ADD'):
+        await controller.add_hidden_service_auth(invalid_service_id, PRIVATE_KEY)
+
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_REMOVE'):
+        await controller.remove_hidden_service_auth(invalid_service_id)
+
+      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_VIEW'):
+        await controller.list_hidden_service_auth(invalid_service_id)
+
+      invalid_key = 'XXXXXXXXXFCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
+
+      # register with an invalid key
+
+      with self.assertRaisesWith(stem.ProtocolError, "ONION_CLIENT_AUTH_ADD response didn't have an OK status: Failed to decode x25519 private key"):
+        await controller.add_hidden_service_auth(SERVICE_ID, invalid_key)
 
   async def _get_router_status_entry(self, controller):
     """

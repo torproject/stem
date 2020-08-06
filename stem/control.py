@@ -112,6 +112,10 @@ If you're fine with allowing your script to raise exceptions then this can be mo
     |- create_ephemeral_hidden_service - create a new ephemeral hidden service
     |- remove_ephemeral_hidden_service - removes an ephemeral hidden service
     |
+    |- add_hidden_service_auth - authenticate to a v3 hidden service
+    |- remove_hidden_service_auth - revoke authentication to a v3 hidden service
+    |- list_hidden_service_auth - list v3 hidden services we authenticate with
+    |
     |- add_event_listener - attaches an event listener to be notified of tor events
     |- remove_event_listener - removes a listener so it isn't notified of further events
     |
@@ -257,6 +261,7 @@ import stem.exit_policy
 import stem.response
 import stem.response.add_onion
 import stem.response.events
+import stem.response.onion_client_auth
 import stem.response.protocolinfo
 import stem.socket
 import stem.util
@@ -449,6 +454,18 @@ class CreateHiddenServiceOutput(collections.namedtuple('CreateHiddenServiceOutpu
   :var dict hostname_for_client: mapping of client names to their onion address
     if available
   :var dict config: tor's new hidden service configuration
+  """
+
+
+class HiddenServiceCredential(collections.namedtuple('HiddenServiceCredential', ['service_id', 'private_key', 'key_type', 'client_name', 'flags'])):
+  """
+  Credentials for authenticating with a v3 hidden service.
+
+  :var str service_id: hidden service id without its '.onion' suffix
+  :var str private_key: base64 encoded credential
+  :var str key_type: encryption type being used
+  :var str client_name: optional nickname for our client
+  :var list flags: flags associated with this credential
   """
 
 
@@ -2916,6 +2933,10 @@ class Controller(BaseController):
         'bob': 'vGnNRpWYiMBFTWD2gbBlcA',
       })
 
+    Please note that **basic_auth** only works for legacy (v2) hidden services.
+    Version 3 can't enable service authentication through the control protocol
+    (`ticket <https://gitlab.torproject.org/tpo/core/tor/-/issues/40084>`_).
+
     To create a **version 3** service simply specify **ED25519-V3** as the
     our key type, and to create a **version 2** service use **RSA1024**. The
     default version of newly created hidden services is based on the
@@ -3073,6 +3094,84 @@ class Controller(BaseController):
       return False  # no hidden service to discontinue
     else:
       raise stem.ProtocolError('DEL_ONION returned unexpected response code: %s' % response.code)
+
+  async def add_hidden_service_auth(self, service_id: str, private_key: str, key_type: str = 'x25519', client_name: Optional[str] = None, write: bool = False) -> None:
+    """
+    Authenticate with a v3 hidden service.
+
+    .. versionadded:: 2.0.0
+
+    :param service_id: hidden service address without the '.onion' suffix
+    :param private_key: base64 encoded private key to authenticate with
+    :param key_type: type of private key in use
+    :param client_name: optional nickname for this client
+    :param write: persists these credentials to disk if **True**, only resides
+      in memory otherwise
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    request = 'ONION_CLIENT_AUTH_ADD %s %s:%s' % (service_id, key_type, private_key)
+
+    if client_name:
+      request += ' ClientName=%s' % client_name
+
+    if write:
+      request += ' Flags=Permanent'
+
+    response = stem.response._convert_to_single_line(await self.msg(request))
+
+    if not response.is_ok():
+      raise stem.ProtocolError("ONION_CLIENT_AUTH_ADD response didn't have an OK status: %s" % response.message)
+
+  async def remove_hidden_service_auth(self, service_id: str) -> None:
+    """
+    Revoke authentication with a v3 hidden service.
+
+    .. versionadded:: 2.0.0
+
+    :param service_id: hidden service address without the '.onion' suffix
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    response = stem.response._convert_to_single_line(await self.msg('ONION_CLIENT_AUTH_REMOVE %s' % service_id))
+
+    if not response.is_ok():
+      raise stem.ProtocolError("ONION_CLIENT_AUTH_REMOVE response didn't have an OK status: %s" % response.message)
+
+  async def list_hidden_service_auth(self, service_id: Optional[str] = None) -> Union['stem.control.HiddenServiceCredential', Dict[str, 'stem.control.HiddenServiceCredential']]:
+    """
+    View Client Authentication for a v3 onion service.
+
+    .. versionadded:: 2.0.0
+
+    :param service_id: restrict query to this service, otherwise provides all
+      credentials
+
+    :returns: single :class:`~stem.control.HiddenServiceCredential` if called
+      with a **service_id**, otherwise this provides a **dict** mapping hidden
+      service ids with their credential
+
+    :raises: :class:`stem.ControllerError` if the call fails
+    """
+
+    request = 'ONION_CLIENT_AUTH_VIEW'
+
+    if service_id:
+      request += ' %s' % service_id
+
+    response = stem.response._convert_to_onion_client_auth_view(await self.msg(request))
+
+    if service_id:
+      if service_id not in response.credentials:
+        raise stem.ProtocolError('ONION_CLIENT_AUTH_VIEW failed to provide a credential for %s: %s' % (service_id, response))
+      elif len(response.credentials) != 1:
+        raise stem.ProtocolError('ONION_CLIENT_AUTH_VIEW should only contain credentials for %s but had %s' % (service_id, ', '.join(response.credentials.keys())))
+
+      return response.credentials[service_id]
+    else:
+      return response.credentials
 
   async def add_event_listener(self, listener: Callable[[stem.response.events.Event], Union[None, Awaitable[None]]], *events: 'stem.control.EventType') -> None:
     """
