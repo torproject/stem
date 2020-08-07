@@ -980,7 +980,12 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
-      self.assertEqual([('0.0.0.0', test.runner.ORPORT), ('::', test.runner.ORPORT)], await controller.get_listeners(Listener.OR))
+      if test.tor_version() >= stem.version.Version('0.4.5.0'):
+        expected_orports = [('0.0.0.0', test.runner.ORPORT), ('::', test.runner.ORPORT)]
+      else:
+        expected_orports = [('0.0.0.0', test.runner.ORPORT)]
+
+      self.assertEqual(expected_orports, await controller.get_listeners(Listener.OR))
       self.assertEqual([], await controller.get_listeners(Listener.DIR))
       self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], await controller.get_listeners(Listener.SOCKS))
       self.assertEqual([], await controller.get_listeners(Listener.TRANS))
