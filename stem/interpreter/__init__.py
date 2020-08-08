@@ -16,6 +16,7 @@ import stem.util.conf
 import stem.util.system
 import stem.util.term
 
+from typing import Tuple, Union
 from stem.util.term import Attr, Color, format
 
 __all__ = [
@@ -85,14 +86,14 @@ def main() -> None:
               'ExitPolicy': 'reject *:*',
             },
             tor_cmd = args.tor_path,
-            completion_percent = 5,
+            completion_percent = 0,
             take_ownership = True,
           )
         except OSError as exc:
           print(format(msg('msg.unable_to_start_tor', error = exc), *ERROR_OUTPUT))
           sys.exit(1)
 
-  control_port = (args.control_address, args.control_port)
+  control_port = (args.control_address, args.control_port if args.control_port else 'default')  # type: Tuple[str, Union[int, str]]
   control_socket = args.control_socket
 
   # If the user explicitely specified an endpoint then just try to connect to
