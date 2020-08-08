@@ -3505,7 +3505,7 @@ class Controller(BaseController):
     """
 
     for circ in await self.get_circuits():
-      if circ.id == circuit_id:
+      if circ.id == str(circuit_id):
         return circ
 
     raise ValueError("Tor currently does not have a circuit with the id of '%s'" % circuit_id)
