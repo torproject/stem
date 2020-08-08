@@ -196,6 +196,7 @@ class TestProc(unittest.TestCase):
   @patch('os.path.exists')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
+  @patch('stem.util.proc.IS_LITTLE_ENDIAN', True)
   def test_connections(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
     """
     Tests the connections function.
@@ -238,6 +239,7 @@ class TestProc(unittest.TestCase):
   @patch('os.path.exists')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
+  @patch('stem.util.proc.IS_LITTLE_ENDIAN', True)
   def test_connections_ipv6(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
     """
     Tests the connections function with ipv6 addresses.
@@ -275,6 +277,7 @@ class TestProc(unittest.TestCase):
   @patch('os.path.exists')
   @patch('pwd.getpwnam')
   @patch('stem.util.proc.open', create = True)
+  @patch('stem.util.proc.IS_LITTLE_ENDIAN', True)
   def test_connections_ipv6_by_user(self, open_mock, getpwnam_mock, path_exists_mock):
     """
     Tests the connections function with ipv6 addresses.
@@ -305,6 +308,7 @@ class TestProc(unittest.TestCase):
   @patch('os.path.exists')
   @patch('os.readlink')
   @patch('stem.util.proc.open', create = True)
+  @patch('stem.util.proc.IS_LITTLE_ENDIAN', True)
   def test_high_connection_count(self, open_mock, readlink_mock, path_exists_mock, listdir_mock):
     """
     When we have over ten thousand connections the 'SL' column's width changes.
