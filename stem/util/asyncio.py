@@ -9,7 +9,6 @@ import asyncio
 import functools
 import inspect
 import threading
-import typing
 import unittest.mock
 
 from types import TracebackType
@@ -87,9 +86,9 @@ class Synchronous(object):
       for name, func in inspect.getmembers(self):
         if name in ('__aiter__', '__aenter__', '__aexit__'):
           pass  # async object methods with synchronous counterparts
-        elif isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
+        elif isinstance(func, unittest.mock.Mock) and (inspect.iscoroutinefunction(func.side_effect) or inspect.isasyncgenfunction(func.side_effect)):
           setattr(self, name, functools.partial(self._run_async_method, name))
-        elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
+        elif inspect.ismethod(func) and (inspect.iscoroutinefunction(func) or inspect.isasyncgenfunction(func)):
           setattr(self, name, functools.partial(self._run_async_method, name))
 
       Synchronous.start(self)
@@ -216,9 +215,7 @@ class Synchronous(object):
       if self._loop is None:
         Synchronous.start(self)
 
-      # convert iterator if indicated by this method's name or type hint
-
-      if method_name == '__aiter__' or (inspect.ismethod(func) and typing.get_type_hints(func).get('return') == AsyncIterator):
+      if inspect.isasyncgenfunction(func):
         async def convert_generator(generator: AsyncIterator) -> Iterator:
           return iter([d async for d in generator])
 
