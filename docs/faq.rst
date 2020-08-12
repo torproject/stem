@@ -444,7 +444,7 @@ Tor is configured through its `torrc
 you need to either restart Tor or issue a **HUP** for the changes to be
 reflected. To issue a HUP you can either...
 
- * Run **pkill -sighup tor**.
+ * Run **pkill -x -sighup tor**.
  * Send Tor a **HUP** signal through its control port...
 
 ::
