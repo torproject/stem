@@ -2,25 +2,14 @@
 # See LICENSE for licensing information
 
 """
-Parsing for Tor microdescriptors, which contain a distilled version of a
-relay's server descriptor. As of Tor version 0.2.3.3-alpha Tor no longer
-downloads server descriptors by default, opting for microdescriptors instead.
+Microdescriptors are a distilled copy of a relay's server descriptor,
+downloaded by Tor clients in lieu of server descriptors to reduce
+bandwidth usage.
 
-Unlike most descriptor documents these aren't available on the metrics site
-(since they don't contain any information that the server descriptors don't).
-
-The limited information in microdescriptors make them rather clunky to use
-compared with server descriptors. For instance microdescriptors lack the
-relay's fingerprint, making it difficut to use them to look up the relay's
-other descriptors.
-
-To do so you need to match the microdescriptor's digest against its
-corresponding router status entry. For added fun as of this writing the
-controller doesn't even surface those router status entries
-(:trac:`7953`).
-
-For instance, here's an example that prints the nickname and fingerprints of
-the exit relays.
+Microdescriptors contain a subset of a server descriptor's information
+and are rather clunky to use. For instance, microdescriptors lack a
+relay's canonical identifier (its fingerprint). To get it you must
+pair microdescriptors with the consensus from which they came...
 
 ::
 
@@ -29,7 +18,7 @@ the exit relays.
   from stem.control import Controller
   from stem.descriptor import parse_file
 
-  with Controller.from_port(port = 9051) as controller:
+  with Controller.from_port() as controller:
     controller.authenticate()
 
     exit_digests = set()
@@ -37,25 +26,26 @@ the exit relays.
 
     for desc in controller.get_microdescriptors():
       if desc.exit_policy.is_exiting_allowed():
-        exit_digests.add(desc.digest)
+        exit_digests.add(desc.digest())
 
-    print 'Exit Relays:'
+    print('Exit Relays:')
 
     for desc in parse_file(os.path.join(data_dir, 'cached-microdesc-consensus')):
-      if desc.digest in exit_digests:
-        print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+      if desc.microdescriptor_digest in exit_digests:
+        print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
 Doing the same is trivial with server descriptors...
 
 ::
 
-  from stem.descriptor import parse_file
+  from stem.control import Controller
 
-  print 'Exit Relays:'
+  with Controller.from_port() as controller:
+    controller.authenticate()
 
-  for desc in parse_file('/home/atagar/.tor/cached-descriptors'):
-    if desc.exit_policy.is_exiting_allowed():
-      print '  %s (%s)' % (desc.nickname, desc.fingerprint)
+    for desc in controller.get_server_descriptors():
+      if desc.exit_policy.is_exiting_allowed():
+        print('  %s (%s)' % (desc.nickname, desc.fingerprint))
 
 **Module Overview:**
 
