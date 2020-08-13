@@ -251,19 +251,20 @@ Library for working with the tor process.
   State that a stream going through tor can have. Tor may provide states not in
   this enum.
 
-  ================= ===========
-  StreamStatus      Description
-  ================= ===========
-  **NEW**           request for a new connection
-  **NEWRESOLVE**    request to resolve an address
-  **REMAP**         address is being re-mapped to another
-  **SENTCONNECT**   sent a connect cell along a circuit
-  **SENTRESOLVE**   sent a resolve cell along a circuit
-  **SUCCEEDED**     stream has been established
-  **FAILED**        stream is detached, and won't be re-established
-  **DETACHED**      stream is detached, but might be re-established
-  **CLOSED**        stream has closed
-  ================= ===========
+  =================== ===========
+  StreamStatus        Description
+  =================== ===========
+  **NEW**             request for a new connection
+  **NEWRESOLVE**      request to resolve an address
+  **REMAP**           address is being re-mapped to another
+  **SENTCONNECT**     sent a connect cell along a circuit
+  **SENTRESOLVE**     sent a resolve cell along a circuit
+  **SUCCEEDED**       stream has been established
+  **FAILED**          stream is detached, and won't be re-established
+  **DETACHED**        stream is detached, but might be re-established
+  **CONTROLLER_WAIT** awaiting a controller's ATTACHSTREAM request
+  **CLOSED**          stream has closed
+  =================== ===========
 
 .. data:: StreamClosureReason (enum)
 
@@ -917,6 +918,7 @@ StreamStatus = stem.util.enum.UppercaseEnum(
   'SUCCEEDED',
   'FAILED',
   'DETACHED',
+  'CONTROLLER_WAIT',
   'CLOSED',
 )
 
