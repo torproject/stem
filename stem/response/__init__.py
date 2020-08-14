@@ -235,13 +235,13 @@ class ControlMessage(object):
 
   def is_ok(self) -> bool:
     """
-    Checks if any of our lines have a 250, 251 or 252 response.
+    Checks if any of our lines have a 2xx response.
 
-    :returns: **True** if any lines have a 250, 251 or 252 response code, **False** otherwise
+    :returns: **True** if any lines have a 2xx response code, **False** otherwise
     """
 
     for code, _, _ in self._parsed_content:
-      if code in ['250', '251', '252']:
+      if code.isdigit() and (200 <= int(code) < 300):
         return True
 
     return False

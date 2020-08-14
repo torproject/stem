@@ -31,7 +31,7 @@ UNRECOGNIZED_KEY_RESPONSE = '''552-Unrecognized configuration key "brickroad"
 
 INVALID_RESPONSE = """\
 123-FOO
-232 BAR"""
+532 BAR"""
 
 
 class TestGetConfResponse(unittest.TestCase):
