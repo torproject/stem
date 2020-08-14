@@ -1202,48 +1202,8 @@ class TestController(unittest.TestCase):
         await controller.close_stream('blarg')
 
   @test.require.controller
-  @test.require.online
   @async_test
   async def test_mapaddress(self):
-    self.skipTest('(https://trac.torproject.org/projects/tor/ticket/25611)')
-    runner = test.runner.get_runner()
-
-    async with await runner.get_tor_controller() as controller:
-      await controller.map_address({'1.2.1.2': 'ifconfig.me'})
-
-      s = None
-      response = None
-
-      # try up to 10 times to rule out transient network failures
-
-      for _ in range(10):
-        try:
-          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-          s.settimeout(30)
-          s.connect(('127.0.0.1', int(await controller.get_conf('SocksPort'))))
-          test.network.negotiate_socks(s, '1.2.1.2', 80)
-          s.sendall(stem.util.str_tools._to_bytes(test.network.IP_REQUEST))  # make the http request for the ip address
-          response = s.recv(1000)
-
-          if response:
-            break
-        except (stem.ProtocolError, socket.timeout):
-          continue
-        finally:
-          if s:
-            s.close()
-
-      self.assertTrue(response)
-
-      # everything after the blank line is the 'data' in a HTTP response.
-      # The response data for our request for request should be an IP address + '\n'
-
-      ip_addr = response[response.find(b'\r\n\r\n'):].strip()
-      self.assertTrue(stem.util.connection.is_valid_ipv4_address(stem.util.str_tools._to_unicode(ip_addr)), "'%s' isn't an address" % ip_addr)
-
-  @test.require.controller
-  @async_test
-  async def test_mapaddress_offline(self):
     runner = test.runner.get_runner()
 
     async with await runner.get_tor_controller() as controller:
