@@ -46,6 +46,14 @@ Unreleased
 The following are only available within Stem's `git repository
 <download.html>`_.
 
+ * **General**
+
+  * Stem now requires Python 3.6+. Support for deprecated Python versions (2.6 -> 3.5) has been removed.
+  * Deprecated methods and attributes have been removed.
+  * Our API now provides `type hints <https://blog.atagar.com/may2020/>`_.
+  * Migrated to `asyncio <https://docs.python.org/3/library/asyncio.html>`_. Stem can now be used by `both synchronous and asynchronous applications <https://blog.atagar.com/july2020/>`_.
+  * Installation has migrated from distutils to setuptools.
+
  * **Controller**
 
   * Socket based control connections often raised BrokenPipeError when closed
