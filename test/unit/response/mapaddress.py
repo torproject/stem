@@ -35,7 +35,7 @@ class TestMapAddressResponse(unittest.TestCase):
     """
 
     control_message = ControlMessage.from_str('250 foo=bar\r\n', 'MAPADDRESS')
-    self.assertEqual({'foo': 'bar'}, control_message.entries)
+    self.assertEqual({'foo': 'bar'}, control_message.mapped)
 
   def test_batch_response(self):
     """
@@ -50,7 +50,7 @@ class TestMapAddressResponse(unittest.TestCase):
     }
 
     control_message = ControlMessage.from_str(BATCH_RESPONSE, 'MAPADDRESS', normalize = True)
-    self.assertEqual(expected, control_message.entries)
+    self.assertEqual(expected, control_message.mapped)
 
   def test_invalid_requests(self):
     """
@@ -61,7 +61,7 @@ class TestMapAddressResponse(unittest.TestCase):
     self.assertRaises(stem.InvalidRequest, stem.response.convert, 'MAPADDRESS', control_message)
 
     control_message = ControlMessage.from_str(PARTIAL_FAILURE_RESPONSE, 'MAPADDRESS', normalize = True)
-    self.assertEqual({'23': '324'}, control_message.entries)
+    self.assertEqual({'23': '324'}, control_message.mapped)
 
   def test_invalid_response(self):
     """

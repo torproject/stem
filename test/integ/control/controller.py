@@ -1210,14 +1210,14 @@ class TestController(unittest.TestCase):
       # try mapping one element, ensuring results are as expected
 
       map1 = {'1.2.1.2': 'ifconfig.me'}
-      self.assertEqual(map1, await controller.map_address(map1))
+      self.assertEqual(map1, (await controller.map_address(map1)).mapped)
 
       # try mapping two elements, ensuring results are as expected
 
       map2 = {'1.2.3.4': 'foobar.example.com',
               '1.2.3.5': 'barfuzz.example.com'}
 
-      self.assertEqual(map2, await controller.map_address(map2))
+      self.assertEqual(map2, (await controller.map_address(map2)).mapped)
 
       # try mapping zero elements
 
@@ -1229,7 +1229,7 @@ class TestController(unittest.TestCase):
       map3 = {'0.0.0.0': 'quux'}
       response = await controller.map_address(map3)
       self.assertEquals(len(response), 1)
-      addr1, target = list(response.items())[0]
+      addr1, target = list(response.mapped.items())[0]
 
       self.assertTrue('%s did not start with 127.' % addr1, addr1.startswith('127.'))
       self.assertEquals('quux', target)
@@ -1239,7 +1239,7 @@ class TestController(unittest.TestCase):
       map4 = {'::': 'quibble'}
       response = await controller.map_address(map4)
       self.assertEquals(1, len(response))
-      addr2, target = list(response.items())[0]
+      addr2, target = list(response.mapped.items())[0]
 
       self.assertTrue(addr2.startswith('[fe'), '%s did not start with [fe.' % addr2)
       self.assertEquals('quibble', target)
@@ -1284,6 +1284,22 @@ class TestController(unittest.TestCase):
       mapped_addresses = (await address_mappings('control')).keys()
       await controller.map_address(dict([(addr, None) for addr in mapped_addresses]))
       self.assertEquals({}, await address_mappings('control'))
+
+  @test.require.controller
+  @async_test
+  async def test_mapaddress_mixed_response(self):
+    runner = test.runner.get_runner()
+
+    async with await runner.get_tor_controller() as controller:
+      # mix a valid and invalid mapping
+
+      response = await controller.map_address({
+        '1.2.1.2': 'ifconfig.me',
+        'foo': '@@@',
+      })
+
+      self.assertEqual({'1.2.1.2': 'ifconfig.me'}, response.mapped)
+      self.assertEqual(["syntax error: invalid address '@@@'"], response.failures)
 
   @test.require.controller
   @test.require.online

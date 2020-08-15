@@ -7,10 +7,20 @@ import stem.socket
 
 class MapAddressResponse(stem.response.ControlMessage):
   """
-  Reply for a MAPADDRESS query.
-  Doesn't raise an exception unless no addresses were mapped successfully.
+  MAPADDRESS reply. Responses can contain a mixture of successes and failures,
+  such as...
 
-  :var dict entries: mapping between the original and replacement addresses
+  ::
+
+    512-syntax error: invalid address '@@@'
+    250 1.2.3.4=tor.freehaven.net
+
+  This only raises an exception if **every** mapping fails. Otherwise
+  **mapped** enumerates our successes and **failures** lists any
+  failure messages.
+
+  :var dict mapped: mapping between the original and replacement addresses
+  :var list failures: failure listed within this reply
 
   :raises:
     * :class:`stem.OperationFailed` if Tor was unable to satisfy the request
@@ -18,10 +28,6 @@ class MapAddressResponse(stem.response.ControlMessage):
   """
 
   def _parse_message(self) -> None:
-    # Example:
-    # 250-127.192.10.10=torproject.org
-    # 250 1.2.3.4=tor.freehaven.net
-
     if not self.is_ok():
       for code, _, message in self.content():
         if code == '512':
@@ -31,12 +37,15 @@ class MapAddressResponse(stem.response.ControlMessage):
         else:
           raise stem.ProtocolError('MAPADDRESS returned unexpected response code: %s', code)
 
-    self.entries = {}
+    self.mapped = {}
+    self.failures = []
 
     for code, _, message in self.content():
       if code == '250':
         try:
           key, value = message.split('=', 1)
-          self.entries[key] = value
+          self.mapped[key] = value
         except ValueError:
           raise stem.ProtocolError(None, "MAPADDRESS returned '%s', which isn't a mapping" % message)
+      else:
+        self.failures.append(message)

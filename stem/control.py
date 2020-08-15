@@ -3870,7 +3870,7 @@ class Controller(BaseController):
 
     return value
 
-  async def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
+  async def map_address(self, mapping: Mapping[str, str]) -> 'stem.response.mapaddress.MapAddressResponse':
     """
     Replace Tor connections for the given addresses with alternate
     destionations. If the destination is **None** then its mapping will be
@@ -3878,7 +3878,8 @@ class Controller(BaseController):
 
     :param mapping: mapping of original addresses to replacement addresses
 
-    :returns: **dict** with 'original -> replacement' address mappings
+    :returns: :class:`~stem.response.mapaddress.MapAddressResponse` with the
+      address mappings and failrues
 
     :raises:
       * :class:`stem.InvalidRequest` if the addresses are malformed
@@ -3887,7 +3888,7 @@ class Controller(BaseController):
 
     mapaddress_arg = ' '.join(['%s=%s' % (k, v if v else k) for (k, v) in list(mapping.items())])
     response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
-    return stem.response._convert_to_mapaddress(response).entries
+    return stem.response._convert_to_mapaddress(response)
 
   async def drop_guards(self) -> None:
     """
