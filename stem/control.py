@@ -3872,12 +3872,8 @@ class Controller(BaseController):
 
   async def map_address(self, mapping: Mapping[str, str]) -> Dict[str, str]:
     """
-    Map addresses to replacement addresses. Tor replaces subseqent connections
-    to the original addresses with the replacement addresses.
-
-    If the original address is a null address, i.e., one of '0.0.0.0', '::0', or
-    '.' Tor picks an original address itself and returns it in the reply. If the
-    original address is already mapped to a different address the mapping is
+    Replace Tor connections for the given addresses with alternate
+    destionations. If the destination is **None** then its mapping will be
     removed.
 
     :param mapping: mapping of original addresses to replacement addresses
@@ -3889,7 +3885,7 @@ class Controller(BaseController):
       * :class:`stem.OperationFailed` if Tor couldn't fulfill the request
     """
 
-    mapaddress_arg = ' '.join(['%s=%s' % (k, v) for (k, v) in list(mapping.items())])
+    mapaddress_arg = ' '.join(['%s=%s' % (k, v if v else k) for (k, v) in list(mapping.items())])
     response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
     return stem.response._convert_to_mapaddress(response).entries
 

@@ -1210,16 +1210,14 @@ class TestController(unittest.TestCase):
       # try mapping one element, ensuring results are as expected
 
       map1 = {'1.2.1.2': 'ifconfig.me'}
-      x = await controller.map_address(map1)
-      self.assertEqual(x, map1)
+      self.assertEqual(map1, await controller.map_address(map1))
 
       # try mapping two elements, ensuring results are as expected
 
       map2 = {'1.2.3.4': 'foobar.example.com',
               '1.2.3.5': 'barfuzz.example.com'}
 
-      x = await controller.map_address(map2)
-      self.assertEqual(x, map2)
+      self.assertEqual(map2, await controller.map_address(map2))
 
       # try mapping zero elements
 
@@ -1229,22 +1227,22 @@ class TestController(unittest.TestCase):
       # try a virtual mapping to IPv4, the default virtualaddressrange is 127.192.0.0/10
 
       map3 = {'0.0.0.0': 'quux'}
-      x = await controller.map_address(map3)
-      self.assertEquals(len(x), 1)
-      addr1, target = list(x.items())[0]
+      response = await controller.map_address(map3)
+      self.assertEquals(len(response), 1)
+      addr1, target = list(response.items())[0]
 
-      self.assertTrue(addr1.startswith('127.'), '%s did not start with 127.' % addr1)
-      self.assertEquals(target, 'quux')
+      self.assertTrue('%s did not start with 127.' % addr1, addr1.startswith('127.'))
+      self.assertEquals('quux', target)
 
       # try a virtual mapping to IPv6, the default IPv6 virtualaddressrange is FE80::/10
 
       map4 = {'::': 'quibble'}
-      x = await controller.map_address(map4)
-      self.assertEquals(len(x), 1)
-      addr2, target = list(x.items())[0]
+      response = await controller.map_address(map4)
+      self.assertEquals(1, len(response))
+      addr2, target = list(response.items())[0]
 
       self.assertTrue(addr2.startswith('[fe'), '%s did not start with [fe.' % addr2)
-      self.assertEquals(target, 'quibble')
+      self.assertEquals('quibble', target)
 
       async def address_mappings(addr_type):
         response = await controller.get_info(['address-mappings/%s' % addr_type])
@@ -1280,6 +1278,12 @@ class TestController(unittest.TestCase):
       # configuration.  Ours should not be there.
 
       self.assertEquals({}, await address_mappings('config'))
+
+      # revert these address mappings
+
+      mapped_addresses = (await address_mappings('control')).keys()
+      await controller.map_address(dict([(addr, None) for addr in mapped_addresses]))
+      self.assertEquals({}, await address_mappings('control'))
 
   @test.require.controller
   @test.require.online
