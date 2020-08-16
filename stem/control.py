@@ -2935,7 +2935,7 @@ class Controller(BaseController):
 
     Please note that **basic_auth** only works for legacy (v2) hidden services.
     Version 3 can't enable service authentication through the control protocol
-    (`ticket <https://gitlab.torproject.org/tpo/core/tor/-/issues/40084>`_).
+    (:ticket:`tor-40084`).
 
     To create a **version 3** service simply specify **ED25519-V3** as the
     our key type, and to create a **version 2** service use **RSA1024**. The
