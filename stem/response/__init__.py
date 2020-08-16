@@ -64,19 +64,19 @@ def convert(response_type: str, message: 'stem.response.ControlMessage', **kwarg
   :class:`~stem.response.ControlMessage` to a subclass for its response type.
   Recognized types include...
 
-  =================== =====
-  response_type       Class
-  =================== =====
-  **ADD_ONION**                :class:`stem.response.add_onion.AddOnionResponse`
-  **AUTHCHALLENGE**            :class:`stem.response.authchallenge.AuthChallengeResponse`
-  **EVENT**                    :class:`stem.response.events.Event` subclass
-  **GETCONF**                  :class:`stem.response.getconf.GetConfResponse`
-  **GETINFO**                  :class:`stem.response.getinfo.GetInfoResponse`
-  **MAPADDRESS**               :class:`stem.response.mapaddress.MapAddressResponse`
-  **ONION_CLIENT_AUTH_VIEW**   :class:`stem.response.onion_client_auth.OnionClientAuthViewResponse`
-  **PROTOCOLINFO**             :class:`stem.response.protocolinfo.ProtocolInfoResponse`
-  **SINGLELINE**               :class:`stem.response.SingleLineResponse`
-  =================== =====
+  =========================== =====
+  response_type               Class
+  =========================== =====
+  **ADD_ONION**               :class:`stem.response.add_onion.AddOnionResponse`
+  **AUTHCHALLENGE**           :class:`stem.response.authchallenge.AuthChallengeResponse`
+  **EVENT**                   :class:`stem.response.events.Event` subclass
+  **GETCONF**                 :class:`stem.response.getconf.GetConfResponse`
+  **GETINFO**                 :class:`stem.response.getinfo.GetInfoResponse`
+  **MAPADDRESS**              :class:`stem.response.mapaddress.MapAddressResponse`
+  **ONION_CLIENT_AUTH_VIEW**  :class:`stem.response.onion_client_auth.OnionClientAuthViewResponse`
+  **PROTOCOLINFO**            :class:`stem.response.protocolinfo.ProtocolInfoResponse`
+  **SINGLELINE**              :class:`stem.response.SingleLineResponse`
+  =========================== =====
 
   :param response_type: type of tor response to convert to
   :param message: message to be converted
