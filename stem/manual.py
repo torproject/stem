@@ -335,9 +335,7 @@ class Manual(object):
 
   This does not include every bit of information from the tor manual. For
   instance, I've excluded the 'THE CONFIGURATION FILE FORMAT' section. If
-  there's a part you'd find useful then `file an issue
-  <https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs>`_ and we can
-  add it.
+  there's a part you'd find useful then file an issue and we can add it.
 
   :var str name: brief description of the tor command
   :var str synopsis: brief tor command usage

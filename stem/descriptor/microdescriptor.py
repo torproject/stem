@@ -196,7 +196,7 @@ class Microdescriptor(Descriptor):
   :var stem.exit_policy.MicroExitPolicy exit_policy_v6: **\\*** exit policy for IPv6
   :var hash identifiers: mapping of key types (like rsa1024 or ed25519) to
     their base64 encoded identity, this is only used for collision prevention
-    (:trac:`11743`)
+    (:ticket:`tor-11743`)
   :var dict protocols: mapping of protocols to their supported versions
 
   **\\*** attribute is required when we're parsed with validation

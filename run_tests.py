@@ -58,7 +58,7 @@ NEW_CAPABILITIES_FOUND = """\
 Your version of Tor has capabilities stem currently isn't taking advantage of.
 If you're running the latest version of stem then please file a ticket on:
 
-  https://trac.torproject.org/projects/tor/wiki/doc/stem/bugs
+  https://github.com/torproject/stem/issues/
 
 New capabilities are:
 """

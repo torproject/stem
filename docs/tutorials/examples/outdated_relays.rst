@@ -5,8 +5,8 @@ List Outdated Relays
    :target: ../double_double_toil_and_trouble.html
 
 Time marches on. Tor makes new releases, and at some point needs to drop
-support for old ones. Below is the script we used on :trac:`9476` to reach out
-to relay operators that needed to upgrade.
+support for old ones. Below is the script we used on :ticket:`tor-9476` to
+reach out to relay operators that needed to upgrade.
 
 .. literalinclude:: /_static/example/outdated_relays.py
    :language: python

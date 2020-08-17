@@ -410,8 +410,6 @@ Library for working with the tor process.
 
   Purpose for a tor connection. Tor may provide types not in this enum.
 
-  The meaning behind these values is a bit unclear, pending :trac:`10086`.
-
   .. versionadded:: 1.2.0
 
   =============== ===========

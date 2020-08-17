@@ -1,12 +1,9 @@
 import re
 
-from docutils.utils import unescape
 from docutils.nodes import reference
-from docutils.parsers.rst.roles import set_classes
 
 STEM_TICKET_URL = 'https://github.com/torproject/stem/issues/{ticket}'
 TOR_TICKET_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/issues/{ticket}'
-TRAC_URL = 'https://trac.torproject.org/{ticket}'
 SPEC_URL = 'https://gitweb.torproject.org/torspec.git/commit/?id={commit}'
 
 
@@ -35,20 +32,6 @@ def role_ticket(name, rawtext, argument, lineno, inliner, options = {}, content 
 
   return (
     [reference(rawtext, label, refuri = url, **options)],
-    [],
-  )
-
-
-def role_trac(name, rawtext, argument, lineno, inliner, options = {}, content = []):
-  """
-  Aliases :trac:`1234` to 'https://trac.torproject.org/1234'.
-  """
-
-  if not argument.isdigit() or int(argument) <= 0:
-    return error('Invalid ticket number: %s' % argument, rawtext, lineno, inliner)
-
-  return (
-    [reference(rawtext, 'ticket %s' % argument, refuri = TRAC_URL.format(ticket = argument), **options)],
     [],
   )
 
@@ -82,5 +65,4 @@ def setup(app):
   """
 
   app.add_role('ticket', role_ticket)
-  app.add_role('trac', role_trac)
   app.add_role('spec', role_spec)

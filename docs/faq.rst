@@ -550,14 +550,7 @@ know if you get stuck or would like to discuss anything!
 #. When you have something that you would like to contribute back do the following...
 
  * If you don't already have a publicly accessible Stem repository then set one up. `GitHub <https://github.com/>`_ in particular is great for this.
- * File a `trac ticket <https://trac.torproject.org/projects/tor/newticket>`_, the only fields you'll need are...
-
-  * Summary: short description of your change
-  * Description: longer description and a link to your repository with either the git commits or branch that has your change
-  * Type: 'defect' if this is a bug fix and 'enhancement' otherwise
-  * Priority: rough guess at the priority of your change
-  * Component: Core Tor / Stem
-
+ * `File a ticket <https://github.com/torproject/stem/issues/>`_ or pull request.
  * I'll review the change and give suggestions. When we're both happy with it I'll push your change to the official repository.
 
 .. _how_do_i_run_the_tests:

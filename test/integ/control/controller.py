@@ -855,7 +855,7 @@ class TestController(unittest.TestCase):
   async def test_set_conf_for_usebridges(self):
     """
     Ensure we can set UseBridges=1 and also set a Bridge. This is a tor
-    regression check (:trac:`31945`).
+    regression check.
     """
 
     async with await test.runner.get_runner().get_tor_controller() as controller:
@@ -1571,7 +1571,7 @@ class TestController(unittest.TestCase):
   async def test_transition_to_relay(self):
     """
     Transitions Tor to turn into a relay, then back to a client. This helps to
-    catch transition issues such as the one cited in :trac:`14901`.
+    catch transition issues such as the one cited in :ticket:`tor-14901`.
     """
 
     async with await test.runner.get_runner().get_tor_controller() as controller:

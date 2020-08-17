@@ -505,7 +505,7 @@ async def authenticate(controller: Union[stem.control.BaseController, stem.socke
 
       All of the authentication methods tor will accept are new and
       unrecognized. Please upgrade stem and, if that doesn't work, file a
-      ticket on 'trac.torproject.org' and I'd be happy to add support.
+      ticket.
 
     * :class:`stem.connection.MissingPassword`
 
@@ -572,7 +572,7 @@ async def authenticate(controller: Union[stem.control.BaseController, stem.socke
     **\\*** In practice it is highly unusual for this to occur, being more of a
     theoretical possibility rather than something you should expect. It's fine
     to treat these as errors. If you have a use case where this commonly
-    happens, please file a ticket on 'trac.torproject.org'.
+    happens, please file a ticket.
 
     In the future new :class:`~stem.connection.AuthenticationFailure`
     subclasses may be added to allow for better error handling.
@@ -743,7 +743,7 @@ async def authenticate_password(controller: Union[stem.control.BaseController, s
   :func:`~stem.connection.authenticate`, we may mistakenly raise a
   PasswordAuthRejected rather than IncorrectPassword. This is because we rely
   on tor's error messaging which is liable to change in future versions
-  (:trac:`4817`).
+  (:ticket:`tor-4817`).
 
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.
@@ -766,7 +766,7 @@ async def authenticate_password(controller: Union[stem.control.BaseController, s
 
   # Escapes quotes. Tor can include those in the password hash, in which case
   # it expects escaped quotes from the controller. For more information see...
-  # https://trac.torproject.org/projects/tor/ticket/4600
+  # https://gitlab.torproject.org/tpo/core/tor/-/issues/4600
 
   password = password.replace('"', '\\"')
 
@@ -820,7 +820,7 @@ async def authenticate_cookie(controller: Union[stem.control.BaseController, ste
   :class:`~stem.connection.CookieAuthRejected` rather than
   :class:`~stem.connection.IncorrectCookieValue`. This is because we rely on
   tor's error messaging which is liable to change in future versions
-  (:trac:`4817`).
+  (:ticket:`tor-4817`).
 
   This can authenticate to either a :class:`~stem.control.BaseController` or
   :class:`~stem.socket.ControlSocket`.
@@ -1147,8 +1147,6 @@ def _read_cookie(cookie_path: str, is_safecookie: bool) -> bytes:
   # Without this a malicious socket could, for instance, claim that
   # '~/.bash_history' or '~/.ssh/id_rsa' was its authentication cookie to trick
   # us into reading it for them with our current permissions.
-  #
-  # https://trac.torproject.org/projects/tor/ticket/4303
 
   auth_cookie_size = os.path.getsize(cookie_path)
 

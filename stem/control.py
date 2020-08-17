@@ -1340,7 +1340,7 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Policies retrieved through 'GETINFO exit-policy/full' rather than
        parsing the user's torrc entries. This should be more reliable for
-       some edge cases. (:trac:`25739`)
+       some edge cases.
 
     :param default: response if the query fails
 
@@ -1951,7 +1951,7 @@ class Controller(BaseController):
     # TODO: We should iterate over the descriptors as they're read from the
     # socket rather than reading the whole thing into memory.
     #
-    # https://trac.torproject.org/8248
+    # https://github.com/torproject/stem/issues/30
 
     desc_content = await self.get_info('desc/all-recent', get_bytes = True)
 
@@ -2041,7 +2041,7 @@ class Controller(BaseController):
     # TODO: We should iterate over the descriptors as they're read from the
     # socket rather than reading the whole thing into memory.
     #
-    # https://trac.torproject.org/8248
+    # https://github.com/torproject/stem/issues/30
 
     desc_content = await self.get_info('ns/all', get_bytes = True)
 
@@ -2069,7 +2069,7 @@ class Controller(BaseController):
     If **await_result** is **True** then this blocks until we either receive
     the descriptor or the request fails. If **False** this returns right away.
 
-    **This method only supports v2 hidden services, not v3.** (:trac:`25417`)
+    **This method only supports v2 hidden services, not v3.** (:ticket:`tor-25417`)
 
     .. versionadded:: 1.4.0
 
@@ -2387,8 +2387,8 @@ class Controller(BaseController):
 
       # Tor provides some config options even if they haven't been set...
       #
-      # https://trac.torproject.org/projects/tor/ticket/2362
-      # https://trac.torproject.org/projects/tor/ticket/17909
+      # https://gitlab.torproject.org/tpo/core/tor/-/issues/2362
+      # https://gitlab.torproject.org/tpo/core/tor/-/issues/17909
 
       default_lines = (
         'Log notice stdout',
@@ -2744,7 +2744,7 @@ class Controller(BaseController):
     # creating a service with one of those we should explicitly create a v2
     # service instead.
     #
-    #   https://trac.torproject.org/projects/tor/ticket/27446
+    #   https://gitlab.torproject.org/tpo/core/tor/-/issues/27446
 
     for path in conf:
       if 'HiddenServiceAuthorizeClient' in conf[path] or 'RendPostPeriod' in conf[path]:
@@ -2853,8 +2853,7 @@ class Controller(BaseController):
     .. versionadded:: 1.4.0
 
     .. versionchanged:: 1.6.0
-       Tor change caused this to start providing empty strings if unset
-       (:trac:`21329`).
+       Tor change caused this to start providing empty strings if unset.
 
     :param default: response if the query fails
     :param our_services: include services created with this controller

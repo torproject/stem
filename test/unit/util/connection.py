@@ -320,9 +320,7 @@ class TestConnection(unittest.TestCase):
     """
     Checks the get_connections function with the ss resolver results on IPv6
     conections. This also checks with the output from a hardened Gentoo system
-    which has subtle differences...
-
-      https://trac.torproject.org/projects/tor/ticket/18079
+    which has subtle differences.
     """
 
     expected = [

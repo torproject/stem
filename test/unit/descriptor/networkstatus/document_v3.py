@@ -970,9 +970,7 @@ DnN5aFtYKiTc19qIC7Nmo+afPdDEf0MlJvEOP5EWl3w=
     self.assertEqual([], document.get_unrecognized_lines())
 
     # Prior to conensus method 9 votes can still have a signature in their
-    # footer...
-    #
-    # https://trac.torproject.org/7932
+    # footer.
 
     document = NetworkStatusDocumentV3.create(
       {

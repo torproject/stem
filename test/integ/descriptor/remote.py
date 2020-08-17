@@ -73,7 +73,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     for auth in consensus.directory_authorities:
       if auth.nickname == 'dannenberg-legacy':
-        continue  # skip due to https://trac.torproject.org/projects/tor/ticket/17906
+        continue  # skip due to https://gitlab.torproject.org/tpo/core/tor/-/issues/17906
 
       stem_auth = stem.directory.Authority.from_cache().get(auth.nickname)
 
@@ -82,7 +82,7 @@ class TestDescriptorDownloader(unittest.TestCase):
 
       for attr in ('v3ident', 'or_port', 'dir_port'):
         if auth.nickname == 'moria1' and attr == 'address':
-          continue  # skip due to https://trac.torproject.org/projects/tor/ticket/14955
+          continue  # skip due to https://gitlab.torproject.org/tpo/core/tor/-/issues/14955
 
         if getattr(auth, attr) != getattr(stem_auth, attr):
           self.fail('%s has %s %s, but we expected %s' % (auth.nickname, attr, getattr(auth, attr), getattr(stem_auth, attr)))

@@ -486,7 +486,7 @@ def _parse_dir_source_line(descriptor: 'stem.descriptor.Descriptor', entries: EN
     raise ValueError("The 'dir-source' line of a v2 network status document must have three values: dir-source %s" % value)
 
   if not dir_source_comp[0]:
-    # https://trac.torproject.org/7055
+    # https://gitlab.torproject.org/tpo/core/tor/-/issues/7055
     raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
   elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[1]):
     raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[1])
@@ -1483,7 +1483,7 @@ def _parse_dirauth_source_line(descriptor: 'stem.descriptor.Descriptor', entries
   elif not stem.util.tor_tools.is_valid_fingerprint(dir_source_comp[1]):
     raise ValueError("Authority's v3ident is invalid: %s" % dir_source_comp[1])
   elif not dir_source_comp[2]:
-    # https://trac.torproject.org/7055
+    # https://gitlab.torproject.org/tpo/core/tor/-/issues/7055
     raise ValueError("Authority's hostname can't be blank: dir-source %s" % value)
   elif not stem.util.connection.is_valid_ipv4_address(dir_source_comp[3]):
     raise ValueError("Authority's address isn't a valid IPv4 address: %s" % dir_source_comp[3])

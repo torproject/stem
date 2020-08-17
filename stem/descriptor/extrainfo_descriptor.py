@@ -959,7 +959,7 @@ class RelayExtraInfoDescriptor(ExtraInfoDescriptor):
       # Due to a tor bug sha256 digests are calculated from the
       # whole descriptor rather than ommiting the signature...
       #
-      #   https://trac.torproject.org/projects/tor/ticket/28415
+      #   https://gitlab.torproject.org/tpo/core/tor/-/issues/28415
 
       return stem.descriptor._encode_digest(hashlib.sha256(self.get_bytes()), encoding)
     else:

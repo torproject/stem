@@ -477,9 +477,7 @@ def _unpack_addr(addr: bytes) -> str:
       # IPv6 address
 
       if IS_LITTLE_ENDIAN:
-        # Group into eight characters, then invert in pairs...
-        #
-        #   https://trac.torproject.org/projects/tor/ticket/18079#comment:24
+        # group into eight characters, then invert in pairs
 
         inverted = []
 

@@ -121,7 +121,7 @@ class TestControlMessage(unittest.TestCase):
 
     # We can't be certain of the order, and there may be extra config-text
     # entries as per...
-    # https://trac.torproject.org/projects/tor/ticket/2362
+    # https://gitlab.torproject.org/tpo/core/tor/-/issues/2362
     #
     # so we'll just check that the response is a superset of our config
 

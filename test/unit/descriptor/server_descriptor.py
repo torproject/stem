@@ -261,9 +261,7 @@ Qlx9HNCqCY877ztFRC624ja2ql6A2hBcuoYMbkHjcQ4=
     self.assertEqual([], desc.get_unrecognized_lines())
 
     # Make sure that we can get a string representation for this descriptor
-    # (having non-unicode content risks a UnicodeEncodeError)...
-    #
-    # https://trac.torproject.org/8265
+    # (having non-unicode content risks a UnicodeEncodeError).
 
     self.assertTrue(isinstance(str(desc), str))
 

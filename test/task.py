@@ -118,7 +118,6 @@ def _check_platform_version():
     extra = platform.release()
   elif platform.system() == 'Linux' and hasattr(platform, 'linux_distribution'):
     # TODO: platform.linux_distribution() was removed in python 3.8
-    # https://trac.torproject.org/projects/tor/ticket/30847
 
     extra = ' '.join(platform.linux_distribution()[:2])
   else:

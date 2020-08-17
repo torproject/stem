@@ -397,8 +397,7 @@ def parse_file(descriptor_file: Union[str, BinaryIO, tarfile.TarFile, IO[bytes]]
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
   # based on its filename. Metrics descriptors, however, can be identified
-  # by an annotation on their first line...
-  # https://trac.torproject.org/5651
+  # by an annotation on their first line.
 
   initial_position = descriptor_file.tell()  # type: ignore
   first_line = stem.util.str_tools._to_unicode(descriptor_file.readline().strip())  # type: ignore
@@ -503,9 +502,6 @@ def _parse_metrics_file(descriptor_type: str, major_version: int, minor_version:
     for desc in stem.descriptor.microdescriptor._parse_file(descriptor_file, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.extrainfo_descriptor.BridgeExtraInfoDescriptor.TYPE_ANNOTATION_NAME and major_version == 1:
-    # version 1.1 introduced a 'transport' field...
-    # https://trac.torproject.org/6257
-
     for desc in stem.descriptor.extrainfo_descriptor._parse_file(descriptor_file, is_bridge = True, validate = validate, **kwargs):
       yield desc
   elif descriptor_type == stem.descriptor.networkstatus.NetworkStatusDocumentV2.TYPE_ANNOTATION_NAME and major_version == 1:
@@ -1493,7 +1489,7 @@ def _descriptor_components_with_extra(raw_contents: bytes, validate: bool, extra
 
     # Some lines have an 'opt ' for backward compatibility. They should be
     # ignored. This prefix is being removed in...
-    # https://trac.torproject.org/projects/tor/ticket/5124
+    # https://gitlab.torproject.org/tpo/core/tor/-/issues/5124
 
     if line.startswith('opt '):
       line = line[4:]

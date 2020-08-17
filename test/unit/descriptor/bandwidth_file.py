@@ -293,7 +293,7 @@ class TestBandwidthFile(unittest.TestCase):
   def test_version_position(self):
     """
     Our 'version' header must be in the second position if validated, but
-    otherwise doesn't matter. (:trac:`29539`)
+    otherwise doesn't matter.
     """
 
     desc = BandwidthFile.from_str(WRONG_VERSION_POSITION)

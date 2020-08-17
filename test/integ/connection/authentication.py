@@ -277,9 +277,7 @@ class TestAuthenticate(unittest.TestCase):
   async def test_wrong_password_with_controller(self):
     """
     We ran into a race condition where providing the wrong password to the
-    Controller caused inconsistent responses. Checking for that...
-
-    https://trac.torproject.org/projects/tor/ticket/22679
+    Controller caused inconsistent responses.
     """
 
     runner = test.runner.get_runner()

@@ -946,8 +946,7 @@ def cwd(pid: int) -> Optional[str]:
       return results[0].split(' ', 1)[1].strip()
 
   # Use lsof as the final fallback. This is available on both Linux and is the
-  # only lookup method here that works for BSD...
-  # https://trac.torproject.org/projects/tor/ticket/4236
+  # only lookup method here that works for BSD.
   #
   # flags:
   #   a - presents the intersection of the following arguments
