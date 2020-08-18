@@ -4,6 +4,7 @@ from docutils.nodes import reference
 
 STEM_TICKET_URL = 'https://github.com/torproject/stem/issues/{ticket}'
 TOR_TICKET_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/issues/{ticket}'
+ARCHIVE_TICKET_URL = 'https://gitlab.torproject.org/legacy/trac/-/issues/{ticket}'
 SPEC_URL = 'https://gitweb.torproject.org/torspec.git/commit/?id={commit}'
 
 
@@ -24,6 +25,9 @@ def role_ticket(name, rawtext, argument, lineno, inliner, options = {}, content 
   if project == 'stem':
     label = 'ticket %s' % ticket
     url = STEM_TICKET_URL.format(ticket = ticket)
+  elif project == 'archive':
+    label = 'ticket %s' % ticket
+    url = ARCHIVE_TICKET_URL.format(ticket = ticket)
   elif project == 'tor':
     label = 'tor ticket %s' % ticket
     url = TOR_TICKET_URL.format(ticket = ticket)

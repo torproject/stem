@@ -78,9 +78,9 @@ Version 1.8 (December 29th, 2019)
 
   * Added :func:`~stem.control.Controller.get_start_time` method to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_uptime` method to the :class:`~stem.control.Controller`
-  * Controller events could fail to be delivered in a timely fashion
-  * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files
-  * ExitPolicies could raise TypeError when read concurrently
+  * Controller events could fail to be delivered in a timely fashion (:ticket:`archive-27173`)
+  * Adjusted :func:`~stem.control.Controller.get_microdescriptors` fallback to also use '.new' cache files (:ticket:`archive-28508`)
+  * ExitPolicies could raise TypeError when read concurrently (:ticket:`archive-29899`)
   * Moved the *arrived_at* attribute from :class:`~stem.response.event.Event` to :class:`~stem.response.__init__.ControlMessage`
   * **STALE_DESC** :data:`~stem.Flag` (:spec:`d14164d`)
   * **DORMANT** and **ACTIVE** :data:`~stem.Signal` (:spec:`4421149`)
@@ -89,38 +89,38 @@ Version 1.8 (December 29th, 2019)
 
  * **Descriptors**
 
-  * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module
-  * Added `v3 hidden service descriptor support <api/descriptor/hidden_service.html>`_
-  * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_
+  * Added the `stem.descriptor.collector <api/descriptor/collector.html>`_ module (:ticket:`archive-17979`)
+  * Added `v3 hidden service descriptor support <api/descriptor/hidden_service.html>`_ (:ticket:`archive-31369`)
+  * `Bandwidth file support <api/descriptor/bandwidth_file.html>`_ (:ticket:`archive-29056`)
   * `stem.descriptor.remote <api/descriptor/remote.html>`_ methods now raise :class:`stem.DownloadFailed`
-  * Check Ed25519 validity though the cryptography module rather than PyNaCl
-  * Download compressed descriptors by default
+  * Check Ed25519 validity though the cryptography module rather than PyNaCl (:ticket:`archive-22022`)
+  * Download compressed descriptors by default (:ticket:`archive-29186`)
   * Added :class:`~stem.descriptor.Compression` class
   * Added :func:`stem.descriptor.remote.get_microdescriptors`
-  * Added :func:`stem.descriptor.remote.get_bandwidth_file`
-  * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing
-  * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method
-  * Added :func:`~stem.descriptor.__init__.Descriptor.type_annotation` method
-  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocument.digest` method
-  * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods
+  * Added :func:`stem.descriptor.remote.get_bandwidth_file` (:ticket:`archive-26902`)
+  * Added :class:`~stem.descriptor.networkstatus.DetachedSignature` parsing (:ticket:`archive-28495`)
+  * Added :func:`~stem.descriptor.__init__.Descriptor.from_str` method (:ticket:`archive-28450`)
+  * Added :func:`~stem.descriptor.__init__.Descriptor.type_annotation` method (:ticket:`archive-28397`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocument.digest` method (:ticket:`archive-28398`)
+  * Added the **hash_type** and **encoding** arguments to `ServerDescriptor <api/descriptor/server_descriptor.html#stem.descriptor.server_descriptor.ServerDescriptor.digest>`_ and `ExtraInfo's <api/descriptor/extrainfo_descriptor.html#stem.descriptor.extrainfo_descriptor.ExtraInfoDescriptor.digest>`_ digest methods (:ticket:`archive-28398`)
   * Added the network status vote's new bandwidth_file_digest attribute (:spec:`1b686ef`)
-  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_valid` and :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.is_fresh` methods (:ticket:`archive-28448`)
   * Replaced :func:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` hex encoded **digest** attribute with a base64 encoded **microdescriptor_digest**
-  * Replaced the **digest** attribute of :class:`~stem.descriptor.microdescriptor.Microdescriptor` with a method by the same name
+  * Replaced the **digest** attribute of :class:`~stem.descriptor.microdescriptor.Microdescriptor` with a method by the same name (:ticket:`archive-28398`)
   * Default the **version_flavor** attribute of :class:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3` to 'ns' (:spec:`d97f8d9`)
-  * DescriptorDownloader crashed if **use_mirrors** is set
+  * DescriptorDownloader crashed if **use_mirrors** is set (:ticket:`archive-28393`)
   * Renamed stem.descriptor.hidden_service_descriptor to stem.descriptor.hidden_service
   * Don't download from Serge, a bridge authority that frequently timeout
-  * Updated dizum authority's address
+  * Updated dizum authority's address (:ticket:`archive-31406`)
 
  * **Client**
 
-  * Sockets with ORPorts errored if responses exceeded a hardcoded buffer size
+  * Sockets with ORPorts errored if responses exceeded a hardcoded buffer size (:ticket:`archive-28961`)
 
  * **Utilities**
 
   * :func:`~stem.util.tor_tools.is_valid_hidden_service_address` now provides *true* if a v3 hidden servie address
-  * Fixed 'invalid escape sequence' python 3.6 warnings
+  * Fixed 'invalid escape sequence' python 3.6 warnings (:ticket:`archive-27270`)
 
  * **Website**
 
@@ -128,7 +128,7 @@ Version 1.8 (December 29th, 2019)
   * Added NetBSD to our `download page <download.html>`_
   * Describe `advanced listener usage <tutorials/tortoise_and_the_hare.html#advanced-listeners>`_
   * Exemplify `manual SAFECOOKIE authentication <faq.html#i-m-using-safe-cookie-authentication>`_
-  * `Update PyPI links <https://packaging.python.org/guides/migrating-to-pypi-org/>`_
+  * `Update PyPI links <https://packaging.python.org/guides/migrating-to-pypi-org/>`_ (:ticket:`archive-30137`)
 
  * **Interpreter**
 
@@ -147,16 +147,16 @@ and the `stem.directory module <api/directory.html>`_.
 
  * **Controller**
 
-  * Listener exceptions and malformed events no longer break further event processing
-  * Documented v3 hidden service support (:spec:`6bd0a69`)
+  * Listener exceptions and malformed events no longer break further event processing (:ticket:`archive-27053`)
+  * Documented v3 hidden service support (:ticket:`archive-25124`, :spec:`6bd0a69`)
   * Added the stem.control.MALFORMED_EVENTS event listener constant
   * Added support for limiting the maximum number of streams for :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`2fcb1c2`)
-  * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response
+  * Added a timeout argument to :class:`~stem.control.Controller` methods that could await a response (:ticket:`archive-26056`)
   * Added a close_output argument to :class:`~stem.process.launch_tor`
   * :func:`stem.connection.connect` crashed if its port argument was a string
-  * More reliable ExitPolicy resolution
-  * Fixed cache invalidation when another contorller calls SETCONF
-  * :func:`~stem.control.COntroller.create_hidden_service` failed when creating services with v2 options
+  * More reliable ExitPolicy resolution (:ticket:`archive-25739`)
+  * Fixed cache invalidation when another contorller calls SETCONF (:ticket:`archive-25821`)
+  * :func:`~stem.control.COntroller.create_hidden_service` failed when creating services with v2 options (:ticket:`archive-27446`)
   * :func:`~stem.control.Controller.get_info` commonly raised :class:`stem.ProtocolError` when it should provide a :class:`stem.OperationFailed`
   * :func:`~stem.control.Controller.get_microdescriptors` now reads microdescriptors from the control port rather than disk when available (:spec:`b5396d5`)
   * Added the delivered_read, delivered_written, overhead_read, and overhead_written attributes to :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`fbb38ec`)
@@ -176,28 +176,28 @@ and the `stem.directory module <api/directory.html>`_.
   * Added the *orport_v6* attribute to the :class:`~stem.directory.Authority` class
   * Added server descriptor's new is_hidden_service_dir attribute
   * Added the network status vote's new bandwidth_file_headers attribute (:spec:`84591df`)
-  * Added the microdescriptor router status entry's new or_addresses attribute (:spec:`fdc8f3e`)
+  * Added the microdescriptor router status entry's new or_addresses attribute (:ticket:`archive-26405`, :spec:`fdc8f3e`)
   * Don't retry downloading descriptors when we've timed out
   * Don't download from tor26, an authority that frequently timeout
-  * Replaced Bifroest bridge authority with Serge
+  * Replaced Bifroest bridge authority with Serge (:ticket:`archive-26771`)
   * `stem.descriptor.remote <api/descriptor/remote.html>`_  now consistently defaults **fall_back_to_authority** to false
   * Deprecated `stem.descriptor.export <api/descriptor/export.html>`_. If you use it please `let us know <https://www.atagar.com/contact/>`_.
   * Added :func:`~stem.descriptor.remote.their_server_descriptor`
   * Added the reply_headers attribute to :class:`~stem.descriptor.remote.Query`
   * Supplying a User-Agent when downloading descriptors
-  * Reduced maximum descriptors fetched by the remote module to match tor's new limit
-  * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute
+  * Reduced maximum descriptors fetched by the remote module to match tor's new limit (:ticket:`archive-24743`)
+  * Consensus **shared_randomness_*_reveal_count** attributes undocumented, and unavailable if retrieved before their corresponding shared_randomness_*_value attribute (:ticket:`archive-25046`)
   * Allow 'proto' line to have blank values (:spec:`a8455f4`)
 
  * **Utilities**
 
-  * Fixed PyPy compatibility
-  * Python 3.6+ syntax error if test_tools.py imported
+  * Fixed PyPy compatibility (:ticket:`archive-26207`)
+  * Python 3.6+ syntax error if test_tools.py imported (:ticket:`archive-26739`)
   * Connection information from proc limited to 10,000 results
   * Include attribute types in most equality checks and hashes
   * Cache hash values of immutable classes
   * More performant string concatenation `via bytearrays <https://docs.python.org/3/faq/programming.html#what-is-the-most-efficient-way-to-concatenate-many-strings-together>`_
-  * Functions using lru_cache could fail with a KeyError on Python 3.5
+  * Functions using lru_cache could fail with a KeyError on Python 3.5 (:ticket:`archive-26412`)
 
  * **Website**
 
@@ -207,7 +207,7 @@ and the `stem.directory module <api/directory.html>`_.
   * Added a `relay connection summary example <tutorials/examples/relay_connections.html>`_
 
  * **Version 1.7.1** (December 26th, 2018) - :func:`~stem.process.launch_tor`
-   compatibility with an upcoming log format change
+   compatibility with an upcoming log format change (:ticket:`archive-28731`)
 
 .. _version_1.6:
 
@@ -219,48 +219,48 @@ Year long accumulation of fixes and improvements in support of the `Nyx 2.0 rele
  * **Controller**
 
   * :func:`~stem.process.launch_tor` raised a ValueError if invoked when outside the main thread
-  * Failure to authenticate could raise an improper response or hang
-  * Renamed :class:`~stem.response.events.ConnectionBandwidthEvent` type attribute to conn_type to avoid conflict with parent class
+  * Failure to authenticate could raise an improper response or hang (:ticket:`archive-22679`)
+  * Renamed :class:`~stem.response.events.ConnectionBandwidthEvent` type attribute to conn_type to avoid conflict with parent class (:ticket:`archive-21774`)
   * Added 'force' argument to :func:`~stem.control.Controller.save_conf` (:spec:`5c82d5e`)
   * Added the QUERY_NO_HSDIR :data:`~stem.HSDescReason` and recognizing unknown HSDir results (:spec:`1412d79`)
   * Added the GUARD_WAIT :data:`~stem.CircStatus` (:spec:`6446210`)
   * Unable to use cookie auth when path includes wide characters (chinese, japanese, etc)
-  * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset
+  * Tor change caused :func:`~stem.control.Controller.list_ephemeral_hidden_services` to provide empty strings if unset (:ticket:`archive-21329`)
   * Better error message when :func:`~stem.control.Controller.set_conf` fails due to an option being immutable
-  * :func:`~stem.control.Controller.get_ports` didn't provide ports for many representations of localhost
+  * :func:`~stem.control.Controller.get_ports` didn't provide ports for many representations of localhost (:ticket:`archive-24085`)
   * :func:`~stem.control.Controller.is_geoip_unavailable` now determines if database is available right away
   * Added the time attribute to :class:`~stem.response.events.StreamBwEvent` and :class:`~stem.response.events.CircuitBandwidthEvent` (:spec:`00b9daf`)
   * Added the consensus_content attribute to :class:`~stem.response.events.NewConsensusEvent` and deprecated its 'desc'
-  * Deprecated :func:`~stem.control.Controller.is_geoip_unavailable`, this is now available via getinfo instead (:spec:`dc973f8`)
-  * Deprecated :class:`~stem.respose.events.AuthDirNewDescEvent` (:spec:`6e887ba`)
+  * Deprecated :func:`~stem.control.Controller.is_geoip_unavailable`, this is now available via getinfo instead (:ticket:`archive-23237`, :spec:`dc973f8`)
+  * Deprecated :class:`~stem.respose.events.AuthDirNewDescEvent` (:ticket:`archive-22377`, :spec:`6e887ba`)
   * Caching manual information as sqlite rather than stem.util.conf, making :func:`stem.manual.Manual.from_cache` about ~8x faster
   * Added :func:`~stem.manual.database` to get a cursor for the manual cache
   * Failed to parse torrcs without a port on ipv6 exit policy entries
   * Resilient to 'Tor' prefix in 'GETINFO version' result (:spec:`c5ff1b1`)
-  * Added a **all_extra** parameter to :class:`stem.version.Version` and support for multiple parenthetical entries (:spec:`b50917d`)
-  * Setting 'UseMicrodescriptors 1' in your torrc caused :func:`~stem.control.Controller.get_network_statuses` to error
+  * Added a **all_extra** parameter to :class:`stem.version.Version` and support for multiple parenthetical entries (:ticket:`archive-22110`, :spec:`b50917d`)
+  * Setting 'UseMicrodescriptors 1' in your torrc caused :func:`~stem.control.Controller.get_network_statuses` to error (:ticket:`archive-24110`)
   * Closing controller connection faster when under heavy event load
   * Better messaging when unable to connect to tor on FreeBSD
   * More succinct trace level logging
 
  * **Descriptors**
 
-  * Supporting `descriptor creation <tutorials/mirror_mirror_on_the_wall.html#can-i-create-descriptors>`_
-  * Support and validation for `ed25519 certificates <api/descriptor/certificate.html>`_ (`spec <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_)
-  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.validate_signatures` to check our key certificate signatures
-  * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.org/project/cryptography/>`_ for validating signatures
+  * Supporting `descriptor creation <tutorials/mirror_mirror_on_the_wall.html#can-i-create-descriptors>`_ (:ticket:`archive-10227`)
+  * Support and validation for `ed25519 certificates <api/descriptor/certificate.html>`_ (`spec <https://gitweb.torproject.org/torspec.git/tree/cert-spec.txt>`_, :ticket:`archive-21558`)
+  * Added :func:`~stem.descriptor.networkstatus.NetworkStatusDocumentV3.validate_signatures` to check our key certificate signatures (:ticket:`archive-11045`)
+  * Moved from the deprecated `pycrypto <https://www.dlitz.net/software/pycrypto/>`_ module to `cryptography <https://pypi.org/project/cryptography/>`_ for validating signatures (:ticket:`archive-21086`)
   * Sped descriptor reading by ~25% by deferring defaulting when validating
   * Added server descriptor's new extra_info_sha256_digest attribute (:spec:`0f03581`)
   * Added server descriptor's new protocol attribute (:spec:`eb4fb3c`)
-  * Added server descriptor's new bridge_distribution attribute
+  * Added server descriptor's new bridge_distribution attribute (:ticket:`archive-21177`)
   * Added extrainfo descriptor's new padding_counts attributes (:spec:`0803997`)
-  * Shared randomness properties weren't being read in votes
-  * Added bastet as a new authority
-  * Updated longclaw authority's address
+  * Shared randomness properties weren't being read in votes (:ticket:`archive-21102`)
+  * Added bastet as a new authority (:ticket:`archive-23912`)
+  * Updated longclaw authority's address (:ticket:`archive-23592`)
 
  * **Utilities**
 
-  * Support connection resolution on OpenBSD using fstat
+  * Support connection resolution on OpenBSD using fstat (:ticket:`archive-13807`)
   * Added :func:`~stem.util.system.size_of`
   * Added :func:`~stem.util.log.is_tracing`
   * Added timeout argument to :func:`~stem.util.system.call`
@@ -274,13 +274,13 @@ Year long accumulation of fixes and improvements in support of the `Nyx 2.0 rele
 
  * **Interpreter**
 
-  * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands
-  * Allowing interpreter to continue after tor shuts down
+  * Added a `'--run [command or path]' argument <tutorials/down_the_rabbit_hole.html#running-individual-commands>`_ to invoke specific commands (:ticket:`archive-21541`)
+  * Allowing interpreter to continue after tor shuts down (:ticket:`archive-22374`)
   * Interpreter buffered an unbounded number of events, leaking memory over time
 
  * **Website**
 
-  * Source code served by '[source]' links perpetually stale
+  * Source code served by '[source]' links perpetually stale (:ticket:`archive-19521`)
 
 .. _version_1.5:
 
@@ -295,21 +295,21 @@ and much more.
  * **Controller**
 
   * Dramatic, 300x performance improvement for reading from the control port with python 3
-  * Added `stem.manual <api/manual.html>`_, which provides information available about Tor from `its manual <https://www.torproject.org/docs/tor-manual.html.en>`_
-  * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default)
-  * :class:`~stem.exit_policy.ExitPolicy` support for *accept6/reject6* and *\*4/6* wildcards
+  * Added `stem.manual <api/manual.html>`_, which provides information available about Tor from `its manual <https://www.torproject.org/docs/tor-manual.html.en>`_ (:ticket:`archive-8251`)
+  * :func:`~stem.connection.connect` and :func:`~stem.control.Controller.from_port` now connect to both port 9051 (relay's default) and 9151 (Tor Browser's default) (:ticket:`archive-16075`)
+  * :class:`~stem.exit_policy.ExitPolicy` support for *accept6/reject6* and *\*4/6* wildcards (:ticket:`archive-16053`)
   * Added `support for NETWORK_LIVENESS events <api/response.html#stem.response.events.NetworkLivenessEvent>`_ (:spec:`44aac63`)
   * Added support for basic authentication to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`c2865d9`)
   * Added support for non-anonymous services to :func:`~stem.control.Controller.create_ephemeral_hidden_service` (:spec:`b8fe774`)
-  * Added :func:`~stem.control.event_description` for getting human-friendly descriptions of tor events
+  * Added :func:`~stem.control.event_description` for getting human-friendly descriptions of tor events (:ticket:`archive-19061`)
   * Added :func:`~stem.control.Controller.reconnect` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_set` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.is_user_traffic_allowed` to the :class:`~stem.control.Controller`
   * Added the replica attribute to :class:`~stem.response.events.HSDescEvent` (:spec:`4989e73`)
   * Added the NoEdConsensus :data:`~stem.Flag` (:spec:`dc99160`)
   * Recognize listeners with IPv6 addresses in :func:`~stem.control.Controller.get_listeners`
-  * :func:`~stem.process.launch_tor` could leave a lingering process during an unexpected exception
-  * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things
+  * :func:`~stem.process.launch_tor` could leave a lingering process during an unexpected exception (:ticket:`archive-17946`)
+  * IPv6 addresses could trigger errors in :func:`~stem.control.Controller.get_listeners`, :class:`~stem.response.events.ORConnEvent`, and quite a few other things (:ticket:`archive-16174`)
   * Don't obscure stacktraces, most notably :class:`~stem.control.Controller` getter methods with default values
   * Classes with custom equality checks didn't provide a corresponding inequality method
 
@@ -321,25 +321,25 @@ and much more.
   * Support downloading microdescriptor consensus with :func:~stem.descriptor.remote.DescriptorDownloader.get_consensus` (:spec`e788b8f`)
   * Added consensus and vote's new shared randomness attributes (:spec:`9949f64`) 
   * Added server descriptor's new allow_tunneled_dir_requests attribute (:spec:`8bc30d6`)
-  * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228
+  * Server descriptor validation fails with 'extra-info-digest line had an invalid value' from additions in proposal 228 (:ticket:`archive-16227`)
   * :class:`~stem.descriptor.server_descriptor.BridgeDescriptor` now has 'ntor_onion_key' like its unsanitized counterparts
   * Replaced the :class:`~stem.descriptor.microdescriptor.Microdescriptor` identifier and identifier_type attributes with an identifiers hash since it can now appear multiple times (:spec:`09ff9e2`)
-  * Unable to read descriptors from data directories on Windows due to their CRLF newlines
-  * TypeError under python3 when using 'use_mirrors = True'
-  * Deprecated hidden service descriptor's *introduction_points_auth* field, which was never implemented in tor (:spec:`9c218f9`)
-  * Deprecated :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors` as it was never implemented in tor
-  * :func:`~stem.control.Controller.get_hidden_service_descriptor` errored when provided a *servers* argument
+  * Unable to read descriptors from data directories on Windows due to their CRLF newlines (:ticket:`archive-17051`)
+  * TypeError under python3 when using 'use_mirrors = True' (:ticket:`archive-17083`)
+  * Deprecated hidden service descriptor's *introduction_points_auth* field, which was never implemented in tor (:ticket:`archive-15190`, :spec:`9c218f9`)
+  * Deprecated :func:`~stem.descriptor.remote.DescriptorDownloader.get_microdescriptors` as it was never implemented in tor (:ticket:`archive-9271`)
+  * :func:`~stem.control.Controller.get_hidden_service_descriptor` errored when provided a *servers* argument (:ticket:`archive-18401`)
   * Fixed parsing of server descriptor's *allow-single-hop-exits* and *caches-extra-info* lines
   * Bracketed IPv6 addresses were mistreated as being invalid content
   * Better validation for non-ascii descriptor content
-  * Updated dannenberg's v3ident
-  * Removed urras as a directory authority
+  * Updated dannenberg's v3ident (:ticket:`archive-17906`)
+  * Removed urras as a directory authority (:ticket:`archive-19271`)
 
  * **Utilities**
 
-  * IPv6 support in :func:`~stem.util.connection.get_connections` when resolving with proc, netstat, lsof, or ss
-  * The 'ss' connection resolver didn't work on Gentoo
-  * Recognize IPv4-mapped IPv6 addresses in our utils
+  * IPv6 support in :func:`~stem.util.connection.get_connections` when resolving with proc, netstat, lsof, or ss (:ticket:`archive-18079`)
+  * The 'ss' connection resolver didn't work on Gentoo (:ticket:`archive-18079`)
+  * Recognize IPv4-mapped IPv6 addresses in our utils (:ticket:`archive-18079`)
   * Allow :func:`stem.util.conf.Config.set` to remove values when provided with a **None** value
   * Support prefix and suffix issue strings in :func:`~stem.util.test_tools.pyflakes_issues`
   * Additional information when :func:`~stem.util.system.call` fails through a :class:`~stem.util.system.CallError`
@@ -358,14 +358,14 @@ and much more.
  * **Website**
 
   * `Comparison of our descriptor parsing libraries <tutorials/mirror_mirror_on_the_wall.html#are-there-any-other-parsing-libraries>`_
-  * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_
+  * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:ticket:`archive-8728`)
   * Example for `persisting ephemeral hidden service keys <tutorials/over_the_river.html#ephemeral-hidden-services>`_
 
  * **Version 1.5.3** (December 5th, 2016) - including tests and site in the
    release tarball
 
  * **Version 1.5.4** (January 4th, 2017) - drop validation of the order of
-   fields in the tor consensus
+   fields in the tor consensus (:ticket:`archive-21059`)
 
 .. _version_1.4:
 
@@ -382,44 +382,45 @@ unvalidated content is lazy-loaded, `greatly improving our performance
 <https://lists.torproject.org/pipermail/tor-dev/2015-January/008211.html>`_.
 
 And last, Stem also now runs directly under both python2 and python3 without a
-2to3 conversion!
+2to3 conversion (:ticket:`archive-14075`)!
 
  * **Controller**
 
   * Added :class:`~stem.control.Controller` methods for a new style of hidden services that don't touch disk: :func:`~stem.control.Controller.list_ephemeral_hidden_services`, :func:`~stem.control.Controller.create_ephemeral_hidden_service`, and :func:`~stem.control.Controller.remove_ephemeral_hidden_service` (:spec:`f5ff369`)
-  * Added :func:`~stem.control.Controller.get_hidden_service_descriptor` and `support for HS_DESC_CONTENT events <api/response.html#stem.response.events.HSDescContentEvent>`_ (:spec:`aaf2434`)
-  * :func:`~stem.process.launch_tor_with_config` avoids writing a temporary torrc to disk if able
-  * :class:`~stem.response.events.CircuitEvent` support for the new SOCKS_USERNAME and SOCKS_PASSWORD arguments (:spec:`2975974`)
-  * The 'strict' argument of :func:`~stem.exit_policy.ExitPolicy.can_exit_to` didn't behave as documented
+  * Added :func:`~stem.control.Controller.get_hidden_service_descriptor` and `support for HS_DESC_CONTENT events <api/response.html#stem.response.events.HSDescContentEvent>`_ (:ticket:`archive-14847`, :spec:`aaf2434`)
+  * :func:`~stem.process.launch_tor_with_config` avoids writing a temporary torrc to disk if able (:ticket:`archive-13865`)
+  * :class:`~stem.response.events.CircuitEvent` support for the new SOCKS_USERNAME and SOCKS_PASSWORD arguments (:ticket:`archive-14555`, :spec:`2975974`)
+  * The 'strict' argument of :func:`~stem.exit_policy.ExitPolicy.can_exit_to` didn't behave as documented (:ticket:`archive-14314`)
   * Threads spawned for status change listeners were never joined on, potentially causing noise during interpreter shutdown
-  * Added support for specifying the authentication type and client names in :func:`~stem.control.Controller.create_hidden_service`
+  * Added support for specifying the authentication type and client names in :func:`~stem.control.Controller.create_hidden_service` (:ticket:`archive-14320`)
 
  * **Descriptors**
 
-  * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is
-  * Added `support for hidden service descriptors <api/descriptor/hidden_service.html>`_
+  * Lazy-loading descriptors, improving performance by 25-70% depending on what type it is (:ticket:`archive-14011`)
+  * Added `support for hidden service descriptors <api/descriptor/hidden_service.html>`_ (:ticket:`archive-15004`)
   * When reading sanitised bridge descriptors (server or extrainfo), :func:`~stem.descriptor.__init__.parse_file` treated the whole file as a single descriptor
   * The :class:`~stem.descriptor.networkstatus.DirectoryAuthority` 'fingerprint' attribute was actually its 'v3ident'
   * Added consensus' new package attribute (:spec:`ab64534`)
   * Added extra info' new hs_stats_end, hs_rend_cells, hs_rend_cells_attr, hs_dir_onions_seen, and hs_dir_onions_seen_attr attributes (:spec:`ddb630d`)
-  * Updating Faravahar's address
+  * Updating Faravahar's address (:ticket:`archive-14487`)
 
  * **Utilities**
 
-  * Windows support for connection resolution
-  * :func:`stem.util.connection.port_usage` always returned None
+  * Windows support for connection resolution (:ticket:`archive-14844`)
+  * :func:`stem.util.connection.port_usage` always returned None (:ticket:`archive-14046`)
   * :func:`~stem.util.test_tools.stylistic_issues` and :func:`~stem.util.test_tools.pyflakes_issues` now provide namedtuples that also includes the line
   * Added :func:`stem.util.system.tail`
-  * Proc connection resolution could fail on especially busy systems
+  * Proc connection resolution could fail on especially busy systems (:ticket:`archive-14048`)
 
  * **Website**
 
-  * Added support and `instructions for tox <faq.html#how-do-i-test-compatibility-with-multiple-python-versions>`_
-  * Added OSX to our `download page <download.html>`_
-  * Updated our twitter example to work with the service's 1.1 API
+  * Added support and `instructions for tox <faq.html#how-do-i-test-compatibility-with-multiple-python-versions>`_ (:ticket:`archive-14091`)
+  * Added OSX to our `download page <download.html>`_ (:ticket:`archive-8588`)
+  * Updated our twitter example to work with the service's 1.1 API (:ticket:`archive-9003`)
 
  * **Version 1.4.1** (May 18th, 2015) - fixed issue where descriptors couldn't
-   be unpickled and a parsing issue for router status entry bandwidth lines
+   be unpickled (:ticket:`archive-16054`) and a parsing issue for router status entry
+   bandwidth lines (:ticket:`archive-16048`)
 
 .. _version_1.3:
 
@@ -434,26 +435,26 @@ brings see `Nathan Willis' LWN article <http://lwn.net/Articles/632914/>`_.
 
  * **Controller**
 
-  * Added :class:`~stem.control.Controller` methods to more easily work with hidden service configurations: :func:`~stem.control.Controller.get_hidden_service_conf`, :func:`~stem.control.Controller.set_hidden_service_conf`, :func:`~stem.control.Controller.create_hidden_service`, and :func:`~stem.control.Controller.remove_hidden_service`
+  * Added :class:`~stem.control.Controller` methods to more easily work with hidden service configurations: :func:`~stem.control.Controller.get_hidden_service_conf`, :func:`~stem.control.Controller.set_hidden_service_conf`, :func:`~stem.control.Controller.create_hidden_service`, and :func:`~stem.control.Controller.remove_hidden_service` (:ticket:`archive-12533`)
   * Added :func:`~stem.control.Controller.get_accounting_stats` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_effective_rate` to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.BaseController.connection_time` to the :class:`~stem.control.BaseController`
   * Changed :func:`~stem.control.Controller.get_microdescriptor`, :func:`~stem.control.Controller.get_server_descriptor`, and :func:`~stem.control.Controller.get_network_status` to get our own descriptor if no fingerprint or nickname is provided.
-  * Added :class:`~stem.exit_policy.ExitPolicy` methods for more easily handling 'private' policies (the `default prefix <https://www.torproject.org/docs/tor-manual.html.en#ExitPolicyRejectPrivate>`_) and the defaultly appended suffix. This includes :func:`~stem.exit_policy.ExitPolicy.has_private`, :func:`~stem.exit_policy.ExitPolicy.strip_private`, :func:`~stem.exit_policy.ExitPolicy.has_default`, and :func:`~stem.exit_policy.ExitPolicy.strip_default` :class:`~stem.exit_policy.ExitPolicy` methods in addition to :func:`~stem.exit_policy.ExitPolicyRule.is_private` and :func:`~stem.exit_policy.ExitPolicyRule.is_default` for the :class:`~stem.exit_policy.ExitPolicyRule`.
+  * Added :class:`~stem.exit_policy.ExitPolicy` methods for more easily handling 'private' policies (the `default prefix <https://www.torproject.org/docs/tor-manual.html.en#ExitPolicyRejectPrivate>`_) and the defaultly appended suffix. This includes :func:`~stem.exit_policy.ExitPolicy.has_private`, :func:`~stem.exit_policy.ExitPolicy.strip_private`, :func:`~stem.exit_policy.ExitPolicy.has_default`, and :func:`~stem.exit_policy.ExitPolicy.strip_default` :class:`~stem.exit_policy.ExitPolicy` methods in addition to :func:`~stem.exit_policy.ExitPolicyRule.is_private` and :func:`~stem.exit_policy.ExitPolicyRule.is_default` for the :class:`~stem.exit_policy.ExitPolicyRule`. (:ticket:`archive-10107`)
   * Added the reason attribute to :class:`~stem.response.events.HSDescEvent` (:spec:`7908c8d`)
-  * :func:`~stem.process.launch_tor_with_config` could cause a "Too many open files" OSError if called too many times
+  * :func:`~stem.process.launch_tor_with_config` could cause a "Too many open files" OSError if called too many times (:ticket:`archive-13141`)
   * The :func:`~stem.control.Controller.get_exit_policy` method errored if tor couldn't determine our external address
   * The Controller's methods for retrieving descriptors could raise unexpected ValueErrors if tor didn't have any descriptors available
-  * Throwing a new :class:`~stem.DescriptorUnavailable` exception type when the :class:`~stem.control.Controller` can't provide the descriptor for a relay
+  * Throwing a new :class:`~stem.DescriptorUnavailable` exception type when the :class:`~stem.control.Controller` can't provide the descriptor for a relay (:ticket:`archive-13879`)
 
  * **Descriptors**
 
-  * Improved speed for parsing consensus documents by around 40%
+  * Improved speed for parsing consensus documents by around 40% (:ticket:`archive-12859` and :ticket:`archive-13821`)
   * Don't fail if consensus method 1 is not present, as it is no longer required (:spec:`fc8a6f0`)
-  * Include '\*.new' files when reading from a Tor data directory
+  * Include '\*.new' files when reading from a Tor data directory (:ticket:`archive-13756`)
   * Updated the authorities we list, `replacing turtles with longclaw <https://lists.torproject.org/pipermail/tor-talk/2014-November/035650.html>`_ and `updating gabelmoo's address <https://lists.torproject.org/pipermail/tor-talk/2014-September/034898.html>`_
   * Noting if authorities are also a bandwidth authority or not
-  * Microdescriptor validation issues could result in an AttributeError
+  * Microdescriptor validation issues could result in an AttributeError (:ticket:`archive-13904`)
 
  * **Utilities**
 
@@ -470,9 +471,9 @@ brings see `Nathan Willis' LWN article <http://lwn.net/Articles/632914/>`_.
  * **Website**
 
   * Tutorial for `hidden services <tutorials/over_the_river.html>`_
-  * Example for `writing descriptors to disk and reading them back <tutorials/mirror_mirror_on_the_wall.html#saving-and-loading-descriptors>`_
-  * Added Gentoo to our `download page <download.html>`_ and handful of testing revisions for that platform
-  * Tests for our tutorial examples
+  * Example for `writing descriptors to disk and reading them back <tutorials/mirror_mirror_on_the_wall.html#saving-and-loading-descriptors>`_ (:ticket:`archive-13774`)
+  * Added Gentoo to our `download page <download.html>`_ and handful of testing revisions for that platform (:ticket:`archive-13904`)
+  * Tests for our tutorial examples (:ticket:`archive-11335`)
   * Revised `GitWeb <https://gitweb.torproject.org/>`_ urls to work after its upgrade
 
 .. _version_1.2:
@@ -489,22 +490,22 @@ among numerous other improvements and fixes.
   * New, better :func:`~stem.connection.connect` function that deprecates :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file`
   * Added :func:`~stem.control.Controller.is_newnym_available` and :func:`~stem.control.Controller.get_newnym_wait` methods to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_ports` and :func:`~stem.control.Controller.get_listeners` methods to the :class:`~stem.control.Controller`
-  * Added :func:`~stem.control.Controller.drop_guards` (:spec:`7c6c7fc`)
+  * Added :func:`~stem.control.Controller.drop_guards` (:ticket:`archive-10032`, :spec:`7c6c7fc`)
   * Added the id attribute to :class:`~stem.response.events.ORConnEvent` (:spec:`6f2919a`)
   * Added `support for CONN_BW events <api/response.html#stem.response.events.ConnectionBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CIRC_BW events <api/response.html#stem.response.events.CircuitBandwidthEvent>`_ (:spec:`6f2919a`)
   * Added `support for CELL_STATS events <api/response.html#stem.response.events.CellStatsEvent>`_ (:spec:`6f2919a`)
   * Added `support for TB_EMPTY events <api/response.html#stem.response.events.TokenBucketEmptyEvent>`_ (:spec:`6f2919a`)
-  * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:spec:`a67ac4d`)
-  * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors
+  * Added `support for HS_DESC events <api/response.html#stem.response.events.HSDescEvent>`_ (:ticket:`archive-10807`, :spec:`a67ac4d`)
+  * Changed :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` to provide :class:`~stem.descriptor.router_status_entry.RouterStatusEntryMicroV3` if Tor is using microdescriptors (:ticket:`archive-7646`)
   * The :func:`~stem.connection.connect_port` and :func:`~stem.connection.connect_socket_file` didn't properly mark the Controller it returned as being authenticated, causing event listening among other things to fail
   * The :func:`~stem.control.Controller.add_event_listener` method couldn't accept event types that Stem didn't already recognize
   * The :class:`~stem.exit_policy.ExitPolicy` class couldn't be pickled
-  * Tor instances spawned with :func:`~stem.process.launch_tor` and :func:`~stem.process.launch_tor_with_config` could hang due to unread stdout content, we now close stdout and stderr once tor finishes bootstrapping
+  * Tor instances spawned with :func:`~stem.process.launch_tor` and :func:`~stem.process.launch_tor_with_config` could hang due to unread stdout content, we now close stdout and stderr once tor finishes bootstrapping (:ticket:`archive-9862`)
 
  * **Descriptors**
 
-  * Added tarfile support to :func:`~stem.descriptor.__init__.parse_file`
+  * Added tarfile support to :func:`~stem.descriptor.__init__.parse_file` (:ticket:`archive-10977`)
   * Added microdescriptor's new identifier and identifier_type attributes (:spec:`22cda72`)
 
  * **Utilities**
@@ -524,10 +525,10 @@ among numerous other improvements and fixes.
   * Made FAQ and other sections quite a bit more succinct.
 
  * **Version 1.2.2** (June 7th, 2014) - fixed an issue where the stem.util.conf
-   module would fail under Python 2.6 with an AttributeError
+   module would fail under Python 2.6 with an AttributeError (:ticket:`archive-12223`)
 
  * **Version 1.2.1** (June 3rd, 2014) - fixed an issue where descriptor
-   parsersing would fail under Python 3.x with a TypeError
+   parsersing would fail under Python 3.x with a TypeError (:ticket:`archive-12185`)
 
 .. _version_1.1:
 
@@ -541,27 +542,27 @@ and a myriad of smaller improvements and fixes.
 
  * **Controller**
 
-  * :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` now provide v3 rather than v2 directory information (:spec:`d2b7ebb`)
-  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:spec:`25b0d43`)
-  * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:spec:`7286576`)
-  * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with Python 3
-  * The :class:`~stem.control.Controller` use of cached content wasn't thread safe
+  * :func:`~stem.control.Controller.get_network_status` and :func:`~stem.control.Controller.get_network_statuses` now provide v3 rather than v2 directory information (:ticket:`archive-7953`, :spec:`d2b7ebb`)
+  * :class:`~stem.response.events.AddrMapEvent` support for the new CACHED argument (:ticket:`archive-8596`, :spec:`25b0d43`)
+  * :func:`~stem.control.Controller.attach_stream` could encounter an undocumented 555 response (:ticket:`archive-8701`, :spec:`7286576`)
+  * :class:`~stem.descriptor.server_descriptor.RelayDescriptor` digest validation was broken when dealing with non-unicode content with Python 3 (:ticket:`archive-8755`)
+  * The :class:`~stem.control.Controller` use of cached content wasn't thread safe (:ticket:`archive-8607`)
   * Added :func:`~stem.control.Controller.get_user` method to the :class:`~stem.control.Controller`
   * Added :func:`~stem.control.Controller.get_pid` method to the :class:`~stem.control.Controller`
-  * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses
-  * :func:`~stem.control.Controller.get_conf` mistakenly cached hidden service related options
+  * :class:`~stem.response.events.StreamEvent` didn't recognize IPv6 addresses (:ticket:`archive-9181`)
+  * :func:`~stem.control.Controller.get_conf` mistakenly cached hidden service related options (:ticket:`archive-9792`)
   * Added `support for TRANSPORT_LAUNCHED events <api/response.html#stem.response.events.TransportLaunchedEvent>`_ (:spec:`48f6dd0`)
 
  * **Descriptors**
 
   * Added the `stem.descriptor.remote <api/descriptor/remote.html>`_ module.
-  * Added support for `TorDNSEL exit lists <api/descriptor/tordnsel.html>`_
-  * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths
+  * Added support for `TorDNSEL exit lists <api/descriptor/tordnsel.html>`_ (:ticket:`archive-8255`)
+  * The :class:`~stem.descriptor.reader.DescriptorReader` mishandled relative paths (:ticket:`archive-8815`)
 
  * **Utilities**
 
-  * Connection resolution via the :func:`~stem.util.connection.get_connections` function
-  * :func:`~stem.util.system.set_process_name` inserted spaces between characters
+  * Connection resolution via the :func:`~stem.util.connection.get_connections` function (:ticket:`archive-7910`)
+  * :func:`~stem.util.system.set_process_name` inserted spaces between characters (:ticket:`archive-8631`)
   * :func:`~stem.util.system.pid_by_name` can now pull for all processes with a given name
   * :func:`~stem.util.system.call` ignored the subprocess' exit status
   * Added :func:`stem.util.system.name_by_pid`
@@ -589,7 +590,7 @@ and a myriad of smaller improvements and fixes.
     <https://www.atagar.com/transfer/stem_frontpage/after.png>`_).
 
  * **Version 1.1.1** (November 9th, 2013) - fixed an issue where imports of stem.util.system
-   would fail with an ImportError for pwd under Windows
+   would fail with an ImportError for pwd under Windows (:ticket:`archive-10072`)
 
 .. _version_1.0:
 
