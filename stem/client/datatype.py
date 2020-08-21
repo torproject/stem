@@ -115,6 +115,9 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
 
   Reason a relay is closed.
 
+  .. versionchanged:: 2.0.0
+     OR_CONN_CLOSED changed to CHANNEL_CLOSED (:spec:`693f5d4`)
+
   ===================== ===========
   CloseReason           Description
   ===================== ===========
@@ -126,7 +129,7 @@ users.** See our :class:`~stem.client.Relay` the API you probably want.
   **RESOURCELIMIT**     out of memory, sockets, or circuit IDs
   **CONNECTFAILED**     unable to reach relay
   **OR_IDENTITY**       connected, but its OR identity was not as expected
-  **OR_CONN_CLOSED**    connection that was carrying this circuit died
+  **CHANNEL_CLOSED**    connection that was carrying this circuit died
   **FINISHED**          circuit has expired for being dirty or old
   **TIMEOUT**           circuit construction took too long
   **DESTROYED**         circuit was destroyed without a client TRUNCATE
@@ -240,7 +243,7 @@ CloseReason = _IntegerEnum(
   ('RESOURCELIMIT', 5),
   ('CONNECTFAILED', 6),
   ('OR_IDENTITY', 7),
-  ('OR_CONN_CLOSED', 8),
+  ('CHANNEL_CLOSED', 8),
   ('FINISHED', 9),
   ('TIMEOUT', 10),
   ('DESTROYED', 11),
