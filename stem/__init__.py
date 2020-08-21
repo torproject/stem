@@ -159,6 +159,9 @@ Library for working with the tor process.
   Reason that a circuit is being closed or failed to be established. Tor may
   provide reasons not in this enum.
 
+  .. versionchanged:: 2.0.0
+     Added IP_NOW_REDUNDANT (:spec:`b418155`).
+
   ========================= ===========
   CircClosureReason         Description
   ========================= ===========
@@ -177,6 +180,7 @@ Library for working with the tor process.
   **NOPATH**                not enough relays to make a circuit
   **NOSUCHSERVICE**         requested hidden service does not exist
   **MEASUREMENT_EXPIRED**   same as **TIMEOUT** except that it was left open for measurement purposes
+  **IP_NOW_REDUNDANT**      introduction point is redundant with another constructed circuit
   ========================= ===========
 
 .. data:: CircEvent (enum)
@@ -869,6 +873,7 @@ CircClosureReason = stem.util.enum.UppercaseEnum(
   'NOPATH',
   'NOSUCHSERVICE',
   'MEASUREMENT_EXPIRED',
+  'IP_NOW_REDUNDANT',
 )
 
 CircEvent = stem.util.enum.UppercaseEnum(
