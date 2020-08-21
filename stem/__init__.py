@@ -141,18 +141,24 @@ Library for working with the tor process.
   Description of what a circuit is intended for. These were introduced in tor
   version 0.2.1.6. Tor may provide purposes not in this enum.
 
-  ==================== ===========
-  CircPurpose          Description
-  ==================== ===========
-  **GENERAL**          client traffic or fetching directory information
-  **HS_CLIENT_INTRO**  client side introduction point for a hidden service circuit
-  **HS_CLIENT_REND**   client side hidden service rendezvous circuit
-  **HS_SERVICE_INTRO** server side introduction point for a hidden service circuit
-  **HS_SERVICE_REND**  server side hidden service rendezvous circuit
-  **TESTING**          testing to see if we're reachable, so we can be used as a relay
-  **CONTROLLER**       circuit that was built by a controller
-  **MEASURE_TIMEOUT**  circuit being kept around to see how long it takes
-  ==================== ===========
+  .. versionchanged:: 2.0.0
+     Added HS_VANGUARDS, PATH_BIAS_TESTING, and CIRCUIT_PADDING (:spec:`a9fee22`).
+
+  ======================= ===========
+  CircPurpose             Description
+  ======================= ===========
+  **GENERAL**             client traffic or fetching directory information
+  **HS_CLIENT_INTRO**     client side introduction point for a hidden service circuit
+  **HS_CLIENT_REND**      client side hidden service rendezvous circuit
+  **HS_SERVICE_INTRO**    server side introduction point for a hidden service circuit
+  **HS_SERVICE_REND**     server side hidden service rendezvous circuit
+  **TESTING**             testing to see if we're reachable, so we can be used as a relay
+  **CONTROLLER**          circuit that was built by a controller
+  **MEASURE_TIMEOUT**     circuit being kept around to see how long it takes
+  **HS_VANGUARDS**        constructed in advance for HS vanguards
+  **PATH_BIAS_TESTING**   probing if circuits are being maliciously closed
+  **CIRCUIT_PADDING**     circuit is unused, but remains open to disguise its closure time
+  ======================= ===========
 
 .. data:: CircClosureReason (enum)
 
@@ -855,6 +861,9 @@ CircPurpose = stem.util.enum.UppercaseEnum(
   'TESTING',
   'CONTROLLER',
   'MEASURE_TIMEOUT',
+  'HS_VANGUARDS',
+  'PATH_BIAS_TESTING',
+  'CIRCUIT_PADDING',
 )
 
 CircClosureReason = stem.util.enum.UppercaseEnum(
