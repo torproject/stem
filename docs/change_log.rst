@@ -58,6 +58,7 @@ The following are only available within Stem's `git repository
 
   * Socket based control connections often raised BrokenPipeError when closed
   * Added :func:`~stem.control.Controller.add_hidden_service_auth`, :func:`~stem.control.Controller.remove_hidden_service_auth`, and :func:`~stem.control.Controller.list_hidden_service_auth` to the :class:`~stem.control.Controller`
+  * Incorrect filesystem encoding broke latin-1 cookie path (:ticket:`57`)
 
  * **Descriptors**
 

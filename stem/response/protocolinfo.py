@@ -108,8 +108,20 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         # parse optional COOKIEFILE mapping (quoted and can have escapes)
 
         if line.is_next_mapping('COOKIEFILE', True, True):
-          self.cookie_path = line._pop_mapping_bytes(True, True)[1].decode(sys.getfilesystemencoding())
-          self.cookie_path = stem.util.str_tools._to_unicode(self.cookie_path)  # normalize back to str
+          path = line._pop_mapping_bytes(True, True)[1]
+
+          # re-encode this path from our filesystem's encoding (with common
+          # fallbacks) to unicode
+
+          for encoding in set([sys.getfilesystemencoding(), 'utf-8', 'latin-1']):
+            try:
+              self.cookie_path = stem.util.str_tools._to_unicode(path.decode(encoding))
+              break
+            except ValueError:
+              pass
+
+          if self.cookie_path is None:
+            raise stem.ProtocolError("Cookie path '%s' mismatches our filesystem encoding (%s)" % (repr(path), sys.getfilesystemencoding()))
       elif line_type == 'VERSION':
         # Line format:
         #   VersionLine = "250-VERSION" SP "Tor=" TorVersion OptArguments CRLF

@@ -56,6 +56,13 @@ RELATIVE_COOKIE_PATH = r"""250-PROTOCOLINFO 1
 
 EXPECTED_UNICODE_PATH = b"/home/user/\346\226\207\346\241\243/tor-browser_en-US/Browser/TorBrowser/Data/Tor/control_auth_cookie".decode('utf-8')
 
+LATIN_COOKIE_PATH = r"""250-PROTOCOLINFO 1
+250-AUTH METHODS=COOKIE,SAFECOOKIE COOKIEFILE="c:\\Drive-E\\Web\\Today\\ZeroNet-win-dist-win64 \341rv\355zt\373r\365 t\374k\366rf\372r\363g\351p\\ZeroNet-win-dist-win64\\core\\tools\\tor\\data\\control_auth_cookie"
+250-VERSION Tor="0.4.2.6"
+250 OK"""
+
+EXPECTED_LATIN_PATH = b"c:\\Drive-E\\Web\\Today\\ZeroNet-win-dist-win64 \341rv\355zt\373r\365 t\374k\366rf\372r\363g\351p\\ZeroNet-win-dist-win64\\core\\tools\\tor\\data\\control_auth_cookie".decode('latin-1')
+
 
 class TestProtocolInfoResponse(unittest.TestCase):
   def test_convert(self):
@@ -151,3 +158,13 @@ class TestProtocolInfoResponse(unittest.TestCase):
 
     control_message = ControlMessage.from_str(UNICODE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(EXPECTED_UNICODE_PATH, control_message.cookie_path)
+
+  @patch('sys.getfilesystemencoding', Mock(return_value = 'UTF-8'))
+  def test_latin_cookie_path(self):
+    """
+    Parse a latin-1 path when our filesystem is configured for unicode.
+    (:ticket:`57`)
+    """
+
+    control_message = ControlMessage.from_str(LATIN_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
+    self.assertEqual(EXPECTED_LATIN_PATH, control_message.cookie_path)
