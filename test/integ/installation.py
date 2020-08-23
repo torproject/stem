@@ -18,6 +18,7 @@ import test
 
 from stem.util.test_tools import asynchronous
 
+INSTALLATION_TIMEOUT = 20  # usually takes ~5s
 BASE_INSTALL_PATH = '/tmp/stem_test'
 PYTHON_EXE = sys.executable if sys.executable else 'python'
 INSTALL_MISMATCH_MSG = "Running 'python setup.py sdist' doesn't match our git contents in the following way. The manifest in our setup.py may need to be updated...\n\n"
@@ -131,8 +132,13 @@ class TestInstallation(unittest.TestCase):
     meant to test that our MANIFEST.in is up to date.
     """
 
+    started_at = time.time()
+
     while stem.util.system.is_running(dependency_pid):
-      time.sleep(0.1)  # we need to run these tests serially
+      if time.time() > started_at + INSTALLATION_TIMEOUT:
+        raise AssertionError('Stem failed to install within %i seconds' % INSTALLATION_TIMEOUT)
+
+      time.sleep(0.1)  # these tests must run serially
 
     git_dir = os.path.join(test.STEM_BASE, '.git')
 

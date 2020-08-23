@@ -360,6 +360,7 @@ IMMUTABLE_CONFIG_OPTIONS = set(map(stem.util.str_tools._to_unicode, map(str.lowe
 ))))
 
 LOG_CACHE_FETCHES = True  # provide trace level logging for cache hits
+MSG_TIMEOUT = 5  # seconds to await a response from tor
 
 # Configuration options that are fetched by a special key. The keys are
 # lowercase to make case insensitive lookups easier.
@@ -693,7 +694,11 @@ class BaseController(Synchronous):
 
       try:
         await self._socket.send(message)
-        response = await self._reply_queue.get()
+
+        try:
+          response = await asyncio.wait_for(self._reply_queue.get(), MSG_TIMEOUT)
+        except asyncio.TimeoutError:
+          raise stem.ControllerError('%s failed to receive a reply within %i seconds' % (message, MSG_TIMEOUT))
 
         # If the message we received back had an exception then re-raise it to the
         # caller. Otherwise return the response.
