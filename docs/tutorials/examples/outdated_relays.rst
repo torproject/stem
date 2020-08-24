@@ -9,6 +9,7 @@ support for old ones. Below is the script we used on :ticket:`tor-9476` to
 reach out to relay operators that needed to upgrade.
 
 .. literalinclude:: /_static/example/outdated_relays.py
+   :caption: `[Download] <../../_static/example/outdated_relays.py>`__
    :language: python
 
 ::

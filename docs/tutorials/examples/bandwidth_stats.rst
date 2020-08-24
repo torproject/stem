@@ -14,6 +14,7 @@ called **bandwidth authorities**. See our `bandwidth file specification
 details. Statistics are publicly available and generated each hour...
 
 .. literalinclude:: /_static/example/bandwidth_stats.py
+   :caption: `[Download] <../_static/example/bandwidth_stats.py>`__
    :language: python
 
 ::

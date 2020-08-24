@@ -31,6 +31,7 @@ So how do we get it? Just tell Stem that's what you want. The
 consensus. For example, to write the consensus simply do the following...
 
 .. literalinclude:: /_static/example/persisting_a_consensus.py
+   :caption: `[Download] <../../_static/example/persisting_a_consensus.py>`__
    :language: python
 
 Our *consensus* here is the current
@@ -51,4 +52,5 @@ Our *consensus* here is the current
 You can then read it back with :func:`~stem.descriptor.__init__.parse_file`...
 
 .. literalinclude:: /_static/example/persisting_a_consensus_with_parse_file.py
+   :caption: `[Download] <../../_static/example/persisting_a_consensus_with_parse_file.py>`__
    :language: python

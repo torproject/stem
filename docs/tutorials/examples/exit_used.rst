@@ -12,6 +12,7 @@ Here's a simple script that prints information about the exits used to service
 the requests going through Tor...
 
 .. literalinclude:: /_static/example/exit_used.py
+   :caption: `[Download] <../../_static/example/exit_used.py>`__
    :language: python
 
 Now if you make a request over Tor...

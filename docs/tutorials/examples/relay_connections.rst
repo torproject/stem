@@ -17,6 +17,7 @@ connections. Couple important notes...
     That said, a general overview like this should be fine.
 
 .. literalinclude:: /_static/example/relay_connections.py
+   :caption: `[Download] <../_static/example/relay_connections.py>`__
    :language: python
 
 ::

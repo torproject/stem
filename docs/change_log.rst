@@ -68,6 +68,10 @@ The following are only available within Stem's `git repository
 
   * Migrated from distutil to setuptools
 
+ * **Website**
+
+  * Download link for tutorial examples
+
 .. _version_1.8:
 
 Version 1.8 (December 29th, 2019)
@@ -358,15 +362,8 @@ and much more.
 
  * **Website**
 
-  * `Comparison of our descriptor parsing libraries <tutorials/mirror_mirror_on_the_wall.html#are-there-any-other-parsing-libraries>`_
   * Example for `custom path selection for circuits <tutorials/to_russia_with_love.html#custom-path-selection>`_ (:ticket:`archive-8728`)
-  * Example for `persisting ephemeral hidden service keys <tutorials/over_the_river.html#ephemeral-hidden-services>`_
-
- * **Version 1.5.3** (December 5th, 2016) - including tests and site in the
-   release tarball
-
- * **Version 1.5.4** (January 4th, 2017) - drop validation of the order of
-   fields in the tor consensus (:ticket:`archive-21059`)
+  * Download link for tutorial examples (:ticket:`archive-10411`)
 
 .. _version_1.4:
 

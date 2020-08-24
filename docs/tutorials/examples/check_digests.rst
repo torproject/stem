@@ -25,6 +25,7 @@ and `consensus documents
 For instance, to validate an extrainfo descriptor...
 
 .. literalinclude:: /_static/example/check_digests.py
+   :caption: `[Download] <../_static/example/check_digests.py>`__
    :language: python
 
 ::

@@ -76,6 +76,7 @@ which can both be downloaded from using Stem's `stem.descriptor.remote
 easy as...
 
 .. literalinclude:: /_static/example/current_descriptors.py
+   :caption: `[Download] <../_static/example/current_descriptors.py>`__
    :language: python
 
 **Please remember that Tor is a shared resource!** If you're going to
@@ -87,6 +88,7 @@ contribute much load please consider `running a relay
 downloaded from by specifying it as the endpoint... 
 
 .. literalinclude:: /_static/example/descriptor_from_orport.py
+   :caption: `[Download] <../_static/example/descriptor_from_orport.py>`__
    :language: python
 
 **DirPorts** by contrast are simpler and specially designed to offer descriptor
@@ -123,11 +125,13 @@ at a prior point in time this is the place to go!
 With CollecTor you can either read descriptors directly...
 
 .. literalinclude:: /_static/example/collector_reading.py
+   :caption: `[Download] <../_static/example/collector_reading.py>`__
    :language: python
 
 ... or download the descriptors to disk and read them later.
 
 .. literalinclude:: /_static/example/collector_caching.py
+   :caption: `[Download] <../_static/example/collector_caching.py>`__
    :language: python
 
 .. _can-i-get-descriptors-from-the-tor-process:
@@ -179,11 +183,13 @@ Now that Tor is happy chugging along, up-to-date descriptors are available
 through Tor's control socket...
 
 .. literalinclude:: /_static/example/descriptor_from_tor_control_socket.py
+   :caption: `[Download] <../_static/example/descriptor_from_tor_control_socket.py>`__
    :language: python
 
 ... or by reading directly from Tor's data directory...
 
 .. literalinclude:: /_static/example/descriptor_from_tor_data_directory.py
+   :caption: `[Download] <../_static/example/descriptor_from_tor_data_directory.py>`__
    :language: python
 
 .. _can-i-create-descriptors:
@@ -197,6 +203,7 @@ for test data. To do so simply use the
 :class:`~stem.descriptor.__init__.Descriptor` subclasses...
 
 .. literalinclude:: /_static/example/create_descriptor.py
+   :caption: `[Download] <../_static/example/create_descriptor.py>`__
    :language: python
 
 Unspecified mandatory fields are filled with mock data. You can also use
@@ -204,6 +211,7 @@ Unspecified mandatory fields are filled with mock data. You can also use
 descriptor...
 
 .. literalinclude:: /_static/example/create_descriptor_content.py
+   :caption: `[Download] <../_static/example/create_descriptor_content.py>`__
    :language: python
 
 ::
@@ -247,6 +255,7 @@ Validating is as simple as including **validate = True** in any method that
 provides descriptors...
 
 .. literalinclude:: /_static/example/validate_descriptor_content.py
+   :caption: `[Download] <../_static/example/validate_descriptor_content.py>`__
    :language: python
 
 .. _saving-and-loading-descriptors:
@@ -259,6 +268,7 @@ Tor descriptors are just plaintext documents. As such, if you'd rather not use
 descriptor by simply writing it to disk, then reading it back later.
 
 .. literalinclude:: /_static/example/saving_and_loading_descriptors.py
+   :caption: `[Download] <../_static/example/saving_and_loading_descriptors.py>`__
    :language: python
 
 Our *server_descriptors* here is a list of
@@ -281,6 +291,7 @@ We can then read it back with :func:`~stem.descriptor.__init__.parse_file`
 by telling it the type of descriptors we're reading...
 
 .. literalinclude:: /_static/example/read_with_parse_file.py
+   :caption: `[Download] <../_static/example/read_with_parse_file.py>`__
    :language: python
 
 For an example of doing this with a consensus document `see here
@@ -303,6 +314,7 @@ could use any of the methods above, but for this example we'll use
 `stem.descriptor.remote <../api/descriptor/remote.html>`_...
 
 .. literalinclude:: /_static/example/tor_descriptors.py
+   :caption: `[Download] <../_static/example/tor_descriptors.py>`__
    :language: python
 
 ::
@@ -395,6 +407,7 @@ Stem Example
 * `Stem Benchmark Script <../.../../_static/example/benchmark_stem.py>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_stem.py
+   :caption: `[Download] <../_static/example/benchmark_server_descriptor_stem.py>`__
    :language: python
 
 Metrics-lib Example
@@ -403,6 +416,7 @@ Metrics-lib Example
 * `Metrics-lib Benchmark Script <../.../../_static/example/benchmark_metrics_lib.java>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_metrics_lib.java
+   :caption: `[Download] <../_static/example/benchmark_server_descriptor_metrics_lib.py>`__
    :language: java
 
 Zoossh Example
@@ -411,4 +425,5 @@ Zoossh Example
 * `Zoossh Benchmark Script <../.../../_static/example/benchmark_zoossh.go>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_zoossh.go
+   :caption: `[Download] <../_static/example/benchmark_server_descriptor_zoossh.py>`__
    :language: go

@@ -29,6 +29,7 @@ are events that Tor emits each second saying the number of bytes downloaded and
 uploaded.
 
 .. literalinclude:: /_static/example/event_listening.py
+   :caption: `[Download] <../_static/example/event_listening.py>`__
    :emphasize-lines: 53-55,62-67
    :language: python
 
@@ -41,6 +42,7 @@ can make troubleshooting your code confusing. For example, exceptions have
 nowhere to propagate...
 
 .. literalinclude:: /_static/example/broken_listener.py
+   :caption: `[Download] <../_static/example/broken_listener.py>`__
    :language: python
 
 ::
@@ -54,6 +56,7 @@ nowhere to propagate...
 fall behind. This can result in a memory leak for long running processes...
 
 .. literalinclude:: /_static/example/slow_listener.py
+   :caption: `[Download] <../_static/example/slow_listener.py>`__
    :language: python
 
 ::
@@ -67,6 +70,7 @@ Avoid performing heavy business logic directly within listeners. For example, a
 producer/consumer pattern sidesteps these issues...
 
 .. literalinclude:: /_static/example/queue_listener.py
+   :caption: `[Download] <../_static/example/queue_listener.py>`__
    :language: python
 
 ::

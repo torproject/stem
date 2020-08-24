@@ -52,6 +52,7 @@ improve this example then please `let me know
 <https://www.atagar.com/contact/>`_!
 
 .. literalinclude:: /_static/example/client_usage_using_pycurl.py
+   :caption: `[Download] <../_static/example/client_usage_using_pycurl.py>`__
    :language: python
 
 .. image:: /_static/locale_selection_output.png
@@ -68,6 +69,7 @@ control port. To use this approach simply replace the query() function above
 with...
 
 .. literalinclude::  /_static/example/client_usage_using_socksipy.py
+   :caption: `[Download] <../_static/example/client_usage_using_socksipy.py>`__
    :language: python
 
 .. _reading-twitter:
@@ -82,6 +84,7 @@ authentication `see their instructions
 <https://dev.twitter.com/oauth/overview/application-owner-access-tokens>`_...
 
 .. literalinclude:: /_static/example/reading_twitter.py
+   :caption: `[Download] <../_static/example/reading_twitter.py>`__
    :language: python
 
 .. image:: /_static/twitter_output.png
@@ -112,6 +115,7 @@ reachability and speed. **Naturally doing this causes quite a bit of load so
 please be careful not to leave this running!**
 
 .. literalinclude:: /_static/example/custom_path_selection.py
+   :caption: `[Download] <../_static/example/custom_path_selection.py>`__
    :language: python
 
 ::

@@ -17,6 +17,7 @@ Bandwidth authorities include their measurements in their votes. The following
 gets their current votes then prints how many relays it had a measurement for.
 
 .. literalinclude:: /_static/example/votes_by_bandwidth_authorities.py
+   :caption: `[Download] <../../_static/example/votes_by_bandwidth_authorities.py>`__
    :language: python
 
 ::

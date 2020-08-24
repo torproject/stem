@@ -27,6 +27,7 @@ yourself is easy, but we also provide a module to make it `even easier
 |
 
 .. literalinclude:: /_static/example/words_with.py
+   :caption: `[Download] <../_static/example/words_with.py>`__
    :language: python
 
 .. _multiprocessing:
@@ -46,6 +47,7 @@ that <../api/util/system.html#stem.util.system.DaemonTask>`_.
 **Threaded**
 
 .. literalinclude:: /_static/example/fibonacci_threaded.py
+   :caption: `[Download] <../_static/example/fibonacci_threaded.py>`__
    :language: python
 
 ::
@@ -56,6 +58,7 @@ that <../api/util/system.html#stem.util.system.DaemonTask>`_.
 **Multi-process**
 
 .. literalinclude:: /_static/example/fibonacci_multiprocessing.py
+   :caption: `[Download] <../_static/example/fibonacci_multiprocessing.py>`__
    :language: python
 
 ::
@@ -91,6 +94,7 @@ With that out of the way, how do you look up this information? Below is a
 simple script that dumps Tor's present connections.
 
 .. literalinclude:: /_static/example/utilities.py
+   :caption: `[Download] <../_static/example/utilities.py>`__
    :language: python
 
 ::

@@ -8,6 +8,7 @@ Compares the votes of two directory authorities, in this case moria1 and
 maatuska, with a special interest in the 'Running' flag.
 
 .. literalinclude:: /_static/example/compare_flags.py
+   :caption: `[Download] <../../_static/example/compare_flags.py>`__
    :language: python
 
 ::

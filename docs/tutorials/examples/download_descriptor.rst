@@ -11,6 +11,7 @@ with http as well from a `DirPort
 <https://gitweb.torproject.org/torspec.git/tree/dir-spec.txt>`_.
 
 .. literalinclude:: /_static/example/download_descriptor.py
+   :caption: `[Download] <../_static/example/download_descriptor.py>`__
    :language: python
 
 ::

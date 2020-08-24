@@ -8,6 +8,7 @@ Tor creates new circuits and tears down old ones on your behalf, so how can you
 get information about circuits Tor currently has available?
 
 .. literalinclude:: /_static/example/list_circuits.py
+   :caption: `[Download] <../../_static/example/list_circuits.py>`__
    :language: python
 
 ::
