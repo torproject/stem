@@ -150,7 +150,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     self.assertEqual((), control_message.unknown_auth_methods)
     self.assertEqual(None, control_message.cookie_path)
 
-  @patch('sys.getfilesystemencoding', Mock(return_value = 'UTF-8'))
+  @patch('sys.getfilesystemencoding', Mock(return_value = 'utf-8'))
   def test_unicode_cookie(self):
     """
     Checks an authentication cookie with a unicode path.
@@ -159,7 +159,7 @@ class TestProtocolInfoResponse(unittest.TestCase):
     control_message = ControlMessage.from_str(UNICODE_COOKIE_PATH, 'PROTOCOLINFO', normalize = True)
     self.assertEqual(EXPECTED_UNICODE_PATH, control_message.cookie_path)
 
-  @patch('sys.getfilesystemencoding', Mock(return_value = 'UTF-8'))
+  @patch('sys.getfilesystemencoding', Mock(return_value = 'utf-8'))
   def test_latin_cookie_path(self):
     """
     Parse a latin-1 path when our filesystem is configured for unicode.

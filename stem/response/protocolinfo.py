@@ -110,12 +110,11 @@ class ProtocolInfoResponse(stem.response.ControlMessage):
         if line.is_next_mapping('COOKIEFILE', True, True):
           path = line._pop_mapping_bytes(True, True)[1]
 
-          # re-encode this path from our filesystem's encoding (with common
-          # fallbacks) to unicode
+          # fall back if our filesystem encoding doesn't work
 
-          for encoding in set([sys.getfilesystemencoding(), 'utf-8', 'latin-1']):
+          for encoding in [sys.getfilesystemencoding(), 'utf-8', 'latin-1']:
             try:
-              self.cookie_path = stem.util.str_tools._to_unicode(path.decode(encoding))
+              self.cookie_path = path.decode(encoding)
               break
             except ValueError:
               pass
