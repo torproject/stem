@@ -1635,17 +1635,24 @@ class TestController(unittest.TestCase):
     Exercises hidden service authentication with invalid data.
     """
 
+    # TODO: This checks for both 'addr' and 'address' because tor runs our
+    # integration tests both before and after...
+    #
+    #   https://gitlab.torproject.org/tpo/core/tor/-/issues/40005
+    #
+    # After a while we should be able to drop this.
+
     async with await test.runner.get_runner().get_tor_controller() as controller:
       invalid_service_id = 'xxxxxxxxyvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
-      exc_msg = "%%s response didn't have an OK status: Invalid v3 address \"%s\"" % invalid_service_id
+      exc_msg = "^%%s response didn't have an OK status: Invalid v3 (addr|address) \"%s\"$" % invalid_service_id
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_ADD'):
+      with self.assertRaisesRegexp(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_ADD'):
         await controller.add_hidden_service_auth(invalid_service_id, PRIVATE_KEY)
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_REMOVE'):
+      with self.assertRaisesRegexp(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_REMOVE'):
         await controller.remove_hidden_service_auth(invalid_service_id)
 
-      with self.assertRaisesWith(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_VIEW'):
+      with self.assertRaisesRegexp(stem.ProtocolError, exc_msg % 'ONION_CLIENT_AUTH_VIEW'):
         await controller.list_hidden_service_auth(invalid_service_id)
 
       invalid_key = 'XXXXXXXXXFCV0c0ELDKKDpSFgVIB8Yow8Evj5iD+GoiTtK878NkQ='
