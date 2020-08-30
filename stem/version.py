@@ -30,6 +30,7 @@ easily parsed and compared, for instance...
   Requirement           Description
   ===================== ===========
   **DORMANT_MODE**      **DORMANT** and **ACTIVE** :data:`~stem.Signal`
+  **DROPTIMEOUTS**      **DROPTIMEOUTS** controller command
   **HSFETCH_V3**        HSFETCH for version 3 hidden services
   ===================== ===========
 """
@@ -218,5 +219,6 @@ class Version(object):
 
 Requirement = stem.util.enum.Enum(
   ('DORMANT_MODE', Version('0.4.0.1-alpha')),
+  ('DROPTIMEOUTS', Version('0.4.5.0-alpha')),
   ('HSFETCH_V3', Version('0.4.1.1-alpha')),
 )

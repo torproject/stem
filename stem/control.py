@@ -3894,16 +3894,27 @@ class Controller(BaseController):
     response = await self.msg('MAPADDRESS %s' % mapaddress_arg)
     return stem.response._convert_to_mapaddress(response)
 
-  async def drop_guards(self) -> None:
+  async def drop_guards(self, reset_timeouts: bool = False) -> None:
     """
     Drops our present guard nodes and picks a new set.
 
     .. versionadded:: 1.2.0
 
+    .. versionchanged:: 2.0.0
+       Added the reset_timeouts argument.
+
+    :param reset_timeouts: reset circuit timeout counters
+
     :raises: :class:`stem.ControllerError` if Tor couldn't fulfill the request
     """
 
+    if reset_timeouts and (await self.get_version() < stem.version.Requirement.DROPTIMEOUTS):
+      raise ValueError('DROPTIMEOUTS requires tor %s or higher' % stem.version.Requirement.DROPTIMEOUTS)
+
     await self.msg('DROPGUARDS')
+
+    if reset_timeouts:
+      await self.msg('DROPTIMEOUTS')
 
   async def _post_authentication(self) -> None:
     await super(Controller, self)._post_authentication()

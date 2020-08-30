@@ -1286,6 +1286,42 @@ class TestController(unittest.TestCase):
       self.assertEquals({}, await address_mappings('control'))
 
   @test.require.controller
+  @test.require.online
+  @async_test
+  async def test_drop_guards(self):
+    async with await test.runner.get_runner().get_tor_controller() as controller:
+      previous_guards = await controller.get_info('entry-guards')
+      started_at = time.time()
+
+      await controller.drop_guards()
+
+      while time.time() < (started_at + 5):
+        if previous_guards != await controller.get_info('entry-guards'):
+          return  # success
+
+        await asyncio.sleep(0.01)
+
+      self.fail('DROPGUARDS failed to change our guards within five seconds')
+
+  @test.require.controller
+  @test.require.version(stem.version.Requirement.DROPTIMEOUTS)
+  @async_test
+  async def test_drop_guards_with_reset(self):
+    async with await test.runner.get_runner().get_tor_controller() as controller:
+      events = asyncio.Queue()
+
+      await controller.add_event_listener(lambda event: events.put_nowait(event), stem.control.EventType.BUILDTIMEOUT_SET)
+      await controller.drop_guards(reset_timeouts = True)
+
+      try:
+        event = await asyncio.wait_for(events.get(), timeout = 5)
+      except asyncio.TimeoutError:
+        self.fail('DROPTIMEOUTS failed to emit a BUILDTIMEOUT_SET event within five seconds')
+
+      self.assertEqual('RESET', event.set_type)
+      self.assertEqual(0, event.total_times)
+
+  @test.require.controller
   @async_test
   async def test_mapaddress_mixed_response(self):
     runner = test.runner.get_runner()

@@ -53,6 +53,7 @@ The following are only available within Stem's `git repository
   * Our API now provides `type hints <https://blog.atagar.com/may2020/>`_.
   * Migrated to `asyncio <https://docs.python.org/3/library/asyncio.html>`_. Stem can now be used by `both synchronous and asynchronous applications <https://blog.atagar.com/july2020/>`_.
   * Installation has migrated from distutils to setuptools.
+  * Added the 'reset_timeouts' argument to :func:`~stem.control.Controller.drop_guards` (:ticket:`73`)
 
  * **Controller**
 
