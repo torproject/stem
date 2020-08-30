@@ -551,7 +551,7 @@ know if you get stuck or would like to discuss anything!
 
  * If you don't already have a publicly accessible Stem repository then set one up. `GitHub <https://github.com/>`_ in particular is great for this.
  * `File a ticket <https://github.com/torproject/stem/issues/>`_ or pull request.
- * I'll review the change and give suggestions. When we're both happy with it I'll push your change to the official repository.
+ * I'll review the change and give suggestions. When we're both happy with it I'll push your change into the official repository.
 
 .. _how_do_i_run_the_tests:
 

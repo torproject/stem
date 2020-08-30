@@ -20,6 +20,7 @@ import io
 import time
 
 import stem.util.str_tools
+import stem.version
 
 from typing import Any, BinaryIO, Callable, Dict, Iterator, List, Mapping, Optional, Sequence, Tuple, Type
 
@@ -105,6 +106,13 @@ def _csv(val: str) -> Sequence[str]:
   return list(map(lambda v: v.strip(), val.split(','))) if val is not None else None
 
 
+def _tor_version(val: str) -> stem.version.Version:
+  try:
+    return stem.version.Version(val) if val else None
+  except ValueError:
+    return None  # invalid tor version
+
+
 # mapping of attributes => (header, type)
 
 HEADER_ATTR = {
@@ -146,6 +154,7 @@ HEADER_ATTR = {
   'recent_stats.relay_failures.insuffient_period': ('recent_measurements_excluded_near_count', _int),
   'recent_stats.relay_failures.insufficient_measurements': ('recent_measurements_excluded_few_count', _int),
   'recent_stats.relay_failures.stale': ('recent_measurements_excluded_old_count', _int),
+  'tor_version': ('tor_version', _tor_version),
 }
 
 HEADER_DEFAULT = {
@@ -285,6 +294,7 @@ class BandwidthFile(Descriptor):
 
   :var str scanner_country: country code where this scan took place
   :var list destinations_countries: all country codes that were scanned
+  :var stem.version.Version tor_version: scanner's tor version
 
   :var int time_to_report_half_network: estimated number of seconds required to
     measure half the network, given recent measurements

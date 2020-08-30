@@ -8,6 +8,7 @@ import unittest
 
 import stem.descriptor
 import stem.util.str_tools
+import stem.version
 
 from unittest.mock import Mock, patch
 
@@ -124,6 +125,7 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(None, desc.scanner_country)
     self.assertEqual(None, desc.destinations_countries)
     self.assertEqual(None, desc.time_to_report_half_network)
+    self.assertEqual(None, desc.tor_version)
 
     stats = desc.recent_stats
     self.assertEqual(None, stats.consensus_count)
@@ -168,6 +170,7 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual(None, desc.scanner_country)
     self.assertEqual(None, desc.destinations_countries)
     self.assertEqual(None, desc.time_to_report_half_network)
+    self.assertEqual(None, desc.tor_version)
 
     stats = desc.recent_stats
     self.assertEqual(None, stats.consensus_count)
@@ -212,6 +215,7 @@ class TestBandwidthFile(unittest.TestCase):
     self.assertEqual('US', desc.scanner_country)
     self.assertEqual(['ZZ'], desc.destinations_countries)
     self.assertEqual(223519, desc.time_to_report_half_network)
+    self.assertEqual(stem.version.Version('0.3.5.10'), desc.tor_version)
 
     stats = desc.recent_stats
     self.assertEqual(34, stats.consensus_count)
