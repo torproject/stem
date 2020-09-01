@@ -181,12 +181,12 @@ class TestConnection(unittest.TestCase):
   def test_download_retries(self, urlopen_mock):
     urlopen_mock.side_effect = urllib.request.URLError('boom')
 
-    self.assertRaisesRegexp(IOError, 'boom', stem.util.connection.download, URL)
+    self.assertRaisesRegexp(OSError, 'boom', stem.util.connection.download, URL)
     self.assertEqual(1, urlopen_mock.call_count)
 
     urlopen_mock.reset_mock()
 
-    self.assertRaisesRegexp(IOError, 'boom', stem.util.connection.download, URL, retries = 4)
+    self.assertRaisesRegexp(OSError, 'boom', stem.util.connection.download, URL, retries = 4)
     self.assertEqual(5, urlopen_mock.call_count)
 
   @patch('os.access')
@@ -249,8 +249,8 @@ class TestConnection(unittest.TestCase):
 
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.PROC, process_pid = 1111))
 
-    proc_mock.side_effect = IOError('No connections for you!')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.PROC, process_pid = 1111)
+    proc_mock.side_effect = OSError('No connections for you!')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.PROC, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_netstat(self, call_mock):
@@ -262,11 +262,11 @@ class TestConnection(unittest.TestCase):
     expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp', False)]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT, process_pid = 15843, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 15843, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call netstat')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.NETSTAT, process_pid = 1111)
 
   @patch('stem.util.system.call', Mock(return_value = NETSTAT_IPV6_OUTPUT.split('\n')))
   def test_get_connections_by_netstat_ipv6(self):
@@ -291,10 +291,10 @@ class TestConnection(unittest.TestCase):
     expected = [Connection('192.168.0.1', 44284, '38.229.79.2', 443, 'tcp', False)]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.NETSTAT_WINDOWS, process_pid = 15843, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111, process_name = 'tor')
     call_mock.side_effect = OSError('Unable to call netstat')
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.NETSTAT_WINDOWS, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_ss(self, call_mock):
@@ -309,11 +309,11 @@ class TestConnection(unittest.TestCase):
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 15843, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 15843, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.SS, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call ss')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
 
   @patch('stem.util.system.call', Mock(return_value = SS_IPV6_OUTPUT.split('\n')))
   def test_get_connections_by_ss_ipv6(self):
@@ -345,11 +345,11 @@ class TestConnection(unittest.TestCase):
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.LSOF, process_pid = 15843, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 15843, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call lsof')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.LSOF, process_pid = 1111)
 
   @patch('stem.util.system.call', Mock(return_value = LSOF_IPV6_OUTPUT.split('\n')))
   def test_get_connections_by_lsof_ipv6(self):
@@ -392,11 +392,11 @@ class TestConnection(unittest.TestCase):
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 4397, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call sockstat')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_SOCKSTAT, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_procstat(self, call_mock):
@@ -413,11 +413,11 @@ class TestConnection(unittest.TestCase):
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 3561, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call procstat')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_PROCSTAT, process_pid = 1111)
 
   @patch('stem.util.system.call')
   def test_get_connections_by_fstat(self, call_mock):
@@ -432,11 +432,11 @@ class TestConnection(unittest.TestCase):
     ]
     self.assertEqual(expected, stem.util.connection.get_connections(Resolver.BSD_FSTAT, process_pid = 15843, process_name = 'tor'))
 
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 15843, process_name = 'stuff')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111, process_name = 'tor')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 15843, process_name = 'stuff')
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111, process_name = 'tor')
 
     call_mock.side_effect = OSError('Unable to call fstat')
-    self.assertRaises(IOError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111)
+    self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.BSD_FSTAT, process_pid = 1111)
 
   def test_is_valid_ipv4_address(self):
     """

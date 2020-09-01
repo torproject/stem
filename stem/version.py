@@ -60,7 +60,7 @@ def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
 
   :returns: :class:`~stem.version.Version` provided by the tor command
 
-  :raises: **IOError** if unable to query or parse the version
+  :raises: **OSError** if unable to query or parse the version
   """
 
   if tor_cmd not in VERSION_CACHE:
@@ -73,11 +73,11 @@ def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
 
       if 'No such file or directory' in str(exc):
         if os.path.isabs(tor_cmd):
-          raise IOError("Unable to check tor's version. '%s' doesn't exist." % tor_cmd)
+          raise OSError("Unable to check tor's version. '%s' doesn't exist." % tor_cmd)
         else:
-          raise IOError("Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd)
+          raise OSError("Unable to run '%s'. Maybe tor isn't in your PATH?" % version_cmd)
 
-      raise IOError(exc)
+      raise OSError(exc)
 
     for line in version_output:
       # output example:
@@ -90,10 +90,10 @@ def get_system_tor_version(tor_cmd: str = 'tor') -> 'stem.version.Version':
           VERSION_CACHE[tor_cmd] = Version(version_str)
           break
         except ValueError as exc:
-          raise IOError(exc)
+          raise OSError(exc)
 
     if tor_cmd not in VERSION_CACHE:
-      raise IOError("'%s' didn't provide a parseable version:\n\n%s" % (version_cmd, '\n'.join(version_output)))
+      raise OSError("'%s' didn't provide a parseable version:\n\n%s" % (version_cmd, '\n'.join(version_output)))
 
   return VERSION_CACHE[tor_cmd]
 

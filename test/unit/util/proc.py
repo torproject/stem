@@ -174,7 +174,7 @@ class TestProc(unittest.TestCase):
     # check that we reject bad pids
 
     for arg in (None, -100, 'hello',):
-      self.assertRaises(IOError, proc.file_descriptors_used, arg)
+      self.assertRaises(OSError, proc.file_descriptors_used, arg)
 
     # when proc directory doesn't exist
 
@@ -182,7 +182,7 @@ class TestProc(unittest.TestCase):
     listdir_mock.side_effect = OSError(error_msg)
 
     exc_msg = 'Unable to check number of file descriptors used: %s' % error_msg
-    self.assertRaisesWith(IOError, exc_msg, proc.file_descriptors_used, 2118)
+    self.assertRaisesWith(OSError, exc_msg, proc.file_descriptors_used, 2118)
 
     # successful calls
 

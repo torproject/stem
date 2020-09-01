@@ -25,10 +25,10 @@ class TestVersion(unittest.TestCase):
     stem.version.get_system_tor_version()
 
     # try running against a command that exists, but isn't tor
-    self.assertRaises(IOError, stem.version.get_system_tor_version, 'ls')
+    self.assertRaises(OSError, stem.version.get_system_tor_version, 'ls')
 
     # try running against a command that doesn't exist
-    self.assertRaises(IOError, stem.version.get_system_tor_version, 'blarg')
+    self.assertRaises(OSError, stem.version.get_system_tor_version, 'blarg')
 
   @test.require.controller
   @async_test

@@ -224,7 +224,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
   :raises:
     * **ValueError** if neither a process_pid nor process_name is provided
 
-    * **IOError** if no connections are available or resolution fails
+    * **OSError** if no connections are available or resolution fails
       (generally they're indistinguishable). The common causes are the
       command being unavailable or permissions.
   """
@@ -235,7 +235,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
     if available_resolvers:
       resolver = available_resolvers[0]
     else:
-      raise IOError('Unable to determine a connection resolver')
+      raise OSError('Unable to determine a connection resolver')
 
   if not process_pid and not process_name:
     raise ValueError('You must provide a pid or process name to provide connections for')
@@ -258,12 +258,12 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
 
     if len(all_pids) == 0:
       if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
-        raise IOError("Unable to determine the pid of '%s'. %s requires the pid to provide the connections." % (process_name, resolver))
+        raise OSError("Unable to determine the pid of '%s'. %s requires the pid to provide the connections." % (process_name, resolver))
     elif len(all_pids) == 1:
       process_pid = all_pids[0]
     else:
       if resolver in (Resolver.NETSTAT_WINDOWS, Resolver.PROC, Resolver.BSD_PROCSTAT):
-        raise IOError("There's multiple processes named '%s'. %s requires a single pid to provide the connections." % (process_name, resolver))
+        raise OSError("There's multiple processes named '%s'. %s requires a single pid to provide the connections." % (process_name, resolver))
 
   if resolver == Resolver.PROC:
     return stem.util.proc.connections(pid = process_pid)
@@ -273,7 +273,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
   try:
     results = stem.util.system.call(resolver_command)
   except OSError as exc:
-    raise IOError("Unable to query '%s': %s" % (resolver_command, exc))
+    raise OSError("Unable to query '%s': %s" % (resolver_command, exc))
 
   resolver_regex_str = RESOLVER_FILTER[resolver].format(
     protocol = '(?P<protocol>\\S+)',
@@ -330,7 +330,7 @@ def get_connections(resolver: Optional['stem.util.connection.Resolver'] = None, 
   _log('%i connections found' % len(connections))
 
   if not connections:
-    raise IOError('No results found using: %s' % resolver_command)
+    raise OSError('No results found using: %s' % resolver_command)
 
   return connections
 

@@ -317,7 +317,7 @@ def _parse_file(document_file: BinaryIO, document_type: Optional[Type] = None, v
   :raises:
     * **ValueError** if the document_version is unrecognized or the contents is
       malformed and validate is **True**
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   # we can't properly default this since NetworkStatusDocumentV3 isn't defined yet
@@ -390,7 +390,7 @@ def _parse_file_key_certs(certificate_file: BinaryIO, validate: bool = False) ->
 
   :raises:
     * **ValueError** if the key certificates are invalid and validate is **True**
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   while True:
@@ -419,7 +419,7 @@ def _parse_file_detached_sigs(detached_signature_file: BinaryIO, validate: bool 
 
   :raises:
     * **ValueError** if the detached signatures are invalid and validate is **True**
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   while True:

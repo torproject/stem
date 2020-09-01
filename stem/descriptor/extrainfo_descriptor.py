@@ -182,7 +182,7 @@ def _parse_file(descriptor_file: BinaryIO, is_bridge = False, validate = False, 
 
   :raises:
     * **ValueError** if the contents is malformed and validate is **True**
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   if kwargs:

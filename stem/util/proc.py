@@ -108,7 +108,7 @@ def system_start_time() -> float:
 
   :returns: **float** for the unix time of when the system started
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   start_time, parameter = time.time(), 'system start time'
@@ -119,7 +119,7 @@ def system_start_time() -> float:
     _log_runtime(parameter, '/proc/stat[btime]', start_time)
     return result
   except:
-    exc = IOError('unable to parse the /proc/stat btime entry: %s' % btime_line)
+    exc = OSError('unable to parse the /proc/stat btime entry: %s' % btime_line)
     _log_failure(parameter, exc)
     raise exc
 
@@ -131,7 +131,7 @@ def physical_memory() -> int:
 
   :returns: **int** for the bytes of physical memory this system has
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   start_time, parameter = time.time(), 'system physical memory'
@@ -142,7 +142,7 @@ def physical_memory() -> int:
     _log_runtime(parameter, '/proc/meminfo[MemTotal]', start_time)
     return result
   except:
-    exc = IOError('unable to parse the /proc/meminfo MemTotal entry: %s' % mem_total_line)
+    exc = OSError('unable to parse the /proc/meminfo MemTotal entry: %s' % mem_total_line)
     _log_failure(parameter, exc)
     raise exc
 
@@ -155,7 +155,7 @@ def cwd(pid: int) -> str:
 
   :returns: **str** with the path of the working directory for the process
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   start_time, parameter = time.time(), 'cwd'
@@ -167,7 +167,7 @@ def cwd(pid: int) -> str:
     try:
       cwd = os.readlink(proc_cwd_link)
     except OSError:
-      exc = IOError('unable to read %s' % proc_cwd_link)
+      exc = OSError('unable to read %s' % proc_cwd_link)
       _log_failure(parameter, exc)
       raise exc
 
@@ -183,7 +183,7 @@ def uid(pid: int) -> int:
 
   :returns: **int** with the user id for the owner of the process
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   start_time, parameter = time.time(), 'uid'
@@ -195,7 +195,7 @@ def uid(pid: int) -> int:
     _log_runtime(parameter, '%s[Uid]' % status_path, start_time)
     return result
   except:
-    exc = IOError('unable to parse the %s Uid entry: %s' % (status_path, uid_line))
+    exc = OSError('unable to parse the %s Uid entry: %s' % (status_path, uid_line))
     _log_failure(parameter, exc)
     raise exc
 
@@ -209,7 +209,7 @@ def memory_usage(pid: int) -> Tuple[int, int]:
   :returns: **tuple** of two ints with the memory usage of the process, of the
     form **(resident_size, virtual_size)**
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   # checks if this is the kernel process
@@ -228,7 +228,7 @@ def memory_usage(pid: int) -> Tuple[int, int]:
     _log_runtime(parameter, '%s[VmRSS|VmSize]' % status_path, start_time)
     return (residentSize, virtualSize)
   except:
-    exc = IOError('unable to parse the %s VmRSS and VmSize entries: %s' % (status_path, ', '.join(mem_lines)))
+    exc = OSError('unable to parse the %s VmRSS and VmSize entries: %s' % (status_path, ', '.join(mem_lines)))
     _log_failure(parameter, exc)
     raise exc
 
@@ -243,11 +243,11 @@ def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[str]:
 
   :returns: **tuple** with all of the requested statistics as strings
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   if CLOCK_TICKS is None:
-    raise IOError('Unable to look up SC_CLK_TCK')
+    raise OSError('Unable to look up SC_CLK_TCK')
 
   start_time, parameter = time.time(), 'process %s' % ', '.join(stat_types)
 
@@ -266,7 +266,7 @@ def stats(pid: int, *stat_types: 'stem.util.proc.Stat') -> Sequence[str]:
     stat_comp += stat_line[cmd_end + 1:].split()
 
   if len(stat_comp) < 44 and _is_float(stat_comp[13], stat_comp[14], stat_comp[21]):
-    exc = IOError('stat file had an unexpected format: %s' % stat_path)
+    exc = OSError('stat file had an unexpected format: %s' % stat_path)
     _log_failure(parameter, exc)
     raise exc
 
@@ -312,21 +312,21 @@ def file_descriptors_used(pid: int) -> int:
 
   :returns: **int** of the number of file descriptors used
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   try:
     pid = int(pid)
 
     if pid < 0:
-      raise IOError("Process pids can't be negative: %s" % pid)
+      raise OSError("Process pids can't be negative: %s" % pid)
   except (ValueError, TypeError):
-    raise IOError('Process pid was non-numeric: %s' % pid)
+    raise OSError('Process pid was non-numeric: %s' % pid)
 
   try:
     return len(os.listdir('/proc/%i/fd' % pid))
   except Exception as exc:
-    raise IOError('Unable to check number of file descriptors used: %s' % exc)
+    raise OSError('Unable to check number of file descriptors used: %s' % exc)
 
 
 def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequence['stem.util.connection.Connection']:
@@ -340,7 +340,7 @@ def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequen
 
   :returns: **list** of :class:`~stem.util.connection.Connection` instances
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   start_time, conn = time.time(), []
@@ -352,9 +352,9 @@ def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequen
       pid = int(pid)
 
       if pid < 0:
-        raise IOError("Process pids can't be negative: %s" % pid)
+        raise OSError("Process pids can't be negative: %s" % pid)
     except (ValueError, TypeError):
-      raise IOError('Process pid was non-numeric: %s' % pid)
+      raise OSError('Process pid was non-numeric: %s' % pid)
   elif user:
     parameter = 'connections for user %s' % user
   else:
@@ -362,7 +362,7 @@ def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequen
 
   try:
     if not IS_PWD_AVAILABLE:
-      raise IOError("This requires python's pwd module, which is unavailable on Windows.")
+      raise OSError("This requires python's pwd module, which is unavailable on Windows.")
 
     inodes = _inodes_for_sockets(pid) if pid else set()
     process_uid = stem.util.str_tools._to_bytes(str(pwd.getpwnam(user).pw_uid)) if user else None
@@ -402,14 +402,14 @@ def connections(pid: Optional[int] = None, user: Optional[str] = None) -> Sequen
               continue  # no port
 
             conn.append(stem.util.connection.Connection(l_addr, l_port, r_addr, r_port, protocol, is_ipv6))
-      except IOError as exc:
-        raise IOError("unable to read '%s': %s" % (proc_file_path, exc))
+      except OSError as exc:
+        raise OSError("unable to read '%s': %s" % (proc_file_path, exc))
       except Exception as exc:
-        raise IOError("unable to parse '%s': %s" % (proc_file_path, exc))
+        raise OSError("unable to parse '%s': %s" % (proc_file_path, exc))
 
     _log_runtime(parameter, '/proc/net/[tcp|udp]', start_time)
     return conn
-  except IOError as exc:
+  except OSError as exc:
     _log_failure(parameter, exc)
     raise
 
@@ -422,7 +422,7 @@ def _inodes_for_sockets(pid: int) -> Set[bytes]:
 
   :returns: **set** with inodes for its sockets
 
-  :raises: **IOError** if it can't be determined
+  :raises: **OSError** if it can't be determined
   """
 
   inodes = set()
@@ -430,7 +430,7 @@ def _inodes_for_sockets(pid: int) -> Set[bytes]:
   try:
     fd_contents = os.listdir('/proc/%s/fd' % pid)
   except OSError as exc:
-    raise IOError('Unable to read our file descriptors: %s' % exc)
+    raise OSError('Unable to read our file descriptors: %s' % exc)
 
   for fd in fd_contents:
     fd_path = '/proc/%s/fd/%s' % (pid, fd)
@@ -447,7 +447,7 @@ def _inodes_for_sockets(pid: int) -> Set[bytes]:
         continue  # descriptors may shift while we're in the middle of iterating over them
 
       # most likely couldn't be read due to permissions
-      raise IOError('unable to determine file descriptor destination (%s): %s' % (exc, fd_path))
+      raise OSError('unable to determine file descriptor destination (%s): %s' % (exc, fd_path))
 
   return inodes
 
@@ -519,7 +519,7 @@ def _get_lines(file_path: str, line_prefixes: Sequence[str], parameter: str) -> 
 
   :returns: mapping of prefixes to the matching line
 
-  :raises: **IOError** if unable to read the file or can't find all of the prefixes
+  :raises: **OSError** if unable to read the file or can't find all of the prefixes
   """
 
   try:
@@ -544,10 +544,10 @@ def _get_lines(file_path: str, line_prefixes: Sequence[str], parameter: str) -> 
       else:
         msg = '%s did not contain %s entries' % (file_path, ', '.join(remaining_prefixes))
 
-      raise IOError(msg)
+      raise OSError(msg)
     else:
       return results
-  except IOError as exc:
+  except OSError as exc:
     _log_failure(parameter, exc)
     raise
 

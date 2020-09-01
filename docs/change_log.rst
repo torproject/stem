@@ -54,6 +54,7 @@ The following are only available within Stem's `git repository
   * Migrated to `asyncio <https://docs.python.org/3/library/asyncio.html>`_. Stem can now be used by `both synchronous and asynchronous applications <https://blog.atagar.com/july2020/>`_.
   * Installation has migrated from distutils to setuptools.
   * Added the 'reset_timeouts' argument to :func:`~stem.control.Controller.drop_guards` (:ticket:`73`)
+  * Replace all IOErrors with OSErrors. Python 3.3 changed IOError into an `OSError alias <https://docs.python.org/3/library/exceptions.html#OSError>`_ to `deprecate it <https://www.python.org/dev/peps/pep-3151/#confusing-set-of-os-related-exceptions>`_.
 
  * **Controller**
 

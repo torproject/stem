@@ -72,7 +72,7 @@ def _parse_file(document_file: BinaryIO, validate: bool, entry_class: Type['stem
 
   :raises:
     * **ValueError** if the contents is malformed and validate is **True**
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   if start_position:

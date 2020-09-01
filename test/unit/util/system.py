@@ -402,11 +402,11 @@ class TestSystem(unittest.TestCase):
     self.assertEqual(14, len(list(system.tail(path))))
     self.assertEqual(14, len(list(system.tail(path, 200))))
 
-    self.assertRaises(IOError, list, system.tail('/path/doesnt/exist'))
+    self.assertRaises(OSError, list, system.tail('/path/doesnt/exist'))
 
     fd, temp_path = tempfile.mkstemp()
     os.chmod(temp_path, 0o077)  # remove read permissions
-    self.assertRaises(IOError, list, system.tail(temp_path))
+    self.assertRaises(OSError, list, system.tail(temp_path))
     os.close(fd)
     os.remove(temp_path)
 

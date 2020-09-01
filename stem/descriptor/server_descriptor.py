@@ -159,7 +159,7 @@ def _parse_file(descriptor_file: BinaryIO, is_bridge: bool = False, validate: bo
 
   :raises:
     * **ValueError** if the contents is malformed and validate is True
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   # Handler for relay descriptors

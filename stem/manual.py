@@ -100,7 +100,7 @@ CATEGORY_SECTIONS = collections.OrderedDict((
 ))
 
 
-class SchemaMismatch(IOError):
+class SchemaMismatch(OSError):
   """
   Database schema doesn't match what Stem supports.
 
@@ -281,13 +281,13 @@ def download_man_page(path: Optional[str] = None, file_handle: Optional[BinaryIO
   :param url: url to download tor's asciidoc manual from
   :param timeout: seconds to wait before timing out the request
 
-  :raises: **IOError** if unable to retrieve the manual
+  :raises: **OSError** if unable to retrieve the manual
   """
 
   if not path and not file_handle:
     raise ValueError("Either the path or file_handle we're saving to must be provided")
   elif not stem.util.system.is_available('a2x'):
-    raise IOError('We require a2x from asciidoc to provide a man page')
+    raise OSError('We require a2x from asciidoc to provide a man page')
 
   with tempfile.TemporaryDirectory() as dirpath:
     asciidoc_path = os.path.join(dirpath, 'tor.1.txt')
@@ -308,7 +308,7 @@ def download_man_page(path: Optional[str] = None, file_handle: Optional[BinaryIO
       if not os.path.exists(manual_path):
         raise OSError('no man page was generated')
     except stem.util.system.CallError as exc:
-      raise IOError("Unable to run '%s': %s" % (exc.command, stem.util.str_tools._to_unicode(exc.stderr)))
+      raise OSError("Unable to run '%s': %s" % (exc.command, stem.util.str_tools._to_unicode(exc.stderr)))
 
     if path:
       try:
@@ -319,7 +319,7 @@ def download_man_page(path: Optional[str] = None, file_handle: Optional[BinaryIO
 
         shutil.copyfile(manual_path, path)
       except OSError as exc:
-        raise IOError(exc)
+        raise OSError(exc)
 
     if file_handle:
       with open(manual_path, 'rb') as manual_file:
@@ -385,7 +385,7 @@ class Manual(object):
     :raises:
       * **ImportError** if cache is sqlite and the sqlite3 module is
         unavailable
-      * **IOError** if a **path** was provided and we were unable to read
+      * **OSError** if a **path** was provided and we were unable to read
         it or the schema is out of date
     """
 
@@ -398,7 +398,7 @@ class Manual(object):
       path = CACHE_PATH
 
     if not os.path.exists(path):
-      raise IOError("%s doesn't exist" % path)
+      raise OSError("%s doesn't exist" % path)
 
     with sqlite3.connect(path) as conn:
       try:
@@ -409,7 +409,7 @@ class Manual(object):
 
         name, synopsis, description, man_commit, stem_commit = conn.execute('SELECT name, synopsis, description, man_commit, stem_commit FROM metadata').fetchone()
       except sqlite3.OperationalError as exc:
-        raise IOError('Failed to read database metadata from %s: %s' % (path, exc))
+        raise OSError('Failed to read database metadata from %s: %s' % (path, exc))
 
       commandline = dict(conn.execute('SELECT name, description FROM commandline').fetchall())
       signals = dict(conn.execute('SELECT name, description FROM signals').fetchall())
@@ -442,7 +442,7 @@ class Manual(object):
 
     :returns: :class:`~stem.manual.Manual` for the system's man page
 
-    :raises: **IOError** if unable to retrieve the manual
+    :raises: **OSError** if unable to retrieve the manual
     """
 
     man_cmd = 'man %s -P cat %s' % ('--encoding=ascii' if HAS_ENCODING_ARG else '', man_path)
@@ -450,7 +450,7 @@ class Manual(object):
     try:
       man_output = stem.util.system.call(man_cmd, env = {'MANWIDTH': '10000000'})
     except OSError as exc:
-      raise IOError("Unable to run '%s': %s" % (man_cmd, exc))
+      raise OSError("Unable to run '%s': %s" % (man_cmd, exc))
 
     categories = _get_categories(man_output)
     config_options = collections.OrderedDict()  # type: collections.OrderedDict[str, stem.manual.ConfigOption]
@@ -484,7 +484,7 @@ class Manual(object):
 
       try:
         manual = stem.manual.from_remote()
-      except IOError:
+      except OSError:
         manual = stem.manual.from_cache()
 
     In addition to our GitWeb dependency this requires 'a2x' which is part of
@@ -499,7 +499,7 @@ class Manual(object):
 
     :returns: latest :class:`~stem.manual.Manual` available for tor
 
-    :raises: **IOError** if unable to retrieve the manual
+    :raises: **OSError** if unable to retrieve the manual
     """
 
     with tempfile.NamedTemporaryFile() as tmp:
@@ -519,7 +519,7 @@ class Manual(object):
     :raises:
       * **ImportError** if saving as sqlite and the sqlite3 module is
         unavailable
-      * **IOError** if unsuccessful
+      * **OSError** if unsuccessful
     """
 
     try:

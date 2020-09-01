@@ -267,7 +267,7 @@ def uses_settings(handle: str, path: str, lazy_load: bool = True) -> Callable:
   :returns: **function** that can be used as a decorator to provide the
     configuration
 
-  :raises: **IOError** if we fail to read the configuration file, if
+  :raises: **OSError** if we fail to read the configuration file, if
     **lazy_load** is true then this arises when we use the decorator
   """
 
@@ -416,7 +416,7 @@ class Config(object):
 
     try:
       user_config.load("/home/atagar/myConfig")
-    except IOError as exc:
+    except OSError as exc:
       print "Unable to load the user's config: %s" % exc
 
     # This replace the contents of ssh_config with the values from the user's
@@ -485,7 +485,7 @@ class Config(object):
       otherwise
 
     :raises:
-      * **IOError** if we fail to read the file (it doesn't exist, insufficient
+      * **OSError** if we fail to read the file (it doesn't exist, insufficient
         permissions, etc)
       * **ValueError** if no path was provided and we've never been provided one
     """
@@ -547,7 +547,7 @@ class Config(object):
     :param path: location to be saved to
 
     :raises:
-      * **IOError** if we fail to save the file (insufficient permissions, etc)
+      * **OSError** if we fail to save the file (insufficient permissions, etc)
       * **ValueError** if no path was provided and we've never been provided one
     """
 

@@ -65,7 +65,7 @@ def poll_twitter_feed(user_id, tweet_count):
   try:
     api_response = urllib2.urlopen(api_request).read()
   except:
-    raise IOError("Unable to reach %s" % TWITTER_API_URL)
+    raise OSError("Unable to reach %s" % TWITTER_API_URL)
 
   return json.loads(api_response)
 
@@ -81,7 +81,7 @@ try:
     print("%i. %s" % (index + 1, tweet["created_at"]))
     print(tweet["text"])
     print("")
-except IOError as exc:
+except OSError as exc:
   print(exc)
 finally:
   tor_process.kill()  # stops tor

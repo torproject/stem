@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
   try:
     stem_commit = stem.util.system.call('git rev-parse HEAD')[0]
-  except IOError as exc:
+  except OSError as exc:
     print("Unable to determine stem's current commit: %s" % exc)
     sys.exit(1)
 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     db_schema = cached_manual.schema
   except stem.manual.SchemaMismatch as exc:
     cached_manual, db_schema = None, exc.database_schema
-  except IOError:
+  except OSError:
     cached_manual, db_schema = None, None  # local copy has been deleted
 
   if db_schema != stem.manual.SCHEMA_VERSION:

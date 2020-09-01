@@ -99,16 +99,16 @@ class TestCollector(unittest.TestCase):
 
   @patch('urllib.request.urlopen')
   def test_index_retries(self, urlopen_mock):
-    urlopen_mock.side_effect = IOError('boom')
+    urlopen_mock.side_effect = OSError('boom')
 
     collector = CollecTor(retries = 0)
-    self.assertRaisesRegexp(IOError, 'boom', collector.index)
+    self.assertRaisesRegexp(OSError, 'boom', collector.index)
     self.assertEqual(1, urlopen_mock.call_count)
 
     urlopen_mock.reset_mock()
 
     collector = CollecTor(retries = 4)
-    self.assertRaisesRegexp(IOError, 'boom', collector.index)
+    self.assertRaisesRegexp(OSError, 'boom', collector.index)
     self.assertEqual(5, urlopen_mock.call_count)
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not json')))
@@ -123,7 +123,7 @@ class TestCollector(unittest.TestCase):
 
       with patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not compressed'))):
         collector = CollecTor()
-        self.assertRaisesRegexp(IOError, 'Failed to decompress as %s' % compression, collector.index, compression)
+        self.assertRaisesRegexp(OSError, 'Failed to decompress as %s' % compression, collector.index, compression)
 
   @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
   def test_files(self):

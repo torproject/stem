@@ -58,7 +58,7 @@ class TestVersion(unittest.TestCase):
     Tor version output that doesn't include a version within it.
     """
 
-    self.assertRaisesRegexp(IOError, "'tor_unit --version' didn't provide a parseable version", stem.version.get_system_tor_version, 'tor_unit')
+    self.assertRaisesRegexp(OSError, "'tor_unit --version' didn't provide a parseable version", stem.version.get_system_tor_version, 'tor_unit')
 
   @patch('stem.util.system.call', Mock(return_value = MALFORMED_TOR_VERSION.splitlines()))
   @patch.dict(stem.version.VERSION_CACHE)
@@ -68,7 +68,7 @@ class TestVersion(unittest.TestCase):
     version.
     """
 
-    self.assertRaisesWith(IOError, "'0.2.blah (git-73ff13ab3cc9570d)' isn't a properly formatted tor version", stem.version.get_system_tor_version, 'tor_unit')
+    self.assertRaisesWith(OSError, "'0.2.blah (git-73ff13ab3cc9570d)' isn't a properly formatted tor version", stem.version.get_system_tor_version, 'tor_unit')
 
   def test_parsing(self):
     """

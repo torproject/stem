@@ -5,7 +5,7 @@ try:
   print("Downloading tor's manual information, please wait...")
   manual = Manual.from_remote()
   print("  done\n")
-except IOError as exc:
+except OSError as exc:
   print("  unsuccessful (%s), using information provided with stem\n" % exc)
   manual = Manual.from_cache()  # fall back to our bundled manual information
 

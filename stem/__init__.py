@@ -731,7 +731,7 @@ class SocketClosed(SocketError):
   'Control socket was closed before completing the message.'
 
 
-class DownloadFailed(IOError):
+class DownloadFailed(OSError):
   """
   Inability to download a resource. Python's urllib module raises
   a wide variety of undocumented exceptions (urllib.request.URLError,

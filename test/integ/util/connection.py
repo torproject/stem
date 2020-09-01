@@ -69,7 +69,7 @@ class TestConnection(unittest.TestCase):
   def test_connections_by_ss(self):
     try:
       self.check_resolver(Resolver.SS)
-    except (IOError, OSError):
+    except OSError:
       self.skipTest('(ticket 27479)')
 
   def test_connections_by_lsof(self):

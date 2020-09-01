@@ -192,7 +192,7 @@ class Directory(object):
 
       try:
         authorities = stem.directory.Authority.from_remote()
-      except IOError:
+      except OSError:
         authorities = stem.directory.Authority.from_cache()
 
     .. versionadded:: 1.5.0
@@ -205,7 +205,7 @@ class Directory(object):
     :returns: **dict** of **str** identifiers to their
       :class:`~stem.directory.Directory`
 
-    :raises: **IOError** if unable to retrieve the fallback directories
+    :raises: **OSError** if unable to retrieve the fallback directories
     """
 
     raise NotImplementedError('Unsupported Operation: this should be implemented by the Directory subclass')
@@ -251,7 +251,7 @@ class Authority(Directory):
       lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
-        raise IOError('no content')
+        raise OSError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
       message = "Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc)
@@ -280,7 +280,7 @@ class Authority(Directory):
           v3ident = matches.get(AUTHORITY_V3IDENT),  # type: ignore
         )
     except ValueError as exc:
-      raise IOError(str(exc))
+      raise OSError(str(exc))
 
     return results
 
@@ -373,7 +373,7 @@ class Fallback(Directory):
         attr[attr_name] = conf.get(key)
 
         if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
-          raise IOError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
+          raise OSError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
 
       if attr['orport6_address'] and attr['orport6_port']:
         orport_v6 = (attr['orport6_address'], int(attr['orport6_port']))
@@ -399,7 +399,7 @@ class Fallback(Directory):
       lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
-        raise IOError('no content')
+        raise OSError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
       message = "Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc)
@@ -408,7 +408,7 @@ class Fallback(Directory):
     # header metadata
 
     if lines[0] != '/* type=fallback */':
-      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
+      raise OSError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
 
     header = {}
 
@@ -418,7 +418,7 @@ class Fallback(Directory):
       if mapping:
         header[mapping.group(1)] = mapping.group(2)
       else:
-        raise IOError('Malformed fallback directory header line: %s' % line)
+        raise OSError('Malformed fallback directory header line: %s' % line)
 
     Fallback._pop_section(lines)  # skip human readable comments
 
@@ -446,7 +446,7 @@ class Fallback(Directory):
           header = header,
         )
     except ValueError as exc:
-      raise IOError(str(exc))
+      raise OSError(str(exc))
 
     return results
 

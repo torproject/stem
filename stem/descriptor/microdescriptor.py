@@ -108,7 +108,7 @@ def _parse_file(descriptor_file: BinaryIO, validate: bool = False, **kwargs: Any
 
   :raises:
     * **ValueError** if the contents is malformed and validate is True
-    * **IOError** if the file can't be read
+    * **OSError** if the file can't be read
   """
 
   if kwargs:

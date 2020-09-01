@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
   try:
     stem_commit = stem.util.system.call('git rev-parse HEAD')[0]
-  except IOError as exc:
+  except OSError as exc:
     print("Unable to determine stem's current commit: %s" % exc)
     sys.exit(1)
 

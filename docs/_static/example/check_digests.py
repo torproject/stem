@@ -19,7 +19,7 @@ def download_descriptors(fingerprint):
   router_status_entries = filter(lambda desc: desc.fingerprint == fingerprint, conensus_query.run())
 
   if len(router_status_entries) != 1:
-    raise IOError("Unable to find relay '%s' in the consensus" % fingerprint)
+    raise OSError("Unable to find relay '%s' in the consensus" % fingerprint)
 
   return (
     router_status_entries[0],

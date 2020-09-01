@@ -307,7 +307,7 @@ class File(object):
 
     :raises:
       * :class:`~stem.DownloadFailed` if the download fails
-      * **IOError** if a mismatching file exists and **overwrite** is **False**
+      * **OSError** if a mismatching file exists and **overwrite** is **False**
     """
 
     filename = self.path.split('/')[-1]
@@ -332,7 +332,7 @@ class File(object):
         if expected_hash == actual_hash:
           return path  # nothing to do, we already have the file
         elif not overwrite:
-          raise IOError("%s already exists but mismatches CollecTor's checksum (expected: %s, actual: %s)" % (path, expected_hash, actual_hash))
+          raise OSError("%s already exists but mismatches CollecTor's checksum (expected: %s, actual: %s)" % (path, expected_hash, actual_hash))
 
     response = stem.util.connection.download(COLLECTOR_URL + self.path, timeout, retries)
 
@@ -624,7 +624,7 @@ class CollecTor(object):
       If unable to retrieve the index this provide...
 
         * **ValueError** if json is malformed
-        * **IOError** if unable to decompress
+        * **OSError** if unable to decompress
         * :class:`~stem.DownloadFailed` if the download fails
     """
 
@@ -664,7 +664,7 @@ class CollecTor(object):
       If unable to retrieve the index this provide...
 
         * **ValueError** if json is malformed
-        * **IOError** if unable to decompress
+        * **OSError** if unable to decompress
         * :class:`~stem.DownloadFailed` if the download fails
     """
 

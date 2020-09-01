@@ -238,7 +238,7 @@ class _Compression(object):
     :raises:
       If unable to decompress this provide...
 
-      * **IOError** if content isn't compressed with this
+      * **OSError** if content isn't compressed with this
       * **ImportError** if this method if decompression is unavalable
     """
 
@@ -253,7 +253,7 @@ class _Compression(object):
     try:
       return self._decompression_func(self._module, content)
     except Exception as exc:
-      raise IOError('Failed to decompress as %s: %s' % (self, exc))
+      raise OSError('Failed to decompress as %s: %s' % (self, exc))
 
   def __str__(self) -> str:
     return self._name
@@ -370,7 +370,7 @@ def parse_file(descriptor_file: Union[str, BinaryIO, tarfile.TarFile, IO[bytes]]
   :raises:
     * **ValueError** if the contents is malformed and validate is True
     * **TypeError** if we can't match the contents of the file to a descriptor type
-    * **IOError** if unable to read from the descriptor_file
+    * **OSError** if unable to read from the descriptor_file
   """
 
   # Delegate to a helper if this is a path or tarfile.
@@ -392,7 +392,7 @@ def parse_file(descriptor_file: Union[str, BinaryIO, tarfile.TarFile, IO[bytes]]
     return
 
   if not descriptor_file.seekable():  # type: ignore
-    raise IOError(UNSEEKABLE_MSG)
+    raise OSError(UNSEEKABLE_MSG)
 
   # The tor descriptor specifications do not provide a reliable method for
   # identifying a descriptor file's type and version so we need to guess
@@ -860,7 +860,7 @@ class Descriptor(object):
     :raises:
       * **ValueError** if the contents is malformed and validate is True
       * **TypeError** if we can't match the contents of the file to a descriptor type
-      * **IOError** if unable to read from the descriptor_file
+      * **OSError** if unable to read from the descriptor_file
     """
 
     if 'descriptor_type' not in kwargs and cls.TYPE_ANNOTATION_NAME is not None:

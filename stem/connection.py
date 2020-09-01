@@ -1157,7 +1157,7 @@ def _read_cookie(cookie_path: str, is_safecookie: bool) -> bytes:
   try:
     with open(cookie_path, 'rb', 0) as f:
       return f.read()
-  except IOError as exc:
+  except OSError as exc:
     exc_msg = "Authentication failed: unable to read '%s' (%s)" % (cookie_path, exc)
     raise UnreadableCookieFile(exc_msg, cookie_path, is_safecookie)
 

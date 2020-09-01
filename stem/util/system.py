@@ -525,7 +525,7 @@ def name_by_pid(pid: int) -> Optional[str]:
   if stem.util.proc.is_available():
     try:
       process_name = stem.util.proc.stats(pid, stem.util.proc.Stat.COMMAND)[0]
-    except IOError:
+    except OSError:
       pass
 
   # attempts to resolve using ps, failing if:
@@ -923,7 +923,7 @@ def cwd(pid: int) -> Optional[str]:
   if stem.util.proc.is_available():
     try:
       return stem.util.proc.cwd(pid)
-    except IOError:
+    except OSError:
       pass
 
   # Fall back to a pwdx query. This isn't available on BSD.
@@ -1024,7 +1024,7 @@ def start_time(pid: str) -> Optional[float]:
   if stem.util.proc.is_available():
     try:
       return float(stem.util.proc.stats(pid, stem.util.proc.Stat.START_TIME)[0])
-    except IOError:
+    except OSError:
       pass
 
   try:
@@ -1053,7 +1053,7 @@ def tail(target: Union[str, BinaryIO], lines: Optional[int] = None) -> Iterator[
 
   :returns: **generator** that reads lines, starting with the end
 
-  :raises: **IOError** if unable to read the file
+  :raises: **OSError** if unable to read the file
   """
 
   if isinstance(target, str):
@@ -1163,7 +1163,7 @@ def is_tarfile(path: str) -> bool:
   # Checking if it's a tar file may fail due to permissions so failing back
   # to the mime type...
   #
-  #   IOError: [Errno 13] Permission denied: '/vmlinuz.old'
+  #   OSError: [Errno 13] Permission denied: '/vmlinuz.old'
   #
   # With python 3 insuffient permissions raises an AttributeError instead...
   #
@@ -1171,7 +1171,7 @@ def is_tarfile(path: str) -> bool:
 
   try:
     return tarfile.is_tarfile(path)
-  except (IOError, AttributeError):
+  except (OSError, AttributeError):
     return mimetypes.guess_type(path)[0] == 'application/x-tar'
 
 
@@ -1402,7 +1402,7 @@ def set_process_name(process_name: str) -> None:
 
   :param process_name: new name for our process
 
-  :raises: **IOError** if the process cannot be renamed
+  :raises: **OSError** if the process cannot be renamed
   """
 
   # This is mostly based on...
@@ -1448,7 +1448,7 @@ def _set_argv(process_name: str) -> None:
   Py_GetArgcArgv(argv, ctypes.pointer(argc))
 
   if len(process_name) > _MAX_NAME_LENGTH:
-    raise IOError("Can't rename process to something longer than our initial name (this would overwrite memory used for the env)")
+    raise OSError("Can't rename process to something longer than our initial name (this would overwrite memory used for the env)")
 
   # space we need to clear
   zero_size = max(len(current_name), len(process_name))

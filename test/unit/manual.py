@@ -238,14 +238,14 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.is_available', Mock(return_value = False))
   def test_download_man_page_requires_a2x(self):
     exc_msg = 'We require a2x from asciidoc to provide a man page'
-    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
+    self.assertRaisesWith(OSError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
-  @patch('stem.manual.open', Mock(side_effect = IOError('unable to write to file')), create = True)
+  @patch('stem.manual.open', Mock(side_effect = OSError('unable to write to file')), create = True)
   @patch('stem.util.system.is_available', Mock(return_value = True))
   def test_download_man_page_when_unable_to_write(self):
     exc_msg = "Unable to download tor's manual from https://gitweb.torproject.org/tor.git/plain/doc/man/tor.1.txt to /no/such/path/tor.1.txt: unable to write to file"
-    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
+    self.assertRaisesWith(OSError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file')
 
   @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
@@ -253,7 +253,7 @@ class TestManual(unittest.TestCase):
   @patch('urllib.request.urlopen', Mock(side_effect = urllib.request.URLError('<urlopen error [Errno -2] Name or service not known>')))
   def test_download_man_page_when_download_fails(self):
     exc_msg = "Unable to download tor's manual from https://www.atagar.com/foo/bar to /no/such/path/tor.1.txt: <urlopen error <urlopen error [Errno -2] Name or service not known>>"
-    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+    self.assertRaisesWith(OSError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', Mock(return_value = io.BytesIO()), create = True)
@@ -262,7 +262,7 @@ class TestManual(unittest.TestCase):
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'test content')))
   def test_download_man_page_when_a2x_fails(self):
     exc_msg = "Unable to run 'a2x -f manpage /no/such/path/tor.1.txt': call failed"
-    self.assertRaisesWith(IOError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
+    self.assertRaisesWith(OSError, exc_msg, stem.manual.download_man_page, '/tmp/no_such_file', url = 'https://www.atagar.com/foo/bar')
 
   @patch('tempfile.TemporaryDirectory', Mock(return_value = TEMP_DIR_MOCK))
   @patch('stem.manual.open', create = True)
@@ -290,7 +290,7 @@ class TestManual(unittest.TestCase):
   @patch('stem.util.system.call', Mock(side_effect = OSError('man --encoding=ascii -P cat tor returned exit status 16')))
   def test_from_man_when_manual_is_unavailable(self):
     exc_msg = "Unable to run 'man --encoding=ascii -P cat tor': man --encoding=ascii -P cat tor returned exit status 16"
-    self.assertRaisesWith(IOError, exc_msg, stem.manual.Manual.from_man)
+    self.assertRaisesWith(OSError, exc_msg, stem.manual.Manual.from_man)
 
   @patch('stem.util.system.call', Mock(return_value = []))
   def test_when_man_is_empty(self):
