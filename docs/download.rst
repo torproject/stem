@@ -76,7 +76,8 @@ Download
    * - .. image:: /_static/section/download/pypi.png
           :target: https://pypi.org/project/stem/
 
-     - .. image:: /_static/label/python_package_index.png
+     - .. _pypi:
+       .. image:: /_static/label/python_package_index.png
           :target: https://pypi.org/project/stem/
 
        Signed releases and instructions for both Python 2.x and 3.x. You can
@@ -93,7 +94,8 @@ Download
 
    * - .. image:: /_static/section/download/osx.png
 
-     - .. image:: /_static/label/osx.png
+     - .. _osx:
+       .. image:: /_static/label/osx.png
 
        As of OSX 10.8 the platform bundles Python 2.7 by default. This makes
        installation easy...
@@ -106,7 +108,8 @@ Download
    * - .. image:: /_static/section/download/debian.png
           :target: https://packages.debian.org/sid/python-stem
 
-     - .. image:: /_static/label/debian.png
+     - .. _debian:
+       .. image:: /_static/label/debian.png
           :target: https://packages.debian.org/sid/python-stem
 
        Packages by Dererk for Debian, including `python-stem
@@ -121,7 +124,8 @@ Download
    * - .. image:: /_static/section/download/ubuntu.png
           :target: https://launchpad.net/ubuntu/+source/python-stem
 
-     - .. image:: /_static/label/ubuntu.png
+     - .. _ubuntu:
+       .. image:: /_static/label/ubuntu.png
           :target: https://launchpad.net/ubuntu/+source/python-stem
 
        Package derived from Debian for Ubuntu.
@@ -133,7 +137,8 @@ Download
    * - .. image:: /_static/section/download/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-     - .. image:: /_static/label/fedora.png
+     - .. _fedora:
+       .. image:: /_static/label/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
        Packages maintained by Juan for Fedora using **dnf** or **yum**. These
@@ -147,7 +152,8 @@ Download
    * - .. image:: /_static/section/download/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
-     - .. image:: /_static/label/gentoo.png
+     - .. _gentoo:
+       .. image:: /_static/label/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
        Package by Anthony Basile for Gentoo.
@@ -159,7 +165,8 @@ Download
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://www.archlinux.org/packages/community/any/python-stem/
 
-     - .. image:: /_static/label/archlinux.png
+     - .. _archlinux:
+       .. image:: /_static/label/archlinux.png
           :target: https://www.archlinux.org/packages/community/any/python-stem/
 
        Package by Sjon for `Arch Linux <https://www.archlinux.org/>`_...
@@ -171,7 +178,8 @@ Download
    * - .. image:: /_static/section/download/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
-     - .. image:: /_static/label/slackware.png
+     - .. _slackware:
+       .. image:: /_static/label/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
        Package by Markus for `Slackware
@@ -193,7 +201,8 @@ Download
    * - .. image:: /_static/section/download/openbsd.png
           :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
 
-     - .. image:: /_static/label/openbsd.png
+     - .. _openbsd:
+       .. image:: /_static/label/openbsd.png
           :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
 
        Port by pascal for OpenBSD.
@@ -205,7 +214,8 @@ Download
    * - .. image:: /_static/section/download/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
 
-     - .. image:: /_static/label/netbsd.png
+     - .. _netbsd:
+       .. image:: /_static/label/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
 
        Port by Riastradh for NetBSD.
@@ -217,7 +227,8 @@ Download
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
 
-     - .. image:: /_static/label/source_repository.png
+     - .. _source:
+       .. image:: /_static/label/source_repository.png
           :target: https://gitweb.torproject.org/stem.git
 
        For those wanting to live on the bleeding edge or contribute to Stem,
