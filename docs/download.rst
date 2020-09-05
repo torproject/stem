@@ -7,7 +7,7 @@ Download
      Source: http://www.python.org/community/logos/
      License: http://www.python.org/psf/trademarks
    
-   * OSX
+   * Mac OS
      Source: IconArchive (http://www.iconarchive.com/show/papercut-social-icons-by-graphicloads/Apple-icon.html)
      Author: GraphicLoads, Papercut Social Icons
      License: Freeware
@@ -80,29 +80,23 @@ Download
        .. image:: /_static/label/python_package_index.png
           :target: https://pypi.org/project/stem/
 
-       Signed releases and instructions for both Python 2.x and 3.x. You can
-       easily install from its `tarball
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
-       (`sig
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_),
-       or with **pip**...
+       You can install our latest release from the Python Package Index (PyPI)
+       with **pip**...
 
        ::
 
-         % sudo easy_install pip
          % sudo pip install stem
 
-   * - .. image:: /_static/section/download/osx.png
+   * - .. image:: /_static/section/download/mac.png
 
      - .. _osx:
-       .. image:: /_static/label/osx.png
+       .. image:: /_static/label/mac_os.png
 
-       As of OSX 10.8 the platform bundles Python 2.7 by default. This makes
+       Mac OS 10.8 and above bundle Python by default. This makes
        installation easy...
 
        ::
 
-         % sudo easy_install pip
          % sudo pip install stem
 
    * - .. image:: /_static/section/download/debian.png
@@ -231,8 +225,8 @@ Download
        .. image:: /_static/label/source_repository.png
           :target: https://gitweb.torproject.org/stem.git
 
-       For those wanting to live on the bleeding edge or contribute to Stem,
-       Stem's git repository can be fetched with...
+       For those who want to live on the bleeding edge or contribute, you can
+       download Stem's git repository with...
 
        ::
 
