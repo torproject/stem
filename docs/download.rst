@@ -59,6 +59,12 @@ Download
      Source: https://www.netbsd.org/gallery/logos.html
      License: https://www.netbsd.org/about/redistribution.html
    
+   * File
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/mimetypes/gnome-mime-application-x-archive.png 
+   
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
@@ -106,8 +112,10 @@ Download
        .. image:: /_static/label/debian.png
           :target: https://packages.debian.org/sid/python-stem
 
-       Packages by Dererk for Debian, including `python-stem
-       <https://packages.debian.org/sid/python-stem>`_ (for Python 2.x) and
+       Packages maintained by `Dererk
+       <https://nm.debian.org/person/dererk/>`_ for Debian
+       include `python-stem <https://packages.debian.org/sid/python-stem>`_
+       (for Python 2.x) and
        `python3-stem <https://packages.debian.org/sid/python3-stem>`_ (for
        Python 3.x).
 
@@ -135,8 +143,9 @@ Download
        .. image:: /_static/label/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-       Packages maintained by Juan for Fedora using **dnf** or **yum**. These
-       include **python-stem** (for Python 2.x), **python3-stem** (for Python
+       Packages maintained by `Juan
+       <https://fedoraproject.org/wiki/User:Jorti>`_ for Fedora include
+       **python-stem** (for Python 2.x), **python3-stem** (for Python
        3.x), and **python-stem-doc** (this website).
 
        ::
@@ -150,7 +159,9 @@ Download
        .. image:: /_static/label/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
-       Package by Anthony Basile for Gentoo.
+       Package by `Anthony Basile
+       <https://packages.gentoo.org/maintainer/blueness@gentoo.org>`_ for
+       Gentoo.
 
        ::
 
@@ -176,8 +187,8 @@ Download
        .. image:: /_static/label/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
-       Package by Markus for `Slackware
-       <http://slackbuilds.org/howto/>`_.
+       Package by `Markus <https://docs.slackware.com/wiki:user:markush>`_ for
+       `Slackware <http://slackbuilds.org/howto/>`_.
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
@@ -217,6 +228,22 @@ Download
        ::
 
            % pkg_add py37-stem
+
+   * - .. image:: /_static/section/download/file.png
+          :target: https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz
+
+     - .. _file:
+       .. image:: /_static/label/file.png
+          :target: https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz
+
+       `File
+       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
+       and `signature <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_ upon which the above packages are based (`instructions <faq.html#how-do-i-validate-the-pgp-signature>`_). You
+       can directly install from this with...
+
+       ::
+
+          % pip install stem-1.7.1.tar.gz
 
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
