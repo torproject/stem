@@ -20,3 +20,6 @@ img {
     max-width: none !important;
 }
 
+.align-default {
+    text-align: left !important;
+}

@@ -7,7 +7,7 @@ Download
      Source: http://www.python.org/community/logos/
      License: http://www.python.org/psf/trademarks
    
-   * OSX
+   * Mac OS
      Source: IconArchive (http://www.iconarchive.com/show/papercut-social-icons-by-graphicloads/Apple-icon.html)
      Author: GraphicLoads, Papercut Social Icons
      License: Freeware
@@ -59,6 +59,12 @@ Download
      Source: https://www.netbsd.org/gallery/logos.html
      License: https://www.netbsd.org/about/redistribution.html
    
+   * File
+     Source: NuoveXT (http://nuovext.pwsp.net/)
+     Author: Alexandre Moore (http://sa-ki.deviantart.com/)
+     License: GPL v2
+     File: NuoveXT/128x128/mimetypes/gnome-mime-application-x-archive.png 
+   
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
@@ -76,41 +82,40 @@ Download
    * - .. image:: /_static/section/download/pypi.png
           :target: https://pypi.org/project/stem/
 
-     - .. image:: /_static/label/python_package_index.png
+     - .. _pypi:
+       .. image:: /_static/label/python_package_index.png
           :target: https://pypi.org/project/stem/
 
-       Signed releases and instructions for both Python 2.x and 3.x. You can
-       easily install from its `tarball
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
-       (`sig
-       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_),
-       or with **pip**...
+       You can install our latest release from the Python Package Index (PyPI)
+       with **pip**...
 
        ::
 
-         % sudo easy_install pip
          % sudo pip install stem
 
-   * - .. image:: /_static/section/download/osx.png
+   * - .. image:: /_static/section/download/mac.png
 
-     - .. image:: /_static/label/osx.png
+     - .. _osx:
+       .. image:: /_static/label/mac_os.png
 
-       As of OSX 10.8 the platform bundles Python 2.7 by default. This makes
+       Mac OS 10.8 and above bundle Python by default. This makes
        installation easy...
 
        ::
 
-         % sudo easy_install pip
          % sudo pip install stem
 
    * - .. image:: /_static/section/download/debian.png
           :target: https://packages.debian.org/sid/python-stem
 
-     - .. image:: /_static/label/debian.png
+     - .. _debian:
+       .. image:: /_static/label/debian.png
           :target: https://packages.debian.org/sid/python-stem
 
-       Packages by Dererk for Debian, including `python-stem
-       <https://packages.debian.org/sid/python-stem>`_ (for Python 2.x) and
+       Packages maintained by `Dererk
+       <https://nm.debian.org/person/dererk/>`_ for Debian
+       include `python-stem <https://packages.debian.org/sid/python-stem>`_
+       (for Python 2.x) and
        `python3-stem <https://packages.debian.org/sid/python3-stem>`_ (for
        Python 3.x).
 
@@ -121,7 +126,8 @@ Download
    * - .. image:: /_static/section/download/ubuntu.png
           :target: https://launchpad.net/ubuntu/+source/python-stem
 
-     - .. image:: /_static/label/ubuntu.png
+     - .. _ubuntu:
+       .. image:: /_static/label/ubuntu.png
           :target: https://launchpad.net/ubuntu/+source/python-stem
 
        Package derived from Debian for Ubuntu.
@@ -133,11 +139,13 @@ Download
    * - .. image:: /_static/section/download/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-     - .. image:: /_static/label/fedora.png
+     - .. _fedora:
+       .. image:: /_static/label/fedora.png
           :target: https://apps.fedoraproject.org/packages/python-stem
 
-       Packages maintained by Juan for Fedora using **dnf** or **yum**. These
-       include **python-stem** (for Python 2.x), **python3-stem** (for Python
+       Packages maintained by `Juan
+       <https://fedoraproject.org/wiki/User:Jorti>`_ for Fedora include
+       **python-stem** (for Python 2.x), **python3-stem** (for Python
        3.x), and **python-stem-doc** (this website).
 
        ::
@@ -147,10 +155,13 @@ Download
    * - .. image:: /_static/section/download/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
-     - .. image:: /_static/label/gentoo.png
+     - .. _gentoo:
+       .. image:: /_static/label/gentoo.png
           :target: http://packages.gentoo.org/package/net-libs/stem
 
-       Package by Anthony Basile for Gentoo.
+       Package by `Anthony Basile
+       <https://packages.gentoo.org/maintainer/blueness@gentoo.org>`_ for
+       Gentoo.
 
        ::
 
@@ -159,7 +170,8 @@ Download
    * - .. image:: /_static/section/download/archlinux.png
           :target: https://www.archlinux.org/packages/community/any/python-stem/
 
-     - .. image:: /_static/label/archlinux.png
+     - .. _archlinux:
+       .. image:: /_static/label/archlinux.png
           :target: https://www.archlinux.org/packages/community/any/python-stem/
 
        Package by Sjon for `Arch Linux <https://www.archlinux.org/>`_...
@@ -171,11 +183,12 @@ Download
    * - .. image:: /_static/section/download/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
-     - .. image:: /_static/label/slackware.png
+     - .. _slackware:
+       .. image:: /_static/label/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
-       Package by Markus for `Slackware
-       <http://slackbuilds.org/howto/>`_.
+       Package by `Markus <https://docs.slackware.com/wiki:user:markush>`_ for
+       `Slackware <http://slackbuilds.org/howto/>`_.
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
@@ -193,7 +206,8 @@ Download
    * - .. image:: /_static/section/download/openbsd.png
           :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
 
-     - .. image:: /_static/label/openbsd.png
+     - .. _openbsd:
+       .. image:: /_static/label/openbsd.png
           :target: http://cvsweb.openbsd.org/cgi-bin/cvsweb/ports/net/py-stem/
 
        Port by pascal for OpenBSD.
@@ -205,7 +219,8 @@ Download
    * - .. image:: /_static/section/download/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
 
-     - .. image:: /_static/label/netbsd.png
+     - .. _netbsd:
+       .. image:: /_static/label/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
 
        Port by Riastradh for NetBSD.
@@ -214,14 +229,31 @@ Download
 
            % pkg_add py37-stem
 
+   * - .. image:: /_static/section/download/file.png
+          :target: https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz
+
+     - .. _file:
+       .. image:: /_static/label/file.png
+          :target: https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz
+
+       `File
+       <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz>`_
+       and `signature <https://files.pythonhosted.org/packages/7f/71/d82f4204e88be00220cc54eedb2972fd05081cb0e5ebdc537d8940b064ea/stem-1.7.1.tar.gz.asc>`_ upon which the above packages are based (`instructions <faq.html#how-do-i-validate-the-pgp-signature>`_). You
+       can directly install from this with...
+
+       ::
+
+          % pip install stem-1.7.1.tar.gz
+
    * - .. image:: /_static/section/download/git.png
           :target: https://gitweb.torproject.org/stem.git
 
-     - .. image:: /_static/label/source_repository.png
+     - .. _source:
+       .. image:: /_static/label/source_repository.png
           :target: https://gitweb.torproject.org/stem.git
 
-       For those wanting to live on the bleeding edge or contribute to Stem,
-       Stem's git repository can be fetched with...
+       For those who want to live on the bleeding edge or contribute, you can
+       download Stem's git repository with...
 
        ::
 

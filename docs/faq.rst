@@ -91,6 +91,48 @@ Stem works with **Python 3.6 and greater**.
 If you require a deprecated Python version then please use Stem 1.8, which was
 compatible with **Python 2.6 and above**.
 
+.. _how_do_i_validate_the_pgp_signature:
+
+How do I validate the PGP signature?
+------------------------------------
+
+Most `download options <download.html>`_ are maintained by their
+operating system's community. Stem's author only provides `PyPI
+<download.html#pypi>`_, `File <download.html#file>`_, and `Source
+<download.html#source>`_.
+
+Releases are `PGP signed <https://en.wikipedia.org/wiki/Pretty_Good_Privacy>`_
+and can be validated with the `author's key
+<https://www.atagar.com/pgp.html>`_...
+
+#. `Install GPG <https://gnupg.org/>`_ if you don't already have it.
+
+#. Download Stem's `latest release and signature <download.html#file>`_.
+
+#. Get the `key <https://www.atagar.com/pgp.html>`_ of Stem's author...
+
+   ::
+
+     % gpg --keyserver keyserver.ubuntu.com --recv-keys 0x9ABBEEC6
+     gpg: requesting key 9ABBEEC6 from hkp server keyserver.ubuntu.com
+     gpg: key 9ABBEEC6: public key "Damian Johnson (www.atagar.com) <atagar1@gmail.com>" imported
+     gpg: no ultimately trusted keys found
+     gpg: Total number processed: 1
+     gpg:               imported: 1  (RSA: 1)
+
+#. Validate the downloaded file with the signature...
+
+   ::
+
+     % gpg --verify stem-1.7.1.tar.gz.asc stem-1.7.1.tar.gz
+     gpg: Signature made Wed 26 Dec 2018 03:00:43 PM PST using RSA key ID 87F30690
+     gpg: Good signature from "Damian Johnson (www.atagar.com) <atagar1@gmail.com>"
+     gpg:                 aka "Damian Johnson <atagar@torproject.org>"
+     gpg: WARNING: This key is not certified with a trusted signature!
+     gpg:          There is no indication that the signature belongs to the owner.
+     Primary key fingerprint: 6827 8CC5 DD2D 1E85 C4E4  5AD9 0445 B7AB 9ABB EEC6
+          Subkey fingerprint: 2AE2 24F5 C424 990A E520  6C85 8884 04C1 87F3 0690
+
 .. _can_i_interact_with_tors_controller_interface_directly:
 
 Can I interact with Tor's controller interface directly?
