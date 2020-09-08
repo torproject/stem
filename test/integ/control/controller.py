@@ -1627,6 +1627,7 @@ class TestController(unittest.TestCase):
         await controller.set_conf('OrPort', str(test.runner.ORPORT))
 
   @test.require.controller
+  @test.require.version(stem.version.Requirement.ONION_CLIENT_AUTH_ADD)
   @async_test
   async def test_hidden_service_auth(self):
     """
@@ -1665,6 +1666,7 @@ class TestController(unittest.TestCase):
       #   https://gitlab.torproject.org/tpo/core/tor/-/issues/40090
 
   @test.require.controller
+  @test.require.version(stem.version.Requirement.ONION_CLIENT_AUTH_ADD)
   @async_test
   async def test_hidden_service_auth_invalid(self):
     """

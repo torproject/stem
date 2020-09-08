@@ -3115,6 +3115,9 @@ class Controller(BaseController):
     :raises: :class:`stem.ControllerError` if the call fails
     """
 
+    if await self.get_version() < stem.version.Requirement.ONION_CLIENT_AUTH_ADD:
+      raise ValueError('ONION_CLIENT_AUTH_ADD requires tor %s or higher' % stem.version.Requirement.ONION_CLIENT_AUTH_ADD)
+
     request = 'ONION_CLIENT_AUTH_ADD %s %s:%s' % (service_id, key_type, private_key)
 
     if client_name:
