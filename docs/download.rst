@@ -187,8 +187,7 @@ Download
        .. image:: /_static/label/slackware.png
           :target: https://slackbuilds.org/repository/14.2/python/stem/
 
-       Package by `Markus <https://docs.slackware.com/wiki:user:markush>`_ for
-       `Slackware <http://slackbuilds.org/howto/>`_.
+       Package by Markus for `Slackware <http://slackbuilds.org/howto/>`_.
 
    * - .. image:: /_static/section/download/freebsd.png
           :target: http://www.freshports.org/security/py-stem/
