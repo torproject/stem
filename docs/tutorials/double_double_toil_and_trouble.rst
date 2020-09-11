@@ -85,6 +85,7 @@ Applications
 `BWScanner <https://github.com/TheTorProject/bwscanner>`_                                                   Measurements for the tor bandwidth authorities. Interesting example of txtorcon and stem being used together.
 `Bushel <https://github.com/irl/bushel/>`_                                                                  Command-line descriptor download tools
 `blockstack-tor <https://github.com/blockstack/blockstack-tor>`_                                            Tor integration for `Blockstack <https://github.com/blockstack/blockstack>`_
+`Prometheus exporter <https://github.com/atx/prometheus-tor_exporter`_                                      Tor integration for `Prometheus <https://prometheus.io/>`_
 =========================================================================================================== ==========
 
 Scripts
