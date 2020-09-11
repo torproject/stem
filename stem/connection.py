@@ -357,8 +357,8 @@ async def connect_async(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1'
   elif control_port:
     if len(control_port) != 2:
       raise ValueError('The control_port argument for connect() should be an (address, port) tuple.')
-    elif not stem.util.connection.is_valid_ipv4_address(control_port[0]):
-      raise ValueError("'%s' isn't a vaid IPv4 address" % control_port[0])
+    elif not stem.util.connection.is_valid_ipv4_address(control_port[0]) and not stem.util.connection.is_valid_ipv6_address(control_port[0]):
+      raise ValueError("'%s' isn't a vaid address" % control_port[0])
     elif control_port[1] != 'default' and not stem.util.connection.is_valid_port(control_port[1]):
       raise ValueError("'%s' isn't a valid port" % control_port[1])
 

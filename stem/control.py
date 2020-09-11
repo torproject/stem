@@ -1072,7 +1072,7 @@ class Controller(BaseController):
 
     import stem.connection
 
-    if not stem.util.connection.is_valid_ipv4_address(address):
+    if not stem.util.connection.is_valid_ipv4_address(address) and not stem.util.connection.is_valid_ipv6_address(address):
       raise ValueError('Invalid IP address: %s' % address)
     elif port != 'default' and not stem.util.connection.is_valid_port(port):
       raise ValueError('Invalid port: %s' % port)
@@ -2611,7 +2611,7 @@ class Controller(BaseController):
 
         if not stem.util.connection.is_valid_port(port):
           raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort port (%s): %s' % (port, content))
-        elif not stem.util.connection.is_valid_ipv4_address(target_address):
+        elif not stem.util.connection.is_valid_ipv4_address(target_address) and not stem.util.connection.is_valid_ipv6_address(target_address):
           raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort target address (%s): %s' % (target_address, content))
         elif not stem.util.connection.is_valid_port(target_port):
           raise stem.ProtocolError('GETCONF provided an invalid HiddenServicePort target port (%s): %s' % (target_port, content))
@@ -2722,8 +2722,8 @@ class Controller(BaseController):
 
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("%s isn't a valid port number" % port)
-    elif target_address and not stem.util.connection.is_valid_ipv4_address(target_address):
-      raise ValueError("%s isn't a valid IPv4 address" % target_address)
+    elif target_address and not stem.util.connection.is_valid_ipv4_address(target_address) and not stem.util.connection.is_valid_ipv6_address(target_address):
+      raise ValueError("%s isn't a valid IP address" % target_address)
     elif target_port is not None and not stem.util.connection.is_valid_port(target_port):
       raise ValueError("%s isn't a valid port number" % target_port)
     elif auth_type not in (None, 'basic', 'stealth'):
