@@ -64,6 +64,12 @@ tcp    ESTAB      0      0              127.0.0.1:22            127.0.0.1:56673
 tcp    ESTAB      0      0           192.168.0.1:44415        38.229.79.2:443    users:(("tor",15843,9))
 """
 
+SS_WHITESPACE_OUTPUT = """\
+Netid  State      Recv-Q Send-Q     Local Address:Port       Peer Address:Port
+tcp    ESTAB      0      0           192.168.0.1:44092      23.112.135.72:443    users:(("tor",15843,10))    
+tcp    ESTAB      0      0           192.168.0.1:44415        38.229.79.2:443    users:(("tor",15843,9))    
+"""
+
 SS_IPV6_OUTPUT = """\
 Netid  State      Recv-Q Send-Q Local Address:Port               Peer Address:Port
 tcp    ESTAB      0      0      5.9.158.75:443                107.170.93.13:56159               users:(("tor",pid=25056,fd=997))
@@ -314,6 +320,19 @@ class TestConnection(unittest.TestCase):
 
     call_mock.side_effect = OSError('Unable to call ss')
     self.assertRaises(OSError, stem.util.connection.get_connections, Resolver.SS, process_pid = 1111)
+
+  @patch('stem.util.system.call', Mock(return_value = SS_WHITESPACE_OUTPUT.split('\n')))
+  def test_get_connections_by_ss_with_whitespace(self):
+    """
+    On some platforms the 'ss' command pads its lines with trailing whitespace.
+    """
+
+    expected = [
+      Connection('192.168.0.1', 44092, '23.112.135.72', 443, 'tcp', False),
+      Connection('192.168.0.1', 44415, '38.229.79.2', 443, 'tcp', False),
+    ]
+
+    self.assertEqual(expected, stem.util.connection.get_connections(Resolver.SS, process_pid = 15843, process_name = 'tor'))
 
   @patch('stem.util.system.call', Mock(return_value = SS_IPV6_OUTPUT.split('\n')))
   def test_get_connections_by_ss_ipv6(self):

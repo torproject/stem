@@ -126,7 +126,7 @@ RESOLVER_FILTER = {
   Resolver.NETSTAT_WINDOWS: '^\\s*{protocol}\\s+{local}\\s+{remote}\\s+ESTABLISHED\\s+{pid}\\s*$',
 
   # tcp    ESTAB      0      0           192.168.0.20:44415       38.229.79.2:443    users:(("tor",15843,9))
-  Resolver.SS: '^{protocol}\\s+ESTAB\\s+.*\\s+{local}\\s+{remote}\\s+users:\\(\\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\\)\\)$',
+  Resolver.SS: '^{protocol}\\s+ESTAB\\s+.*\\s+{local}\\s+{remote}\\s+users:\\(\\("{name}",(?:pid=)?{pid},(?:fd=)?[0-9]+\\)\\)\\s*$',
 
   # tor  3873  atagar  45u  IPv4  40994  0t0  TCP 10.243.55.20:45724->194.154.227.109:9001 (ESTABLISHED)
   Resolver.LSOF: '^{name}\\s+{pid}\\s+.*\\s+{protocol}\\s+{local}->{remote} \\(ESTABLISHED\\)$',

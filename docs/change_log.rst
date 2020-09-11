@@ -67,6 +67,10 @@ The following are only available within Stem's `git repository
 
   * *transport* lines within extrainfo descriptors failed to validate
 
+ * **Utilities**
+
+  * *ss* connection resolver failed on platforms that append whitespace (:ticket:`46`)
+
  * **Installation**
 
   * Migrated from distutil to setuptools
