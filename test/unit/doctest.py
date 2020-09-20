@@ -1,5 +1,5 @@
 """
-Tests examples from our documentation.
+Test inline examples from our documentation.
 """
 
 import doctest
