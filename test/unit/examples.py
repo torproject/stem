@@ -2,6 +2,8 @@
 Exercise the code in our examples directory.
 """
 
+import importlib
+import io
 import os
 import sys
 import unittest
@@ -9,23 +11,53 @@ import unittest
 import stem.util.system
 import test
 
+from stem.descriptor.bandwidth_file import BandwidthFile
+from unittest.mock import patch
+
+EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
+
+EXPECTED_BANDWIDTH_STATS = """\
+Relay FDCF49562E65B1CC219410009BD48A9EED387C77
+  bw = 1
+  bw_mean = 807445
+  bw_median = 911047
+  consensus_bandwidth = 1190000
+  node_id = $FDCF49562E65B1CC219410009BD48A9EED387C77
+
+Relay BD4172533C3F7271ABCCD9F057E06FD91547C42B
+  bw = 1
+  bw_mean = 631049
+  bw_median = 622052
+  consensus_bandwidth = 55000
+  node_id = $BD4172533C3F7271ABCCD9F057E06FD91547C42B
+
+"""
+
+
+def run_example(module):
+  """
+  Invoke the given example, returning its stdout.
+  """
+
+  original_path = list(sys.path)
+  sys.path.append(EXAMPLE_DIR)
+
+  try:
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      importlib.import_module(module)
+
+    return stdout_mock.getvalue()
+  finally:
+    sys.path = original_path
+
 
 class TestExamples(unittest.TestCase):
-  def setUp(self):
-    self.original_path = list(sys.path)
-    self.example_dir = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
-
-    sys.path.append(self.example_dir)
-
-  def tearDown(self):
-    sys.path = self.original_path
-
   def test_runs_everything(self):
     """
     Ensure we have tests for all our examples.
     """
 
-    all_examples = set([os.path.basename(path)[:-3] for path in stem.util.system.files_with_suffix(self.example_dir, '.py')])
+    all_examples = set([os.path.basename(path)[:-3] for path in stem.util.system.files_with_suffix(EXAMPLE_DIR, '.py')])
     tested_examples = set([method[5:] for method in dir(self) if method.startswith('test_') and method != 'test_runs_everything'])
 
     extra = sorted(tested_examples.difference(all_examples))
@@ -37,8 +69,16 @@ class TestExamples(unittest.TestCase):
     if missing:
       self.fail("Changed our examples directory? The following are untested: %s" % ', '.join(missing))
 
-  def test_bandwidth_stats(self):
-    pass
+  @patch('stem.descriptor.remote.get_bandwidth_file')
+  def test_bandwidth_stats(self, get_bandwidth_file_mock):
+    get_bandwidth_file_mock().run.return_value = [BandwidthFile.create({
+      'content': [
+        'bw=1 bw_mean=807445 bw_median=911047 consensus_bandwidth=1190000 node_id=$FDCF49562E65B1CC219410009BD48A9EED387C77',
+        'bw=1 bw_mean=631049 bw_median=622052 consensus_bandwidth=55000 node_id=$BD4172533C3F7271ABCCD9F057E06FD91547C42B',
+      ],
+    })]
+
+    self.assertEqual(EXPECTED_BANDWIDTH_STATS, run_example('bandwidth_stats'))
 
   def test_benchmark_server_descriptor_stem(self):
     pass
