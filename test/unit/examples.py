@@ -33,20 +33,25 @@ Relay BD4172533C3F7271ABCCD9F057E06FD91547C42B
 
 """
 
+EXPECTED_BENCHMARK_SERVER_DESC_PREFIX = """\
+Finished measure_average_advertised_bandwidth('%s')
+  Total time: 0 seconds
+  Processed server descriptors: 5
+  Average advertised bandwidth: 313183
+  Time per server descriptor:
+""".rstrip()
 
-def run_example(module):
+
+def import_example(module_name):
   """
-  Invoke the given example, returning its stdout.
+  Import this example module.
   """
 
   original_path = list(sys.path)
   sys.path.append(EXAMPLE_DIR)
 
   try:
-    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
-      importlib.import_module(module)
-
-    return stdout_mock.getvalue()
+    return importlib.import_module(module_name)
   finally:
     sys.path = original_path
 
@@ -70,7 +75,8 @@ class TestExamples(unittest.TestCase):
       self.fail("Changed our examples directory? The following are untested: %s" % ', '.join(missing))
 
   @patch('stem.descriptor.remote.get_bandwidth_file')
-  def test_bandwidth_stats(self, get_bandwidth_file_mock):
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_bandwidth_stats(self, stdout_mock, get_bandwidth_file_mock):
     get_bandwidth_file_mock().run.return_value = [BandwidthFile.create({
       'content': [
         'bw=1 bw_mean=807445 bw_median=911047 consensus_bandwidth=1190000 node_id=$FDCF49562E65B1CC219410009BD48A9EED387C77',
@@ -78,10 +84,17 @@ class TestExamples(unittest.TestCase):
       ],
     })]
 
-    self.assertEqual(EXPECTED_BANDWIDTH_STATS, run_example('bandwidth_stats'))
+    import_example('bandwidth_stats')
+    self.assertEqual(EXPECTED_BANDWIDTH_STATS, stdout_mock.getvalue())
 
-  def test_benchmark_server_descriptor_stem(self):
-    pass
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_benchmark_server_descriptor_stem(self, stdout_mock):
+    path = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data', 'collector', 'server-descriptors-2005-12-cropped.tar')
+
+    module = import_example('benchmark_server_descriptor_stem')
+    module.measure_average_advertised_bandwidth(path)
+
+    self.assertTrue(stdout_mock.getvalue().startswith(EXPECTED_BENCHMARK_SERVER_DESC_PREFIX % path))
 
   def test_benchmark_stem(self):
     pass
