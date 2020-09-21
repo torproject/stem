@@ -407,7 +407,6 @@ Stem Example
 * `Stem Benchmark Script <../.../../_static/example/benchmark_stem.py>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_stem.py
-   :caption: `[Download] <../_static/example/benchmark_server_descriptor_stem.py>`__
    :language: python
 
 Metrics-lib Example
@@ -416,7 +415,6 @@ Metrics-lib Example
 * `Metrics-lib Benchmark Script <../.../../_static/example/benchmark_metrics_lib.java>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_metrics_lib.java
-   :caption: `[Download] <../_static/example/benchmark_server_descriptor_metrics_lib.py>`__
    :language: java
 
 Zoossh Example
@@ -425,5 +423,4 @@ Zoossh Example
 * `Zoossh Benchmark Script <../.../../_static/example/benchmark_zoossh.go>`_
 
 .. literalinclude:: /_static/example/benchmark_server_descriptor_zoossh.go
-   :caption: `[Download] <../_static/example/benchmark_server_descriptor_zoossh.py>`__
    :language: go
