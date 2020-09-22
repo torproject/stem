@@ -8,11 +8,14 @@ import os
 import sys
 import unittest
 
+import stem.socket
 import stem.util.system
 import test
 
+from stem.control import Controller
 from stem.descriptor.bandwidth_file import BandwidthFile
-from unittest.mock import patch
+from stem.response import ControlMessage
+from unittest.mock import Mock, patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
 DESC_DIR = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data')
@@ -153,8 +156,23 @@ class TestExamples(unittest.TestCase):
       module.measure_fraction_relays_exit_80_microdescriptors(path)
       self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
 
-  def test_broken_listener(self):
-    pass
+  @patch('time.sleep')
+  @patch('stem.control.Controller.authenticate', Mock())
+  @patch('stem.control.Controller.is_alive', Mock(return_value = True))
+  @patch('stem.control.Controller.from_port')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_broken_listener(self, stdout_mock, from_port_mock, sleep_mock):
+    controller = Controller(stem.socket.ControlSocket())
+    from_port_mock.return_value = controller
+
+    # emits a BW event when the example runs time.sleep()
+
+    bw_event = ControlMessage.from_str('650 BW 15 25', 'EVENT', normalize = True)
+    sleep_mock.side_effect = lambda duration: controller._handle_event(bw_event)
+
+    import_example('broken_listener')
+
+    self.assertEqual('start of broken_handler\n', stdout_mock.getvalue())
 
   def test_check_digests(self):
     pass
