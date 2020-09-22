@@ -15,6 +15,7 @@ from stem.descriptor.bandwidth_file import BandwidthFile
 from unittest.mock import patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
+DESC_DIR = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data')
 
 EXPECTED_BANDWIDTH_STATS = """\
 Relay FDCF49562E65B1CC219410009BD48A9EED387C77
@@ -33,12 +34,36 @@ Relay BD4172533C3F7271ABCCD9F057E06FD91547C42B
 
 """
 
-EXPECTED_BENCHMARK_SERVER_DESC_PREFIX = """\
+EXPECTED_SERVER_DESC_BENCHMARK_PREFIX = """\
 Finished measure_average_advertised_bandwidth('%s')
   Total time: 0 seconds
   Processed server descriptors: 5
   Average advertised bandwidth: 313183
   Time per server descriptor:
+""".rstrip()
+
+EXPECTED_EXTRAINFO_BENCHMARK_PREFIX = """\
+Finished measure_countries_v3_requests('%s')
+  Total time: 0 seconds
+  Processed extrainfo descriptors: 7
+  Number of countries: 6
+  Time per extrainfo descriptor:
+""".rstrip()
+
+EXPECTED_CONSENSUS_BENCHMARK_PREFIX = """\
+Finished measure_average_relays_exit('%s')
+  Total time: 0 seconds
+  Processed 2 consensuses with 243 router status entries
+  Total exits: 28 (0.12%%)
+  Time per consensus:
+""".rstrip()
+
+EXPECTED_MICRODESC_BENCHMARK_PREFIX = """\
+Finished measure_fraction_relays_exit_80_microdescriptors('%s')
+  Total time: 0 seconds
+  Processed microdescriptors: 3
+  Total exits to port 80: 1 (0.33%%)
+  Time per microdescriptor:
 """.rstrip()
 
 
@@ -89,15 +114,44 @@ class TestExamples(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_benchmark_server_descriptor_stem(self, stdout_mock):
-    path = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data', 'collector', 'server-descriptors-2005-12-cropped.tar')
+    path = os.path.join(DESC_DIR, 'collector', 'server-descriptors-2005-12-cropped.tar')
+    expected_prefix = EXPECTED_SERVER_DESC_BENCHMARK_PREFIX % path
 
     module = import_example('benchmark_server_descriptor_stem')
     module.measure_average_advertised_bandwidth(path)
 
-    self.assertTrue(stdout_mock.getvalue().startswith(EXPECTED_BENCHMARK_SERVER_DESC_PREFIX % path))
+    self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
 
   def test_benchmark_stem(self):
-    pass
+    module = import_example('benchmark_stem')
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      path = os.path.join(DESC_DIR, 'collector', 'server-descriptors-2005-12-cropped.tar')
+      expected_prefix = EXPECTED_SERVER_DESC_BENCHMARK_PREFIX % path
+
+      module.measure_average_advertised_bandwidth(path)
+      self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      path = os.path.join(DESC_DIR, 'collector', 'extra-infos-2019-04-cropped.tar')
+      expected_prefix = EXPECTED_EXTRAINFO_BENCHMARK_PREFIX % path
+
+      module.measure_countries_v3_requests(path)
+      self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      path = os.path.join(DESC_DIR, 'collector', 'consensuses-2018-06-cropped.tar')
+      expected_prefix = EXPECTED_CONSENSUS_BENCHMARK_PREFIX % path
+
+      module.measure_average_relays_exit(path)
+      self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      path = os.path.join(DESC_DIR, 'collector', 'microdescs-2019-05-cropped.tar')
+      expected_prefix = EXPECTED_MICRODESC_BENCHMARK_PREFIX % path
+
+      module.measure_fraction_relays_exit_80_microdescriptors(path)
+      self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
 
   def test_broken_listener(self):
     pass

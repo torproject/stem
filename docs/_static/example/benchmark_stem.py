@@ -60,7 +60,7 @@ def measure_fraction_relays_exit_80_microdescriptors(path):
   start_time = time.time()
   exits, count = 0, 0
 
-  for desc in stem.descriptor.parse_file(path):
+  for desc in stem.descriptor.parse_file(path, descriptor_type = 'microdescriptor 1.0'):
     if desc.exit_policy.can_exit_to(port = 80):
       exits += 1
 
@@ -74,8 +74,9 @@ def measure_fraction_relays_exit_80_microdescriptors(path):
   print('  Time per microdescriptor: %0.5f seconds' % (runtime / count))
   print('')
 
-measure_average_advertised_bandwidth('/home/atagar/Desktop/server-descriptors-2015-11.tar')
-measure_countries_v3_requests('/home/atagar/Desktop/extra-infos-2015-11.tar')
-measure_average_relays_exit('/home/atagar/Desktop/consensuses-2015-11.tar')
-measure_fraction_relays_exit_80_microdescriptors('/home/atagar/Desktop/microdescs-2015-11.tar')
+if __name__ == '__main__':
+  measure_average_advertised_bandwidth('/home/atagar/Desktop/server-descriptors-2015-11.tar')
+  measure_countries_v3_requests('/home/atagar/Desktop/extra-infos-2015-11.tar')
+  measure_average_relays_exit('/home/atagar/Desktop/consensuses-2015-11.tar')
+  measure_fraction_relays_exit_80_microdescriptors('/home/atagar/Desktop/microdescs-2015-11.tar')
 
