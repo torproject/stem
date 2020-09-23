@@ -4,7 +4,6 @@ Exercise the code in our examples directory.
 
 import base64
 import binascii
-import importlib
 import io
 import os
 import sys
@@ -25,6 +24,13 @@ from unittest.mock import Mock, patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
 DESC_DIR = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data')
+
+UNTESTED = (
+  # client usage demos don't have much non-stem code
+
+  'client_usage_using_pycurl',
+  'client_usage_using_socksipy',
+)
 
 EXPECTED_BANDWIDTH_STATS = """\
 Relay FDCF49562E65B1CC219410009BD48A9EED387C77
@@ -86,21 +92,14 @@ Extrainfo descriptor digest is correct
 """
 
 
-def import_example(module_name):
-  """
-  Import this example module.
-  """
-
-  original_path = list(sys.path)
-  sys.path.append(EXAMPLE_DIR)
-
-  try:
-    return importlib.import_module(module_name)
-  finally:
-    sys.path = original_path
-
-
 class TestExamples(unittest.TestCase):
+  def setUp(self):
+    self.original_path = list(sys.path)
+    sys.path.append(EXAMPLE_DIR)
+
+  def tearDown(self):
+    sys.path = self.original_path
+
   def test_runs_everything(self):
     """
     Ensure we have tests for all our examples.
@@ -110,7 +109,7 @@ class TestExamples(unittest.TestCase):
     tested_examples = set([method[5:] for method in dir(self) if method.startswith('test_') and method != 'test_runs_everything'])
 
     extra = sorted(tested_examples.difference(all_examples))
-    missing = sorted(all_examples.difference(tested_examples))
+    missing = sorted(all_examples.difference(tested_examples).difference(UNTESTED))
 
     if extra:
       self.fail("Changed our examples directory? We test the following which are not present: %s" % ', '.join(extra))
@@ -128,21 +127,22 @@ class TestExamples(unittest.TestCase):
       ],
     })]
 
-    import_example('bandwidth_stats')
+    import bandwidth_stats
     self.assertEqual(EXPECTED_BANDWIDTH_STATS, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_benchmark_server_descriptor_stem(self, stdout_mock):
+    import benchmark_server_descriptor_stem as module
+
     path = os.path.join(DESC_DIR, 'collector', 'server-descriptors-2005-12-cropped.tar')
     expected_prefix = EXPECTED_SERVER_DESC_BENCHMARK_PREFIX % path
 
-    module = import_example('benchmark_server_descriptor_stem')
     module.measure_average_advertised_bandwidth(path)
 
     self.assertTrue(stdout_mock.getvalue().startswith(expected_prefix))
 
   def test_benchmark_stem(self):
-    module = import_example('benchmark_stem')
+    import benchmark_stem as module
 
     with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
       path = os.path.join(DESC_DIR, 'collector', 'server-descriptors-2005-12-cropped.tar')
@@ -186,7 +186,7 @@ class TestExamples(unittest.TestCase):
     bw_event = ControlMessage.from_str('650 BW 15 25', 'EVENT', normalize = True)
     sleep_mock.side_effect = lambda duration: controller._handle_event(bw_event)
 
-    import_example('broken_listener')
+    import broken_listener
 
     self.assertEqual('start of broken_handler\n', stdout_mock.getvalue())
 
@@ -197,7 +197,7 @@ class TestExamples(unittest.TestCase):
       query.run.return_value = [desc]
       return Mock(return_value = query)
 
-    module = import_example('check_digests')
+    import check_digests as module
     fingerprint = 'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
 
     extrainfo_desc = RelayExtraInfoDescriptor.create()
@@ -228,12 +228,6 @@ class TestExamples(unittest.TestCase):
           with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
             module.validate_relay(fingerprint)
             self.assertEqual(EXPECTED_CHECK_DIGESTS_BAD % server_desc.digest(), stdout_mock.getvalue())
-
-  def test_client_usage_using_pycurl(self):
-    pass
-
-  def test_client_usage_using_socksipy(self):
-    pass
 
   def test_collector_caching(self):
     pass
