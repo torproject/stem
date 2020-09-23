@@ -2,6 +2,8 @@
 Exercise the code in our examples directory.
 """
 
+import base64
+import binascii
 import importlib
 import io
 import os
@@ -11,9 +13,13 @@ import unittest
 import stem.socket
 import stem.util.system
 import test
+import test.require
 
 from stem.control import Controller
 from stem.descriptor.bandwidth_file import BandwidthFile
+from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
+from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.response import ControlMessage
 from unittest.mock import Mock, patch
 
@@ -68,6 +74,16 @@ Finished measure_fraction_relays_exit_80_microdescriptors('%s')
   Total exits to port 80: 1 (0.33%%)
   Time per microdescriptor:
 """.rstrip()
+
+EXPECTED_CHECK_DIGESTS_OK = """
+Server descriptor digest is correct
+Extrainfo descriptor digest is correct
+"""
+
+EXPECTED_CHECK_DIGESTS_BAD = """
+Server descriptor digest invalid, expected A106452D87BD7B803B6CE916291ED368DC5BD091 but is %s
+Extrainfo descriptor digest is correct
+"""
 
 
 def import_example(module_name):
@@ -174,8 +190,44 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual('start of broken_handler\n', stdout_mock.getvalue())
 
+  @test.require.cryptography
   def test_check_digests(self):
-    pass
+    def download_of(desc):
+      query = Mock()
+      query.run.return_value = [desc]
+      return Mock(return_value = query)
+
+    module = import_example('check_digests')
+    fingerprint = 'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
+
+    extrainfo_desc = RelayExtraInfoDescriptor.create()
+    server_desc = RelayDescriptor.create({'extra-info-digest': extrainfo_desc.digest()}, sign = True)
+
+    encoded_digest = base64.b64encode(binascii.unhexlify(server_desc.digest())).rstrip(b'=')
+
+    consensus_desc = RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s %s 2012-08-06 11:19:31 71.35.150.29 9001 0' % encoded_digest.decode('utf-8'),
+    })
+
+    bad_consensus_desc = RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })
+
+    with patch('stem.descriptor.remote.get_server_descriptors', download_of(server_desc)):
+      with patch('stem.descriptor.remote.get_extrainfo_descriptors', download_of(extrainfo_desc)):
+        # correctly signed descriptors
+
+        with patch('stem.descriptor.remote.get_consensus', download_of(consensus_desc)):
+          with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+            module.validate_relay(fingerprint)
+            self.assertEqual(EXPECTED_CHECK_DIGESTS_OK, stdout_mock.getvalue())
+
+        # incorrect server descriptor digest
+
+        with patch('stem.descriptor.remote.get_consensus', download_of(bad_consensus_desc)):
+          with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+            module.validate_relay(fingerprint)
+            self.assertEqual(EXPECTED_CHECK_DIGESTS_BAD % server_desc.digest(), stdout_mock.getvalue())
 
   def test_client_usage_using_pycurl(self):
     pass
