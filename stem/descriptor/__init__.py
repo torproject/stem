@@ -921,6 +921,9 @@ class Descriptor(object):
       * **NotImplementedError** if not implemented for this descriptor type
     """
 
+    # TODO: add support for creating descriptors with preset parameters (rather
+    # than line content)
+
     return cls(cls.content(attr, exclude), validate = validate)  # type: ignore
 
   def type_annotation(self) -> 'stem.descriptor.TypeAnnotation':
