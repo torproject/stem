@@ -19,6 +19,7 @@ from stem.descriptor.bandwidth_file import BandwidthFile
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.exit_policy import ExitPolicy
 from stem.response import ControlMessage
 from unittest.mock import Mock, patch
 
@@ -95,6 +96,12 @@ EXPECTED_COLLECTOR_CACHING = """\
   krypton (3E2F63E2356F52318B536A12B6445373808A5D6C)
   dizum (7EA6EAD6FD83083C538F44038BBFA077587DD755)
   flubber (5C2124E6C5DD75C3C17C03EEA5A51812773DE671)
+"""
+
+EXPECTED_COLLECTOR_READING = """\
+1 relays published an exiting policy today...
+
+  caerSidi (4F0C867DF0EF68160568C826838F482CEA7CFE44)
 """
 
 
@@ -256,8 +263,19 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_COLLECTOR_CACHING, stdout_mock.getvalue())
 
-  def test_collector_reading(self):
-    pass
+  @patch('stem.descriptor.collector.CollecTor.get_server_descriptors')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_collector_reading(self, stdout_mock, server_desc_mock):
+    server_desc_mock.return_value = [
+      RelayDescriptor.create({
+        'router': 'caerSidi 71.35.133.197 9001 0 0',
+        'fingerprint': '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44',
+      }, exit_policy = ExitPolicy('accept *:*')),
+    ]
+
+    import collector_reading
+
+    self.assertEqual(EXPECTED_COLLECTOR_READING, stdout_mock.getvalue())
 
   def test_compare_flags(self):
     pass
