@@ -91,6 +91,12 @@ Server descriptor digest invalid, expected A106452D87BD7B803B6CE916291ED368DC5BD
 Extrainfo descriptor digest is correct
 """
 
+EXPECTED_COLLECTOR_CACHING = """\
+  krypton (3E2F63E2356F52318B536A12B6445373808A5D6C)
+  dizum (7EA6EAD6FD83083C538F44038BBFA077587DD755)
+  flubber (5C2124E6C5DD75C3C17C03EEA5A51812773DE671)
+"""
+
 
 class TestExamples(unittest.TestCase):
   def setUp(self):
@@ -229,8 +235,26 @@ class TestExamples(unittest.TestCase):
             module.validate_relay(fingerprint)
             self.assertEqual(EXPECTED_CHECK_DIGESTS_BAD % server_desc.digest(), stdout_mock.getvalue())
 
-  def test_collector_caching(self):
-    pass
+  @patch('stem.descriptor.collector.File.download', Mock())
+  @patch('stem.descriptor.collector.CollecTor.files')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_collector_caching(self, stdout_mock, files_mock):
+    files_mock.return_value = [stem.descriptor.collector.File(
+     'archive/relay-descriptors/server-descriptors/server-descriptors-2005-12.tar',
+      ['server-descriptor 1.0'],
+      1348620,
+      '0RrqB5aMY46vTeEHYqnbPVFGZQi1auJkzyHyt0NNDcw=',
+      '2005-12-15 01:42',
+      '2005-12-17 11:06',
+      '2016-06-24 08:12',
+    )]
+
+    server_desc = list(stem.descriptor.parse_file(os.path.join(DESC_DIR, 'collector', 'server-descriptors-2005-12-cropped.tar')))
+
+    with patch('stem.descriptor.parse_file', Mock(return_value = server_desc)):
+      import collector_caching
+
+    self.assertEqual(EXPECTED_COLLECTOR_CACHING, stdout_mock.getvalue())
 
   def test_collector_reading(self):
     pass
