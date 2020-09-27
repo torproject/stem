@@ -13,7 +13,7 @@ def main():
     stream_listener = functools.partial(stream_event, controller)
     controller.add_event_listener(stream_listener, EventType.STREAM)
 
-    raw_input()  # wait for user to press enter
+    input()  # wait for user to press enter
 
 
 def stream_event(controller, event):

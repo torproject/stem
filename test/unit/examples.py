@@ -4,6 +4,7 @@ Exercise the code in our examples directory.
 
 import base64
 import binascii
+import functools
 import io
 import os
 import sys
@@ -104,6 +105,17 @@ EXPECTED_COLLECTOR_READING = """\
   caerSidi (4F0C867DF0EF68160568C826838F482CEA7CFE44)
 """
 
+EXPECTED_EXIT_USED = """\
+Tracking requests for tor exits. Press 'enter' to end.
+
+Exit relay for our connection to 64.15.112.44:80
+  address: 31.172.30.2:443
+  fingerprint: A59E1E7C7EAEE083D756EE1FF6EC31CA3D8651D7
+  nickname: chaoscomputerclub19
+  locale: unknown
+
+"""
+
 EXPECTED_LIST_CIRCUITS = """\
 
 Circuit 4 (GENERAL)
@@ -121,6 +133,12 @@ Circuit 10 (GENERAL)
  |- 00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F (ph3x, 86.59.119.83)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
 """
+
+
+def _make_circ_event(circ_id, hop1, hop2, hop3):
+  path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
+  content = '650 CIRC %i BUILT %s PURPOSE=GENERAL' % (circ_id, path)
+  return ControlMessage.from_str(content, 'EVENT', normalize = True)
 
 
 class TestExamples(unittest.TestCase):
@@ -328,8 +346,27 @@ class TestExamples(unittest.TestCase):
   def test_event_listening(self):
     pass
 
-  def test_exit_used(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_exit_used(self, stdout_mock, from_port_mock):
+    path_1 = ('9EA317EECA56BDF30CAEB208A253FB456EDAB1A0', 'bolobolo1')
+    path_2 = ('00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F', 'ph3x')
+    path_3 = ('A59E1E7C7EAEE083D756EE1FF6EC31CA3D8651D7', 'chaoscomputerclub19')
+
+    event = ControlMessage.from_str('650 STREAM 15 SUCCEEDED 3 64.15.112.44:80', 'EVENT', normalize = True)
+    r_line = '%s pZ4efH6u4IPXVu4f9uwxyj2GUdc= oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 31.172.30.2 443 0'
+
+    controller = from_port_mock().__enter__()
+    controller.get_circuit.return_value = _make_circ_event(1, path_1, path_2, path_3)
+    controller.get_network_status.return_value = RouterStatusEntryV3.create({'r': r_line % path_3[1]})
+    controller.get_info.return_value = 'unknown'
+
+    import exit_used
+
+    with patch('builtins.input', Mock(side_effect = functools.partial(exit_used.stream_event, controller, event))):
+      exit_used.main()
+
+    self.assertEqual(EXPECTED_EXIT_USED, stdout_mock.getvalue())
 
   def test_fibonacci_multiprocessing(self):
     pass
@@ -349,11 +386,6 @@ class TestExamples(unittest.TestCase):
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_list_circuits(self, stdout_mock, from_port_mock):
-    def _get_circ_event(circ_id, hop1, hop2, hop3):
-      path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
-      content = '650 CIRC %i BUILT %s PURPOSE=GENERAL' % (circ_id, path)
-      return ControlMessage.from_str(content, 'EVENT', normalize = True)
-
     path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
     path_2 = ('0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338', 'afo02')
     path_3 = ('DB3B1CFBD3E4D97B84B548ADD5B9A31451EEC4CC', 'edwardsnowden3')
@@ -362,9 +394,9 @@ class TestExamples(unittest.TestCase):
     path_6 = ('00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F', 'ph3x')
     path_7 = ('65242C91BFF30F165DA4D132C81A9EBA94B71D62', 'torexit16')
 
-    circuit_4 = _get_circ_event(4, path_1, path_2, path_3)
-    circuit_6 = _get_circ_event(6, path_1, path_4, path_5)
-    circuit_10 = _get_circ_event(10, path_1, path_6, path_7)
+    circuit_4 = _make_circ_event(4, path_1, path_2, path_3)
+    circuit_6 = _make_circ_event(6, path_1, path_4, path_5)
+    circuit_10 = _make_circ_event(10, path_1, path_6, path_7)
 
     controller = from_port_mock().__enter__()
     controller.get_circuits.return_value = [circuit_4, circuit_6, circuit_10]
