@@ -12,7 +12,7 @@ import test
 from unittest.mock import Mock, patch
 
 from stem.control import Controller
-from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
+from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.exit_policy import ExitPolicy
@@ -111,17 +111,6 @@ class TestTutorial(unittest.TestCase):
     rmtree_mock.assert_called_once_with('/home/atagar/.tor/hello_world')
 
     self.assertEqual(OVER_THE_RIVER_OUTPUT, stdout_mock.getvalue())
-
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.control.Controller.from_port', spec = Controller)
-  def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
-    controller = from_port_mock().__enter__()
-    controller.get_network_statuses.return_value = [RouterStatusEntryV2.create({
-      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
-    })]
-
-    exec_documentation_example('descriptor_from_tor_control_socket.py')
-    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('%s.open' % __name__, create = True)

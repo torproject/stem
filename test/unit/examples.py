@@ -400,8 +400,17 @@ class TestExamples(unittest.TestCase):
   def test_descriptor_from_orport(self):
     pass
 
-  def test_descriptor_from_tor_control_socket(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_descriptor_from_tor_control_socket(self, stdout_mock, from_port_mock):
+    controller = from_port_mock().__enter__()
+    controller.get_network_statuses.return_value = [RouterStatusEntryV2.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]
+
+    import descriptor_from_tor_control_socket
+
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   def test_descriptor_from_tor_data_directory(self):
     pass
