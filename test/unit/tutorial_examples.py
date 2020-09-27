@@ -7,11 +7,10 @@ import itertools
 import os
 import unittest
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 
 from test.unit import exec_documentation_example
@@ -23,15 +22,6 @@ CIRC_CONTENT = '650 CIRC %d %s \
 PURPOSE=%s'
 
 PATH_CONTENT = '$%s=%s,$%s=%s,$%s=%s'
-
-VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT = """\
-Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
-  5935 measured entries and 1332 unmeasured
-Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/authority:
-  6647 measured entries and 625 unmeasured
-Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
-  6313 measured entries and 1112 unmeasured
-"""
 
 PERSISTING_A_CONSENSUS_OUTPUT = """\
 A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
@@ -70,39 +60,6 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.directory.Authority.from_cache')
-  @patch('stem.descriptor.remote.DescriptorDownloader.query')
-  def test_votes_by_bandwidth_authorities(self, query_mock, authorities_mock, stdout_mock):
-    directory_values = [
-      DIRECTORY_AUTHORITIES['gabelmoo'],
-      DIRECTORY_AUTHORITIES['moria1'],
-      DIRECTORY_AUTHORITIES['maatuska'],
-    ]
-
-    directory_values[0].address = '131.188.40.189'
-    authorities_mock().values.return_value = directory_values
-
-    entry_with_measurement = RouterStatusEntryV3.create({'w': 'Bandwidth=1 Measured=1'})
-    entry_without_measurement = RouterStatusEntryV3.create()
-
-    query1 = Mock()
-    query1.download_url = 'http://131.188.40.189:80/tor/status-vote/current/authority'
-    query1.run.return_value = [entry_with_measurement] * 5935 + [entry_without_measurement] * 1332
-
-    query2 = Mock()
-    query2.download_url = 'http://128.31.0.39:9131/tor/status-vote/current/authority'
-    query2.run.return_value = [entry_with_measurement] * 6647 + [entry_without_measurement] * 625
-
-    query3 = Mock()
-    query3.download_url = 'http://171.25.193.9:443/tor/status-vote/current/authority'
-    query3.run.return_value = [entry_with_measurement] * 6313 + [entry_without_measurement] * 1112
-
-    query_mock.side_effect = [query1, query2, query3]
-
-    exec_documentation_example('votes_by_bandwidth_authorities.py')
-    self.assertCountEqual(VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
-
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.parse_file')
   @patch('stem.descriptor.remote.Query')

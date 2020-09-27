@@ -152,6 +152,15 @@ Checking for outdated relays...
 2 outdated relays found, 1 had contact information
 """
 
+EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES = """\
+Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
+  5935 measured entries and 1332 unmeasured
+Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/authority:
+  6647 measured entries and 625 unmeasured
+Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
+  6313 measured entries and 1112 unmeasured
+"""
+
 
 def _make_circ_event(circ_id, hop1, hop2, hop3):
   path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
@@ -524,8 +533,36 @@ class TestExamples(unittest.TestCase):
   def test_validate_descriptor_content(self):
     pass
 
-  def test_votes_by_bandwidth_authorities(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader.query')
+  @patch('stem.directory.Authority.from_cache')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_votes_by_bandwidth_authorities(self, stdout_mock, authorities_mock, query_mock):
+    authorities_mock().values.return_value = [
+      DIRECTORY_AUTHORITIES['gabelmoo'],
+      DIRECTORY_AUTHORITIES['moria1'],
+      DIRECTORY_AUTHORITIES['maatuska'],
+    ]
+
+    entry_with_measurement = RouterStatusEntryV3.create({'w': 'Bandwidth=1 Measured=1'})
+    entry_without_measurement = RouterStatusEntryV3.create()
+
+    query1 = Mock()
+    query1.download_url = 'http://131.188.40.189:80/tor/status-vote/current/authority'
+    query1.run.return_value = [entry_with_measurement] * 5935 + [entry_without_measurement] * 1332
+
+    query2 = Mock()
+    query2.download_url = 'http://128.31.0.39:9131/tor/status-vote/current/authority'
+    query2.run.return_value = [entry_with_measurement] * 6647 + [entry_without_measurement] * 625
+
+    query3 = Mock()
+    query3.download_url = 'http://171.25.193.9:443/tor/status-vote/current/authority'
+    query3.run.return_value = [entry_with_measurement] * 6313 + [entry_without_measurement] * 1112
+
+    query_mock.side_effect = [query1, query2, query3]
+
+    import votes_by_bandwidth_authorities
+
+    self.assertEqual(EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES, stdout_mock.getvalue())
 
   def test_words_with(self):
     pass
