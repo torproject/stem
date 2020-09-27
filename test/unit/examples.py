@@ -19,7 +19,7 @@ from stem.control import Controller
 from stem.descriptor.bandwidth_file import BandwidthFile
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
-from stem.descriptor.router_status_entry import RouterStatusEntryV3
+from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.directory import DIRECTORY_AUTHORITIES
 from stem.exit_policy import ExitPolicy
@@ -383,8 +383,16 @@ class TestExamples(unittest.TestCase):
   def test_create_descriptor_content(self):
     pass
 
-  def test_current_descriptors(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_current_descriptors(self, stdout_mock, downloader_mock):
+    downloader_mock().get_consensus.return_value = [RouterStatusEntryV2.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]
+
+    import current_descriptors
+
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   def test_custom_path_selection(self):
     pass

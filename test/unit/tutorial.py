@@ -113,16 +113,6 @@ class TestTutorial(unittest.TestCase):
     self.assertEqual(OVER_THE_RIVER_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.descriptor.remote.DescriptorDownloader')
-  def test_mirror_mirror_on_the_wall_1(self, downloader_mock, stdout_mock):
-    downloader_mock().get_consensus.return_value = [RouterStatusEntryV2.create({
-      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
-    })]
-
-    exec_documentation_example('current_descriptors.py')
-    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
-
-  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_mirror_mirror_on_the_wall_2(self, from_port_mock, stdout_mock):
     controller = from_port_mock().__enter__()
