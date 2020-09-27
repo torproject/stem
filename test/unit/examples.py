@@ -152,6 +152,9 @@ Checking for outdated relays...
 2 outdated relays found, 1 had contact information
 """
 
+EXPECTED_PERSISTING_A_CONSENSUS = """\
+A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
+"""
 EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES = """\
 Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
@@ -166,6 +169,12 @@ def _make_circ_event(circ_id, hop1, hop2, hop3):
   path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
   content = '650 CIRC %i BUILT %s PURPOSE=GENERAL' % (circ_id, path)
   return ControlMessage.from_str(content, 'EVENT', normalize = True)
+
+
+def _download_of(desc):
+  query = Mock()
+  query.run.return_value = [desc]
+  return Mock(return_value = query)
 
 
 class TestExamples(unittest.TestCase):
@@ -268,11 +277,6 @@ class TestExamples(unittest.TestCase):
 
   @test.require.cryptography
   def test_check_digests(self):
-    def download_of(desc):
-      query = Mock()
-      query.run.return_value = [desc]
-      return Mock(return_value = query)
-
     import check_digests as module
     fingerprint = 'A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB'
 
@@ -289,18 +293,18 @@ class TestExamples(unittest.TestCase):
       'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
     })
 
-    with patch('stem.descriptor.remote.get_server_descriptors', download_of(server_desc)):
-      with patch('stem.descriptor.remote.get_extrainfo_descriptors', download_of(extrainfo_desc)):
+    with patch('stem.descriptor.remote.get_server_descriptors', _download_of(server_desc)):
+      with patch('stem.descriptor.remote.get_extrainfo_descriptors', _download_of(extrainfo_desc)):
         # correctly signed descriptors
 
-        with patch('stem.descriptor.remote.get_consensus', download_of(consensus_desc)):
+        with patch('stem.descriptor.remote.get_consensus', _download_of(consensus_desc)):
           with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
             module.validate_relay(fingerprint)
             self.assertEqual(EXPECTED_CHECK_DIGESTS_OK, stdout_mock.getvalue())
 
         # incorrect server descriptor digest
 
-        with patch('stem.descriptor.remote.get_consensus', download_of(bad_consensus_desc)):
+        with patch('stem.descriptor.remote.get_consensus', _download_of(bad_consensus_desc)):
           with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
             module.validate_relay(fingerprint)
             self.assertEqual(EXPECTED_CHECK_DIGESTS_BAD % server_desc.digest(), stdout_mock.getvalue())
@@ -494,11 +498,35 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_OUTDATED_RELAYS, stdout_mock.getvalue())
 
-  def test_persisting_a_consensus(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  def test_persisting_a_consensus(self, downloader_mock):
+    consensus = NetworkStatusDocumentV3.create(routers = (RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    }),))
 
-  def test_persisting_a_consensus_with_parse_file(self):
-    pass
+    downloader_mock().get_consensus = _download_of(consensus)
+
+    try:
+      import persisting_a_consensus
+
+      with open('/tmp/descriptor_dump') as output_file:
+        self.assertEqual(str(consensus), output_file.read())
+    finally:
+      if os.path.exists('/tmp/descriptor_dump'):
+        os.remove('/tmp/descriptor_dump')
+
+  @patch('stem.descriptor.parse_file')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_persisting_a_consensus_with_parse_file(self, stdout_mock, parse_file_mock):
+    consensus = NetworkStatusDocumentV3.create(routers = (RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    }),))
+
+    parse_file_mock.return_value = iter([consensus])
+
+    import persisting_a_consensus_with_parse_file
+
+    self.assertEqual(EXPECTED_PERSISTING_A_CONSENSUS, stdout_mock.getvalue())
 
   def test_queue_listener(self):
     pass
