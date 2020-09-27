@@ -131,17 +131,6 @@ class TestTutorial(unittest.TestCase):
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.descriptor.collector.get_server_descriptors')
-  def test_mirror_mirror_on_the_wall_4(self, get_desc_mock, stdout_mock):
-    get_desc_mock.return_value = iter([RelayDescriptor.create({
-      'router': 'caerSidi 71.35.133.197 9001 0 0',
-      'fingerprint': '2C3C 4662 5698 B6D6 7DF3 2BC1 918A D3EE 1F99 06B1',
-    }, exit_policy = ExitPolicy('accept *:*'), validate = False)])
-
-    exec_documentation_example('collector_reading.py')
-    self.assertEqual('1 relays published an exiting policy today...\n\n  caerSidi (2C3C46625698B6D67DF32BC1918AD3EE1F9906B1)\n', stdout_mock.getvalue())
-
-  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
   def test_mirror_mirror_on_the_wall_5(self, downloader_mock, stdout_mock):
     def tutorial_example():

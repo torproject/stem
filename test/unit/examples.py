@@ -330,7 +330,7 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_COLLECTOR_CACHING, stdout_mock.getvalue())
 
-  @patch('stem.descriptor.collector.CollecTor.get_server_descriptors')
+  @patch('stem.descriptor.collector.get_server_descriptors')
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_collector_reading(self, stdout_mock, server_desc_mock):
     server_desc_mock.return_value = [
