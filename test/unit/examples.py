@@ -438,8 +438,18 @@ class TestExamples(unittest.TestCase):
   def test_get_hidden_service_descriptor(self):
     pass
 
-  def test_hello_world(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_hello_world(self, stdout_mock, from_port_mock):
+    controller = from_port_mock().__enter__()
+    controller.get_info.side_effect = lambda arg: {
+      'traffic/read': '33406',
+      'traffic/written': '29649',
+    }[arg]
+
+    import hello_world
+
+    self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
   def test_introduction_points(self):
     pass

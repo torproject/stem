@@ -47,18 +47,6 @@ class TestTutorial(unittest.TestCase):
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
   @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.control.Controller.from_port', spec = Controller)
-  def test_the_little_relay_that_could(self, from_port_mock, stdout_mock):
-    controller = from_port_mock().__enter__()
-    controller.get_info.side_effect = lambda arg: {
-      'traffic/read': '33406',
-      'traffic/written': '29649',
-    }[arg]
-
-    exec_documentation_example('hello_world.py')
-    self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
-
-  @patch('sys.stdout', new_callable = io.StringIO)
   @patch('shutil.rmtree')
   @patch('stem.control.Controller.from_port', spec = Controller)
   def test_over_the_river(self, from_port_mock, rmtree_mock, stdout_mock):
