@@ -11,7 +11,6 @@ from unittest.mock import Mock, patch
 
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.directory import DIRECTORY_AUTHORITIES
 from stem.response import ControlMessage
 
@@ -24,14 +23,6 @@ CIRC_CONTENT = '650 CIRC %d %s \
 PURPOSE=%s'
 
 PATH_CONTENT = '$%s=%s,$%s=%s,$%s=%s'
-
-OUTDATED_RELAYS_OUTPUT = """\
-Checking for outdated relays...
-
-  0.1.0           Sambuddha Basu
-
-2 outdated relays found, 1 had contact information
-"""
 
 COMPARE_FLAGS_OUTPUT = """\
 maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62
@@ -87,20 +78,6 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.descriptor.remote.DescriptorDownloader')
-  def test_outdated_relays(self, downloader_mock, stdout_mock):
-    downloader_mock().get_server_descriptors.return_value = [
-      RelayDescriptor.create({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
-      RelayDescriptor.create({'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
-      RelayDescriptor.create({'opt': 'contact Random Person admin@gtr-10.de', 'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
-      RelayDescriptor.create({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
-    ]
-
-    exec_documentation_example('outdated_relays.py')
-
-    self.assertCountEqual(OUTDATED_RELAYS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
-
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.Query')
   @patch('stem.directory.Authority.from_cache')

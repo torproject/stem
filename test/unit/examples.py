@@ -134,6 +134,14 @@ Circuit 10 (GENERAL)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
 """
 
+EXPECTED_OUTDATED_RELAYS = """\
+Checking for outdated relays...
+
+  0.1.0           Sambuddha Basu
+
+2 outdated relays found, 1 had contact information
+"""
+
 
 def _make_circ_event(circ_id, hop1, hop2, hop3):
   path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
@@ -423,8 +431,19 @@ class TestExamples(unittest.TestCase):
   def test_manual_config_options(self):
     pass
 
-  def test_outdated_relays(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_outdated_relays(self, stdout_mock, downloader_mock):
+    downloader_mock().get_server_descriptors.return_value = [
+      RelayDescriptor.create({'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
+      RelayDescriptor.create({'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
+      RelayDescriptor.create({'opt': 'contact Random Person admin@gtr-10.de', 'platform': 'node-Tor 0.2.3.0 on Linux x86_64'}),
+      RelayDescriptor.create({'opt': 'contact Sambuddha Basu', 'platform': 'node-Tor 0.1.0 on Linux x86_64'}),
+    ]
+
+    import outdated_relays
+
+    self.assertEqual(EXPECTED_OUTDATED_RELAYS, stdout_mock.getvalue())
 
   def test_persisting_a_consensus(self):
     pass
