@@ -24,14 +24,6 @@ PURPOSE=%s'
 
 PATH_CONTENT = '$%s=%s,$%s=%s,$%s=%s'
 
-COMPARE_FLAGS_OUTPUT = """\
-maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62
-moria1 has the Running flag but maatuska doesn't: 546C54E2A89D88E0794D04AECBF1AC8AC9DA81DE
-maatuska has the Running flag but moria1 doesn't: 92FCB6748A40E6088E22FBAB943AB2DD743EA818
-maatuska has the Running flag but moria1 doesn't: 6871F682350BA931838C0EC1E4A23044DAE06A73
-moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61
-"""
-
 VOTES_BY_BANDWIDTH_AUTHORITIES_OUTPUT = """\
 Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
@@ -78,47 +70,6 @@ def _get_router_status(address = None, port = None, nickname = None, fingerprint
 
 
 class TestTutorialExamples(unittest.TestCase):
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('stem.descriptor.remote.Query')
-  @patch('stem.directory.Authority.from_cache')
-  def test_compare_flags(self, authorities_mock, query_mock, stdout_mock):
-    authorities_mock().items.return_value = [('moria1', DIRECTORY_AUTHORITIES['moria1']), ('maatuska', DIRECTORY_AUTHORITIES['maatuska'])]
-
-    fingerprint = [
-      ('92FCB6748A40E6088E22FBAB943AB2DD743EA818', 'kvy2dIpA5giOIvurlDqy3XQ+qBg='),
-      ('6871F682350BA931838C0EC1E4A23044DAE06A73', 'aHH2gjULqTGDjA7B5KIwRNrganM='),
-      ('E2BB13AA2F6960CD93ABE5257A825687F3973C62', '4rsTqi9pYM2Tq+UleoJWh/OXPGI='),
-      ('546C54E2A89D88E0794D04AECBF1AC8AC9DA81DE', 'VGxU4qidiOB5TQSuy/Gsisnagd4='),
-      ('DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61', '3K7D0GncOarkPRPIrzG1ZF4F7WE='),
-    ]
-
-    entry = [
-      # entries for moria1
-
-      _get_router_status(fingerprint_base64 = fingerprint[0][1], s_line = ' '),
-      _get_router_status(fingerprint_base64 = fingerprint[1][1], s_line = ' '),
-      _get_router_status(fingerprint_base64 = fingerprint[2][1], s_line = ' '),
-      _get_router_status(fingerprint_base64 = fingerprint[3][1]),
-      _get_router_status(fingerprint_base64 = fingerprint[4][1]),
-
-      # entries for maatuska
-
-      _get_router_status(fingerprint_base64 = fingerprint[0][1]),
-      _get_router_status(fingerprint_base64 = fingerprint[1][1]),
-      _get_router_status(fingerprint_base64 = fingerprint[2][1]),
-      _get_router_status(fingerprint_base64 = fingerprint[3][1], s_line = ' '),
-      _get_router_status(fingerprint_base64 = fingerprint[4][1], s_line = ' '),
-    ]
-
-    query_mock().run.side_effect = [
-      [NetworkStatusDocumentV3.create(routers = (entry[0], entry[1], entry[2], entry[3], entry[4]))],
-      [NetworkStatusDocumentV3.create(routers = (entry[5], entry[6], entry[7], entry[8], entry[9]))],
-    ]
-
-    exec_documentation_example('compare_flags.py')
-
-    self.assertCountEqual(COMPARE_FLAGS_OUTPUT.splitlines(), stdout_mock.getvalue().splitlines())
-
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.directory.Authority.from_cache')
   @patch('stem.descriptor.remote.DescriptorDownloader.query')

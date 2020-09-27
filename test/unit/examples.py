@@ -18,8 +18,10 @@ import test.require
 from stem.control import Controller
 from stem.descriptor.bandwidth_file import BandwidthFile
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
+from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
+from stem.directory import DIRECTORY_AUTHORITIES
 from stem.exit_policy import ExitPolicy
 from stem.response import ControlMessage
 from unittest.mock import Mock, patch
@@ -103,6 +105,14 @@ EXPECTED_COLLECTOR_READING = """\
 1 relays published an exiting policy today...
 
   caerSidi (4F0C867DF0EF68160568C826838F482CEA7CFE44)
+"""
+
+EXPECTED_COMPARE_FLAGS = """\
+moria1 has the Running flag but maatuska doesn't: 546C54E2A89D88E0794D04AECBF1AC8AC9DA81DE
+maatuska has the Running flag but moria1 doesn't: 6871F682350BA931838C0EC1E4A23044DAE06A73
+maatuska has the Running flag but moria1 doesn't: 92FCB6748A40E6088E22FBAB943AB2DD743EA818
+moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5645E05ED61
+maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62
 """
 
 EXPECTED_EXIT_USED = """\
@@ -321,8 +331,38 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_COLLECTOR_READING, stdout_mock.getvalue())
 
-  def test_compare_flags(self):
-    pass
+  @patch('stem.directory.Authority.from_cache')
+  @patch('stem.descriptor.remote.Query')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_compare_flags(self, stdout_mock, query_mock, authorities_mock):
+    authorities_mock().items.return_value = [
+      ('moria1', DIRECTORY_AUTHORITIES['moria1']),
+      ('maatuska', DIRECTORY_AUTHORITIES['maatuska']),
+    ]
+
+    r_line = 'caerSidi %s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0'
+
+    moria1_consensus = NetworkStatusDocumentV3.create(routers = [
+      RouterStatusEntryV3.create({'r': r_line % 'kvy2dIpA5giOIvurlDqy3XQ+qBg=', 's': ' '}),
+      RouterStatusEntryV3.create({'r': r_line % 'aHH2gjULqTGDjA7B5KIwRNrganM=', 's': ' '}),
+      RouterStatusEntryV3.create({'r': r_line % '4rsTqi9pYM2Tq+UleoJWh/OXPGI=', 's': ' '}),
+      RouterStatusEntryV3.create({'r': r_line % 'VGxU4qidiOB5TQSuy/Gsisnagd4='}),
+      RouterStatusEntryV3.create({'r': r_line % '3K7D0GncOarkPRPIrzG1ZF4F7WE='}),
+    ])
+
+    maatuska_consensus = NetworkStatusDocumentV3.create(routers = [
+      RouterStatusEntryV3.create({'r': r_line % 'kvy2dIpA5giOIvurlDqy3XQ+qBg='}),
+      RouterStatusEntryV3.create({'r': r_line % 'aHH2gjULqTGDjA7B5KIwRNrganM='}),
+      RouterStatusEntryV3.create({'r': r_line % '4rsTqi9pYM2Tq+UleoJWh/OXPGI='}),
+      RouterStatusEntryV3.create({'r': r_line % 'VGxU4qidiOB5TQSuy/Gsisnagd4=', 's': ' '}),
+      RouterStatusEntryV3.create({'r': r_line % '3K7D0GncOarkPRPIrzG1ZF4F7WE=', 's': ' '}),
+    ])
+
+    query_mock().run.side_effect = [[moria1_consensus], [maatuska_consensus]]
+
+    import compare_flags
+
+    self.assertEqual(EXPECTED_COMPARE_FLAGS, stdout_mock.getvalue())
 
   def test_create_descriptor(self):
     pass
