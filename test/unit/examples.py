@@ -104,6 +104,24 @@ EXPECTED_COLLECTOR_READING = """\
   caerSidi (4F0C867DF0EF68160568C826838F482CEA7CFE44)
 """
 
+EXPECTED_LIST_CIRCUITS = """\
+
+Circuit 4 (GENERAL)
+ |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
+ |- 0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338 (afo02, 87.238.194.176)
+ +- DB3B1CFBD3E4D97B84B548ADD5B9A31451EEC4CC (edwardsnowden3, 109.163.234.10)
+
+Circuit 6 (GENERAL)
+ |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
+ |- EC01CB4766BADC1611678555CE793F2A7EB2D723 (sprockets, 46.165.197.96)
+ +- 9EA317EECA56BDF30CAEB208A253FB456EDAB1A0 (bolobolo1, 96.47.226.20)
+
+Circuit 10 (GENERAL)
+ |- B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C (ByTORAndTheSnowDog, 173.209.180.61)
+ |- 00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F (ph3x, 86.59.119.83)
+ +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
+"""
+
 
 class TestExamples(unittest.TestCase):
   def setUp(self):
@@ -328,8 +346,44 @@ class TestExamples(unittest.TestCase):
   def test_introduction_points(self):
     pass
 
-  def test_list_circuits(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_list_circuits(self, stdout_mock, from_port_mock):
+    def _get_circ_event(circ_id, hop1, hop2, hop3):
+      path = '$%s=%s,$%s=%s,$%s=%s' % (hop1[0], hop1[1], hop2[0], hop2[1], hop3[0], hop3[1])
+      content = '650 CIRC %i BUILT %s PURPOSE=GENERAL' % (circ_id, path)
+      return ControlMessage.from_str(content, 'EVENT', normalize = True)
+
+    path_1 = ('B1FA7D51B8B6F0CB585D944F450E7C06EDE7E44C', 'ByTORAndTheSnowDog')
+    path_2 = ('0DD9935C5E939CFA1E07B8DDA6D91C1A2A9D9338', 'afo02')
+    path_3 = ('DB3B1CFBD3E4D97B84B548ADD5B9A31451EEC4CC', 'edwardsnowden3')
+    path_4 = ('EC01CB4766BADC1611678555CE793F2A7EB2D723', 'sprockets')
+    path_5 = ('9EA317EECA56BDF30CAEB208A253FB456EDAB1A0', 'bolobolo1')
+    path_6 = ('00C2C2A16AEDB51D5E5FB7D6168FC66B343D822F', 'ph3x')
+    path_7 = ('65242C91BFF30F165DA4D132C81A9EBA94B71D62', 'torexit16')
+
+    circuit_4 = _get_circ_event(4, path_1, path_2, path_3)
+    circuit_6 = _get_circ_event(6, path_1, path_4, path_5)
+    circuit_10 = _get_circ_event(10, path_1, path_6, path_7)
+
+    controller = from_port_mock().__enter__()
+    controller.get_circuits.return_value = [circuit_4, circuit_6, circuit_10]
+
+    r_line = 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 %s 9001 0'
+
+    controller.get_network_status.side_effect = lambda fingerprint, *args: {
+      path_1[0]: RouterStatusEntryV3.create({'r': r_line % '173.209.180.61'}),
+      path_2[0]: RouterStatusEntryV3.create({'r': r_line % '87.238.194.176'}),
+      path_3[0]: RouterStatusEntryV3.create({'r': r_line % '109.163.234.10'}),
+      path_4[0]: RouterStatusEntryV3.create({'r': r_line % '46.165.197.96'}),
+      path_5[0]: RouterStatusEntryV3.create({'r': r_line % '96.47.226.20'}),
+      path_6[0]: RouterStatusEntryV3.create({'r': r_line % '86.59.119.83'}),
+      path_7[0]: RouterStatusEntryV3.create({'r': r_line % '176.67.169.171'}),
+    }[fingerprint]
+
+    import list_circuits
+
+    self.assertEqual(EXPECTED_LIST_CIRCUITS, stdout_mock.getvalue())
 
   def test_load_test(self):
     pass

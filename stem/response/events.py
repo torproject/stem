@@ -417,6 +417,10 @@ class CircuitEvent(Event):
     my_id = getattr(self, 'id')
     their_id = getattr(other, 'id')
 
+    if my_id.isdigit() and their_id.isdigit():
+      my_id = int(my_id)
+      their_id = int(their_id)
+
     return method(my_id, their_id) if my_id != their_id else method(hash(self), hash(other))
 
   def __gt__(self, other: Any) -> bool:
