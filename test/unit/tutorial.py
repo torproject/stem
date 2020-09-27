@@ -3,11 +3,9 @@ Tests for the examples given in stem's tutorial.
 """
 
 import io
-import os
 import unittest
 
 import stem.descriptor.remote
-import test
 
 from unittest.mock import Mock, patch
 
@@ -15,7 +13,6 @@ from stem.control import Controller
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
-from stem.exit_policy import ExitPolicy
 
 OVER_THE_RIVER_OUTPUT = """\
  * Connecting to tor
@@ -29,14 +26,6 @@ MIRROR_MIRROR_OUTPUT = """\
 2. speedyexit (102.13 KB/s)
 3. speedyexit (102.13 KB/s)
 """
-
-
-def exec_documentation_example(filename):
-  path = os.path.join(test.STEM_BASE, 'docs', '_static', 'example', filename)
-
-  with open(path) as f:
-    code = compile(f.read(), path, 'exec')
-    exec(code)
 
 
 class TestTutorial(unittest.TestCase):
