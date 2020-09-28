@@ -1,4 +1,4 @@
-import StringIO
+import io
 import time
 
 import pycurl
@@ -20,7 +20,7 @@ def query(url):
   Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
   """
 
-  output = StringIO.StringIO()
+  output = io.StringIO()
 
   query = pycurl.Curl()
   query.setopt(pycurl.URL, url)
