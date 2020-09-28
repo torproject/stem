@@ -163,6 +163,12 @@ EXPECTED_RUNNING_HIDDEN_SERVICE = """\
  * Shutting down our hidden service
 """
 
+EXPECTED_TOR_DESCRIPTORS = """\
+1. speedyexit (102.13 KB/s)
+2. speedyexit (102.13 KB/s)
+3. speedyexit (102.13 KB/s)
+"""
+
 EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES = """\
 Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
@@ -192,6 +198,11 @@ class TestExamples(unittest.TestCase):
 
   def tearDown(self):
     sys.path = self.original_path
+
+    # Ensure we don't cache a Mock object as our downloader. Otherwise future
+    # tests will understandably be very sad. :P
+
+    stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
   def test_runs_everything(self):
     """
@@ -620,8 +631,22 @@ class TestExamples(unittest.TestCase):
   def test_slow_listener(self):
     pass
 
-  def test_tor_descriptors(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_tor_descriptors(self, stdout_mock, downloader_mock):
+    exit_descriptor = RelayDescriptor.content({'router': 'speedyexit 149.255.97.109 9001 0 0'}).replace(b'reject *:*', b'accept *:*')
+    exit_descriptor = RelayDescriptor(exit_descriptor)
+
+    downloader_mock().get_server_descriptors().run.return_value = [
+      exit_descriptor,
+      RelayDescriptor.create(),  # non-exit
+      exit_descriptor,
+      exit_descriptor,
+    ]
+
+    import tor_descriptors
+
+    self.assertEqual(EXPECTED_TOR_DESCRIPTORS, stdout_mock.getvalue())
 
   def test_utilities(self):
     pass
