@@ -9,8 +9,6 @@ import stem.descriptor.remote
 
 from unittest.mock import patch
 
-from stem.descriptor.router_status_entry import RouterStatusEntryV3
-from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
 
 MIRROR_MIRROR_OUTPUT = """\
@@ -26,24 +24,6 @@ class TestTutorial(unittest.TestCase):
     # tests will understandably be very sad. :P
 
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
-
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('%s.open' % __name__, create = True)
-  def test_mirror_mirror_on_the_wall_3(self, open_mock, stdout_mock):
-    def tutorial_example():
-      from stem.descriptor import parse_file
-
-      for desc in parse_file(open('/home/atagar/.tor/cached-consensus')):
-        print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
-
-    test_file = io.BytesIO(NetworkStatusDocumentV3.content(routers = [RouterStatusEntryV3.create({
-      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
-    })]))
-    test_file.name = '/home/atagar/.tor/cached-consensus'
-    open_mock.return_value = test_file
-
-    tutorial_example()
-    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('stem.descriptor.remote.DescriptorDownloader')
