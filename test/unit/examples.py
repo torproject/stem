@@ -448,8 +448,18 @@ class TestExamples(unittest.TestCase):
     finally:
       sys.modules = original_modules
 
-  def test_descriptor_from_orport(self):
-    pass
+  @patch('stem.descriptor.remote.DescriptorDownloader')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_descriptor_from_orport(self, stdout_mock, downloader_mock):
+    downloader_mock().get_consensus.return_value = [
+      RouterStatusEntryV3.create({
+        'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+      })
+    ]
+
+    import descriptor_from_orport
+
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)
