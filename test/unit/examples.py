@@ -396,11 +396,25 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_COMPARE_FLAGS, stdout_mock.getvalue())
 
-  def test_create_descriptor(self):
-    pass
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_create_descriptor(self, stdout_mock):
+    import create_descriptor
 
-  def test_create_descriptor_content(self):
-    pass
+    # First line is randomized, for example...
+    #
+    #   Unnamed566296572314 (226.149.46.74:9001)
+    #   demo (127.0.0.1:80)
+
+    lines = stdout_mock.getvalue().splitlines()
+
+    self.assertTrue(lines[0].startswith('Unnamed'))
+    self.assertEqual('demo (127.0.0.1:80)', lines[1])
+
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_create_descriptor_content(self, stdout_mock):
+    import create_descriptor_content
+
+    self.assertTrue(stdout_mock.getvalue().startswith('router demo 127.0.0.1 80 0 0\npublish'))
 
   @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('sys.stdout', new_callable = io.StringIO)
