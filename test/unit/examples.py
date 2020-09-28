@@ -155,6 +155,14 @@ Checking for outdated relays...
 EXPECTED_PERSISTING_A_CONSENSUS = """\
 A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 """
+
+EXPECTED_RUNNING_HIDDEN_SERVICE = """\
+ * Connecting to tor
+ * Creating our hidden service in /home/atagar/.tor/hello_world
+ * Our service is available at uxiuaxejc3sxrb6i.onion, press ctrl+c to quit
+ * Shutting down our hidden service
+"""
+
 EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES = """\
 Getting gabelmoo's vote from http://131.188.40.189:80/tor/status-vote/current/authority:
   5935 measured entries and 1332 unmeasured
@@ -570,8 +578,33 @@ class TestExamples(unittest.TestCase):
   def test_resuming_ephemeral_hidden_service(self):
     pass
 
-  def test_running_hidden_service(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('shutil.rmtree')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_running_hidden_service(self, stdout_mock, rmtree_mock, from_port_mock):
+    original_modules = dict(sys.modules)
+
+    try:
+      flask_mock = Mock()
+
+      hidden_service_data = Mock()
+      hidden_service_data.hostname = 'uxiuaxejc3sxrb6i.onion'
+
+      controller = from_port_mock().__enter__()
+      controller.get_conf.return_value = '/home/atagar/.tor'
+      controller.create_hidden_service.return_value = hidden_service_data
+
+      sys.modules['flask'] = flask_mock
+
+      import running_hidden_service
+
+      controller.get_conf.assert_called_once_with('DataDirectory', '/tmp')
+      controller.create_hidden_service.assert_called_once_with('/home/atagar/.tor/hello_world', 80, target_port = 5000)
+      rmtree_mock.assert_called_once_with('/home/atagar/.tor/hello_world')
+
+      self.assertEqual(EXPECTED_RUNNING_HIDDEN_SERVICE, stdout_mock.getvalue())
+    finally:
+      sys.modules = original_modules
 
   def test_saving_and_loading_descriptors(self):
     pass

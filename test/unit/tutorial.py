@@ -7,19 +7,11 @@ import unittest
 
 import stem.descriptor.remote
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
-from stem.control import Controller
 from stem.descriptor.router_status_entry import RouterStatusEntryV3
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.server_descriptor import RelayDescriptor
-
-OVER_THE_RIVER_OUTPUT = """\
- * Connecting to tor
- * Creating our hidden service in /home/atagar/.tor/hello_world
- * Our service is available at uxiuaxejc3sxrb6i.onion, press ctrl+c to quit
- * Shutting down our hidden service
-"""
 
 MIRROR_MIRROR_OUTPUT = """\
 1. speedyexit (102.13 KB/s)
@@ -34,72 +26,6 @@ class TestTutorial(unittest.TestCase):
     # tests will understandably be very sad. :P
 
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
-
-  @patch('sys.stdout', new_callable = io.StringIO)
-  @patch('shutil.rmtree')
-  @patch('stem.control.Controller.from_port', spec = Controller)
-  def test_over_the_river(self, from_port_mock, rmtree_mock, stdout_mock):
-    def tutorial_example(app):
-      import os
-      import shutil
-
-      from stem.control import Controller
-
-      @app.route('/')
-      def index():
-        return '<h1>Hi Grandma!</h1>'
-
-      print(' * Connecting to tor')
-
-      with Controller.from_port() as controller:
-        controller.authenticate()
-
-        # All hidden services have a directory on disk. Lets put ours in tor's data
-        # directory.
-
-        hidden_service_dir = os.path.join(controller.get_conf('DataDirectory', '/tmp'), 'hello_world')
-
-        # Create a hidden service where visitors of port 80 get redirected to local
-        # port 5000 (this is where flask runs by default).
-
-        print(' * Creating our hidden service in %s' % hidden_service_dir)
-        result = controller.create_hidden_service(hidden_service_dir, 80, target_port = 5000)
-
-        # The hostname is only available we can read the hidden service directory.
-        # This requires us to be running with the same user as tor.
-
-        if result.hostname:
-          print(' * Our service is available at %s, press ctrl+c to quit' % result.hostname)
-        else:
-          print(" * Unable to determine our service's hostname, probably due to being unable to read the hidden service directory")
-
-        try:
-          app.run()
-        finally:
-          # Shut down the hidden service and clean it off disk. Note that you *don't*
-          # want to delete the hidden service directory if you'd like to have this
-          # same *.onion address in the future.
-
-          print(' * Shutting down our hidden service')
-          controller.remove_hidden_service(hidden_service_dir)
-          shutil.rmtree(hidden_service_dir)
-
-    flask_mock = Mock()
-
-    hidden_service_data = Mock()
-    hidden_service_data.hostname = 'uxiuaxejc3sxrb6i.onion'
-
-    controller = from_port_mock().__enter__()
-    controller.get_conf.return_value = '/home/atagar/.tor'
-    controller.create_hidden_service.return_value = hidden_service_data
-
-    tutorial_example(flask_mock)
-
-    controller.get_conf.assert_called_once_with('DataDirectory', '/tmp')
-    controller.create_hidden_service.assert_called_once_with('/home/atagar/.tor/hello_world', 80, target_port = 5000)
-    rmtree_mock.assert_called_once_with('/home/atagar/.tor/hello_world')
-
-    self.assertEqual(OVER_THE_RIVER_OUTPUT, stdout_mock.getvalue())
 
   @patch('sys.stdout', new_callable = io.StringIO)
   @patch('%s.open' % __name__, create = True)
