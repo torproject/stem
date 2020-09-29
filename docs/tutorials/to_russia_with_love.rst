@@ -68,7 +68,7 @@ connections through Tor, so this'll break our ability to connect to Tor's
 control port. To use this approach simply replace the query() function above
 with...
 
-.. literalinclude::  /_static/example/client_usage_using_socksipy.py
+.. literalinclude:: /_static/example/client_usage_using_socksipy.py
    :caption: `[Download] <../_static/example/client_usage_using_socksipy.py>`__
    :language: python
 

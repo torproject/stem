@@ -7,6 +7,7 @@ import binascii
 import functools
 import io
 import os
+import re
 import sys
 import unittest
 
@@ -231,13 +232,13 @@ class TestExamples(unittest.TestCase):
 
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
-  def test_runs_everything(self):
+  def test_everything_is_tested(self):
     """
     Ensure we have tests for all our examples.
     """
 
     all_examples = set([os.path.basename(path)[:-3] for path in stem.util.system.files_with_suffix(EXAMPLE_DIR, '.py')])
-    tested_examples = set([method[5:] for method in dir(self) if method.startswith('test_') and method != 'test_runs_everything'])
+    tested_examples = set([method[5:] for method in dir(self) if method.startswith('test_') and not method.startswith('test_everything_')])
 
     extra = sorted(tested_examples.difference(all_examples))
     missing = sorted(all_examples.difference(tested_examples).difference(UNTESTED))
@@ -247,6 +248,36 @@ class TestExamples(unittest.TestCase):
 
     if missing:
       self.fail("Changed our examples directory? The following are untested: %s" % ', '.join(missing))
+
+  def test_everything_is_referenced(self):
+    """
+    Ensure that all our examples are referenced our website. Otherwise they're
+    dead code.
+    """
+
+    all_examples = set([os.path.basename(path)[:-3] for path in stem.util.system.files_with_suffix(EXAMPLE_DIR, '.py')])
+
+    include_regex = re.compile('.. literalinclude:: /_static/example/(\\S*).py')
+    referenced_examples = set()
+
+    for path in stem.util.system.files_with_suffix(os.path.join(test.STEM_BASE, 'docs'), '.rst'):
+      with open(path) as example_file:
+        referenced_examples.update(include_regex.findall(example_file.read()))
+
+    for path in stem.util.system.files_with_suffix(os.path.join(test.STEM_BASE, 'stem'), '.py'):
+      with open(path) as source_file:
+        referenced_examples.update(include_regex.findall(source_file.read()))
+
+    extra = sorted(referenced_examples.difference(all_examples))
+    missing = sorted(all_examples.difference(referenced_examples))
+
+    missing.remove('benchmark_stem')  # expanded copy of benchmark_server_descriptor_stem.py
+
+    if extra:
+      self.fail("Changed our documentation? We reference the following examples which are not present: %s" % ', '.join(extra))
+
+    if missing:
+      self.fail("Changed our documntation? The following examples are unreferenced: %s" % ', '.join(missing))
 
   @patch('stem.descriptor.remote.get_bandwidth_file')
   @patch('sys.stdout', new_callable = io.StringIO)
