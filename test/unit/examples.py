@@ -578,11 +578,24 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_EXIT_USED, stdout_mock.getvalue())
 
-  def test_fibonacci_multiprocessing(self):
-    pass
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_fibonacci_multiprocessing(self, stdout_mock):
+    # This example intentionally takes a long time (~11 seconds), so replacing
+    # the work it does with a no-op.
 
-  def test_fibonacci_threaded(self):
-    pass
+    with patch('fibonacci_multiprocessing.fibonacci', Mock(return_value = 5)):
+      import fibonacci_multiprocessing
+
+      fibonacci_multiprocessing.main()
+      self.assertEqual('took 0.0 seconds\n', stdout_mock.getvalue())
+
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_fibonacci_threaded(self, stdout_mock):
+    with patch('fibonacci_threaded.fibonacci', Mock(return_value = 5)):
+      import fibonacci_threaded
+
+      fibonacci_threaded.main()
+      self.assertEqual('took 0.0 seconds\n', stdout_mock.getvalue())
 
   def test_get_hidden_service_descriptor(self):
     pass
