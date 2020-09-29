@@ -539,8 +539,22 @@ class TestExamples(unittest.TestCase):
     finally:
       sys.modules = original_modules
 
-  def test_event_listening(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  def test_event_listening(self, from_port_mock):
+    # This is a lengthy example that's mostly curses. This is just a surface
+    # level test to check for syntax issues and such.
+
+    original_modules = dict(sys.modules)
+
+    try:
+      sys.modules['curses'] = Mock()
+
+      import event_listening
+
+      event_listening.main()
+      event_listening._render_graph(Mock(), [(0, 0)] * event_listening.GRAPH_WIDTH)
+    finally:
+      sys.modules = original_modules
 
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)

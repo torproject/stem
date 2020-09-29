@@ -7,21 +7,21 @@ from stem.util import str_tools
 # colors that curses can handle
 
 COLOR_LIST = {
-  "red": curses.COLOR_RED,
-  "green": curses.COLOR_GREEN,
-  "yellow": curses.COLOR_YELLOW,
-  "blue": curses.COLOR_BLUE,
-  "cyan": curses.COLOR_CYAN,
-  "magenta": curses.COLOR_MAGENTA,
-  "black": curses.COLOR_BLACK,
-  "white": curses.COLOR_WHITE,
+  'red': curses.COLOR_RED,
+  'green': curses.COLOR_GREEN,
+  'yellow': curses.COLOR_YELLOW,
+  'blue': curses.COLOR_BLUE,
+  'cyan': curses.COLOR_CYAN,
+  'magenta': curses.COLOR_MAGENTA,
+  'black': curses.COLOR_BLACK,
+  'white': curses.COLOR_WHITE,
 }
 
 GRAPH_WIDTH = 40
 GRAPH_HEIGHT = 8
 
-DOWNLOAD_COLOR = "green"
-UPLOAD_COLOR = "blue"
+DOWNLOAD_COLOR = 'green'
+UPLOAD_COLOR = 'blue'
 
 def main():
   with Controller.from_port(port = 9051) as controller:
@@ -74,10 +74,10 @@ def _render_graph(window, bandwidth_rates):
 
   # show the latest values at the top
 
-  label = "Downloaded (%s/s):" % str_tools.size_label(download_rates[0], 1)
+  label = 'Downloaded (%s/s):' % str_tools.size_label(download_rates[0], 1)
   window.addstr(0, 1, label, DOWNLOAD_COLOR, curses.A_BOLD)
 
-  label = "Uploaded (%s/s):" % str_tools.size_label(upload_rates[0], 1)
+  label = 'Uploaded (%s/s):' % str_tools.size_label(upload_rates[0], 1)
   window.addstr(0, GRAPH_WIDTH + 7, label, UPLOAD_COLOR, curses.A_BOLD)
 
   # draw the graph bounds in KB
@@ -85,24 +85,24 @@ def _render_graph(window, bandwidth_rates):
   max_download_rate = max(download_rates)
   max_upload_rate = max(upload_rates)
 
-  window.addstr(1, 1, "%4i" % (max_download_rate / 1024), DOWNLOAD_COLOR)
-  window.addstr(GRAPH_HEIGHT, 1, "   0", DOWNLOAD_COLOR)
+  window.addstr(1, 1, '%4i' % (max_download_rate / 1024), DOWNLOAD_COLOR)
+  window.addstr(GRAPH_HEIGHT, 1, '   0', DOWNLOAD_COLOR)
 
-  window.addstr(1, GRAPH_WIDTH + 7, "%4i" % (max_upload_rate / 1024), UPLOAD_COLOR)
-  window.addstr(GRAPH_HEIGHT, GRAPH_WIDTH + 7, "   0", UPLOAD_COLOR)
+  window.addstr(1, GRAPH_WIDTH + 7, '%4i' % (max_upload_rate / 1024), UPLOAD_COLOR)
+  window.addstr(GRAPH_HEIGHT, GRAPH_WIDTH + 7, '   0', UPLOAD_COLOR)
 
   # draw the graph
 
   for col in range(GRAPH_WIDTH):
     col_height = GRAPH_HEIGHT * download_rates[col] / max(max_download_rate, 1)
 
-    for row in range(col_height):
-      window.addstr(GRAPH_HEIGHT - row, col + 6, " ", DOWNLOAD_COLOR, curses.A_STANDOUT)
+    for row in range(int(col_height)):
+      window.addstr(GRAPH_HEIGHT - row, col + 6, ' ', DOWNLOAD_COLOR, curses.A_STANDOUT)
 
     col_height = GRAPH_HEIGHT * upload_rates[col] / max(max_upload_rate, 1)
 
-    for row in range(col_height):
-      window.addstr(GRAPH_HEIGHT - row, col + GRAPH_WIDTH + 12, " ", UPLOAD_COLOR, curses.A_STANDOUT)
+    for row in range(int(col_height)):
+      window.addstr(GRAPH_HEIGHT - row, col + GRAPH_WIDTH + 12, ' ', UPLOAD_COLOR, curses.A_STANDOUT)
 
   window.refresh()
 
@@ -154,7 +154,7 @@ class Window(object):
 
     if color is not None:
       if color not in self._colors:
-        recognized_colors = ", ".join(self._colors.keys())
+        recognized_colors = ', '.join(self._colors.keys())
         raise ValueError("The '%s' color isn't recognized: %s" % (color, recognized_colors))
 
       attr |= self._colors[color]
