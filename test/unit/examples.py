@@ -673,9 +673,6 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_LIST_CIRCUITS, stdout_mock.getvalue())
 
-  def test_load_test(self):
-    pass
-
   def test_manual_config_options(self):
     pass
 
