@@ -145,6 +145,14 @@ Exit relay for our connection to 64.15.112.44:80
 
 """
 
+EXPECTED_INTRODUCTION_POINTS = """\
+DuckDuckGo's introduction points are...
+
+  178.62.222.129:443 => iwki77xtbvp6qvedfrwdzncxs3ckayeu
+  46.4.174.52:443 => em4gjk6eiiualhmlyiifrzc7lbtrsbip
+  62.210.82.169:443 => jqhfl364x3upe6lqnxizolewlfrsw2zy
+"""
+
 EXPECTED_LIST_CIRCUITS = """\
 
 Circuit 4 (GENERAL)
@@ -621,8 +629,15 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual('My Tor relay has read 33406 bytes and written 29649.\n', stdout_mock.getvalue())
 
-  def test_introduction_points(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_introduction_points(self, stdout_mock, from_port_mock):
+    controller = from_port_mock().__enter__()
+    controller.get_hidden_service_descriptor.return_value = next(stem.descriptor.parse_file(os.path.join(DESC_DIR, 'hidden_service_duckduckgo')))
+
+    import introduction_points
+
+    self.assertEqual(EXPECTED_INTRODUCTION_POINTS, stdout_mock.getvalue())
 
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)
