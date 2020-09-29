@@ -18,6 +18,7 @@ import test.require
 from stem.control import Controller
 from stem.descriptor.bandwidth_file import BandwidthFile
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
+from stem.descriptor.hidden_service import HiddenServiceDescriptorV2
 from stem.descriptor.networkstatus import NetworkStatusDocumentV3
 from stem.descriptor.router_status_entry import RouterStatusEntryV2, RouterStatusEntryV3
 from stem.descriptor.server_descriptor import RelayDescriptor
@@ -597,8 +598,15 @@ class TestExamples(unittest.TestCase):
       fibonacci_threaded.main()
       self.assertEqual('took 0.0 seconds\n', stdout_mock.getvalue())
 
-  def test_get_hidden_service_descriptor(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_get_hidden_service_descriptor(self, stdout_mock, from_port_mock):
+    controller = from_port_mock().__enter__()
+    controller.get_hidden_service_descriptor.return_value = HiddenServiceDescriptorV2.create()
+
+    import get_hidden_service_descriptor
+
+    self.assertTrue(stdout_mock.getvalue().startswith('rendezvous-service-descriptor '))
 
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)
