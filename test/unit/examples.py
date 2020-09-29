@@ -127,6 +127,12 @@ Downloading server descriptor from 1.2.3.4:443...
 router caerSidi 71.35.133.197 9001 0 0
 """
 
+EXPECTED_EPHEMEREAL_HIDDEN_SERVICES = """\
+ * Connecting to tor
+ * Our service is available at my-service.onion, press ctrl+c to quit
+ * Shutting down our hidden service
+"""
+
 EXPECTED_EXIT_USED = """\
 Tracking requests for tor exits. Press 'enter' to end.
 
@@ -515,8 +521,23 @@ class TestExamples(unittest.TestCase):
         download_descriptor.main(['--dirport', '1.2.3.4:443'])
         self.assertTrue(stdout_mock.getvalue().startswith(EXPECTED_DOWNLOAD_DESCRIPTOR_PREFIX))
 
-  def test_ephemeral_hidden_services(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_ephemeral_hidden_services(self, stdout_mock, from_port_mock):
+    original_modules = dict(sys.modules)
+
+    try:
+      sys.modules['flask'] = Mock()
+
+      controller = from_port_mock().__enter__()
+      hidden_service = controller.create_ephemeral_hidden_service()
+      hidden_service.service_id = 'my-service'
+
+      import ephemeral_hidden_services
+
+      self.assertEqual(EXPECTED_EPHEMEREAL_HIDDEN_SERVICES, stdout_mock.getvalue())
+    finally:
+      sys.modules = original_modules
 
   def test_event_listening(self):
     pass
