@@ -57,9 +57,6 @@ def parse(argv):
 
   for opt, arg in recognized_args:
     if opt in ('-t', '--type'):
-      if arg not in VALID_TYPES:
-        raise ValueError("'%s' isn't a recognized decriptor type, options are: %s" % (arg, ', '.join(VALID_TYPES)))
-
       args['descriptor_type'] = arg
     elif opt in ('-f', '--fingerprint'):
       if not stem.util.tor_tools.is_valid_fingerprint(arg):
@@ -88,9 +85,9 @@ def parse(argv):
   return Args(**args)
 
 
-def main():
+def main(argv):
   try:
-    args = parse(sys.argv[1:])
+    args = parse(argv)
   except ValueError as exc:
     print(exc)
     sys.exit(1)
@@ -125,7 +122,8 @@ def main():
     print("'%s' is not a recognized descriptor type, options are: %s" % (args.descriptor_type, ', '.join(VALID_TYPES)))
     sys.exit(1)
 
-  print(desc)
+  if desc:
+    print(desc)
 
 if __name__ == '__main__':
-  main()
+  main(sys.argv[1:])

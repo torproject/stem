@@ -115,6 +115,18 @@ moria1 has the Running flag but maatuska doesn't: DCAEC3D069DC39AAE43D13C8AF31B5
 maatuska has the Running flag but moria1 doesn't: E2BB13AA2F6960CD93ABE5257A825687F3973C62
 """
 
+EXPECTED_DOWNLOAD_DESCRIPTOR_UNKNOWN_TYPE = """\
+Downloading kaboom descriptor from 128.31.0.34:9131...
+
+'kaboom' is not a recognized descriptor type, options are: server, extrainfo, consensus
+"""
+
+EXPECTED_DOWNLOAD_DESCRIPTOR_PREFIX = """\
+Downloading server descriptor from 1.2.3.4:443...
+
+router caerSidi 71.35.133.197 9001 0 0
+"""
+
 EXPECTED_EXIT_USED = """\
 Tracking requests for tor exits. Press 'enter' to end.
 
@@ -484,8 +496,24 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
+  @patch('sys.exit', Mock())
   def test_download_descriptor(self):
-    pass
+    import download_descriptor
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      download_descriptor.main(['--help'])
+      self.assertTrue(stdout_mock.getvalue().startswith("Downloads a descriptor through Tor's ORPort"))
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      download_descriptor.main(['--type', 'kaboom'])
+      self.assertEqual(EXPECTED_DOWNLOAD_DESCRIPTOR_UNKNOWN_TYPE, stdout_mock.getvalue())
+
+    server_desc = RelayDescriptor.create({'router': 'caerSidi 71.35.133.197 9001 0 0'})
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      with patch('stem.descriptor.remote.get_server_descriptors', _download_of(server_desc)):
+        download_descriptor.main(['--dirport', '1.2.3.4:443'])
+        self.assertTrue(stdout_mock.getvalue().startswith(EXPECTED_DOWNLOAD_DESCRIPTOR_PREFIX))
 
   def test_ephemeral_hidden_services(self):
     pass
