@@ -172,6 +172,21 @@ Circuit 10 (GENERAL)
  +- 65242C91BFF30F165DA4D132C81A9EBA94B71D62 (torexit16, 176.67.169.171)
 """
 
+EXPECTED_MANUAL_CONFIG_OPTIONS = """\
+Downloading tor's manual information, please wait...
+  done
+
+Which tor configuration would you like to learn about?  (press ctrl+c to quit)
+
+IPv6Exit 0|1
+Allow clients to use us for IPv6 traffic
+
+Full Description:
+
+If set, and we are an exit node, allow clients to use us for IPv6 traffic. When this option is set and ExitRelay is auto, we act as if ExitRelay is 1. (Default: 0)
+
+"""
+
 EXPECTED_OUTDATED_RELAYS = """\
 Checking for outdated relays...
 
@@ -704,8 +719,14 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_LIST_CIRCUITS, stdout_mock.getvalue())
 
-  def test_manual_config_options(self):
-    pass
+  @patch('stem.manual.Manual.from_remote', Mock(return_value = stem.manual.Manual.from_cache()))
+  @patch('stem.util.term.format', Mock(side_effect = lambda msg, *args: msg))
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_manual_config_options(self, stdout_mock):
+    with patch('builtins.input', Mock(side_effect = ['IPv6Exit', KeyboardInterrupt()])):
+      import manual_config_options
+
+    self.assertEqual(EXPECTED_MANUAL_CONFIG_OPTIONS, stdout_mock.getvalue())
 
   @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('sys.stdout', new_callable = io.StringIO)

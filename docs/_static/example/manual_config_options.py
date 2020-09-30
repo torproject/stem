@@ -13,7 +13,7 @@ print('Which tor configuration would you like to learn about?  (press ctrl+c to 
 
 try:
   while True:
-    requested_option = raw_input('> ').strip()
+    requested_option = input('> ').strip()
 
     if requested_option:
       if requested_option in manual.config_options:
