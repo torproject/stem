@@ -772,8 +772,18 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_PERSISTING_A_CONSENSUS, stdout_mock.getvalue())
 
-  def test_queue_listener(self):
-    pass
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_queue_listener(self, stdout_mock, from_port_mock):
+    bw_event = ControlMessage.from_str('650 BW 15 25', 'EVENT', normalize = True)
+
+    controller = from_port_mock().__enter__()
+    controller.add_event_listener.side_effect = lambda handler, event_type: handler(bw_event)
+
+    with patch('time.time', Mock(side_effect = [1, 1, 10])):
+      import queue_listener
+
+    self.assertEqual('I got a BW event for 15 bytes downloaded and 25 bytes uploaded\n', stdout_mock.getvalue())
 
   def test_read_with_parse_file(self):
     pass
