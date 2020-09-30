@@ -785,8 +785,14 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual('I got a BW event for 15 bytes downloaded and 25 bytes uploaded\n', stdout_mock.getvalue())
 
-  def test_read_with_parse_file(self):
-    pass
+  @patch('stem.descriptor.parse_file')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_read_with_parse_file(self, stdout_mock, parse_file_mock):
+    parse_file_mock.return_value = [RelayDescriptor.create({'fingerprint': '4F0C 867D F0EF 6816 0568 C826 838F 482C EA7C FE44'})]
+
+    import read_with_parse_file
+
+    self.assertEqual('4F0C867DF0EF68160568C826838F482CEA7CFE44\n', stdout_mock.getvalue())
 
   def test_reading_twitter(self):
     pass
