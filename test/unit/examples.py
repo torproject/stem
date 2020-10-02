@@ -28,7 +28,7 @@ from stem.directory import DIRECTORY_AUTHORITIES
 from stem.exit_policy import ExitPolicy
 from stem.response import ControlMessage
 from stem.util.connection import Connection, Resolver
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
 DESC_DIR = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data')
@@ -257,6 +257,12 @@ Getting moria1's vote from http://128.31.0.39:9131/tor/status-vote/current/autho
   6647 measured entries and 625 unmeasured
 Getting maatuska's vote from http://171.25.193.9:443/tor/status-vote/current/authority:
   6313 measured entries and 1112 unmeasured
+"""
+
+EXPECTED_WORDS_WITH = """\
+Words with 'hel' include...
+
+hello                         hellena
 """
 
 
@@ -1033,5 +1039,13 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES, stdout_mock.getvalue())
 
-  def test_words_with(self):
-    pass
+  @patch('builtins.input', Mock(return_value = 'hel'))
+  @patch('builtins.open', mock_open(read_data = 'hello\nnope\nhellena'))
+  @patch('stem.util.term.format', Mock(side_effect = lambda msg, *args: msg))
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_words_with(self, stdout_mock):
+    import words_with
+
+    words_with.main()
+
+    self.assertEqual(EXPECTED_WORDS_WITH.rstrip(), stdout_mock.getvalue().rstrip())
