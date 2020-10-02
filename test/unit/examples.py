@@ -606,8 +606,9 @@ class TestExamples(unittest.TestCase):
     import download_descriptor
 
     with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
-      download_descriptor.main(['--help'])
-      self.assertTrue(stdout_mock.getvalue().startswith("Downloads a descriptor through Tor's ORPort"))
+      with patch('stem.descriptor.remote.get_server_descriptors', _download_of([])):
+        download_descriptor.main(['--help'])
+        self.assertTrue(stdout_mock.getvalue().startswith("Downloads a descriptor through Tor's ORPort"))
 
     with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
       download_descriptor.main(['--type', 'kaboom'])
