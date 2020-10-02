@@ -27,7 +27,7 @@ from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.directory import DIRECTORY_AUTHORITIES
 from stem.exit_policy import ExitPolicy
 from stem.response import ControlMessage
-from stem.util.connection import Connection
+from stem.util.connection import Connection, Resolver
 from unittest.mock import Mock, patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
@@ -238,6 +238,16 @@ EXPECTED_TOR_DESCRIPTORS = """\
 1. speedyexit (102.13 KB/s)
 2. speedyexit (102.13 KB/s)
 3. speedyexit (102.13 KB/s)
+"""
+
+EXPECTED_UTILITIES = """\
+Our platform supports connection resolution via: netstat (picked netstat)
+Tor is running with pid 12345
+
+Connections:
+
+  17.17.17.17:4369 => 34.34.34.34:8738
+  18.18.18.18:443 => 35.35.35.35:4281
 """
 
 EXPECTED_VOTES_BY_BANDWIDTH_AUTHORITIES = """\
@@ -967,8 +977,19 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_TOR_DESCRIPTORS, stdout_mock.getvalue())
 
-  def test_utilities(self):
-    pass
+  @patch('stem.util.connection.system_resolvers', Mock(return_value = [Resolver.NETSTAT]))
+  @patch('stem.util.system.pid_by_name', Mock(return_value = [12345]))
+  @patch('stem.util.connection.get_connections')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_utilities(self, stdout_mock, get_connections_mock):
+    get_connections_mock.return_value = [
+      Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+      Connection('18.18.18.18', 443, '35.35.35.35', 4281, 'tcp', False),
+    ]
+
+    import utilities
+
+    self.assertEqual(EXPECTED_UTILITIES, stdout_mock.getvalue())
 
   def test_validate_descriptor_content(self):
     pass
