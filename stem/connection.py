@@ -305,7 +305,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
         pass
       elif isinstance(func, unittest.mock.Mock) and inspect.iscoroutinefunction(func.side_effect):
         setattr(connection, name, functools.partial(connection._run_async_method, name))
-      elif inspect.ismethod(func) and inspect.iscoroutinefunction(func):
+      elif inspect.ismethod(func) and (inspect.iscoroutinefunction(func) or inspect.isasyncgenfunction(func)):
         setattr(connection, name, functools.partial(connection._run_async_method, name))
 
     return connection

@@ -1,6 +1,7 @@
 import time
 import stem.descriptor
 
+
 def measure_average_advertised_bandwidth(path):
   start_time = time.time()
   total_bw, count = 0, 0
@@ -16,6 +17,7 @@ def measure_average_advertised_bandwidth(path):
   print('  Average advertised bandwidth: %i' % (total_bw / count))
   print('  Time per server descriptor: %0.5f seconds' % (runtime / count))
   print('')
+
 
 def measure_countries_v3_requests(path):
   start_time = time.time()
@@ -34,6 +36,7 @@ def measure_countries_v3_requests(path):
   print('  Number of countries: %i' % len(countries))
   print('  Time per extrainfo descriptor: %0.5f seconds' % (runtime / count))
   print('')
+
 
 def measure_average_relays_exit(path):
   start_time = time.time()
@@ -56,11 +59,12 @@ def measure_average_relays_exit(path):
   print('  Time per consensus: %0.5f seconds' % (runtime / consensuses))
   print('')
 
+
 def measure_fraction_relays_exit_80_microdescriptors(path):
   start_time = time.time()
   exits, count = 0, 0
 
-  for desc in stem.descriptor.parse_file(path):
+  for desc in stem.descriptor.parse_file(path, descriptor_type = 'microdescriptor 1.0'):
     if desc.exit_policy.can_exit_to(port = 80):
       exits += 1
 
@@ -74,8 +78,9 @@ def measure_fraction_relays_exit_80_microdescriptors(path):
   print('  Time per microdescriptor: %0.5f seconds' % (runtime / count))
   print('')
 
-measure_average_advertised_bandwidth('/home/atagar/Desktop/server-descriptors-2015-11.tar')
-measure_countries_v3_requests('/home/atagar/Desktop/extra-infos-2015-11.tar')
-measure_average_relays_exit('/home/atagar/Desktop/consensuses-2015-11.tar')
-measure_fraction_relays_exit_80_microdescriptors('/home/atagar/Desktop/microdescs-2015-11.tar')
 
+if __name__ == '__main__':
+  measure_average_advertised_bandwidth('/home/atagar/Desktop/server-descriptors-2015-11.tar')
+  measure_countries_v3_requests('/home/atagar/Desktop/extra-infos-2015-11.tar')
+  measure_average_relays_exit('/home/atagar/Desktop/consensuses-2015-11.tar')
+  measure_fraction_relays_exit_80_microdescriptors('/home/atagar/Desktop/microdescs-2015-11.tar')

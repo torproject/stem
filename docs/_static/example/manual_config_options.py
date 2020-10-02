@@ -4,16 +4,16 @@ from stem.util import term
 try:
   print("Downloading tor's manual information, please wait...")
   manual = Manual.from_remote()
-  print("  done\n")
+  print('  done\n')
 except OSError as exc:
-  print("  unsuccessful (%s), using information provided with stem\n" % exc)
+  print('  unsuccessful (%s), using information provided with stem\n' % exc)
   manual = Manual.from_cache()  # fall back to our bundled manual information
 
 print('Which tor configuration would you like to learn about?  (press ctrl+c to quit)\n')
 
 try:
   while True:
-    requested_option = raw_input('> ').strip()
+    requested_option = input('> ').strip()
 
     if requested_option:
       if requested_option in manual.config_options:
@@ -27,4 +27,3 @@ try:
         print(term.format("Sorry, we don't have any information about %s. Are you sure it's an option?" % requested_option, term.Color.RED))
 except KeyboardInterrupt:
   pass  # user pressed ctrl+c
-

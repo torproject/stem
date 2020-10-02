@@ -9,6 +9,6 @@ try:
   )
 
   for desc in consensus:
-    print("found relay %s (%s)" % (desc.nickname, desc.fingerprint))
+    print('found relay %s (%s)' % (desc.nickname, desc.fingerprint))
 except Exception as exc:
-  print("Unable to retrieve the consensus: %s" % exc)
+  print('Unable to retrieve the consensus: %s' % exc)

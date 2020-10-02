@@ -11,10 +11,8 @@ socket.socket = socks.socksocket
 
 # Perform DNS resolution through the socket
 
-def getaddrinfo(*args):
-  return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+socket.getaddrinfo = lambda *args: [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
 
-socket.getaddrinfo = getaddrinfo
 
 def query(url):
   """
@@ -24,4 +22,4 @@ def query(url):
   try:
     return urllib.urlopen(url).read()
   except:
-    return "Unable to reach %s" % url
+    return 'Unable to reach %s' % url

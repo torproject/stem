@@ -1,20 +1,27 @@
 import stem.util.system
 import time
 
+
 def fibonacci(n):
   if n < 2:
     return n
   else:
-    return fibonacci(n-2) + fibonacci(n-1)
+    return fibonacci(n - 2) + fibonacci(n - 1)
 
-# calculate fibonacci sequences four times in parallel
 
-start_time, threads = time.time(), []
+def main():
+  # calculate fibonacci sequences four times in parallel
 
-for i in range(4):
-  threads.append(stem.util.system.DaemonTask(fibonacci, (35,), start = True))
+  start_time, threads = time.time(), []
 
-for t in threads:
-  t.join()
+  for i in range(4):
+    threads.append(stem.util.system.DaemonTask(fibonacci, (35,), start = True))
 
-print('took %0.1f seconds' % (time.time() - start_time))
+  for t in threads:
+    t.join()
+
+  print('took %0.1f seconds' % (time.time() - start_time))
+
+
+if __name__ == '__main__':
+  main()

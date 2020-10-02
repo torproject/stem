@@ -1,6 +1,7 @@
 import time
 import stem.descriptor
 
+
 def measure_average_advertised_bandwidth(path):
   start_time = time.time()
   total_bw, count = 0, 0
@@ -16,6 +17,7 @@ def measure_average_advertised_bandwidth(path):
   print('  Average advertised bandwidth: %i' % (total_bw / count))
   print('  Time per server descriptor: %0.5f seconds' % (runtime / count))
   print('')
+
 
 if __name__ == '__main__':
   measure_average_advertised_bandwidth('server-descriptors-2015-11.tar')

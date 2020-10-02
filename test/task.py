@@ -62,6 +62,7 @@ SRC_PATHS = [os.path.join(test.STEM_BASE, path) for path in (
   'cache_fallback_directories.py',
   'setup.py',
   'tor-prompt',
+  os.path.join('docs', '_static', 'example'),
   os.path.join('docs', 'roles.py'),
 )]
 

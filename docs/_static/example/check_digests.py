@@ -16,7 +16,7 @@ def download_descriptors(fingerprint):
   server_desc_query = stem.descriptor.remote.get_server_descriptors(fingerprint)
   extrainfo_query = stem.descriptor.remote.get_extrainfo_descriptors(fingerprint)
 
-  router_status_entries = filter(lambda desc: desc.fingerprint == fingerprint, conensus_query.run())
+  router_status_entries = list(filter(lambda desc: desc.fingerprint == fingerprint, conensus_query.run()))
 
   if len(router_status_entries) != 1:
     raise OSError("Unable to find relay '%s' in the consensus" % fingerprint)
@@ -27,8 +27,8 @@ def download_descriptors(fingerprint):
     extrainfo_query.run()[0],
   )
 
-if __name__ == '__main__':
-  fingerprint = raw_input("What relay fingerprint would you like to validate?\n")
+
+def validate_relay(fingerprint):
   print('')  # blank line
 
   if not stem.util.tor_tools.is_valid_fingerprint(fingerprint):
@@ -42,11 +42,16 @@ if __name__ == '__main__':
     sys.exit(1)
 
   if router_status_entry.digest == server_desc.digest():
-    print("Server descriptor digest is correct")
+    print('Server descriptor digest is correct')
   else:
-    print("Server descriptor digest invalid, expected %s but is %s" % (router_status_entry.digest, server_desc.digest()))
+    print('Server descriptor digest invalid, expected %s but is %s' % (router_status_entry.digest, server_desc.digest()))
 
   if server_desc.extra_info_digest == extrainfo_desc.digest():
-    print("Extrainfo descriptor digest is correct")
+    print('Extrainfo descriptor digest is correct')
   else:
-    print("Extrainfo descriptor digest invalid, expected %s but is %s" % (server_desc.extra_info_digest, extrainfo_desc.digest()))
+    print('Extrainfo descriptor digest invalid, expected %s but is %s' % (server_desc.extra_info_digest, extrainfo_desc.digest()))
+
+
+if __name__ == '__main__':
+  fingerprint = input('What relay fingerprint would you like to validate?\n')
+  validate_relay(fingerprint)

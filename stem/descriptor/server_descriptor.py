@@ -762,13 +762,13 @@ class RelayDescriptor(ServerDescriptor):
     super(RelayDescriptor, self).__init__(raw_contents, validate)
 
     if validate:
-      if self.fingerprint:
-        key_hash = hashlib.sha1(_bytes_for_block(self.signing_key)).hexdigest()
-
-        if key_hash != self.fingerprint.lower():
-          raise ValueError('Fingerprint does not match the hash of our signing key (fingerprint: %s, signing key hash: %s)' % (self.fingerprint.lower(), key_hash))
-
       if not skip_crypto_validation:
+        if self.fingerprint:
+          key_hash = hashlib.sha1(_bytes_for_block(self.signing_key)).hexdigest()
+
+          if key_hash != self.fingerprint.lower():
+            raise ValueError('Fingerprint does not match the hash of our signing key (fingerprint: %s, signing key hash: %s)' % (self.fingerprint.lower(), key_hash))
+
         try:
           signed_digest = self._digest_for_signature(self.signing_key, self.signature)
 

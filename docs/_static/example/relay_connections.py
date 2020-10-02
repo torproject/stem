@@ -9,7 +9,7 @@ import stem.util.str_tools
 from stem.control import Listener
 from stem.util.connection import get_connections, port_usage, is_valid_ipv4_address
 
-HEADER_LINE = " {version}   uptime: {uptime}   flags: {flags}\n"
+HEADER_LINE = ' {version}   uptime: {uptime}   flags: {flags}\n'
 
 DIV = '+%s+%s+%s+' % ('-' * 30, '-' * 6, '-' * 6)
 COLUMN = '| %-28s | %4s | %4s |'
@@ -23,11 +23,11 @@ OUTBOUND_EXIT = 'Outbound exit traffic'
 OUTBOUND_UNKNOWN = 'Outbound uncategorized'
 
 
-def main():
+def main(args = None):
   parser = argparse.ArgumentParser()
-  parser.add_argument("--ctrlport", help="default: 9051 or 9151")
-  parser.add_argument("--resolver", help="default: autodetected")
-  args = parser.parse_args()
+  parser.add_argument('--ctrlport', help = 'default: 9051 or 9151')
+  parser.add_argument('--resolver', help = 'default: autodetected')
+  args = parser.parse_args(args)
 
   control_port = int(args.ctrlport) if args.ctrlport else 'default'
   controller = stem.connection.connect(control_port = ('127.0.0.1', control_port))

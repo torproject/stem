@@ -21,7 +21,7 @@ Manual information includes arguments, signals, and probably most usefully the
 torrc configuration options. For example, say we want a little script that told
 us what our torrc options do...
 
-.. literalinclude::  /_static/example/manual_config_options.py
+.. literalinclude:: /_static/example/manual_config_options.py
    :language: python
 
 |

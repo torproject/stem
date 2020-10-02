@@ -35,7 +35,7 @@ for vote in votes.values():
 
 # Finally, compare moria1's votes to maatuska's votes.
 
-for fingerprint in all_fingerprints:
+for fingerprint in sorted(all_fingerprints):
   moria1_vote = votes['moria1'].routers.get(fingerprint)
   maatuska_vote = votes['maatuska'].routers.get(fingerprint)
 

@@ -1,24 +1,31 @@
 import threading
 import time
 
+
 def fibonacci(n):
   if n < 2:
     return n
   else:
-    return fibonacci(n-2) + fibonacci(n-1)
+    return fibonacci(n - 2) + fibonacci(n - 1)
 
-# calculate fibonacci sequences four times in parallel
 
-start_time, threads = time.time(), []
+def main():
+  # calculate fibonacci sequences four times in parallel
 
-for i in range(4):
-  t = threading.Thread(target = fibonacci, args = (35,))
-  t.setDaemon(True)
-  t.start()
+  start_time, threads = time.time(), []
 
-  threads.append(t)
+  for i in range(4):
+    t = threading.Thread(target = fibonacci, args = (35,))
+    t.setDaemon(True)
+    t.start()
 
-for t in threads:
-  t.join()
+    threads.append(t)
 
-print('took %0.1f seconds' % (time.time() - start_time))
+  for t in threads:
+    t.join()
+
+  print('took %0.1f seconds' % (time.time() - start_time))
+
+
+if __name__ == '__main__':
+  main()

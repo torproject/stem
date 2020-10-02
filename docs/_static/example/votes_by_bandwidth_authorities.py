@@ -29,4 +29,4 @@ for authority_name, query in queries.items():
     else:
       print('  %i measured entries and %i unmeasured' % (measured, unmeasured))
   except Exception as exc:
-    print("  failed to get the vote (%s)" % exc)
+    print('  failed to get the vote (%s)' % exc)

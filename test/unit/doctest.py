@@ -1,5 +1,5 @@
 """
-Tests examples from our documentation.
+Test inline examples from our documentation.
 """
 
 import doctest
@@ -55,7 +55,7 @@ class TestDocumentation(unittest.TestCase):
     is_failed = False
 
     for path in stem.util.system.files_with_suffix(stem_dir, '.py'):
-      args = {'module_relative': False}
+      args = {'module_relative': False, 'verbose': False}
       test_run = None
 
       if path.endswith('/stem/util/conf.py'):
