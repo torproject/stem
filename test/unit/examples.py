@@ -918,7 +918,17 @@ class TestExamples(unittest.TestCase):
       sys.modules = original_modules
 
   def test_saving_and_loading_descriptors(self):
-    pass
+    server_desc = RelayDescriptor.create({'router': 'caerSidi 71.35.133.197 9001 0 0'})
+
+    with patch('stem.descriptor.remote.get_server_descriptors', _download_of(server_desc)):
+      try:
+        import saving_and_loading_descriptors
+
+        with open('/tmp/descriptor_dump') as descriptor_file:
+          self.assertTrue(descriptor_file.read().startswith('router caerSidi 71.35.133.197'))
+      finally:
+        if os.path.exists('/tmp/descriptor_dump'):
+          os.remove('/tmp/descriptor_dump')
 
   def test_slow_listener(self):
     pass
