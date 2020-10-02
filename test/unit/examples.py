@@ -991,8 +991,16 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual(EXPECTED_UTILITIES, stdout_mock.getvalue())
 
-  def test_validate_descriptor_content(self):
-    pass
+  @patch('stem.descriptor.parse_file')
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_validate_descriptor_content(self, stdout_mock, parse_file_mock):
+    parse_file_mock.return_value = [RouterStatusEntryV3.create({
+      'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+    })]
+
+    import validate_descriptor_content
+
+    self.assertEqual('found relay caerSidi (A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB)\n', stdout_mock.getvalue())
 
   @patch('stem.descriptor.remote.DescriptorDownloader.query')
   @patch('stem.directory.Authority.from_cache')
