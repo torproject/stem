@@ -13,10 +13,11 @@ import unittest
 
 import stem.socket
 import stem.util.system
+import stem.version
 import test
 import test.require
 
-from stem.control import Controller
+from stem.control import Controller, Listener
 from stem.descriptor.bandwidth_file import BandwidthFile
 from stem.descriptor.extrainfo_descriptor import RelayExtraInfoDescriptor
 from stem.descriptor.hidden_service import HiddenServiceDescriptorV2
@@ -26,6 +27,7 @@ from stem.descriptor.server_descriptor import RelayDescriptor
 from stem.directory import DIRECTORY_AUTHORITIES
 from stem.exit_policy import ExitPolicy
 from stem.response import ControlMessage
+from stem.util.connection import Connection
 from unittest.mock import Mock, patch
 
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
@@ -36,6 +38,7 @@ UNTESTED = (
 
   'client_usage_using_pycurl',
   'client_usage_using_socksipy',
+  'reading_twitter',
 )
 
 EXPECTED_BANDWIDTH_STATS = """\
@@ -197,6 +200,31 @@ Checking for outdated relays...
 
 EXPECTED_PERSISTING_A_CONSENSUS = """\
 A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
+"""
+
+EXPECTED_RELAY_CONNECTIONS_HELP = """\
+usage: run_tests.py [-h] [--ctrlport CTRLPORT] [--resolver RESOLVER]
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --ctrlport CTRLPORT  default: 9051 or 9151
+  --resolver RESOLVER  default: autodetected
+"""
+
+EXPECTED_RELAY_CONNECTIONS = """\
+ 1.2.3.4   uptime: 00:50   flags: Fast, Stable
+
++------------------------------+------+------+
+| Type                         | IPv4 | IPv6 |
++------------------------------+------+------+
+| Inbound to our ORPort        |    1 |    0 |
+| Inbound to our DirPort       |    2 |    0 |
+| Inbound to our ControlPort   |    1 |    0 |
+| Outbound uncategorized       |    1 |    0 |
++------------------------------+------+------+
+| Total                        |    5 |    0 |
++------------------------------+------+------+
+
 """
 
 EXPECTED_RUNNING_HIDDEN_SERVICE = """\
@@ -794,11 +822,51 @@ class TestExamples(unittest.TestCase):
 
     self.assertEqual('4F0C867DF0EF68160568C826838F482CEA7CFE44\n', stdout_mock.getvalue())
 
-  def test_reading_twitter(self):
-    pass
+  @patch('sys.exit', Mock())
+  @patch('time.time', Mock(return_value = 100))
+  @patch('stem.util.system.start_time', Mock(return_value = 50))
+  @patch('stem.util.connection.get_connections')
+  @patch('stem.connection.connect')
+  def test_relay_connections(self, connect_mock, get_connections_mock):
+    import relay_connections
 
-  def test_relay_connections(self):
-    pass
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      connect_mock.return_value = None
+
+      relay_connections.main(['--help'])
+      self.assertEqual(EXPECTED_RELAY_CONNECTIONS_HELP, stdout_mock.getvalue())
+
+    with patch('sys.stdout', new_callable = io.StringIO) as stdout_mock:
+      consensus_desc = RouterStatusEntryV2.create({
+        'r': 'caerSidi p1aag7VwarGxqctS7/fS0y5FU+s oQZFLYe9e4A7bOkWKR7TaNxb0JE 2012-08-06 11:19:31 71.35.150.29 9001 0',
+        's': 'Fast Stable',
+      })
+
+      controller = Mock()
+      controller.get_pid.return_value = 123
+      controller.get_version.return_value = stem.version.Version('1.2.3.4')
+      controller.get_exit_policy.return_value = ExitPolicy('reject *:*')
+      controller.get_network_status.return_value = consensus_desc
+      controller.get_network_statuses.return_value = [consensus_desc]
+
+      controller.get_ports.side_effect = lambda port_type, default_val: {
+        Listener.OR: [4369],
+        Listener.DIR: [443],
+        Listener.CONTROL: [9100],
+      }.get(port_type, default_val)
+
+      connect_mock.return_value = controller
+
+      get_connections_mock.return_value = [
+        Connection('17.17.17.17', 4369, '34.34.34.34', 8738, 'tcp', False),
+        Connection('18.18.18.18', 443, '35.35.35.35', 4281, 'tcp', False),
+        Connection('19.19.19.19', 443, '36.36.36.36', 2814, 'tcp', False),
+        Connection('20.20.20.20', 9100, '37.37.37.37', 2814, 'tcp', False),
+        Connection('21.21.21.21', 80, '38.38.38.38', 8142, 'tcp', False),
+      ]
+
+      relay_connections.main([])
+      self.assertEqual(EXPECTED_RELAY_CONNECTIONS, stdout_mock.getvalue())
 
   def test_resuming_ephemeral_hidden_service(self):
     pass
