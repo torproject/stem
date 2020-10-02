@@ -930,8 +930,25 @@ class TestExamples(unittest.TestCase):
         if os.path.exists('/tmp/descriptor_dump'):
           os.remove('/tmp/descriptor_dump')
 
-  def test_slow_listener(self):
-    pass
+  @patch('time.sleep')
+  @patch('time.time', Mock(return_value = 123))
+  @patch('stem.control.Controller.authenticate', Mock())
+  @patch('stem.control.Controller.is_alive', Mock(return_value = True))
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_slow_listener(self, stdout_mock, from_port_mock, sleep_mock):
+    controller = Controller(stem.socket.ControlSocket())
+    from_port_mock.return_value = controller
+
+    # emits a BW event when the example runs time.sleep() at the end, but *not*
+    # within the listener
+
+    bw_event = ControlMessage.from_str('650 BW 15 25', 'EVENT', normalize = True)
+    sleep_mock.side_effect = lambda duration: controller._handle_event(bw_event) if duration == 10 else None
+
+    import slow_listener
+
+    self.assertEqual("processing a BW event that's 0.0 seconds old (0 more events are waiting)\n", stdout_mock.getvalue())
 
   @patch('stem.descriptor.remote.DescriptorDownloader')
   @patch('sys.stdout', new_callable = io.StringIO)
