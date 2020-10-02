@@ -23,6 +23,7 @@ GRAPH_HEIGHT = 8
 DOWNLOAD_COLOR = 'green'
 UPLOAD_COLOR = 'blue'
 
+
 def main():
   with Controller.from_port(port = 9051) as controller:
     controller.authenticate()
@@ -35,6 +36,7 @@ def main():
       curses.wrapper(draw_bandwidth_graph, controller)
     except KeyboardInterrupt:
       pass  # the user hit ctrl+c
+
 
 def draw_bandwidth_graph(stdscr, controller):
   window = Window(stdscr)
@@ -59,12 +61,14 @@ def draw_bandwidth_graph(stdscr, controller):
 
   stdscr.getch()
 
+
 def _handle_bandwidth_event(window, bandwidth_rates, event):
   # callback for when tor provides us with a BW event
 
   bandwidth_rates.insert(0, (event.read, event.written))
   bandwidth_rates = bandwidth_rates[:GRAPH_WIDTH]  # truncate old values
   _render_graph(window, bandwidth_rates)
+
 
 def _render_graph(window, bandwidth_rates):
   window.erase()
@@ -105,6 +109,7 @@ def _render_graph(window, bandwidth_rates):
       window.addstr(GRAPH_HEIGHT - row, col + GRAPH_WIDTH + 12, ' ', UPLOAD_COLOR, curses.A_STANDOUT)
 
   window.refresh()
+
 
 class Window(object):
   """
@@ -172,6 +177,7 @@ class Window(object):
 
   def refresh(self):
     self._stdscr.refresh()
+
 
 if __name__ == '__main__':
   main()

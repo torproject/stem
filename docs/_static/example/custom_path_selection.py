@@ -15,6 +15,7 @@ EXIT_FINGERPRINT = '379FB450010D17078B3766C2273303C358C3A442'
 SOCKS_PORT = 9050
 CONNECTION_TIMEOUT = 30  # timeout before we give up on a circuit
 
+
 def query(url):
   """
   Uses pycurl to fetch a site using the proxy on the SOCKS_PORT.
@@ -34,7 +35,7 @@ def query(url):
     query.perform()
     return output.getvalue()
   except pycurl.error as exc:
-    raise ValueError("Unable to reach %s (%s)" % (url, exc))
+    raise ValueError('Unable to reach %s (%s)' % (url, exc))
 
 
 def scan(controller, path):

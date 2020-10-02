@@ -1,11 +1,13 @@
 import threading
 import time
 
+
 def fibonacci(n):
   if n < 2:
     return n
   else:
-    return fibonacci(n-2) + fibonacci(n-1)
+    return fibonacci(n - 2) + fibonacci(n - 1)
+
 
 def main():
   # calculate fibonacci sequences four times in parallel
@@ -23,6 +25,7 @@ def main():
     t.join()
 
   print('took %0.1f seconds' % (time.time() - start_time))
+
 
 if __name__ == '__main__':
   main()

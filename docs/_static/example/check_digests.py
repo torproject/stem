@@ -42,16 +42,16 @@ def validate_relay(fingerprint):
     sys.exit(1)
 
   if router_status_entry.digest == server_desc.digest():
-    print("Server descriptor digest is correct")
+    print('Server descriptor digest is correct')
   else:
-    print("Server descriptor digest invalid, expected %s but is %s" % (router_status_entry.digest, server_desc.digest()))
+    print('Server descriptor digest invalid, expected %s but is %s' % (router_status_entry.digest, server_desc.digest()))
 
   if server_desc.extra_info_digest == extrainfo_desc.digest():
-    print("Extrainfo descriptor digest is correct")
+    print('Extrainfo descriptor digest is correct')
   else:
-    print("Extrainfo descriptor digest invalid, expected %s but is %s" % (server_desc.extra_info_digest, extrainfo_desc.digest()))
+    print('Extrainfo descriptor digest invalid, expected %s but is %s' % (server_desc.extra_info_digest, extrainfo_desc.digest()))
 
 
 if __name__ == '__main__':
-  fingerprint = raw_input("What relay fingerprint would you like to validate?\n")
+  fingerprint = input('What relay fingerprint would you like to validate?\n')
   validate_relay(fingerprint)
