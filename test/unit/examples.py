@@ -868,8 +868,26 @@ class TestExamples(unittest.TestCase):
       relay_connections.main([])
       self.assertEqual(EXPECTED_RELAY_CONNECTIONS, stdout_mock.getvalue())
 
-  def test_resuming_ephemeral_hidden_service(self):
-    pass
+  @patch('builtins.input', Mock())
+  @patch('os.path.expanduser', Mock(return_value = '/tmp/stem_hs_test'))
+  @patch('stem.control.Controller.from_port', spec = Controller)
+  @patch('sys.stdout', new_callable = io.StringIO)
+  def test_resuming_ephemeral_hidden_service(self, stdout_mock, from_port_mock):
+    hs_response = '250-ServiceID=gfzprpioee3hoppz\n250-PrivateKey=RSA1024:MIICXgIB\n250 OK'
+
+    controller = from_port_mock().__enter__()
+    controller.create_ephemeral_hidden_service.return_value = ControlMessage.from_str(hs_response, 'ADD_ONION', normalize = True)
+
+    try:
+      import resuming_ephemeral_hidden_service
+
+      with open('/tmp/stem_hs_test') as key_file:
+        self.assertEqual('RSA1024:MIICXgIB', key_file.read())
+
+      self.assertEqual('Started a new hidden service with the address of gfzprpioee3hoppz.onion\n', stdout_mock.getvalue())
+    finally:
+      if os.path.exists('/tmp/stem_hs_test'):
+        os.remove('/tmp/stem_hs_test')
 
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('shutil.rmtree')

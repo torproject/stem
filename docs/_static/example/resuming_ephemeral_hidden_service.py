@@ -19,5 +19,5 @@ with Controller.from_port() as controller:
     service = controller.create_ephemeral_hidden_service({80: 5000}, key_type = key_type, key_content = key_content, await_publication = True)
     print("Resumed %s.onion" % service.service_id)
 
-  raw_input('press any key to shut the service down...')
+  input('press any key to shut the service down...')
   controller.remove_ephemeral_hidden_service(service.service_id)
