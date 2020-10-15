@@ -1233,7 +1233,7 @@ class Controller(BaseController):
       param_set = set(params)
 
     for param in param_set:
-      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and self.get_info('ip-to-country/ipv4-available', '0') != '1':
+      if param.startswith('ip-to-country/') and param != 'ip-to-country/0.0.0.0' and await self.get_info('ip-to-country/ipv4-available', '0') != '1':
         raise stem.ProtocolError('Tor geoip database is unavailable')
       elif param == 'address' and self._last_address_exc:
         raise self._last_address_exc  # we already know we can't resolve an address
