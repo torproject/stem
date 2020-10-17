@@ -548,7 +548,7 @@ class TestEvents(unittest.TestCase):
         print_bw(_get_event('650 BW 15 25'))
         time.sleep(0.0005)
 
-    controller = Mock(spec = Controller)
+    controller = Mock()
 
     controller.authenticate()
     controller.add_event_listener(print_bw, EventType.BW)
