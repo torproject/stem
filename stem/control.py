@@ -2488,9 +2488,11 @@ class Controller(BaseController):
     query_comp = ['RESETCONF' if reset else 'SETCONF']
 
     if isinstance(params, dict):
-      params = list(params.items())
+      params_list = list(params.items())
+    else:
+      params_list = params  # type: ignore # type: Sequence[Tuple[str, Union[str, Sequence[str]]]]
 
-    for param, value in params:
+    for param, value in params_list:
       if isinstance(value, str):
         query_comp.append('%s="%s"' % (param, value.strip()))
       elif isinstance(value, collections.Iterable):
@@ -2508,12 +2510,12 @@ class Controller(BaseController):
 
       if self.is_caching_enabled():
         # clear cache for params; the CONF_CHANGED event will set cache for changes
-        to_cache = dict((k.lower(), None) for k, v in params)
+        to_cache = dict((k.lower(), None) for k, v in params_list)
         self._set_cache(to_cache, 'getconf')
-        self._confchanged_cache_invalidation(dict(params))
+        self._confchanged_cache_invalidation(dict(params_list))
     else:
       log.debug('%s (failed, code: %s, message: %s)' % (query, response.code, response.message))
-      immutable_params = [k for k, v in params if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
+      immutable_params = [k for k, v in params_list if stem.util.str_tools._to_unicode(k).lower() in IMMUTABLE_CONFIG_OPTIONS]
 
       if immutable_params:
         raise stem.InvalidArguments(message = "%s cannot be changed while tor's running" % ', '.join(sorted(immutable_params)), arguments = immutable_params)

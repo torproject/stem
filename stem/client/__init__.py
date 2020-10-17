@@ -319,7 +319,7 @@ class Circuit(object):
     except ImportError:
       raise ImportError('Circuit construction requires the cryptography module')
 
-    ctr = modes.CTR(ZERO * (algorithms.AES.block_size // 8))  # type: ignore
+    ctr = modes.CTR(ZERO * (algorithms.AES.block_size // 8))
 
     self.relay = relay
     self.id = circ_id

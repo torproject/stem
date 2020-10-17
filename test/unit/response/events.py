@@ -537,7 +537,7 @@ class TestEvents(unittest.TestCase):
     """
 
     import time
-    from stem.control import Controller, EventType
+    from stem.control import EventType
 
     def print_bw(event):
       msg = 'sent: %i, received: %i' % (event.written, event.read)

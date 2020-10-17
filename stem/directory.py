@@ -267,8 +267,8 @@ class Authority(Directory):
       results = {}
 
       for matches in _directory_entries(lines, Authority._pop_section, (AUTHORITY_NAME, AUTHORITY_V3IDENT, AUTHORITY_IPV6, AUTHORITY_ADDR), required = (AUTHORITY_NAME, AUTHORITY_ADDR)):
-        nickname, or_port = matches.get(AUTHORITY_NAME)
-        address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)
+        nickname, or_port = matches.get(AUTHORITY_NAME)  # type: ignore
+        address, dir_port, fingerprint = matches.get(AUTHORITY_ADDR)  # type: ignore
 
         results[nickname] = Authority(
           address = address,
@@ -433,7 +433,7 @@ class Fallback(Directory):
       results = {}
 
       for matches in _directory_entries(lines, Fallback._pop_section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,)):
-        address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
+        address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]  # type: ignore
 
         results[fingerprint] = Fallback(
           address = address,

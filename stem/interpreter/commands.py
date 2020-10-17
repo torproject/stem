@@ -269,7 +269,7 @@ class ControlInterpreter(code.InteractiveConsole):
     for label, desc in descriptor_section:
       if desc:
         lines += ['', div, format(label, *BOLD_OUTPUT), div, '']
-        lines += [format(l, *STANDARD_OUTPUT) for l in str(desc).splitlines()]
+        lines += [format(line, *STANDARD_OUTPUT) for line in str(desc).splitlines()]
 
     return '\n'.join(lines)
 
