@@ -96,6 +96,7 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual('1.01 minutes', str_tools.time_label(61, 2, True))
 
     self.assertEqual('0s', str_tools.time_label(0))
+    self.assertEqual('0s', str_tools.time_label(0.1))
     self.assertEqual('0 seconds', str_tools.time_label(0, is_long = True))
     self.assertEqual('0.00s', str_tools.time_label(0, 2))
     self.assertEqual('-10s', str_tools.time_label(-10))

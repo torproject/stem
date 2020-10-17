@@ -329,6 +329,9 @@ def size_label(byte_count: int, decimal: int = 0, is_long: bool = False, is_byte
   :returns: **str** with human readable representation of the size
   """
 
+  if isinstance(byte_count, float):
+    byte_count = int(byte_count)
+
   if is_bytes:
     return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long, round)
   else:
@@ -363,6 +366,9 @@ def time_label(seconds: int, decimal: int = 0, is_long: bool = False) -> str:
   :returns: **str** with human readable representation of the time
   """
 
+  if isinstance(seconds, float):
+    seconds = int(seconds)
+
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
 
 
@@ -385,6 +391,9 @@ def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
 
   :returns: **list** of strings with human readable representations of the time
   """
+
+  if isinstance(seconds, float):
+    seconds = int(seconds)
 
   time_labels = []
 
@@ -415,6 +424,9 @@ def short_time_label(seconds: int) -> str:
 
   :raises: **ValueError** if the input is negative
   """
+
+  if isinstance(seconds, float):
+    seconds = int(seconds)
 
   if seconds < 0:
     raise ValueError("Input needs to be a non-negative integer, got '%i'" % seconds)
@@ -560,35 +572,36 @@ def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int
 
   # formatted string for the requested number of digits
   label_format = '%%.%if' % decimal
+  remainder = count
 
-  if count < 0:
+  if remainder < 0:
     label_format = '-' + label_format
-    count = abs(count)
-  elif count == 0:
+    remainder = abs(remainder)
+  elif remainder == 0:
     units_label = units[-1][2] + 's' if is_long else units[-1][1]
     return '%s%s' % (label_format % count, units_label)
 
   for count_per_unit, short_label, long_label in units:
-    if count >= count_per_unit:
+    if remainder >= count_per_unit:
       if not round:
-        # Rounding down with a '%f' is a little clunky. Reducing the count so
-        # it'll divide evenly as the rounded down value.
+        # Rounding down with a '%f' is a little clunky. Reducing the remainder
+        # so it'll divide evenly as the rounded down value.
 
-        count -= count % (count_per_unit / (10 ** decimal))
+        remainder -= remainder % (count_per_unit / (10 ** decimal))
 
-      count_label = label_format % (count / count_per_unit)
+      count_label = label_format % (remainder / count_per_unit)
 
       if is_long:
         # Pluralize if any of the visible units make it greater than one. For
         # instance 1.0003 is plural but 1.000 isn't.
 
         if decimal > 0:
-          is_plural = count > count_per_unit
+          is_plural = remainder > count_per_unit
         else:
-          is_plural = count >= count_per_unit * 2
+          is_plural = remainder >= count_per_unit * 2
 
         return count_label + long_label + ('s' if is_plural else '')
       else:
         return count_label + short_label
 
-  raise ValueError('BUG: value should always be divisible by a unit (%s)' % str(units))
+  raise ValueError('BUG: %s should always be divisible by a unit (%s)' % (count, str(units)))
