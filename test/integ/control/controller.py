@@ -1647,13 +1647,10 @@ class TestController(unittest.TestCase):
       self.assertEqual('x25519', credential.key_type)
       self.assertEqual([], credential.flags)
 
-      # TODO: We should assert our client_name's value...
-      #
-      #   self.assertEqual('StemInteg', credential.client_name)
-      #
-      # ... but that's broken within tor...
-      #
-      #   https://gitlab.torproject.org/tpo/core/tor/-/issues/40089
+      # client names were fixed by https://gitlab.torproject.org/tpo/core/tor/-/issues/40089
+
+      if test.tor_version() >= stem.version.Version('0.4.4.5'):
+        self.assertEqual('StemInteg', credential.client_name)
 
       # deregister authentication credentials
 
