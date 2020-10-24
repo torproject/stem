@@ -6,6 +6,7 @@ Frequently Asked Questions
  * :ref:`what_is_stem`
  * :ref:`does_stem_have_any_dependencies`
  * :ref:`what_python_versions_is_stem_compatible_with`
+ * :ref:`how_do_i_validate_the_pgp_signature`
  * :ref:`can_i_interact_with_tors_controller_interface_directly`
  * :ref:`are_there_any_other_controller_libraries`
  * :ref:`what_license_is_stem_under`
@@ -587,7 +588,7 @@ To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
 #. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
-#. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes mypy**.
+#. Get our test dependencies: **sudo pip install mock pyflakes pycodestyle mypy**.
 #. Find a `bug or feature <https://github.com/torproject/stem/issues/>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
 
@@ -639,9 +640,9 @@ See ``run_tests.py --help`` for more usage information.
 How can I test compatibility with multiple python versions?
 -----------------------------------------------------------
 
-Stem supports python versions 2.6 and above, including the 3.x series. You can
-test all versions of python you currently have installed on your system with
-`tox <https://testrun.org/tox/>`_. If you're using a Debian based system this
+Stem supports python versions 3.6 and above. You can test all versions of
+python you currently have installed on your system with `tox
+<https://testrun.org/tox/>`_. If you're using a Debian based system this
 can be as simple as...
 
 ::
@@ -682,8 +683,14 @@ example...
 How do I build the site?
 ------------------------
 
-If you have `Sphinx <http://sphinx-doc.org/>`_ version 1.3 or later installed
-then building our site is as easy as...
+To build Stem's website install `Sphinx <http://sphinx-doc.org/>`_ with its
+`typehint plugin <https://github.com/agronholm/sphinx-autodoc-typehints>`_...
+
+::
+
+  ~$ sudo pip install sphinx sphinx-autodoc-typehints
+
+Then simply run **make html** within our **docs** directory...
 
 ::
 
