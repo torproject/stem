@@ -270,7 +270,7 @@ class File(object):
 
         return
 
-    path = self.download(directory, True, timeout, retries)
+    path = self.download(directory, timeout, retries)
 
     # Archives can contain multiple descriptor types, so parsing everything and
     # filtering to what we're after.
@@ -290,13 +290,12 @@ class File(object):
 
         yield desc
 
-  def download(self, directory: str, decompress: bool = True, timeout: Optional[int] = None, retries: Optional[int] = 3, overwrite: bool = False) -> str:
+  def download(self, directory: str, timeout: Optional[int] = None, retries: Optional[int] = 3, overwrite: bool = False) -> str:
     """
     Downloads this file to the given location. If a file already exists this is
     a no-op.
 
     :param directory: destination to download into
-    :param decompress: decompress written file
     :param timeout: timeout when connection becomes idle, no timeout
       applied if **None**
     :param retries: maximum attempts to impose
@@ -311,12 +310,7 @@ class File(object):
     """
 
     filename = self.path.split('/')[-1]
-
-    if self.compression != Compression.PLAINTEXT and decompress:
-      filename = filename.rsplit('.', 1)[0]
-
     directory = os.path.expanduser(directory)
-
     path = os.path.join(directory, filename)
 
     if not os.path.exists(directory):
@@ -335,9 +329,6 @@ class File(object):
           raise OSError("%s already exists but mismatches CollecTor's checksum (expected: %s, actual: %s)" % (path, expected_hash, actual_hash))
 
     response = stem.util.connection.download(COLLECTOR_URL + self.path, timeout, retries)
-
-    if decompress:
-      response = self.compression.decompress(response)
 
     with open(path, 'wb') as output_file:
       output_file.write(response)
