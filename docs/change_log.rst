@@ -65,6 +65,7 @@ The following are only available within Stem's `git repository
 
  * **Descriptors**
 
+  * Cached CollecTor files always reported a hash mismatch (:ticket:`76`)
   * *transport* lines within extrainfo descriptors failed to validate
 
  * **Utilities**

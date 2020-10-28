@@ -298,7 +298,7 @@ def crop(msg: str, size: int, min_word_length: int = 4, min_crop: int = 0, endin
   return (return_msg, remainder) if get_remainder else return_msg
 
 
-def size_label(byte_count: int, decimal: int = 0, is_long: bool = False, is_bytes: bool = True, round: bool = False) -> str:
+def size_label(byte_count: Union[int, float], decimal: int = 0, is_long: bool = False, is_bytes: bool = True, round: bool = False) -> str:
   """
   Converts a number of bytes into a human readable label in its most
   significant units. For instance, 7500 bytes would return "7 KB". If the
@@ -329,16 +329,13 @@ def size_label(byte_count: int, decimal: int = 0, is_long: bool = False, is_byte
   :returns: **str** with human readable representation of the size
   """
 
-  if isinstance(byte_count, float):
-    byte_count = int(byte_count)
-
   if is_bytes:
     return _get_label(SIZE_UNITS_BYTES, byte_count, decimal, is_long, round)
   else:
     return _get_label(SIZE_UNITS_BITS, byte_count, decimal, is_long, round)
 
 
-def time_label(seconds: int, decimal: int = 0, is_long: bool = False) -> str:
+def time_label(seconds: Union[int, float], decimal: int = 0, is_long: bool = False) -> str:
   """
   Converts seconds into a time label truncated to its most significant units.
   For instance, 7500 seconds would return "2h". Units go up through days.
@@ -366,13 +363,10 @@ def time_label(seconds: int, decimal: int = 0, is_long: bool = False) -> str:
   :returns: **str** with human readable representation of the time
   """
 
-  if isinstance(seconds, float):
-    seconds = int(seconds)
-
   return _get_label(TIME_UNITS, seconds, decimal, is_long)
 
 
-def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
+def time_labels(seconds: Union[int, float], is_long: bool = False) -> Sequence[str]:
   """
   Provides a list of label conversions for each time unit, starting with its
   most significant units on down. Any counts that evaluate to zero are omitted.
@@ -392,9 +386,6 @@ def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
   :returns: **list** of strings with human readable representations of the time
   """
 
-  if isinstance(seconds, float):
-    seconds = int(seconds)
-
   time_labels = []
 
   for count_per_unit, _, _ in TIME_UNITS:
@@ -405,7 +396,7 @@ def time_labels(seconds: int, is_long: bool = False) -> Sequence[str]:
   return time_labels
 
 
-def short_time_label(seconds: int) -> str:
+def short_time_label(seconds: Union[int, float]) -> str:
   """
   Provides a time in the following format:
   [[dd-]hh:]mm:ss
@@ -424,9 +415,6 @@ def short_time_label(seconds: int) -> str:
 
   :raises: **ValueError** if the input is negative
   """
-
-  if isinstance(seconds, float):
-    seconds = int(seconds)
 
   if seconds < 0:
     raise ValueError("Input needs to be a non-negative integer, got '%i'" % seconds)
@@ -557,7 +545,7 @@ def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 
-def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int, is_long: bool, round: bool = False) -> str:
+def _get_label(units: Sequence[Tuple[float, str, str]], count: Union[int, float], decimal: int, is_long: bool, round: bool = False) -> str:
   """
   Provides label corresponding to units of the highest significance in the
   provided set. This rounds down (ie, integer truncation after visible units).
@@ -582,7 +570,7 @@ def _get_label(units: Sequence[Tuple[float, str, str]], count: int, decimal: int
     return '%s%s' % (label_format % count, units_label)
 
   for count_per_unit, short_label, long_label in units:
-    if remainder >= count_per_unit:
+    if remainder >= count_per_unit or count_per_unit == 1:
       if not round:
         # Rounding down with a '%f' is a little clunky. Reducing the remainder
         # so it'll divide evenly as the rounded down value.

@@ -99,6 +99,7 @@ class TestStrTools(unittest.TestCase):
     self.assertEqual('0s', str_tools.time_label(0.1))
     self.assertEqual('0 seconds', str_tools.time_label(0, is_long = True))
     self.assertEqual('0.00s', str_tools.time_label(0, 2))
+    self.assertEqual('0.10s', str_tools.time_label(0.1, 2))
     self.assertEqual('-10s', str_tools.time_label(-10))
 
     self.assertRaises(TypeError, str_tools.time_label, None)
