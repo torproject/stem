@@ -96,22 +96,6 @@ def assert_in(expected: Any, actual: Any, msg: Optional[str] = None) -> None:
     raise AssertionError("Expected '%s' to be within '%s'" % (expected, actual) if msg is None else msg)
 
 
-def skip(msg: str) -> None:
-  """
-  Function form of a TestCase's skipTest.
-
-  .. versionadded:: 1.6.0
-
-  :param msg: reason test is being skipped
-
-  :raises: **unittest.case.SkipTest** for this reason
-  """
-
-  # TODO: remove now that python 2.x is unsupported?
-
-  raise unittest.case.SkipTest(msg)
-
-
 def asynchronous(func: Callable) -> Callable:
   test = stem.util.test_tools.AsyncTest(func)
   ASYNC_TESTS[test.name] = test

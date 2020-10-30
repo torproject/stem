@@ -26,7 +26,7 @@ import test.require
 from contextlib import contextmanager
 from unittest.mock import patch, Mock
 
-from stem.util.test_tools import async_test, asynchronous, assert_equal, assert_in, skip
+from stem.util.test_tools import async_test, asynchronous, assert_equal, assert_in
 
 BASIC_RELAY_TORRC = """\
 SocksPort 9089
@@ -255,7 +255,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('sleep'):
-      skip('(sleep unavailable)')
+      raise unittest.case.SkipTest('(sleep unavailable)')
 
     with patch('re.compile', Mock(side_effect = KeyboardInterrupt('nope'))):
       # We don't need to actually run tor for this test. Rather, any process will
@@ -547,7 +547,7 @@ class TestProcess(unittest.TestCase):
     """
 
     if not stem.util.system.is_available('sleep'):
-      skip('(sleep unavailable)')
+      raise unittest.case.SkipTest('(sleep unavailable)')
 
     with tempfile.TemporaryDirectory() as data_directory:
       sleep_process = subprocess.Popen(['sleep', '60'])
