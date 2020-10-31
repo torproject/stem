@@ -436,17 +436,14 @@ class Query(Synchronous):
     if block:
       self.run(True)
 
-  async def start(self) -> None:
+  def start(self) -> None:
     """
     Starts downloading the scriptors if we haven't started already.
     """
 
     with self._downloader_lock:
       if self._downloader_task is None:
-        # TODO: replace with get_running_loop() when we remove python 3.6 support
-
-        loop = asyncio.get_event_loop()
-        self._downloader_task = loop.create_task(self._download_descriptors(self.retries, self.timeout))
+        self._downloader_task = self._loop.create_task(Query._download_descriptors(self, self.retries, self.timeout))
 
   async def run(self, suppress: bool = False) -> List['stem.descriptor.Descriptor']:
     """
@@ -473,7 +470,7 @@ class Query(Synchronous):
 
   async def _run(self, suppress: bool) -> AsyncIterator[stem.descriptor.Descriptor]:
     with self._downloader_lock:
-      await self.start()
+      self.start()
       await self._downloader_task
 
       if self.error:
