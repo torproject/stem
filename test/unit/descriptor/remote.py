@@ -79,6 +79,21 @@ class TestDescriptorDownloader(unittest.TestCase):
     stem.descriptor.remote.SINGLETON_DOWNLOADER = None
 
   @mock_download(TEST_DESCRIPTOR)
+  def test_initial_startup(self):
+    """
+    Check that the query can begin downloading in the background when first
+    constructed.
+    """
+
+    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
+    self.assertTrue(query._downloader_task is None)
+    query.stop()
+
+    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = True)
+    self.assertTrue(query._downloader_task is not None)
+    query.stop()
+
+  @mock_download(TEST_DESCRIPTOR)
   def test_download(self):
     """
     Simply download and parse a descriptor.
