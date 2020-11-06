@@ -248,6 +248,14 @@ class TimedTestRunner(unittest.TextTestRunner):
 
           return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), *args, **kwargs)
 
+        def shortDescription(self):
+          # Python now prints the first line of a test's docstring by default.
+          # This breaks our output parsers so disabling the feature...
+          #
+          #   https://stackoverflow.com/questions/12962772/how-to-stop-python-unittest-from-printing-test-docstring
+
+          return None
+
         def id(self) -> str:
           return '%s.%s.%s' % (original_type.__module__, original_type.__name__, self._testMethodName)
 
