@@ -2,6 +2,7 @@
 Unit tests for stem.descriptor.remote.
 """
 
+import time
 import unittest
 
 import stem
@@ -87,11 +88,49 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
     self.assertTrue(query._downloader_task is None)
-    query.stop()
 
     query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = True)
     self.assertTrue(query._downloader_task is not None)
     query.stop()
+
+  def test_stop(self):
+    """
+    Stop a complete, in-process, and unstarted query.
+    """
+
+    # stop a completed query
+
+    with mock_download(TEST_DESCRIPTOR):
+      query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31')
+      self.assertTrue(query._loop_thread.is_alive())
+
+      query.run()  # complete the query
+      self.assertFalse(query._loop_thread.is_alive())
+      self.assertFalse(query._downloader_task.cancelled())
+
+      query.stop()  # nothing to do
+      self.assertFalse(query._loop_thread.is_alive())
+      self.assertFalse(query._downloader_task.cancelled())
+
+    # stop an in-process query
+
+    def pause(*args):
+      time.sleep(5)
+
+    with patch('stem.descriptor.remote.Query._download_from', Mock(side_effect = pause)):
+      query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31')
+
+      query.stop()  # terminates in-process query
+      self.assertFalse(query._loop_thread.is_alive())
+      self.assertTrue(query._downloader_task.cancelled())
+
+    # stop an unstarted query
+
+    query = stem.descriptor.remote.get_server_descriptors('9695DFC35FFEB861329B9F1AB04C46397020CE31', start = False)
+
+    query.stop()  # nothing to do
+    self.assertTrue(query._loop_thread is None)
+    self.assertTrue(query._downloader_task is None)
 
   @mock_download(TEST_DESCRIPTOR)
   def test_download(self):
@@ -114,8 +153,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual('128.31.0.34', desc.address)
     self.assertEqual('9695DFC35FFEB861329B9F1AB04C46397020CE31', desc.fingerprint)
     self.assertEqual(TEST_DESCRIPTOR.rstrip(), desc.get_bytes())
-
-    reply.stop()
 
   def test_response_header_code(self):
     """
@@ -165,13 +202,11 @@ class TestDescriptorDownloader(unittest.TestCase):
     descriptors = list(query)
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
-    query.stop()
 
   def test_gzip_url_override(self):
     query = stem.descriptor.remote.Query(TEST_RESOURCE + '.z', compression = Compression.PLAINTEXT, start = False)
     self.assertEqual([stem.descriptor.Compression.GZIP], query.compression)
     self.assertEqual(TEST_RESOURCE, query.resource)
-    query.stop()
 
   @mock_download(read_resource('compressed_identity'), encoding = 'identity')
   def test_compression_plaintext(self):
@@ -187,7 +222,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -206,7 +240,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -227,7 +260,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -248,7 +280,6 @@ class TestDescriptorDownloader(unittest.TestCase):
     )
 
     descriptors = list(query)
-    query.stop()
 
     self.assertEqual(1, len(descriptors))
     self.assertEqual('moria1', descriptors[0].nickname)
@@ -300,8 +331,6 @@ class TestDescriptorDownloader(unittest.TestCase):
 
     self.assertRaises(ValueError, query.run)
 
-    query.stop()
-
   def test_query_with_invalid_endpoints(self):
     invalid_endpoints = {
       'hello': "'h' is a str.",
@@ -330,5 +359,3 @@ class TestDescriptorDownloader(unittest.TestCase):
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
     self.assertEqual(1, len(list(query)))
-
-    query.stop()
