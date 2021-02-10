@@ -19,9 +19,9 @@ Miscellaneous utility functions for working with tor.
   is_hex_digits - checks if a string is only made up of hex digits
 """
 
+import base64
+import hashlib
 import re
-from base64 import b32decode
-from hashlib import sha3_256
 
 import stem.util.str_tools
 
@@ -47,7 +47,6 @@ CIRC_ID_PATTERN = re.compile('^[a-zA-Z0-9]{1,16}$')
 
 HS_V2_ADDRESS_PATTERN = re.compile('^[a-z2-7]{16}$')
 HS_V3_ADDRESS_PATTERN = re.compile('^[a-z2-7]{56}$')
-HS_V3_CHECKSUM_CONSTANT = ".onion checksum"
 
 
 def is_valid_fingerprint(entry: str, check_prefix: bool = False) -> bool:
@@ -156,14 +155,6 @@ def is_valid_hidden_service_address(entry: str, version: Optional[Union[int, Seq
     otherwise
   """
 
-  def _extract_v3_parts(address):
-    decoded = b32decode(address.upper())
-    return (decoded[:32], decoded[32:34])
-
-  v3_pubkey = None
-  v3_checksum = None
-  v3_version = int(3).to_bytes(1, 'little')
-
   if isinstance(entry, bytes):
     entry = stem.util.str_tools._to_unicode(entry)
 
@@ -179,15 +170,19 @@ def is_valid_hidden_service_address(entry: str, version: Optional[Union[int, Seq
       return True
 
     if 3 in version and bool(HS_V3_ADDRESS_PATTERN.match(entry)):
-      # v3+ onions have a consistent version at end of address
-      if not entry.endswith('d'):
-        return False
-      # Test that the checksum (part of every v3 address) is valid
-      v3_pubkey, v3_checksum = _extract_v3_parts(entry)
-      expected_checksum = sha3_256(HS_V3_CHECKSUM_CONSTANT.encode('utf-8') + v3_pubkey + v3_version).digest()[:2]
-      if expected_checksum != v3_checksum:
-        return False
-      return True
+      # onion_address = base32(PUBKEY | CHECKSUM | VERSION) + ".onion"
+
+      decoded = base64.b32decode(entry.upper())
+      pubkey, checksum, addr_version = decoded[:32], decoded[32:34], decoded[34:]
+
+      if addr_version != b'\x03':
+        return False  # VERSION component must be three
+
+      # CHECKSUM = H(".onion checksum" | PUBKEY | VERSION)[:2]
+
+      expected_checksum = hashlib.sha3_256(b'.onion checksum' + pubkey + addr_version).digest()[:2]
+
+      return checksum == expected_checksum
 
     return False
   except TypeError:

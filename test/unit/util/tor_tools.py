@@ -3,66 +3,62 @@ Unit tests for the stem.util.tor_tools functions.
 """
 
 import unittest
-import os
 
 import stem.util.str_tools
 import stem.util.tor_tools
 
 
 class TestTorTools(unittest.TestCase):
+  def test_is_valid_hidden_service_address_v2(self):
+    """
+    Checks the is_valid_hidden_service_address for v2 addresses.
+    """
 
-  def test_is_valid_hidden_service_address(self):
-    """
-    Check hidden service addresses are valid (no .onion)
-    """
     valid_v2_addresses = [
       'facebookcorewwwi',
       'aaaaaaaaaaaaaaaa',
     ]
+
     invalid_v2_addresses = [
       'facebookcorewww',
       'facebookcorewwyi'
       'facebookc0rewwwi',
       'facebookcorew wi',
-      None,
-      0,
-      1,
-      -1,
-      os.urandom(8)
     ]
 
     for address in valid_v2_addresses:
       self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address))
-      self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address, version=2))
+      self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address, version = 2))
 
     for address in invalid_v2_addresses:
       self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address))
-      self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address, version=2))
+      self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address, version = 2))
 
-    # Test version 3 addresses
+  def test_is_valid_hidden_service_address_v3(self):
+    """
+    Checks the is_valid_hidden_service_address for v3 addresses.
+    """
+
     valid_v3_addresses = [
       'pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryd',
       'sp3k262uwy4r2k3ycr5awluarykdpag6a7y33jxop4cs2lu5uz5sseqd',
-      'xa4r2iadxm55fbnqgwwi5mymqdcofiu3w6rpbtqn7b2dyn7mgwj64jyd'
-      ]
+      'xa4r2iadxm55fbnqgwwi5mymqdcofiu3w6rpbtqn7b2dyn7mgwj64jyd',
+    ]
+
     invalid_v3_addresses = [
-      'pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryc', # bad version
-      'xa4r2iadxm55fbnqgwwi5mymqdcofiu3w6rpbtqn7b2dyn7mgwj64jy', # too short
-      'sp3k262uwy4r2k4ycr5awluarykdpag6a7y33jxop4cs2lu5uz5sseqd', # checksum mismatch
-      'pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscrybd', # too long
-      None,
-      0,
-      1,
-      -1,
-      os.urandom(56)
+      'pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscryc',  # bad version
+      'xa4r2iadxm55fbnqgwwi5mymqdcofiu3w6rpbtqn7b2dyn7mgwj64jy',  # too short
+      'sp3k262uwy4r2k4ycr5awluarykdpag6a7y33jxop4cs2lu5uz5sseqd',  # checksum mismatch
+      'pg6mmjiyjmcrsslvykfwnntlaru7p5svn6y2ymmju6nubxndf4pscrybd',  # too long
     ]
 
     for address in valid_v3_addresses:
       self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address))
-      self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address, version=3))
+      self.assertTrue(stem.util.tor_tools.is_valid_hidden_service_address(address, version = 3))
+
     for address in invalid_v3_addresses:
       self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address))
-      self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address, version=3))
+      self.assertFalse(stem.util.tor_tools.is_valid_hidden_service_address(address, version = 3))
 
   def test_is_valid_fingerprint(self):
     """

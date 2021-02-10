@@ -1129,7 +1129,7 @@ class HiddenServiceDescriptorV3(HiddenServiceDescriptor):
     if onion_address.endswith('.onion'):
       onion_address = onion_address[:-6]
 
-    if not stem.util.tor_tools.is_valid_hidden_service_address(onion_address, version = 3):
+    if not stem.util.tor_tools.HS_V3_ADDRESS_PATTERN.match(onion_address):
       raise ValueError("'%s.onion' isn't a valid hidden service v3 address" % onion_address)
 
     # onion_address = base32(PUBKEY | CHECKSUM | VERSION) + '.onion'
