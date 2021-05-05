@@ -125,7 +125,7 @@ class TestProcess(unittest.TestCase):
     Check that 'tor --version' matches 'GETINFO version'.
     """
 
-    assert_equal('Tor version %s.\n' % test.tor_version(), run_tor(tor_cmd, '--version'))
+    assert_in('Tor version %s.\n' % test.tor_version(), run_tor(tor_cmd, '--version'))
 
   @asynchronous
   def test_help_argument(tor_cmd):
