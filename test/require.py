@@ -125,6 +125,16 @@ def version(req_version):
   return needs(lambda: test.tor_version() >= req_version, 'requires %s' % req_version)
 
 
+def version_older_than(req_version):
+  """
+  Skips the test unless we meet a version older than the requested version.
+
+  :param stem.version.Version req_version: the version that tor should be older than
+  """
+
+  return needs(lambda: test.tor_version() < req_version, 'requires %s' % req_version)
+
+
 cryptography = needs(lambda: CRYPTOGRAPHY_AVAILABLE, 'requires cryptography')
 proc = needs(stem.util.proc.is_available, 'proc unavailable')
 controller = needs(_can_access_controller, 'no connection')

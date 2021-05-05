@@ -26,14 +26,15 @@ easily parsed and compared, for instance...
 
   Enumerations for the version requirements of features.
 
-  =========================== ===========
-  Requirement                 Description
-  =========================== ===========
-  **DORMANT_MODE**            **DORMANT** and **ACTIVE** :data:`~stem.Signal`
-  **DROPTIMEOUTS**            **DROPTIMEOUTS** controller command
-  **HSFETCH_V3**              HSFETCH for version 3 hidden services
-  **ONION_CLIENT_AUTH_ADD**   **ONION_CLIENT_AUTH_ADD** controller command
-  =========================== ===========
+  ========================== ===========
+  Requirement                Description
+  ========================== ===========
+  **DORMANT_MODE**           **DORMANT** and **ACTIVE** :data:`~stem.Signal`
+  **DROPTIMEOUTS**           **DROPTIMEOUTS** controller command
+  **HSFETCH_V3**             HSFETCH for version 3 hidden services
+  **ONION_CLIENT_AUTH_ADD**  **ONION_CLIENT_AUTH_ADD** controller command
+  **ONION_SERVICE_AUTH_ADD** For adding ClientAuthV3 to a v3 onion service via ADD_ONION
+  ========================== ===========
 """
 
 import functools
@@ -223,4 +224,5 @@ Requirement = stem.util.enum.Enum(
   ('DROPTIMEOUTS', Version('0.4.5.0-alpha')),
   ('HSFETCH_V3', Version('0.4.1.1-alpha')),
   ('ONION_CLIENT_AUTH_ADD', Version('0.4.3.1-alpha')),
+  ('ONION_SERVICE_AUTH_ADD', Version('0.4.6.1-alpha')),
 )
