@@ -29,11 +29,12 @@ from stem.control import EventType, Listener, State
 from stem.exit_policy import ExitPolicy
 from stem.version import Requirement
 
+SERVICE_ID = 'yvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
+
 # Router status entry for a relay with a nickname other than 'Unnamed'. This is
 # used for a few tests that need to look up a relay.
 
 TEST_ROUTER_STATUS_ENTRY = None
-
 
 class TestController(unittest.TestCase):
   @test.require.only_run_once
@@ -446,6 +447,7 @@ class TestController(unittest.TestCase):
       self.assertFalse(controller.is_set('ConnLimit'))
 
   @test.require.controller
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_hidden_services_conf(self):
     """
     Exercises the hidden service family of methods (get_hidden_service_conf,
@@ -563,10 +565,11 @@ class TestController(unittest.TestCase):
     with test.runner.get_runner().get_tor_controller() as controller:
       self.assertEqual([], controller.list_ephemeral_hidden_services())
       self.assertEqual([], controller.list_ephemeral_hidden_services(detached = True))
-      self.assertEqual(False, controller.remove_ephemeral_hidden_service('gfzprpioee3hoppz'))
+      self.assertEqual(False, controller.remove_ephemeral_hidden_service(SERVICE_ID))
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION)
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_with_invalid_ephemeral_hidden_service_port(self):
     with test.runner.get_runner().get_tor_controller() as controller:
       for ports in (4567890, [4567, 4567890], {4567: '-:4567'}):
@@ -575,6 +578,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION)
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_ephemeral_hidden_services_v2(self):
     """
     Exercises creating v2 ephemeral hidden services.
@@ -620,6 +624,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.version(Requirement.HIDDEN_SERVICE_V3)
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_ephemeral_hidden_services_v3(self):
     """
     Exercises creating v3 ephemeral hidden services.
@@ -665,6 +670,7 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.version(Requirement.ADD_ONION_BASIC_AUTH)
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_with_ephemeral_hidden_services_basic_auth(self):
     """
     Exercises creating ephemeral hidden services that uses basic authentication.
@@ -684,7 +690,43 @@ class TestController(unittest.TestCase):
       self.assertEqual([], controller.list_ephemeral_hidden_services())
 
   @test.require.controller
+  @test.require.version(stem.version.Requirement.ONION_SERVICE_AUTH_ADD)
+  def test_with_ephemeral_hidden_services_v3_client_auth(self):
+    """
+    Exercises creating v3 ephemeral hidden services with ClientAuthV3.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      response = controller.create_ephemeral_hidden_service(4567, key_content = 'ED25519-V3', client_auth_v3='FGTORMIDKR7T2PR632HSHLWA4G6HF5TCWSGMHDUU4LWBEFTAVYQQ')
+      self.assertEqual([response.service_id], controller.list_ephemeral_hidden_services())
+      self.assertTrue(response.private_key is not None)
+      self.assertEqual('ED25519-V3', response.private_key_type)
+      self.assertEqual({}, response.client_auth)
+
+      # drop the service
+
+      self.assertEqual(True, controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], controller.list_ephemeral_hidden_services())
+
+  @test.require.controller
+  @test.require.version(stem.version.Requirement.ONION_SERVICE_AUTH_ADD)
+  def test_with_ephemeral_hidden_services_v3_client_auth_invalid(self):
+    """
+    Exercises creating v3 ephemeral hidden services with ClientAuthV3 but
+    with an invalid public key.
+    """
+
+    runner = test.runner.get_runner()
+
+    with runner.get_tor_controller() as controller:
+      exc_msg = "ADD_ONION response didn't have an OK status: Cannot decode v3 client auth key"
+      self.assertRaisesWith(stem.ProtocolError, exc_msg, controller.create_ephemeral_hidden_service, 4567, key_content = 'ED25519-V3', client_auth_v3='badkey')
+
+  @test.require.controller
   @test.require.version(Requirement.ADD_ONION_BASIC_AUTH)
+  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_with_ephemeral_hidden_services_basic_auth_no_credentials(self):
     """
     Exercises creating ephemeral hidden services when attempting to use basic

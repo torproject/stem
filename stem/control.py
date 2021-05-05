@@ -2941,7 +2941,7 @@ class Controller(BaseController):
 
     return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
-  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, timeout = None, basic_auth = None, max_streams = None):
+  def create_ephemeral_hidden_service(self, ports, key_type = 'NEW', key_content = 'BEST', discard_key = False, detached = False, await_publication = False, timeout = None, basic_auth = None, max_streams = None, client_auth_v3 = None):
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2991,6 +2991,12 @@ class Controller(BaseController):
         'bob': 'vGnNRpWYiMBFTWD2gbBlcA',
       })
 
+    Please note that **basic_auth** only works for legacy (v2) hidden services.
+
+    To use client auth with a **version 3** service, pass the **client_auth_v3**
+    argument. The value must be a base32-encoded public key from a key pair you
+    have generated elsewhere.
+
     To create a **version 3** service simply specify **ED25519-V3** as the
     our key type, and to create a **version 2** service use **RSA1024**. The
     default version of newly created hidden services is based on the
@@ -3019,6 +3025,9 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout and max_streams arguments.
 
+    .. versionchanged:: 1.8.1
+       Added the client_auth_v3 argument.
+
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
       service ports to their targets
     :param str key_type: type of key being provided, generates a new key if
@@ -3032,9 +3041,11 @@ class Controller(BaseController):
     :param bool await_publication: blocks until our descriptor is successfully
       published if **True**
     :param float timeout: seconds to wait when **await_result** is **True**
-    :param dict basic_auth: required user credentials to access this service
+    :param dict basic_auth: required user credentials to access a v2 service
     :param int max_streams: maximum number of streams the hidden service will
       accept, unlimited if zero or not set
+    :param str client_auth_v3: base32-encoded public key for **version 3**
+      onion services that require client authentication
 
     :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
 
@@ -3081,6 +3092,12 @@ class Controller(BaseController):
       if self.get_conf('HiddenServiceSingleHopMode', None) == '1' and self.get_conf('HiddenServiceNonAnonymousMode', None) == '1':
         flags.append('NonAnonymous')
 
+    if client_auth_v3 is not None:
+      if self.get_version() < stem.version.Requirement.ONION_SERVICE_AUTH_ADD:
+        raise stem.UnsatisfiableRequest(message = 'Client authentication support for v3 onions was added to ADD_ONION in tor version %s' % stem.version.Requirement.ONION_SERVICE_AUTH_ADD)
+
+      flags.append('V3Auth')
+
     if flags:
       request += ' Flags=%s' % ','.join(flags)
 
@@ -3104,6 +3121,9 @@ class Controller(BaseController):
           request += ' ClientAuth=%s:%s' % (client_name, client_blob)
         else:
           request += ' ClientAuth=%s' % client_name
+
+    if client_auth_v3 is not None:
+      request += ' ClientAuthV3=%s' % client_auth_v3
 
     response = self.msg(request)
     stem.response.convert('ADD_ONION', response)

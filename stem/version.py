@@ -81,6 +81,7 @@ easily parsed and compared, for instance...
   **TORRC_PORT_FORWARDING**             'PortForwarding' config option
   **TORRC_DISABLE_DEBUGGER_ATTACHMENT** 'DisableDebuggerAttachment' config option
   **TORRC_VIA_STDIN**                   Allow torrc options via 'tor -f -' (:trac:`13865`)
+  **ONION_SERVICE_AUTH_ADD**            For adding ClientAuthV3 to a v3 onion service via ADD_ONION
   ===================================== ===========
 """
 
@@ -397,4 +398,5 @@ Requirement = stem.util.enum.Enum(
   ('TORRC_PORT_FORWARDING', Version('0.2.3.1-alpha')),
   ('TORRC_DISABLE_DEBUGGER_ATTACHMENT', Version('0.2.3.9')),
   ('TORRC_VIA_STDIN', Version('0.2.6.3-alpha')),
+  ('ONION_SERVICE_AUTH_ADD', Version('0.4.6.1-alpha')),
 )
