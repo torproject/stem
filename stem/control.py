@@ -2960,7 +2960,6 @@ class Controller(BaseController):
 
       print('service established at %s.onion' % response.service_id)
 
-
     .. versionadded:: 1.4.0
 
     .. versionchanged:: 1.5.0
