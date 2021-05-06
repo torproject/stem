@@ -36,6 +36,7 @@ SERVICE_ID = 'yvhz3ofkv7gwf5hpzqvhonpr3gbax2cc7dee3xcnt7dmtlx2gu7vyvid'
 
 TEST_ROUTER_STATUS_ENTRY = None
 
+
 class TestController(unittest.TestCase):
   @test.require.only_run_once
   @test.require.controller
