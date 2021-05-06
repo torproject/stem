@@ -624,7 +624,6 @@ class TestController(unittest.TestCase):
 
   @test.require.controller
   @test.require.version(Requirement.HIDDEN_SERVICE_V3)
-  @test.require.version_older_than(stem.version.Version('0.4.6.1-alpha'))
   def test_ephemeral_hidden_services_v3(self):
     """
     Exercises creating v3 ephemeral hidden services.
