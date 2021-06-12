@@ -1090,6 +1090,8 @@ class StreamEvent(Event):
     'SOURCE': 'source',
     'SOURCE_ADDR': 'source_addr',
     'PURPOSE': 'purpose',
+    'SOCKS_USERNAME': 'socks_username',
+    'SOCKS_PASSWORD': 'socks_password',
   }
 
   def __init__(self):
