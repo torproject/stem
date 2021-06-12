@@ -1081,6 +1081,8 @@ class StreamEvent(Event):
   :var str source_address: requester address (ip or hostname)
   :var int source_port: requester port
   :var stem.StreamPurpose purpose: purpose for the stream
+  :var str socks_username: username used by the socket connection
+  :var str socks_password: password used by the socket connection
   """
 
   _POSITIONAL_ARGS = ('id', 'status', 'circ_id', 'target')
@@ -1090,6 +1092,8 @@ class StreamEvent(Event):
     'SOURCE': 'source',
     'SOURCE_ADDR': 'source_addr',
     'PURPOSE': 'purpose',
+    'SOCKS_USERNAME': 'socks_username',
+    'SOCKS_PASSWORD': 'socks_password',
   }
 
   def __init__(self):
@@ -1106,6 +1110,8 @@ class StreamEvent(Event):
     self.source_address = None  # type: Optional[str]
     self.source_port = None  # type: Optional[str]
     self.purpose = None  # type: Optional[stem.StreamPurpose]
+    self.socks_username = None  # type: Optional[str]
+    self.socks_password = None  # type: Optional[str]
 
   def _parse(self) -> None:
     if self.target is None:
