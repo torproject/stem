@@ -1962,7 +1962,7 @@ class BridgeNetworkStatusDocument(NetworkStatusDocument):
       published_line = published_line.split(' ', 1)[1].strip()
 
       try:
-        self.published = stem.util.str_tools._parse_timestamp(published_line)
+        self.published = stem.util.str_tools._parse_timestamp(published_line, datetime.timezone.utc)
       except ValueError:
         if validate:
           raise ValueError("Bridge network status document's 'published' time wasn't parsable: %s" % published_line)

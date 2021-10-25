@@ -247,6 +247,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 import asyncio
 import calendar
 import collections
+import datetime
 import functools
 import inspect
 import io
@@ -1537,7 +1538,7 @@ class Controller(BaseController):
       self.get_info('accounting/bytes-left'),
     )
 
-    interval_end = stem.util.str_tools._parse_timestamp(interval_end)
+    interval_end = stem.util.str_tools._parse_timestamp(interval_end, datetime.timezone.utc)
     used_read, used_written = [int(val) for val in used.split(' ', 1)]
     left_read, left_written = [int(val) for val in left.split(' ', 1)]
 

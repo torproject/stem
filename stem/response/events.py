@@ -221,12 +221,14 @@ class AddrMapEvent(Event):
         self.expiry = None
       else:
         try:
-          self.expiry = stem.util.str_tools._parse_timestamp(self.expiry)
+          # control-spec: "Expiry is expressed as the local time (rather than
+          # UTC). This is a bug, left in for backward compatibility"
+          self.expiry = stem.util.str_tools._parse_timestamp(self.expiry, None)
         except ValueError:
           raise stem.ProtocolError('Unable to parse date in ADDRMAP event: %s' % self)
 
     if self.utc_expiry is not None:
-      self.utc_expiry = stem.util.str_tools._parse_timestamp(self.utc_expiry)
+      self.utc_expiry = stem.util.str_tools._parse_timestamp(self.utc_expiry, datetime.timezone.utc)
 
     if self.cached is not None:
       if self.cached == 'YES':
@@ -518,7 +520,7 @@ class ClientsSeenEvent(Event):
 
   def _parse(self) -> None:
     if self.start_time is not None:
-      self.start_time = stem.util.str_tools._parse_timestamp(self.start_time)
+      self.start_time = stem.util.str_tools._parse_timestamp(self.start_time, datetime.timezone.utc)
 
     if self.locales is not None:
       locale_to_count = {}

@@ -98,13 +98,13 @@ class TorDNSEL(Descriptor):
         self.fingerprint = value
       elif keyword == 'Published':
         try:
-          self.published = stem.util.str_tools._parse_timestamp(value)
+          self.published = stem.util.str_tools._parse_timestamp(value, datetime.timezone.utc)
         except ValueError:
           if validate:
             raise ValueError("Published time wasn't parsable: %s" % value)
       elif keyword == 'LastStatus':
         try:
-          self.last_status = stem.util.str_tools._parse_timestamp(value)
+          self.last_status = stem.util.str_tools._parse_timestamp(value, datetime.timezone.utc)
         except ValueError:
           if validate:
             raise ValueError("LastStatus time wasn't parsable: %s" % value)
@@ -119,7 +119,7 @@ class TorDNSEL(Descriptor):
               raise ValueError('Unexpected block content: %s' % block_content)
 
           try:
-            date = stem.util.str_tools._parse_timestamp(date_str)
+            date = stem.util.str_tools._parse_timestamp(date_str, datetime.timezone.utc)
             self.exit_addresses.append((address, date))
           except ValueError:
             if validate:
