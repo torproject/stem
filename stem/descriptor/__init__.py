@@ -108,6 +108,7 @@ import base64
 import codecs
 import collections
 import copy
+import datetime
 import hashlib
 import io
 import os
@@ -683,7 +684,7 @@ def _parse_timestamp_line(keyword: str, attribute: str) -> Callable[['stem.descr
     value = _value(keyword, entries)
 
     try:
-      setattr(descriptor, attribute, stem.util.str_tools._parse_timestamp(value))
+      setattr(descriptor, attribute, stem.util.str_tools._parse_timestamp(value, datetime.timezone.utc))
     except ValueError:
       raise ValueError("Timestamp on %s line wasn't parsable: %s %s" % (keyword, keyword, value))
 

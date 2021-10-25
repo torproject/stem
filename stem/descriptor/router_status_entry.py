@@ -22,6 +22,7 @@ sources...
 """
 
 import binascii
+import datetime
 import io
 
 import stem.exit_policy
@@ -161,7 +162,7 @@ def _parse_r_line(descriptor: 'stem.descriptor.Descriptor', entries: ENTRY_TYPE)
 
   try:
     published = '%s %s' % (r_comp[3], r_comp[4])
-    descriptor.published = stem.util.str_tools._parse_timestamp(published)
+    descriptor.published = stem.util.str_tools._parse_timestamp(published, datetime.timezone.utc)
   except ValueError:
     raise ValueError("Publication time time wasn't parsable: r %s" % value)
 

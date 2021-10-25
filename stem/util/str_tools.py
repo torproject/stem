@@ -26,7 +26,7 @@ import sys
 import stem.util
 import stem.util.enum
 
-from typing import List, Sequence, Tuple, Union, overload
+from typing import List, Optional, Sequence, Tuple, Union, overload
 
 # label conversion tuples of the form...
 # (bits / bytes / seconds, short label, long label)
@@ -481,7 +481,7 @@ def parse_short_time_label(label: str) -> int:
     raise ValueError('Non-numeric value in time entry: %s' % label)
 
 
-def _parse_timestamp(entry: str) -> datetime.datetime:
+def _parse_timestamp(entry: str, tz: Optional[datetime.timezone]) -> datetime.datetime:
   """
   Parses the date and time that in format like like...
 
@@ -490,6 +490,8 @@ def _parse_timestamp(entry: str) -> datetime.datetime:
     2012-11-08 16:48:41
 
   :param entry: timestamp to be parsed
+  :param tz: timezone of the entry (if **None**, the returned **datetime** will
+    be "naive")
 
   :returns: **datetime** for the time represented by the timestamp
 
@@ -504,7 +506,12 @@ def _parse_timestamp(entry: str) -> datetime.datetime:
   except AttributeError:
     raise ValueError('Expected timestamp in format YYYY-MM-DD HH:MM:ss but got ' + entry)
 
-  return datetime.datetime(time[0], time[1], time[2], time[3], time[4], time[5])
+  dt = datetime.datetime(time[0], time[1], time[2], time[3], time[4], time[5])
+
+  if tz != None:
+    dt.replace(tzinfo=tz)
+
+  return dt
 
 
 def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
@@ -541,7 +548,7 @@ def _parse_iso_timestamp(entry: str) -> 'datetime.datetime':
   else:
     raise ValueError("timestamp didn't contain delimeter 'T' between date and time")
 
-  timestamp = _parse_timestamp(timestamp_str)
+  timestamp = _parse_timestamp(timestamp_str, datetime.timezone.utc)
   return timestamp + datetime.timedelta(microseconds = int(microseconds))
 
 

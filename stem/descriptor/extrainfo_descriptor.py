@@ -239,7 +239,7 @@ def _parse_timestamp_and_interval(keyword: str, content: str) -> Tuple[datetime.
     raise ValueError("%s line's interval wasn't a number: %s" % (keyword, line))
 
   try:
-    timestamp = stem.util.str_tools._parse_timestamp(timestamp_str)
+    timestamp = stem.util.str_tools._parse_timestamp(timestamp_str, datetime.timezone.utc)
     return timestamp, int(interval), remainder
   except ValueError:
     raise ValueError("%s line's timestamp wasn't parsable: %s" % (keyword, line))
