@@ -248,7 +248,7 @@ If you're fine with allowing your script to raise exceptions then this can be mo
 """
 
 import calendar
-import collections
+import collections.abc
 import functools
 import inspect
 import io
@@ -2532,7 +2532,7 @@ class Controller(BaseController):
     for param, value in params:
       if isinstance(value, str):
         query_comp.append('%s="%s"' % (param, value.strip()))
-      elif isinstance(value, collections.Iterable):
+      elif isinstance(value, collections.abc.Iterable):
         query_comp.extend(['%s="%s"' % (param, val.strip()) for val in value])
       elif not value:
         query_comp.append(param)
