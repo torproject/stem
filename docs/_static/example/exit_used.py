@@ -1,6 +1,6 @@
 import functools
 
-from stem import StreamStatus
+from stem import CircBuildFlag, StreamStatus
 from stem.control import EventType, Controller
 
 
@@ -20,6 +20,9 @@ def main():
 async def stream_event(controller, event):
   if event.status == StreamStatus.SUCCEEDED and event.circ_id:
     circ = await controller.get_circuit(event.circ_id)
+
+    if CircBuildFlag.IS_INTERNAL in circ.build_flags:
+      return
 
     exit_fingerprint = circ.path[-1][0]
     exit_relay = await controller.get_network_status(exit_fingerprint)
