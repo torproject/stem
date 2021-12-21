@@ -2,74 +2,74 @@ Download
 ========
 
 .. Image Sources:
-   
+
    * PyPI
      Source: http://www.python.org/community/logos/
      License: http://www.python.org/psf/trademarks
-   
+
    * Mac OS
      Source: IconArchive (http://www.iconarchive.com/show/papercut-social-icons-by-graphicloads/Apple-icon.html)
      Author: GraphicLoads, Papercut Social Icons
      License: Freeware
-   
+
    * Debian
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/debian-logo.png
-   
+
    * Ubuntu
      Source: http://logonoid.com/ubuntu-logo/
      Not quite sure of the license, probably covered by...
      http://design.ubuntu.com/brand/ubuntu-logo
-   
+
    * Fedora
      Source: https://en.wikipedia.org/wiki/File:Fedora_logo_and_wordmark.svg
      Author: Unknown
-   
+
    * Red Hat
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/fedora.png
-   
+
    * Gentoo
      Source: https://www.gentoo.org/main/en/name-logo.xml
-   
+
    * Arch Linux
      Source: https://en.wikipedia.org/wiki/File:Archlinux-official-fullcolour.svg
-   
+
    * Slackware
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/slackware.png
-   
+
    * FreeBSD
      Source: https://en.wikipedia.org/wiki/File:Freebsd_logo.svg
      Author: Anton Gural
-   
+
    * OpenBSD
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
      File: NuoveXT/128x128/apps/openbsd.png
-   
+
    * NetBSD
      Source: https://www.netbsd.org/gallery/logos.html
      License: https://www.netbsd.org/about/redistribution.html
-   
+
    * File
      Source: NuoveXT (http://nuovext.pwsp.net/)
      Author: Alexandre Moore (http://sa-ki.deviantart.com/)
      License: GPL v2
-     File: NuoveXT/128x128/mimetypes/gnome-mime-application-x-archive.png 
-   
+     File: NuoveXT/128x128/mimetypes/gnome-mime-application-x-archive.png
+
    * Git
      Source: https://en.wikipedia.org/wiki/File:Git-logo.svg
      Author: Jason Long
      License: CC v3 (A)
-   
+
    * Git (Alternate)
      Source: http://www.dylanbeattie.net/git_logo/
      Author: Dylan Beattie
@@ -213,7 +213,7 @@ Download
 
        ::
 
-           % pkg_add py-stem
+           % pkg_add py3-stem
 
    * - .. image:: /_static/section/download/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
