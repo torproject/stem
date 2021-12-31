@@ -200,7 +200,7 @@ Download
 
        ::
 
-           % pkg_add py-stem
+           % pkg_add py3-stem
 
    * - .. image:: /_static/section/download/netbsd.png
           :target: http://pkgsrc.se/net/py-stem
