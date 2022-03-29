@@ -16,7 +16,7 @@ def main():
 
   for i in range(4):
     t = threading.Thread(target = fibonacci, args = (35,))
-    t.setDaemon(True)
+    t.daemon = True
     t.start()
 
     threads.append(t)

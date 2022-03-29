@@ -278,7 +278,7 @@ def connect(control_port: Tuple[str, Union[str, int]] = ('127.0.0.1', 'default')
 
   loop = asyncio.new_event_loop()
   loop_thread = threading.Thread(target = loop.run_forever, name = 'asyncio')
-  loop_thread.setDaemon(True)
+  loop_thread.daemon = True
   loop_thread.start()
 
   try:

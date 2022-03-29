@@ -173,7 +173,7 @@ class AsyncTest(object):
             name = 'Background test of %s' % self.name,
           )
 
-          self._process.setDaemon(True)
+          self._process.daemon = True
         else:
           self._process = multiprocessing.Process(target = _wrapper, args = (child_pipe, self._runner, self._runner_args))
 

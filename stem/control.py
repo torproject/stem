@@ -964,7 +964,7 @@ class BaseController(Synchronous):
             args = (self, state, change_timestamp)
 
             notice_thread = threading.Thread(target = listener, args = args, name = '%s notification' % state)
-            notice_thread.setDaemon(True)
+            notice_thread.daemon = True
             notice_thread.start()
             self._state_change_threads.append(notice_thread)
           else:
