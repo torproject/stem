@@ -1055,6 +1055,11 @@ class Controller(BaseController):
   @staticmethod
   def from_port(address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
     """
+    convert target address to valid IPv4 address
+    """
+    import socket as tempSocket
+    address = tempSocket.gethostbyname(address)
+    """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
     If the **port** is **'default'** then this checks on both 9051 (default
@@ -2693,6 +2698,11 @@ class Controller(BaseController):
     await self.set_options(hidden_service_options)
 
   async def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
+    """
+    convert target address to valid IPv4 address
+    """
+    import socket as tempSocket
+    target_address = tempSocket.gethostbyname(target_address)
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
