@@ -1053,12 +1053,7 @@ class Controller(BaseController):
   """
 
   @staticmethod
-  def from_port(address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
-    """
-    convert target address to valid IPv4 address
-    """
-    import socket as tempSocket
-    address = tempSocket.gethostbyname(address)
+  def from_port(hostname: Optional[str] = None, address: str = '127.0.0.1', port: Union[int, str] = 'default') -> 'stem.control.Controller':
     """
     Constructs a :class:`~stem.socket.ControlPort` based Controller.
 
@@ -1076,6 +1071,10 @@ class Controller(BaseController):
 
     :raises: :class:`stem.SocketError` if we're unable to establish a connection
     """
+    
+    if hostname is not None:
+      import socket as tempSocket
+      address = tempSocket.gethostbyname(hostname)
 
     import stem.connection
 
@@ -2697,12 +2696,7 @@ class Controller(BaseController):
 
     await self.set_options(hidden_service_options)
 
-  async def create_hidden_service(self, path: str, port: int, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
-    """
-    convert target address to valid IPv4 address
-    """
-    import socket as tempSocket
-    target_address = tempSocket.gethostbyname(target_address)
+  async def create_hidden_service(self, path: str, port: int, hostname: Optional[str] = None, target_address: Optional[str] = None, target_port: Optional[int] = None, auth_type: Optional[str] = None, client_names: Optional[Sequence[str]] = None) -> 'stem.control.CreateHiddenServiceOutput':
     """
     Create a new hidden service. If the directory is already present, a
     new port is added.
@@ -2733,6 +2727,10 @@ class Controller(BaseController):
 
     :raises: :class:`stem.ControllerError` if the call fails
     """
+    
+    if hostname is not None:
+      import socket as tempSocket
+      target_address = tempSocket.gethostbyname(hostname)
 
     if not stem.util.connection.is_valid_port(port):
       raise ValueError("%s isn't a valid port number" % port)
