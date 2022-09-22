@@ -1,0 +1,121 @@
+# core/tor releases:
+# https://gitlab.torproject.org/tpo/core/team/-/wikis/NetworkTeam/CoreTorReleases
+# 0.4.9
+# 0.4.8
+# 0.4.7 stable by March 15, 2022
+# ~~0.4.6 EOL on or after June 15, 2022~~
+# 0.4.5 (LTS) EOL Feb 15, 2023
+# Python stable releases: https://www.python.org/downloads/
+# 3.10 EOL 2026-10, PEP 619
+# 3.9 EOL 2025-10, PEP 596
+# 3.8 EOL 2024-10, PEP 569
+# 3.7 EOL 2023-06-27, PEP 537
+
+variables:
+  BASE_IMAGE: python:3.9
+  RELEASE: tor-nightly-main-bullseye
+  # Without version, the default available in the Debian repository will be
+  # installed.
+  # Specifying which version starts with will install the highest that start
+  # with that version.
+  TOR: tor/tor-nightly-main-bullseye
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+cache:
+  paths:
+    - .cache/pip
+
+image: $BASE_IMAGE
+
+before_script:
+  - "wget https://deb.torproject.org/torproject.org/\
+    A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc"
+  - cat A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc  | apt-key add -
+  - echo deb [signed-by=A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89]
+    http://deb.torproject.org/torproject.org $RELEASE
+    main >> /etc/apt/sources.list
+  - apt update -yqq
+  - apt install -yqq $TOR
+  - pip install tox
+  - python --version
+  - tor --version
+
+python37:
+  variables:
+    BASE_IMAGE: python:3.7
+  script:
+    - tox -e py37
+
+python38:
+  variables:
+    BASE_IMAGE: python:3.8
+  script:
+    - tox -e py38
+
+python39tor045:
+  variables:
+    RELEASE: tor-nightly-0.4.5.x-bullseye
+    TOR: tor/tor-nightly-0.4.5.x-bullseye
+  script:
+    - tox -e py39
+
+python39tormaster:
+  # This will overwrite the default before_script, so need to repeat the
+  # commands
+  before_script:
+    - "wget https://deb.torproject.org/torproject.org/\
+      A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc"
+    - cat A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc  | apt-key add -
+    - echo deb [signed-by=A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89]
+      http://deb.torproject.org/torproject.org $RELEASE
+      main >> /etc/apt/sources.list
+    - apt update -yqq
+    - apt install -yqq $TOR
+    - pip install tox
+    - python --version
+    - tor --version
+    # To build the docs
+    - apt install -yqq texlive-latex-extra
+    - apt install -yqq dvipng
+  script:
+    - tox -e py39
+
+python39torstable:
+  variables:
+    BASE_IMAGE: python:3.9
+    RELEASE: bullseye
+    TOR: tor/bullseye
+  script:
+    - tox -e py39
+
+python310:
+  variables:
+    BASE_IMAGE: python:3.10
+  script:
+    - tox -e py310
+
+release_job:
+  before_script:
+    - echo "Nothing"
+  after_script:
+    - echo "Nothing"
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  only: [tags]
+  script:
+    - echo "Running release job."
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: "Created using release-cli"
+    tag_name: "$CI_COMMIT_TAG"
+    ref: "$CI_COMMIT_TAG"
+    milestones:
+      - "stem: 1.8.1"
+
+pages:
+  before_script:
+    - pip install sphinx
+  script:
+    - cd docs && make html && mv _build/html ../public
+  artifacts:
+    paths:
+      - public
