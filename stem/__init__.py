@@ -507,7 +507,7 @@ import traceback
 import stem.util
 import stem.util.enum
 
-__version__ = '1.8.0-maint'
+__version__ = '1.8.1'
 __author__ = 'Damian Johnson'
 __contact__ = 'atagar@torproject.org'
 __url__ = 'https://stem.torproject.org/'
