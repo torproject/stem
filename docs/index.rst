@@ -1,7 +1,15 @@
 Welcome to Stem!
 ================
 
-Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. With it you can use Tor's `control protocol <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_ to script against the Tor process, or build things such as `Nyx <https://nyx.torproject.org/>`_. Stem's latest version is **1.8** (released December 29th, 2019).
+.. NOTE:: Stem is mostly unmaintained. However, you can still:
+
+   * Open issues at https://github.com/torproject/stem/issues
+   * Work on an issue and open a pull request at https://github.com/torproject/stem/pulls
+   * Contact us (via tor-dev mailing list or gk at torproject dot org) to request
+     a new bugfix release including some patches in the Stem's `master` branch or
+     pull requests.
+
+Stem is a Python controller library for `Tor <https://www.torproject.org/>`_. With it you can use Tor's `control protocol <https://gitweb.torproject.org/torspec.git/tree/control-spec.txt>`_ to script against the Tor process, or build things such as `Nyx <https://nyx.torproject.org/>`_. Stem's latest version is **1.8.1** (released September, 2022).
 
 .. Main Stem Logo
    Source: http://www.wpclipart.com/plants/assorted/P/plant_stem.png.html
