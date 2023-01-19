@@ -92,7 +92,10 @@ class Synchronous(object):
           setattr(self, name, functools.partial(self._run_async_method, name))
 
       Synchronous.start(self)
-      asyncio.run_coroutine_threadsafe(asyncio.coroutine(self.__ainit__)(), self._loop).result()
+
+      async def convert_ainit():
+        return self.__ainit__()
+      asyncio.run_coroutine_threadsafe(convert_ainit(), self._loop).result()
 
   def __ainit__(self):
     """
