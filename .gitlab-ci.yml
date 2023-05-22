@@ -6,6 +6,7 @@
 # ~~0.4.6 EOL on or after June 15, 2022~~
 # ~~0.4.5 (LTS) EOL Feb 15, 2023~~
 # Python stable releases: https://www.python.org/downloads/
+# 3.11 EOL 2027-10, PEP 664
 # 3.10 EOL 2026-10, PEP 619
 # 3.9 EOL 2025-10, PEP 596
 # 3.8 EOL 2024-10, PEP 569
@@ -87,6 +88,12 @@ python310:
   script:
     - tox -e py310
 
+python311:
+  variables:
+    BASE_IMAGE: python:3.11
+  script:
+    - tox -e py311
+
 release_job:
   before_script:
     - echo "Nothing"
@@ -102,7 +109,7 @@ release_job:
     tag_name: "$CI_COMMIT_TAG"
     ref: "$CI_COMMIT_TAG"
     milestones:
-      - "stem: 1.8.1"
+      - "stem: 1.8.2"
 
 pages:
   before_script:
