@@ -3025,7 +3025,7 @@ class Controller(BaseController):
     .. versionchanged:: 1.7.0
        Added the timeout and max_streams arguments.
 
-    .. versionchanged:: 1.8.1
+    .. versionchanged:: 1.8.2
        Added the client_auth_v3 argument.
 
     :param int,list,dict ports: hidden service port(s) or mapping of hidden
