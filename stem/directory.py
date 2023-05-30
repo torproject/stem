@@ -372,7 +372,9 @@ class Fallback(Directory):
     self.header = OrderedDict(header) if header else OrderedDict()
 
   @staticmethod
-  def from_cache(path = FALLBACK_CACHE_PATH):
+  def from_cache(path = None):
+    if path is None:
+        path = FALLBACK_CACHE_PATH
     conf = stem.util.conf.Config()
     conf.load(path)
     headers = OrderedDict([(k.split('.', 1)[1], conf.get(k)) for k in conf.keys() if k.startswith('header.')])
