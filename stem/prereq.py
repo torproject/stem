@@ -139,7 +139,7 @@ def is_crypto_available(ed25519 = False):
   from stem.util import log
 
   try:
-    from cryptography.utils import int_from_bytes, int_to_bytes
+    from cryptography.utils import int_to_bytes
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.backends.openssl.backend import backend
     from cryptography.hazmat.primitives.asymmetric import rsa

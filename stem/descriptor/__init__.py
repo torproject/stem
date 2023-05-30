@@ -1052,14 +1052,14 @@ class Descriptor(object):
 
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives.serialization import load_der_public_key
-    from cryptography.utils import int_to_bytes, int_from_bytes
+    from cryptography.utils import int_to_bytes
 
     key = load_der_public_key(_bytes_for_block(signing_key), default_backend())
     modulus = key.public_numbers().n
     public_exponent = key.public_numbers().e
 
     sig_as_bytes = _bytes_for_block(signature)
-    sig_as_long = int_from_bytes(sig_as_bytes, byteorder='big')  # convert signature to an int
+    sig_as_long = int.from_bytes(sig_as_bytes, byteorder='big')  # convert signature to an int
     blocksize = len(sig_as_bytes)  # 256B for NetworkStatusDocuments, 128B for others
 
     # use the public exponent[e] & the modulus[n] to decrypt the int
