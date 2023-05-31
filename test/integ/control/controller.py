@@ -741,6 +741,29 @@ class TestController(unittest.TestCase):
   @test.require.controller
   @test.require.version(stem.version.Requirement.ONION_SERVICE_AUTH_ADD)
   @async_test
+  async def test_with_ephemeral_hidden_services_v3_client_auth_multiple_keys(self):
+    """
+    Exercises creating v3 ephemeral hidden services with ClientAuthV3.
+    """
+
+    runner = test.runner.get_runner()
+
+    async with await runner.get_tor_controller() as controller:
+      client_auth_v3_keys = ['FGTORMIDKR7T2PR632HSHLWA4G6HF5TCWSGMHDUU4LWBEFTAVYQQ', 'IIFY5QJBTQDEU5IUBZRQVZV3DBWRKZLDYXSRUP7WYYDKSBPCQVVQ']
+      response = await controller.create_ephemeral_hidden_service(4567, key_content = 'ED25519-V3', client_auth_v3=client_auth_v3_keys)
+      self.assertEqual([response.service_id], await controller.list_ephemeral_hidden_services())
+      self.assertTrue(response.private_key is not None)
+      self.assertEqual('ED25519-V3', response.private_key_type)
+      self.assertEqual({}, response.client_auth)
+
+      # drop the service
+
+      self.assertEqual(True, await controller.remove_ephemeral_hidden_service(response.service_id))
+      self.assertEqual([], await controller.list_ephemeral_hidden_services())
+
+  @test.require.controller
+  @test.require.version(stem.version.Requirement.ONION_SERVICE_AUTH_ADD)
+  @async_test
   async def test_with_ephemeral_hidden_services_v3_client_auth_invalid(self):
     """
     Exercises creating v3 ephemeral hidden services with ClientAuthV3 but
