@@ -2891,7 +2891,7 @@ class Controller(BaseController):
 
     return [r for r in result if r]  # drop any empty responses (GETINFO is blank if unset)
 
-  async def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None, client_auth_v3: Optional[str] = None) -> stem.response.add_onion.AddOnionResponse:
+  async def create_ephemeral_hidden_service(self, ports: Union[int, Sequence[int], Mapping[int, str]], key_type: str = 'NEW', key_content: str = 'BEST', discard_key: bool = False, detached: bool = False, await_publication: bool = False, timeout: Optional[float] = None, basic_auth: Optional[Mapping[str, str]] = None, max_streams: Optional[int] = None, client_auth_v3: Optional[Union[str, Sequence[str]]] = None) -> stem.response.add_onion.AddOnionResponse:
     """
     Creates a new hidden service. Unlike
     :func:`~stem.control.Controller.create_hidden_service` this style of
@@ -2994,7 +2994,7 @@ class Controller(BaseController):
     :param basic_auth: required user credentials to access a v2 service
     :param max_streams: maximum number of streams the hidden service will
       accept, unlimited if zero or not set
-    :param str client_auth_v3: base32-encoded public key for **version 3**
+    :param str client_auth_v3: base32-encoded public key(s) for **version 3**
       onion services that require client authentication
 
     :returns: :class:`~stem.response.add_onion.AddOnionResponse` with the response
@@ -3063,8 +3063,13 @@ class Controller(BaseController):
         else:
           request += ' ClientAuth=%s' % client_name
 
-    if client_auth_v3 is not None:
+    if isinstance(client_auth_v3, str):
       request += ' ClientAuthV3=%s' % client_auth_v3
+    elif isinstance(client_auth_v3, list):
+      for v3key in client_auth_v3:
+        request += ' ClientAuthV3=%s' % v3key
+    else:
+      raise ValueError("The 'client_auth_v3' argument of create_ephemeral_hidden_service() needs to be a str or list")
 
     response = stem.response._convert_to_add_onion(stem.response._convert_to_add_onion(await self.msg(request)))
 
