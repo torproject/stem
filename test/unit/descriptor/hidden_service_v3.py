@@ -269,7 +269,7 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
       pubkey_b64 = base64.b64encode(pubkey)
       return stem.util.str_tools._to_unicode(pubkey_b64)
 
-    from cryptography.hazmat.backends.openssl.x25519 import X25519PublicKey
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
     intro_point = InnerLayer(INNER_LAYER_STR).introduction_points[0]
 
