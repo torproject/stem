@@ -4,7 +4,7 @@
 # 0.4.8
 # 0.4.7 stable by March 15, 2022
 # ~~0.4.6 EOL on or after June 15, 2022~~
-# 0.4.5 (LTS) EOL Feb 15, 2023
+# ~~0.4.5 (LTS) EOL Feb 15, 2023~~
 # Python stable releases: https://www.python.org/downloads/
 # 3.10 EOL 2026-10, PEP 619
 # 3.9 EOL 2025-10, PEP 596
@@ -51,13 +51,6 @@ python38:
     BASE_IMAGE: python:3.8
   script:
     - tox -e py38
-
-python39tor045:
-  variables:
-    RELEASE: tor-nightly-0.4.5.x-bullseye
-    TOR: tor/tor-nightly-0.4.5.x-bullseye
-  script:
-    - tox -e py39
 
 python39tormaster:
   # This will overwrite the default before_script, so need to repeat the
