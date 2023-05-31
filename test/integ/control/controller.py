@@ -962,7 +962,11 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      self.assertEqual([test.runner.ORPORT], controller.get_ports(Listener.OR))
+      # `controller.get_ports(Listener.OR))` returns `[1113, 1113]`
+      self.assertEqual(
+        [test.runner.ORPORT, test.runner.ORPORT],
+        controller.get_ports(Listener.OR)
+      )
       self.assertEqual([], controller.get_ports(Listener.DIR))
       self.assertEqual([test.runner.SOCKS_PORT], controller.get_ports(Listener.SOCKS))
       self.assertEqual([], controller.get_ports(Listener.TRANS))
@@ -983,7 +987,11 @@ class TestController(unittest.TestCase):
     runner = test.runner.get_runner()
 
     with runner.get_tor_controller() as controller:
-      self.assertEqual([('0.0.0.0', test.runner.ORPORT)], controller.get_listeners(Listener.OR))
+      # `controller.get_listeners(Listener.OR)` returns `[('0.0.0.0', 1113), ('::', 1113)]`
+      self.assertEqual(
+        [('0.0.0.0', test.runner.ORPORT), ("::", test.runner.ORPORT)],
+        controller.get_listeners(Listener.OR)
+      )
       self.assertEqual([], controller.get_listeners(Listener.DIR))
       self.assertEqual([('127.0.0.1', test.runner.SOCKS_PORT)], controller.get_listeners(Listener.SOCKS))
       self.assertEqual([], controller.get_listeners(Listener.TRANS))
