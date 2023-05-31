@@ -306,7 +306,14 @@ class ModuleVersion(Task):
       if prereq_check is None or prereq_check():
         for module in modules:
           if HAS_IMPORTLIB and stem.util.test_tools._module_exists(module):
-            return importlib.import_module(module).__version__
+            # unittest.mock has no attribute `__version__`: just use empty
+            # string for native modules' version.
+            try:
+              version = importlib.import_module(module).__version__
+            except Exception:
+              version = ''
+            finally:
+              return version
 
       return 'missing'
 
