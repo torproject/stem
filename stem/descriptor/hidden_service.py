@@ -286,7 +286,7 @@ class IntroductionPointV3(collections.namedtuple('IntroductionPointV3', ['link_s
     lines = []
 
     link_count = stem.client.datatype.Size.CHAR.pack(len(self.link_specifiers))
-    link_specifiers = link_count + b''.join([l.pack() for l in self.link_specifiers])
+    link_specifiers = link_count + b''.join([link.pack() for link in self.link_specifiers])
     lines.append('introduction-point %s' % stem.util.str_tools._to_unicode(base64.b64encode(link_specifiers)))
     lines.append('onion-key ntor %s' % self.onion_key_raw)
     lines.append('auth-key\n' + self.auth_key_cert.to_base64(pem = True))
