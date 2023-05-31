@@ -41,29 +41,12 @@ arithmetic, so we cannot handle secrets without risking their disclosure.
 
 import hashlib
 import operator
-import sys
-
 
 __version__ = "1.0.dev0"
 
-
-# Useful for very coarse version differentiation.
-PY3 = sys.version_info[0] == 3
-
-if PY3:
-    indexbytes = operator.getitem
-    intlist2bytes = bytes
-    int2byte = operator.methodcaller("to_bytes", 1, "big")
-else:
-    int2byte = chr
-    range = xrange
-
-    def indexbytes(buf, i):
-        return ord(buf[i])
-
-    def intlist2bytes(l):
-        return b"".join(chr(c) for c in l)
-
+indexbytes = operator.getitem
+intlist2bytes = bytes
+int2byte = operator.methodcaller("to_bytes", 1, "big")
 
 b = 256
 q = 2 ** 255 - 19
