@@ -216,15 +216,15 @@ Download
            % pkg_add py37-stem
 
    * - .. image:: /_static/section/download/git.png
-          :target: https://gitweb.torproject.org/stem.git
+          :target: https://gitlab.torproject.org/tpo/network-health/stem.git
 
      - .. image:: /_static/label/source_repository.png
-          :target: https://gitweb.torproject.org/stem.git
+          :target: https://gitlab.torproject.org/tpo/network-health/stem.git
 
        For those wanting to live on the bleeding edge or contribute to Stem,
        Stem's git repository can be fetched with...
 
        ::
 
-         % git clone https://git.torproject.org/stem.git
+         % git clone https://gitlab.torproject.org/tpo/network-health/stem.git
 

@@ -541,7 +541,7 @@ help! I'm **atagar** on `oftc <http://www.oftc.net/>`_ and also available
 To start hacking on Stem please do the following and don't hesitate to let me
 know if you get stuck or would like to discuss anything!
 
-#. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://git.torproject.org/stem.git**
+#. Clone our `git <http://git-scm.com/>`_ repository: **git clone https://gitlab.torproject.org/tpo/network-health/stem.git**
 #. Get our test dependencies: **sudo pip install mock pycodestyle pyflakes**.
 #. Find a `bug or feature <https://github.com/torproject/stem/issues/>`_ that sounds interesting.
 #. When you have something that you would like to contribute back do the following...
