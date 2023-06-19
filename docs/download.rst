@@ -245,16 +245,16 @@ Download
           % pip install stem-1.7.1.tar.gz
 
    * - .. image:: /_static/section/download/git.png
-          :target: https://gitweb.torproject.org/stem.git
+          :target: https://gitlab.torproject.org/tpo/network-health/stem.git
 
      - .. _source:
        .. image:: /_static/label/source_repository.png
-          :target: https://gitweb.torproject.org/stem.git
+          :target: https://gitlab.torproject.org/tpo/network-health/stem.git
 
        For those who want to live on the bleeding edge or contribute, you can
        download Stem's git repository with...
 
        ::
 
-         % git clone https://git.torproject.org/stem.git
+         % git clone https://gitlab.torproject.org/tpo/network-health/stem.git
 
