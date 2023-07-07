@@ -1302,9 +1302,9 @@ class InnerLayer(Descriptor):
   @classmethod
   def content(cls: Type['stem.descriptor.hidden_service.InnerLayer'], attr: Optional[Mapping[str, str]] = None, exclude: Sequence[str] = (), introduction_points: Optional[Sequence['stem.descriptor.hidden_service.IntroductionPointV3']] = None) -> bytes:
     if introduction_points:
-      suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
+      suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points)) + '\n'
     else:
-      suffix = ''
+      suffix = '\n'
 
     return _descriptor_content(attr, exclude, (
       ('create2-formats', '2'),
