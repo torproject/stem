@@ -1313,9 +1313,9 @@ class InnerLayer(Descriptor):
   @classmethod
   def content(cls, attr = None, exclude = (), sign = False, introduction_points = None):
     if introduction_points:
-      suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points))
+      suffix = '\n' + '\n'.join(map(IntroductionPointV3.encode, introduction_points)) + '\n'
     else:
-      suffix = ''
+      suffix = '\n'
 
     return _descriptor_content(attr, exclude, (
       ('create2-formats', '2'),
