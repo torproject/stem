@@ -58,7 +58,7 @@ FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.
 AUTHORITY_NAME = re.compile('"(\\S+) orport=(\\d+) .*"')
 AUTHORITY_V3IDENT = re.compile('"v3ident=([\\dA-F]{40}) "')
 AUTHORITY_IPV6 = re.compile('"ipv6=\\[([\\da-f:]+)\\]:(\\d+) "')
-AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{49})",')
+AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{40,49})",')
 
 FALLBACK_DIV = '/* ===== */'
 FALLBACK_MAPPING = re.compile('/\\*\\s+(\\S+)=(\\S*)\\s+\\*/')
