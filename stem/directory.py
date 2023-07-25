@@ -56,7 +56,7 @@ try:
 except ImportError:
   from stem.util.ordereddict import OrderedDict
 
-GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
+GITLAB_AUTHORITY_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/HEAD/src/app/config/auth_dirs.inc'
 GITLAB_FALLBACK_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
@@ -265,14 +265,14 @@ class Authority(Directory):
   @staticmethod
   def from_remote(timeout = 60):
     try:
-      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITLAB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise IOError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
-      message = "Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc)
-      raise stem.DownloadFailed(GITWEB_AUTHORITY_URL, exc, stacktrace, message)
+      message = "Unable to download tor's directory authorities from %s: %s" % (GITLAB_AUTHORITY_URL, exc)
+      raise stem.DownloadFailed(GITLAB_AUTHORITY_URL, exc, stacktrace, message)
 
     # Entries look like...
     #
