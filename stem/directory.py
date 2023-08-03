@@ -51,7 +51,7 @@ import stem.util.conf
 from stem.util import connection, str_tools, tor_tools
 from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Pattern, Sequence, Tuple, Union
 
-GITLAB_AUTHORITY_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/HEAD/src/app/config/auth_dirs.inc'
+GITLAB_AUTHORITY_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/auth_dirs.inc'
 GITLAB_FALLBACK_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
