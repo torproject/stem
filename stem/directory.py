@@ -127,21 +127,22 @@ class Directory(object):
 
   :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
-  :var int dir_port: port on which directory information is available
+  :var int dir_port: port on which directory information is available, or
+    **None** if it doesn't have one
   :var str fingerprint: relay fingerprint
   :var str nickname: relay nickname
   :var tuple orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address: str, or_port: Union[int, str], dir_port: Union[int, str], fingerprint: str, nickname: str, orport_v6: Tuple[str, int]) -> None:
+  def __init__(self, address: str, or_port: Union[int, str], dir_port: Optional[Union[int, str]], fingerprint: str, nickname: str, orport_v6: Tuple[str, int]) -> None:
     identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
 
     if not connection.is_valid_ipv4_address(address):
       raise ValueError('%s has an invalid IPv4 address: %s' % (identifier, address))
     elif not connection.is_valid_port(or_port):
       raise ValueError('%s has an invalid ORPort: %s' % (identifier, or_port))
-    elif not connection.is_valid_port(dir_port):
+    elif dir_port and not connection.is_valid_port(dir_port):
       raise ValueError('%s has an invalid DirPort: %s' % (identifier, dir_port))
     elif not tor_tools.is_valid_fingerprint(fingerprint):
       raise ValueError('%s has an invalid fingerprint: %s' % (identifier, fingerprint))
@@ -158,7 +159,7 @@ class Directory(object):
 
     self.address = address
     self.or_port = int(or_port)
-    self.dir_port = int(dir_port)
+    self.dir_port = int(dir_port) if dir_port else None
     self.fingerprint = fingerprint
     self.nickname = nickname
     self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
@@ -379,11 +380,15 @@ class Fallback(Directory):
         orport_v6 = (attr['orport6_address'], int(attr['orport6_port']))
       else:
         orport_v6 = None
+      if attr['dir_port'] != 'None':
+          dir_port = int(attr['dir_port'])
+      else:
+          dir_port = None
 
       results[fingerprint] = Fallback(
         address = attr['address'],
         or_port = int(attr['or_port']),
-        dir_port = int(attr['dir_port']),
+        dir_port = dir_port,
         fingerprint = fingerprint,
         nickname = attr['nickname'],
         has_extrainfo = attr['has_extrainfo'] == 'true',
