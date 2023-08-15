@@ -73,10 +73,13 @@ AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{49})",')
 FALLBACK_DIV = '/* ===== */'
 FALLBACK_MAPPING = re.compile('/\\*\\s+(\\S+)=(\\S*)\\s+\\*/')
 
-FALLBACK_ADDR = re.compile('"([\\d\\.]+):(\\d+) orport=(\\d+) id=([\\dA-F]{40}).*')
+FALLBACK_ADDR = re.compile('"([\\d\\.]+)(?::(\\d+))? orport=(\\d+) id=([\\dA-F]{40}).*')
 FALLBACK_NICKNAME = re.compile('/\\* nickname=(\\S+) \\*/')
 FALLBACK_EXTRAINFO = re.compile('/\\* extrainfo=([0-1]) \\*/')
 FALLBACK_IPV6 = re.compile('" ipv6=\\[([\\da-f:]+)\\]:(\\d+)"')
+FALLBACK_TYPE_FIELD = "/* type=fallback */"
+# hard-coded header, cf. https://gitlab.torproject.org/tpo/core/fallback-scripts/-/blob/main/src/main.rs#L16
+FALLBACK_GENERATED = re.compile("//[\n\r]{,2}// Generated on: .+[\n\r]{,2}[\n\r]{,2}")
 
 
 def _match_with(lines, regexes, required = None):
@@ -430,40 +433,64 @@ class Fallback(Directory):
       message = "Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc)
       raise stem.DownloadFailed(GITWEB_FALLBACK_URL, exc, stacktrace, message)
 
+    # process header
+    # example of current header
+    #/* type=fallback */
+    #/* version=4.0.0 */
+    #/* timestamp=20210412000000 */
+    #/* source=offer-list */
+    #//
+    #// Generated on: Fri, 04 Aug 2023 13:52:18 +0000
+    #
+
     # header metadata
 
-    if lines[0] != '/* type=fallback */':
-      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
+    if lines[0] != FALLBACK_TYPE_FIELD:
+      raise IOError('%s does not have a type field indicating it is fallback directory metadata' % GITLAB_FALLBACK_URL)
+
 
     header = {}
 
-    for line in Fallback._pop_section(lines):
+    for _ in range(4):
+      line = lines.pop(0)
       mapping = FALLBACK_MAPPING.match(line)
 
       if mapping:
         header[mapping.group(1)] = mapping.group(2)
       else:
         raise IOError('Malformed fallback directory header line: %s' % line)
+    # skip the next two lines
+    if FALLBACK_GENERATED.match(os.linesep.join(lines[0:2])):
+        lines = lines[2:]
+    else:
+        raise IOError('Malformed header: %s' % os.linesep.join(lines[0:2]))
 
-    Fallback._pop_section(lines)  # skip human readable comments
+    # process entries
 
     # Entries look like...
-    #
-    # "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-    # " ipv6=[2a01:4f8:162:51e2::2]:9001"
-    # /* nickname=rueckgrat */
-    # /* extrainfo=1 */
+
+    # without IPv6
+    #"159.89.87.126 orport=143 id=9D07DFA6472B80277798D73234348CEF02F2E7D5"
+    #/* nickname=incircuitryrelay */
+    #/* extrainfo=0 */
+
+    # with IPv6
+    #"185.220.101.209 orport=443 id=6D6EC2A2E2ED8BFF2D4834F8D669D82FC2A9FA8D"
+    #" ipv6=[2a0b:f4c2:2:1::209]:443"
+    #/* nickname=ForPrivacyNET */
+    #/* extrainfo=0 */
 
     try:
       results = {}
 
       for matches in _directory_entries(lines, Fallback._pop_section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,)):
-        address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]
+        address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]  # type: ignore
+        dir_port = int(dir_port) if dir_port else None
 
         results[fingerprint] = Fallback(
           address = address,
           or_port = int(or_port),
-          dir_port = int(dir_port),
+          dir_port = dir_port,
           fingerprint = fingerprint,
           nickname = matches.get(FALLBACK_NICKNAME),
           has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1',
