@@ -41,6 +41,7 @@ as follows...
 import os
 import re
 import sys
+import urllib.request
 
 import stem
 import stem.util
@@ -55,14 +56,8 @@ try:
 except ImportError:
   from stem.util.ordereddict import OrderedDict
 
-try:
-  # account for urllib's change between python 2.x and 3.x
-  import urllib.request as urllib
-except ImportError:
-  import urllib2 as urllib
-
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
-GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
+GITLAB_FALLBACK_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\\S+) orport=(\\d+) .*"')
@@ -270,7 +265,7 @@ class Authority(Directory):
   @staticmethod
   def from_remote(timeout = 60):
     try:
-      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise IOError('no content')
@@ -424,14 +419,14 @@ class Fallback(Directory):
   @staticmethod
   def from_remote(timeout = 60):
     try:
-      lines = str_tools._to_unicode(urllib.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITLAB_FALLBACK_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise IOError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
-      message = "Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc)
-      raise stem.DownloadFailed(GITWEB_FALLBACK_URL, exc, stacktrace, message)
+      message = "Unable to download tor's fallback directories from %s: %s" % (GITLAB_FALLBACK_URL, exc)
+      raise stem.DownloadFailed(GITLAB_FALLBACK_URL, exc, stacktrace, message)
 
     # process header
     # example of current header
