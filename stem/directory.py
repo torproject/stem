@@ -414,7 +414,7 @@ class Fallback(Directory):
       raise stem.DownloadFailed(GITLAB_FALLBACK_URL, exc, stacktrace, message)
 
     # process header
-    # example of current header
+    # example of header as of August 4th 2023
     #/* type=fallback */
     #/* version=4.0.0 */
     #/* timestamp=20210412000000 */
@@ -431,19 +431,18 @@ class Fallback(Directory):
 
     header = {}
 
-    for _ in range(4):
-      line = lines.pop(0)
+    for line in Fallback._pop_header(lines):
       mapping = FALLBACK_MAPPING.match(line)
 
       if mapping:
         header[mapping.group(1)] = mapping.group(2)
       else:
         raise OSError('Malformed fallback directory header line: %s' % line)
-    # skip the next two lines
-    if FALLBACK_GENERATED.match(os.linesep.join(lines[0:2])):
+    # skip the generation timestamp
+    if len(lines) >= 2 and FALLBACK_GENERATED.fullmatch(os.linesep.join(lines[0:2])):
         lines = lines[2:]
     else:
-        raise OSError('Malformed header: %s' % os.linesep.join(lines[0:2]))
+        raise OSError('Malformed header: %s' % os.linesep.join(lines[0:min(len(lines),2)]))
 
     # process entries
 
@@ -481,6 +480,16 @@ class Fallback(Directory):
       raise OSError(str(exc))
 
     return results
+
+  @staticmethod
+  def _pop_header(lines: List[str]) -> List[str]:
+    """Provides lines up to the generation timestamp part."""
+    header_lines = []
+    while lines:
+      if lines[0] == "//":
+        break
+      header_lines.append(lines.pop(0))
+    return header_lines
 
   @staticmethod
   def _pop_section(lines: List[str]) -> List[str]:
