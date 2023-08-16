@@ -376,22 +376,18 @@ class Fallback(Directory):
         key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
-        if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
+        if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port', 'dir_port'):
           raise OSError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
 
       if attr['orport6_address'] and attr['orport6_port']:
         orport_v6 = (attr['orport6_address'], int(attr['orport6_port']))
       else:
         orport_v6 = None
-      if attr['dir_port'] != 'None':
-          dir_port = int(attr['dir_port'])
-      else:
-          dir_port = None
 
       results[fingerprint] = Fallback(
         address = attr['address'],
         or_port = int(attr['or_port']),
-        dir_port = dir_port,
+        dir_port = attr['dir_port'],
         fingerprint = fingerprint,
         nickname = attr['nickname'],
         has_extrainfo = attr['has_extrainfo'] == 'true',
@@ -535,7 +531,8 @@ class Fallback(Directory):
       fingerprint = directory.fingerprint
       conf.set('%s.address' % fingerprint, directory.address)
       conf.set('%s.or_port' % fingerprint, str(directory.or_port))
-      conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+      if directory.dir_port:
+        conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
       conf.set('%s.nickname' % fingerprint, directory.nickname)
       conf.set('%s.has_extrainfo' % fingerprint, 'true' if directory.has_extrainfo else 'false')
 
