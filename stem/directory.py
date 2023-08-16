@@ -52,7 +52,7 @@ from stem.util import connection, str_tools, tor_tools
 from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Pattern, Sequence, Tuple, Union
 
 GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
-GITWEB_FALLBACK_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/fallback_dirs.inc'
+GITLAB_FALLBACK_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\\S+) orport=(\\d+) .*"')
@@ -63,10 +63,13 @@ AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{49})",')
 FALLBACK_DIV = '/* ===== */'
 FALLBACK_MAPPING = re.compile('/\\*\\s+(\\S+)=(\\S*)\\s+\\*/')
 
-FALLBACK_ADDR = re.compile('"([\\d\\.]+):(\\d+) orport=(\\d+) id=([\\dA-F]{40}).*')
+FALLBACK_ADDR = re.compile('"([\\d\\.]+)(?::(\\d+))? orport=(\\d+) id=([\\dA-F]{40}).*')
 FALLBACK_NICKNAME = re.compile('/\\* nickname=(\\S+) \\*/')
 FALLBACK_EXTRAINFO = re.compile('/\\* extrainfo=([0-1]) \\*/')
 FALLBACK_IPV6 = re.compile('" ipv6=\\[([\\da-f:]+)\\]:(\\d+)"')
+FALLBACK_TYPE_FIELD = "/* type=fallback */"
+# hard-coded header, cf. https://gitlab.torproject.org/tpo/core/fallback-scripts/-/blob/main/src/main.rs#L16
+FALLBACK_GENERATED = re.compile("//[\n\r]{,2}// Generated on: .+[\n\r]{,2}[\n\r]{,2}")
 
 
 def _match_with(lines: Sequence[str], regexes: Sequence[Pattern], required: Optional[Sequence[Pattern]] = None) -> Dict[Pattern, Union[str, List[str]]]:
@@ -127,21 +130,22 @@ class Directory(object):
 
   :var str address: IPv4 address of the directory
   :var int or_port: port on which the relay services relay traffic
-  :var int dir_port: port on which directory information is available
+  :var int dir_port: port on which directory information is available, or
+    **None** if it doesn't have one
   :var str fingerprint: relay fingerprint
   :var str nickname: relay nickname
   :var tuple orport_v6: **(address, port)** tuple for the directory's IPv6
     ORPort, or **None** if it doesn't have one
   """
 
-  def __init__(self, address: str, or_port: Union[int, str], dir_port: Union[int, str], fingerprint: str, nickname: str, orport_v6: Tuple[str, int]) -> None:
+  def __init__(self, address: str, or_port: Union[int, str], dir_port: Optional[Union[int, str]], fingerprint: str, nickname: str, orport_v6: Tuple[str, int]) -> None:
     identifier = '%s (%s)' % (fingerprint, nickname) if nickname else fingerprint
 
     if not connection.is_valid_ipv4_address(address):
       raise ValueError('%s has an invalid IPv4 address: %s' % (identifier, address))
     elif not connection.is_valid_port(or_port):
       raise ValueError('%s has an invalid ORPort: %s' % (identifier, or_port))
-    elif not connection.is_valid_port(dir_port):
+    elif dir_port and not connection.is_valid_port(dir_port):
       raise ValueError('%s has an invalid DirPort: %s' % (identifier, dir_port))
     elif not tor_tools.is_valid_fingerprint(fingerprint):
       raise ValueError('%s has an invalid fingerprint: %s' % (identifier, fingerprint))
@@ -158,7 +162,7 @@ class Directory(object):
 
     self.address = address
     self.or_port = int(or_port)
-    self.dir_port = int(dir_port)
+    self.dir_port = int(dir_port) if dir_port else None
     self.fingerprint = fingerprint
     self.nickname = nickname
     self.orport_v6 = (orport_v6[0], int(orport_v6[1])) if orport_v6 else None
@@ -372,7 +376,7 @@ class Fallback(Directory):
         key = '%s.%s' % (fingerprint, attr_name)
         attr[attr_name] = conf.get(key)
 
-        if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port'):
+        if not attr[attr_name] and attr_name not in ('nickname', 'has_extrainfo', 'orport6_address', 'orport6_port', 'dir_port'):
           raise OSError("'%s' is missing from %s" % (key, FALLBACK_CACHE_PATH))
 
       if attr['orport6_address'] and attr['orport6_port']:
@@ -383,7 +387,7 @@ class Fallback(Directory):
       results[fingerprint] = Fallback(
         address = attr['address'],
         or_port = int(attr['or_port']),
-        dir_port = int(attr['dir_port']),
+        dir_port = attr['dir_port'],
         fingerprint = fingerprint,
         nickname = attr['nickname'],
         has_extrainfo = attr['has_extrainfo'] == 'true',
@@ -396,49 +400,72 @@ class Fallback(Directory):
   @staticmethod
   def from_remote(timeout: int = 60) -> Dict[str, 'stem.directory.Fallback']:
     try:
-      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_FALLBACK_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITLAB_FALLBACK_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise OSError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
-      message = "Unable to download tor's fallback directories from %s: %s" % (GITWEB_FALLBACK_URL, exc)
-      raise stem.DownloadFailed(GITWEB_FALLBACK_URL, exc, stacktrace, message)
+      message = "Unable to download tor's fallback directories from %s: %s" % (GITLAB_FALLBACK_URL, exc)
+      raise stem.DownloadFailed(GITLAB_FALLBACK_URL, exc, stacktrace, message)
+
+    # process header
+    # example of header as of August 4th 2023
+    #/* type=fallback */
+    #/* version=4.0.0 */
+    #/* timestamp=20210412000000 */
+    #/* source=offer-list */
+    #//
+    #// Generated on: Fri, 04 Aug 2023 13:52:18 +0000
+    #
 
     # header metadata
 
-    if lines[0] != '/* type=fallback */':
-      raise OSError('%s does not have a type field indicating it is fallback directory metadata' % GITWEB_FALLBACK_URL)
+    if lines[0] != FALLBACK_TYPE_FIELD:
+      raise OSError('%s does not have a type field indicating it is fallback directory metadata' % GITLAB_FALLBACK_URL)
+
 
     header = {}
 
-    for line in Fallback._pop_section(lines):
+    for line in Fallback._pop_header(lines):
       mapping = FALLBACK_MAPPING.match(line)
 
       if mapping:
         header[mapping.group(1)] = mapping.group(2)
       else:
         raise OSError('Malformed fallback directory header line: %s' % line)
+    # skip the generation timestamp
+    if len(lines) >= 2 and FALLBACK_GENERATED.fullmatch(os.linesep.join(lines[0:2])):
+        lines = lines[2:]
+    else:
+        raise OSError('Malformed header: %s' % os.linesep.join(lines[0:min(len(lines),2)]))
 
-    Fallback._pop_section(lines)  # skip human readable comments
+    # process entries
 
     # Entries look like...
-    #
-    # "5.9.110.236:9030 orport=9001 id=0756B7CD4DFC8182BE23143FAC0642F515182CEB"
-    # " ipv6=[2a01:4f8:162:51e2::2]:9001"
-    # /* nickname=rueckgrat */
-    # /* extrainfo=1 */
+
+    # without IPv6
+    #"159.89.87.126 orport=143 id=9D07DFA6472B80277798D73234348CEF02F2E7D5"
+    #/* nickname=incircuitryrelay */
+    #/* extrainfo=0 */
+
+    # with IPv6
+    #"185.220.101.209 orport=443 id=6D6EC2A2E2ED8BFF2D4834F8D669D82FC2A9FA8D"
+    #" ipv6=[2a0b:f4c2:2:1::209]:443"
+    #/* nickname=ForPrivacyNET */
+    #/* extrainfo=0 */
 
     try:
       results = {}
 
       for matches in _directory_entries(lines, Fallback._pop_section, (FALLBACK_ADDR, FALLBACK_NICKNAME, FALLBACK_EXTRAINFO, FALLBACK_IPV6), required = (FALLBACK_ADDR,)):
         address, dir_port, or_port, fingerprint = matches[FALLBACK_ADDR]  # type: ignore
+        dir_port = int(dir_port) if dir_port else None
 
         results[fingerprint] = Fallback(
           address = address,
           or_port = int(or_port),
-          dir_port = int(dir_port),
+          dir_port = dir_port,
           fingerprint = fingerprint,
           nickname = matches.get(FALLBACK_NICKNAME),  # type: ignore
           has_extrainfo = matches.get(FALLBACK_EXTRAINFO) == '1',
@@ -449,6 +476,16 @@ class Fallback(Directory):
       raise OSError(str(exc))
 
     return results
+
+  @staticmethod
+  def _pop_header(lines: List[str]) -> List[str]:
+    """Provides lines up to the generation timestamp part."""
+    header_lines = []
+    while lines:
+      if lines[0] == "//":
+        break
+      header_lines.append(lines.pop(0))
+    return header_lines
 
   @staticmethod
   def _pop_section(lines: List[str]) -> List[str]:
@@ -494,7 +531,8 @@ class Fallback(Directory):
       fingerprint = directory.fingerprint
       conf.set('%s.address' % fingerprint, directory.address)
       conf.set('%s.or_port' % fingerprint, str(directory.or_port))
-      conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
+      if directory.dir_port:
+        conf.set('%s.dir_port' % fingerprint, str(directory.dir_port))
       conf.set('%s.nickname' % fingerprint, directory.nickname)
       conf.set('%s.has_extrainfo' % fingerprint, 'true' if directory.has_extrainfo else 'false')
 
