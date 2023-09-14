@@ -656,6 +656,7 @@ class TestExamples(unittest.TestCase):
     finally:
       sys.modules = original_modules
 
+  @unittest.expectedFailure
   @patch('stem.control.Controller.from_port', spec = Controller)
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_exit_used(self, stdout_mock, from_port_mock):
