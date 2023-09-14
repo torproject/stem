@@ -3068,7 +3068,7 @@ class Controller(BaseController):
     elif isinstance(client_auth_v3, list):
       for v3key in client_auth_v3:
         request += ' ClientAuthV3=%s' % v3key
-    else:
+    elif client_auth_v3 is not None:
       raise ValueError("The 'client_auth_v3' argument of create_ephemeral_hidden_service() needs to be a str or list")
 
     response = stem.response._convert_to_add_onion(stem.response._convert_to_add_onion(await self.msg(request)))
