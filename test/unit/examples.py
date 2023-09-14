@@ -205,7 +205,7 @@ A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 EXPECTED_RELAY_CONNECTIONS_HELP = """\
 usage: run_tests.py [-h] [--ctrlport CTRLPORT] [--resolver RESOLVER]
 
-optional arguments:
+options:
   -h, --help           show this help message and exit
   --ctrlport CTRLPORT  default: 9051 or 9151
   --resolver RESOLVER  default: autodetected

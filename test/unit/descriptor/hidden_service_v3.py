@@ -293,12 +293,12 @@ class TestHiddenServiceDescriptorV3(unittest.TestCase):
 
     # minimal layer
 
-    self.assertEqual(b'create2-formats 2', InnerLayer.content())
+    self.assertEqual(b'create2-formats 2', InnerLayer.content().strip())
     self.assertEqual([2], InnerLayer.create().formats)
 
     # specify their only mandatory parameter (formats)
 
-    self.assertEqual(b'create2-formats 1 2 3', InnerLayer.content({'create2-formats': '1 2 3'}))
+    self.assertEqual(b'create2-formats 1 2 3', InnerLayer.content({'create2-formats': '1 2 3'}).strip())
     self.assertEqual([1, 2, 3], InnerLayer.create({'create2-formats': '1 2 3'}).formats)
 
     # include optional parameters
