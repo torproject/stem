@@ -205,11 +205,11 @@ A7569A83B5706AB1B1A9CB52EFF7D2D32E4553EB: caerSidi
 EXPECTED_RELAY_CONNECTIONS_HELP = """\
 usage: run_tests.py [-h] [--ctrlport CTRLPORT] [--resolver RESOLVER]
 
-options:
+{options}:
   -h, --help           show this help message and exit
   --ctrlport CTRLPORT  default: 9051 or 9151
   --resolver RESOLVER  default: autodetected
-"""
+""".format(options="options" if sys.version_info >= (3, 10) else "optional arguments")
 
 EXPECTED_RELAY_CONNECTIONS = """\
  1.2.3.4   uptime: 00:50   flags: Fast, Stable
