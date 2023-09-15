@@ -78,6 +78,9 @@ class TestInstallation(unittest.TestCase):
 
         if platform.python_implementation() == 'PyPy':
           site_packages_paths = glob.glob('%s/*/*/site-packages' % BASE_INSTALL_PATH)
+        elif hasattr(sys, 'real_prefix') or sys.base_prefix != sys.prefix:
+            # https://stackoverflow.com/questions/1871549/determine-if-python-is-running-inside-virtualenv/42580137#42580137
+            site_packages_paths = glob.glob('%s/*/*/*/*/lib/python*/site-packages' % BASE_INSTALL_PATH, include_hidden=True)
         else:
           site_packages_paths = glob.glob('%s/*/*/lib*/*/*-packages' % BASE_INSTALL_PATH)
       except stem.util.system.CallError as exc:
