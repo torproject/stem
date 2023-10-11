@@ -8,18 +8,27 @@ Caches tor's latest fallback directories.
 
 import re
 import sys
+import json
+import datetime
 import urllib.request
 
 import stem.directory
 import stem.util.system
 
-GITWEB_FALLBACK_LOG = 'https://gitweb.torproject.org/tor.git/log/src/app/config/fallback_dirs.inc'
+# call to GitLab API to retrieve file history
+GITLAB_FALLBACK_LOG = 'https://gitlab.torproject.org/api/v4/projects/426/repository/files/src%2Fapp%2Fconfig%2Ffallback_dirs.inc/blame?ref=main'
+# replace by function getting the right entry out of the JSON
 FALLBACK_DIR_LINK = b"href='/tor.git/commit/src/app/config/fallback_dirs.inc\\?id=([^']*)'"
 
 if __name__ == '__main__':
   try:
-    fallback_dir_page = urllib.request.urlopen(GITWEB_FALLBACK_LOG).read()
-    fallback_dir_commit = re.search(FALLBACK_DIR_LINK, fallback_dir_page).group(1).decode('utf-8')
+    fallback_dir_commit = sorted(
+        json.loads(urllib.request.urlopen(GITLAB_FALLBACK_LOG).read()),
+        key=lambda commit: datetime.datetime.fromisoformat(
+            commit["commit"]["committed_date"]
+        ),
+        reverse=True,
+    )[0]["commit"]["id"]
   except:
     print("Unable to determine the latest commit to edit tor's fallback directories: %s" % sys.exc_info()[1])
     sys.exit(1)

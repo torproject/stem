@@ -51,14 +51,14 @@ import stem.util.conf
 from stem.util import connection, str_tools, tor_tools
 from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Pattern, Sequence, Tuple, Union
 
-GITWEB_AUTHORITY_URL = 'https://gitweb.torproject.org/tor.git/plain/src/app/config/auth_dirs.inc'
+GITLAB_AUTHORITY_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/auth_dirs.inc'
 GITLAB_FALLBACK_URL = 'https://gitlab.torproject.org/tpo/core/tor/-/raw/main/src/app/config/fallback_dirs.inc'
 FALLBACK_CACHE_PATH = os.path.join(os.path.dirname(__file__), 'cached_fallbacks.cfg')
 
 AUTHORITY_NAME = re.compile('"(\\S+) orport=(\\d+) .*"')
 AUTHORITY_V3IDENT = re.compile('"v3ident=([\\dA-F]{40}) "')
 AUTHORITY_IPV6 = re.compile('"ipv6=\\[([\\da-f:]+)\\]:(\\d+) "')
-AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{49})",')
+AUTHORITY_ADDR = re.compile('"([\\d\\.]+):(\\d+) ([\\dA-F ]{40,49})",')
 
 FALLBACK_DIV = '/* ===== */'
 FALLBACK_MAPPING = re.compile('/\\*\\s+(\\S+)=(\\S*)\\s+\\*/')
@@ -252,14 +252,14 @@ class Authority(Directory):
   @staticmethod
   def from_remote(timeout: int = 60) -> Dict[str, 'stem.directory.Authority']:
     try:
-      lines = str_tools._to_unicode(urllib.request.urlopen(GITWEB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
+      lines = str_tools._to_unicode(urllib.request.urlopen(GITLAB_AUTHORITY_URL, timeout = timeout).read()).splitlines()
 
       if not lines:
         raise OSError('no content')
     except:
       exc, stacktrace = sys.exc_info()[1:3]
-      message = "Unable to download tor's directory authorities from %s: %s" % (GITWEB_AUTHORITY_URL, exc)
-      raise stem.DownloadFailed(GITWEB_AUTHORITY_URL, exc, stacktrace, message)
+      message = "Unable to download tor's directory authorities from %s: %s" % (GITLAB_AUTHORITY_URL, exc)
+      raise stem.DownloadFailed(GITLAB_AUTHORITY_URL, exc, stacktrace, message)
 
     # Entries look like...
     #
@@ -605,7 +605,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 9101,
     dir_port = 9131,
     fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
-    v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
+    v3ident = 'F533C81CEF0BC0267857C99B2F471ADF249FA232',
   ),
   'tor26': Authority(
     nickname = 'tor26',
@@ -685,3 +685,4 @@ DIRECTORY_AUTHORITIES = {
     v3ident = None,  # does not vote in the consensus
   ),
 }
+

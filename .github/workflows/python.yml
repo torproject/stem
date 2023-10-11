@@ -1,0 +1,35 @@
+name: Testing
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+  schedule:
+    - cron: '2 3 * * *'
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11']
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - name: Set Python ${{ matrix.python-version }} environment up
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Run unit tests
+        run: |
+          ./run_tests.py --unit
+      - name: Run integration tests
+        run: |
+          sudo apt-get install tor -y
+          ./run_tests.py --unit
