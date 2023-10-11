@@ -605,7 +605,7 @@ DIRECTORY_AUTHORITIES = {
     or_port = 9101,
     dir_port = 9131,
     fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
-    v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
+    v3ident = 'F533C81CEF0BC0267857C99B2F471ADF249FA232',
   ),
   'tor26': Authority(
     nickname = 'tor26',
@@ -685,3 +685,4 @@ DIRECTORY_AUTHORITIES = {
     v3ident = None,  # does not vote in the consensus
   ),
 }
+
