@@ -671,7 +671,7 @@ class ExtraInfoDescriptor(Descriptor):
   :var datetime geoip_start_time: replaced by bridge_stats_end (deprecated)
   :var dict geoip_client_origins: replaced by bridge_ips (deprecated)
   :var dict ip_versions: mapping of ip protocols to a rounded count for the number of users
-  :var dict ip_versions: mapping of ip transports to a count for the number of users
+  :var dict ip_transports: mapping of ip transports to a count for the number of users
 
   **\\*** attribute is either required when we're parsed with validation or has
   a default value, others are left as **None** if undefined
