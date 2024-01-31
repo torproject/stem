@@ -602,10 +602,10 @@ DIRECTORY_AUTHORITIES = {
   'moria1': Authority(
     nickname = 'moria1',
     address = '128.31.0.39',
-    or_port = 9101,
-    dir_port = 9131,
-    fingerprint = '9695DFC35FFEB861329B9F1AB04C46397020CE31',
-    v3ident = 'D586D18309DED4CD6D57C18FDB97EFA96D330566',
+    or_port = 9201,
+    dir_port = 9231,
+    fingerprint = '1A25C6358DB91342AA51720A5038B72742732498',
+    v3ident = 'F533C81CEF0BC0267857C99B2F471ADF249FA232',
   ),
   'tor26': Authority(
     nickname = 'tor26',
@@ -618,7 +618,7 @@ DIRECTORY_AUTHORITIES = {
   ),
   'dizum': Authority(
     nickname = 'dizum',
-    address = '45.66.33.45',
+    address = '45.66.35.11',
     or_port = 443,
     dir_port = 80,
     fingerprint = '7EA6EAD6FD83083C538F44038BBFA077587DD755',
@@ -650,14 +650,6 @@ DIRECTORY_AUTHORITIES = {
     fingerprint = 'BD6A829255CB08E66FBE7D3748363586E46B3810',
     orport_v6 = ('2001:67c:289c::9', 80),
     v3ident = '49015F787433103580E3B66A1707A00E60F2D15B',
-  ),
-  'Faravahar': Authority(
-    nickname = 'Faravahar',
-    address = '154.35.175.225',
-    or_port = 443,
-    dir_port = 80,
-    fingerprint = 'CF6D0AAFB385BE71B8E111FC5CFF4B47923733BC',
-    v3ident = 'EFCBE720AB3A82B99F9E953CD5BF50F7EEFC7B97',
   ),
   'longclaw': Authority(
     nickname = 'longclaw',
