@@ -14,12 +14,12 @@
 
 variables:
   BASE_IMAGE: python:3.9
-  RELEASE: tor-nightly-main-bullseye
+  RELEASE: tor-nightly-main-bookworm
   # Without version, the default available in the Debian repository will be
   # installed.
   # Specifying which version starts with will install the highest that start
   # with that version.
-  TOR: tor/tor-nightly-main-bullseye
+  TOR: tor/tor-nightly-main-bookworm
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
@@ -40,12 +40,6 @@ before_script:
   - pip install tox
   - python --version
   - tor --version
-
-python37:
-  variables:
-    BASE_IMAGE: python:3.7
-  script:
-    - tox -e py37
 
 python38:
   variables:
@@ -77,8 +71,8 @@ python39tormaster:
 python39torstable:
   variables:
     BASE_IMAGE: python:3.9
-    RELEASE: bullseye
-    TOR: tor/bullseye
+    RELEASE: bookworm
+    TOR: tor/bookworm
   script:
     - tox -e py39
 
