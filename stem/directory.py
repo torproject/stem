@@ -232,7 +232,7 @@ class Directory(object):
 class Authority(Directory):
   """
   Tor directory authority, a special type of relay `hardcoded into tor
-  <https://gitweb.torproject.org/tor.git/plain/src/or/auth_dirs.inc>`_
+  <https://gitlab.torproject.org/tpo/core/tor/-/raw/HEAD/src/app/config/auth_dirs.inc>`_
   to enumerate the relays in the network.
 
   .. versionchanged:: 1.3.0
