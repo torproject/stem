@@ -331,7 +331,7 @@ class Fallback(Directory):
   """
   Particularly stable relays tor can instead of authorities when
   bootstrapping. These relays are `hardcoded in tor
-  <https://gitweb.torproject.org/tor.git/tree/src/or/fallback_dirs.inc>`_.
+  <https://gitlab.torproject.org/tpo/core/tor/-/blob/HEAD/src/app/config/fallback_dirs.inc>`_.
 
   For example, the following checks the performance of tor's fallback directories...
 
