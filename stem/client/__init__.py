@@ -315,7 +315,6 @@ class Circuit(object):
   def __init__(self, relay: 'stem.client.Relay', circ_id: int, kdf: 'stem.client.datatype.KDF') -> None:
     try:
       from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-      from cryptography.hazmat.backends import default_backend
     except ImportError:
       raise ImportError('Circuit construction requires the cryptography module')
 
@@ -325,8 +324,8 @@ class Circuit(object):
     self.id = circ_id
     self.forward_digest = hashlib.sha1(kdf.forward_digest)
     self.backward_digest = hashlib.sha1(kdf.backward_digest)
-    self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr, default_backend()).encryptor()
-    self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr, default_backend()).decryptor()
+    self.forward_key = Cipher(algorithms.AES(kdf.forward_key), ctr).encryptor()
+    self.backward_key = Cipher(algorithms.AES(kdf.backward_key), ctr).decryptor()
 
   async def directory(self, request: str, stream_id: int = 0) -> bytes:
     """
