@@ -731,7 +731,15 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
           digest_content = self._content_range('rendezvous-service-descriptor ', '\nsignature\n')
           content_digest = hashlib.sha1(digest_content).hexdigest().upper()
 
-          if signed_digest != content_digest:
+          # When signing, the cryptography module includes a constant prefix
+          # indicating the hash algorithm used. Tor doesn't. This causes
+          # signature validation failures and unfortunately cryptography have
+          # no nice way of excluding these. To work around this, we only
+          # validate that the digest ends with the correct suffix.
+          #
+          #   https://github.com/pyca/cryptography/issues/3713
+          #
+          if not signed_digest.endswith(content_digest):
             raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, content_digest))
         except ImportError:
           pass  # cryptography module unavailable

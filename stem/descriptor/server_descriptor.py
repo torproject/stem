@@ -772,7 +772,16 @@ class RelayDescriptor(ServerDescriptor):
         try:
           signed_digest = self._digest_for_signature(self.signing_key, self.signature)
 
-          if signed_digest != self.digest():
+
+          # When signing, the cryptography module includes a constant prefix
+          # indicating the hash algorithm used. Tor doesn't. This causes
+          # signature validation failures and unfortunately cryptography have
+          # no nice way of excluding these. To work around this, we only
+          # validate that the digest ends with the correct suffix.
+          #
+          #   https://github.com/pyca/cryptography/issues/3713
+          #
+          if not signed_digest.endswith(self.digest()):
             raise ValueError('Decrypted digest does not match local digest (calculated: %s, local: %s)' % (signed_digest, self.digest()))
 
           if self.onion_key_crosscert:
