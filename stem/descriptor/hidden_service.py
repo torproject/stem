@@ -517,7 +517,6 @@ def _encrypt_layer(plaintext: bytes, constant: bytes, revision_counter: int, sub
 def _layer_cipher(constant: bytes, revision_counter: int, subcredential: bytes, blinded_key: bytes, salt: bytes) -> Tuple['cryptography.hazmat.primitives.ciphers.Cipher', Callable[[bytes], bytes]]:  # type: ignore
   try:
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-    from cryptography.hazmat.backends import default_backend
   except ImportError:
     raise ImportError('Layer encryption/decryption requires the cryptography module')
 
@@ -528,7 +527,7 @@ def _layer_cipher(constant: bytes, revision_counter: int, subcredential: bytes, 
   secret_iv = keys[S_KEY_LEN:S_KEY_LEN + S_IV_LEN]
   mac_key = keys[S_KEY_LEN + S_IV_LEN:]
 
-  cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv), default_backend())
+  cipher = Cipher(algorithms.AES(secret_key), modes.CTR(secret_iv))
   mac_prefix = struct.pack('>Q', len(mac_key)) + mac_key + struct.pack('>Q', len(salt)) + salt
 
   return cipher, lambda ciphertext: hashlib.sha3_256(mac_prefix + ciphertext).digest()
@@ -783,7 +782,6 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
   def _decrypt_basic_auth(content: bytes, authentication_cookie: bytes) -> bytes:
     try:
       from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-      from cryptography.hazmat.backends import default_backend
     except ImportError:
       raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
@@ -809,13 +807,13 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
 
       # try decrypting the session key
 
-      cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(b'\x00' * len(iv)), default_backend())
+      cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(b'\x00' * len(iv)))
       decryptor = cipher.decryptor()
       session_key = decryptor.update(encrypted_session_key) + decryptor.finalize()
 
       # attempt to decrypt the intro points with the session key
 
-      cipher = Cipher(algorithms.AES(session_key), modes.CTR(iv), default_backend())
+      cipher = Cipher(algorithms.AES(session_key), modes.CTR(iv))
       decryptor = cipher.decryptor()
       decrypted = decryptor.update(encrypted) + decryptor.finalize()
 
@@ -830,13 +828,12 @@ class HiddenServiceDescriptorV2(HiddenServiceDescriptor):
   def _decrypt_stealth_auth(content: bytes, authentication_cookie: bytes) -> bytes:
     try:
       from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-      from cryptography.hazmat.backends import default_backend
     except ImportError:
       raise DecryptionFailure('Decrypting introduction-points requires the cryptography module')
 
     # byte 1 = authentication type, 2-17 = input vector, 18 on = encrypted content
     iv, encrypted = content[1:17], content[17:]
-    cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(iv), default_backend())
+    cipher = Cipher(algorithms.AES(authentication_cookie), modes.CTR(iv))
     decryptor = cipher.decryptor()
 
     return decryptor.update(encrypted) + decryptor.finalize()

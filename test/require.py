@@ -30,7 +30,6 @@ import test.runner
 
 try:
   from cryptography.utils import int_to_bytes
-  from cryptography.hazmat.backends import default_backend
   from cryptography.hazmat.backends.openssl.backend import backend
   from cryptography.hazmat.primitives.asymmetric import rsa
   from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes

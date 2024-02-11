@@ -1050,13 +1050,12 @@ class Descriptor(object):
     """
 
     try:
-      from cryptography.hazmat.backends import default_backend
       from cryptography.hazmat.primitives.serialization import load_der_public_key
       from cryptography.utils import int_to_bytes
     except ImportError:
       raise ValueError('Generating the signed digest requires the cryptography module')
 
-    key = load_der_public_key(_bytes_for_block(signing_key), default_backend())
+    key = load_der_public_key(_bytes_for_block(signing_key))
     modulus = key.public_numbers().n
     public_exponent = key.public_numbers().e
 
@@ -1357,7 +1356,6 @@ def create_signing_key(private_key: Optional['cryptography.hazmat.backends.opens
   """
 
   try:
-    from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
   except ImportError:
@@ -1367,21 +1365,7 @@ def create_signing_key(private_key: Optional['cryptography.hazmat.backends.opens
     private_key = rsa.generate_private_key(
       public_exponent = 65537,
       key_size = 1024,
-      backend = default_backend(),
     )
-
-    # When signing the cryptography module includes a constant indicating
-    # the hash algorithm used. Tor doesn't. This causes signature
-    # validation failures and unfortunately cryptography have no nice way
-    # of excluding these so we need to mock out part of their internals...
-    #
-    #   https://github.com/pyca/cryptography/issues/3713
-
-    def no_op(*args: Any, **kwargs: Any) -> int:
-      return 1
-
-    private_key._backend._lib.EVP_PKEY_CTX_set_signature_md = no_op  # type: ignore
-    private_key._backend.openssl_assert = no_op  # type: ignore
 
   public_key = private_key.public_key()
   public_digest = b'\n' + public_key.public_bytes(
