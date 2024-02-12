@@ -242,7 +242,8 @@ class DaemonTask(object):
     self.result = None
     self.error = None
 
-    self._process = None  # type: Optional[multiprocessing.Process]
+    self._context = None  # type: Optional[multiprocessing.context.BaseContext]
+    self._process = None  # type: Optional[multiprocessing.context.SpawnProcess]
     self._pipe = None  # type: Optional[multiprocessing.connection.Connection]
 
     if start:
@@ -255,8 +256,16 @@ class DaemonTask(object):
     """
 
     if self.status == State.PENDING:
-      self._pipe, child_pipe = multiprocessing.Pipe()
-      self._process = multiprocessing.Process(target = DaemonTask._run_wrapper, args = (child_pipe, self.priority, self.runner, self.args))
+      # The only start method supported by all platforms is 'spawn'; moreover,
+      # the default method will move away from 'fork' in python 3.14. We thus
+      # set method='spawn' for consistency across platforms. See:
+      #
+      #   - https://docs.python.org/3/library/multiprocessing.html
+      #   - https://github.com/python/cpython/issues/84559
+      #
+      self._context = multiprocessing.get_context(method='spawn')
+      self._pipe, child_pipe = self._context.Pipe()
+      self._process = self._context.Process(target = DaemonTask._run_wrapper, args = (child_pipe, self.priority, self.runner, self.args))
       self._process.start()
       self.status = State.RUNNING
 
