@@ -33,28 +33,6 @@ from unittest.mock import Mock, mock_open, patch
 EXAMPLE_DIR = os.path.join(test.STEM_BASE, 'docs', '_static', 'example')
 DESC_DIR = os.path.join(test.STEM_BASE, 'test', 'unit', 'descriptor', 'data')
 
-# `fibonacci_multiprocessing` makes use of the multiprocessing helper
-# `stem.util.system.DaemonTask`, whose arguments must be imported at
-# the top level for it to be properly pickled and spawned. See:
-#
-#   https://docs.python.org/3/library/multiprocessing.html
-#
-ORIGINAL_PATH = sys.path
-sys.path.append(EXAMPLE_DIR)
-import fibonacci_multiprocessing  # noqa: E402
-sys.path = ORIGINAL_PATH
-
-# import additional arguments of `fibonacci_multiprocessing` at the top level
-# to prevent `PicklingError`s. See:
-#
-#   https://github.com/torproject/stem/pull/152
-#
-from multiprocessing import connection  # noqa: E402, F401
-if stem.util.system.is_windows():
-  from multiprocessing import popen_spawn_win32  # noqa: F401
-else:
-  from multiprocessing import popen_spawn_posix  # noqa: F401
-
 UNTESTED = (
   # client usage demos don't have much non-stem code
 
@@ -703,8 +681,20 @@ class TestExamples(unittest.TestCase):
 
   @patch('sys.stdout', new_callable = io.StringIO)
   def test_fibonacci_multiprocessing(self, stdout_mock):
-    fibonacci_multiprocessing.main()
-    output = stdout_mock.getvalue()
+    import subprocess
+    from pathlib import Path
+
+    # `fibonacci_multiprocessing.py` is run as a subprocess to ensure that
+    # the multiprocessing module would spawn the child processes correctly.
+    # See:
+    #
+    #   - https://github.com/torproject/stem/pull/152
+    #
+    output = subprocess.run(
+      ["python", Path(EXAMPLE_DIR) / 'fibonacci_multiprocessing.py'],
+      capture_output=True,
+      text=True
+    ).stdout
     self.assertTrue(output.startswith('took ') and output.endswith(' seconds\n'))
 
   @patch('sys.stdout', new_callable = io.StringIO)
