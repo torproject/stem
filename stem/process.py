@@ -35,7 +35,7 @@ NO_TORRC = '<no torrc>'
 DEFAULT_INIT_TIMEOUT = 90
 
 
-def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc_path: Optional[str] = None, completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True, stdin: Optional[str] = None) -> subprocess.Popen:
+def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc_path: Optional[str] = None, completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: Optional[int] = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True, stdin: Optional[str] = None) -> subprocess.Popen:
   """
   Initializes a tor process. This blocks until initialization completes or we
   error out.
@@ -199,7 +199,7 @@ def launch_tor(tor_cmd: str = 'tor', args: Optional[Sequence[str]] = None, torrc
         pass
 
 
-def launch_tor_with_config(config: Dict[str, Union[str, Sequence[str]]], tor_cmd: str = 'tor', completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: int = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True) -> subprocess.Popen:
+def launch_tor_with_config(config: Dict[str, Union[str, Sequence[str]]], tor_cmd: str = 'tor', completion_percent: int = 100, init_msg_handler: Optional[Callable[[str], None]] = None, timeout: Optional[int] = DEFAULT_INIT_TIMEOUT, take_ownership: bool = False, close_output: bool = True) -> subprocess.Popen:
   """
   Initializes a tor process, like :func:`~stem.process.launch_tor`, but with a
   customized configuration. This writes a temporary torrc to disk, launches
