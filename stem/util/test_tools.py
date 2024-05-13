@@ -238,7 +238,7 @@ class TimedTestRunner(unittest.TextTestRunner):
         def assertRaisesWith(self, exc_type: Type[Exception], exc_msg: str, *args: Any, **kwargs: Any) -> None:
           """
           Asserts the given invokation raises the expected excepiton. This is
-          similar to unittest's assertRaises and assertRaisesRegexp, but checks
+          similar to unittest's assertRaises and assertRaisesRegex, but checks
           for an exact match.
 
           This method is **not** being vended to external users and may be
@@ -246,7 +246,7 @@ class TimedTestRunner(unittest.TextTestRunner):
           vended API then please let us know.
           """
 
-          return self.assertRaisesRegexp(exc_type, '^%s$' % re.escape(exc_msg), *args, **kwargs)
+          return self.assertRaisesRegex(exc_type, '^%s$' % re.escape(exc_msg), *args, **kwargs)
 
         def shortDescription(self):
           # Python now prints the first line of a test's docstring by default.

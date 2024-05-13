@@ -117,7 +117,7 @@ class TestEd25519Certificate(unittest.TestCase):
     """
 
     exc_msg = re.escape("Ed25519 certificate wasn't propoerly base64 encoded (Incorrect padding):")
-    self.assertRaisesRegexp(ValueError, exc_msg, Ed25519Certificate.from_base64, '\x02\x0323\x04')
+    self.assertRaisesRegex(ValueError, exc_msg, Ed25519Certificate.from_base64, '\x02\x0323\x04')
 
   def test_too_short(self):
     """

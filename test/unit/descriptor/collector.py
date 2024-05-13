@@ -102,19 +102,19 @@ class TestCollector(unittest.TestCase):
     urlopen_mock.side_effect = OSError('boom')
 
     collector = CollecTor(retries = 0)
-    self.assertRaisesRegexp(OSError, 'boom', collector.index)
+    self.assertRaisesRegex(OSError, 'boom', collector.index)
     self.assertEqual(1, urlopen_mock.call_count)
 
     urlopen_mock.reset_mock()
 
     collector = CollecTor(retries = 4)
-    self.assertRaisesRegexp(OSError, 'boom', collector.index)
+    self.assertRaisesRegex(OSError, 'boom', collector.index)
     self.assertEqual(5, urlopen_mock.call_count)
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not json')))
   def test_index_malformed_json(self):
     collector = CollecTor()
-    self.assertRaisesRegexp(ValueError, 'Expecting value: line 1 column 1', collector.index, Compression.PLAINTEXT)
+    self.assertRaisesRegex(ValueError, 'Expecting value: line 1 column 1', collector.index, Compression.PLAINTEXT)
 
   def test_index_malformed_compression(self):
     for compression in (Compression.GZIP, Compression.BZ2, Compression.LZMA):
@@ -123,7 +123,7 @@ class TestCollector(unittest.TestCase):
 
       with patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'not compressed'))):
         collector = CollecTor()
-        self.assertRaisesRegexp(OSError, 'Failed to decompress as %s' % compression, collector.index, compression)
+        self.assertRaisesRegex(OSError, 'Failed to decompress as %s' % compression, collector.index, compression)
 
   @patch('stem.descriptor.collector.CollecTor.index', Mock(return_value = EXAMPLE_INDEX))
   def test_files(self):

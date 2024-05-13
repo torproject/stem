@@ -100,15 +100,15 @@ class TestFallback(unittest.TestCase):
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
-    self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Fallback.from_remote)
+    self.assertRaisesRegex(stem.DownloadFailed, 'no content', stem.directory.Fallback.from_remote)
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'\n'.join(FALLBACK_GITLAB_CONTENT.splitlines()[1:]))))
   def test_from_remote_no_header(self):
-    self.assertRaisesRegexp(OSError, 'does not have a type field indicating it is fallback directory metadata', stem.directory.Fallback.from_remote)
+    self.assertRaisesRegex(OSError, 'does not have a type field indicating it is fallback directory metadata', stem.directory.Fallback.from_remote)
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(FALLBACK_GITLAB_CONTENT.replace(b'version=4.0.0', b'version'))))
   def test_from_remote_malformed_header(self):
-    self.assertRaisesRegexp(OSError, 'Malformed fallback directory header line: /\\* version \\*/', stem.directory.Fallback.from_remote)
+    self.assertRaisesRegex(OSError, 'Malformed fallback directory header line: /\\* version \\*/', stem.directory.Fallback.from_remote)
 
   def test_from_remote_malformed(self):
     test_values = {
@@ -121,7 +121,7 @@ class TestFallback(unittest.TestCase):
 
     for entry, expected in test_values.items():
       with patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(entry))):
-        self.assertRaisesRegexp(OSError, re.escape(expected), stem.directory.Fallback.from_remote)
+        self.assertRaisesRegex(OSError, re.escape(expected), stem.directory.Fallback.from_remote)
 
   def test_persistence(self):
     expected = {

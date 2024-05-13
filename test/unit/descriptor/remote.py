@@ -181,7 +181,7 @@ class TestDescriptorDownloader(unittest.TestCase):
         skip_crypto_validation = not test.require.CRYPTOGRAPHY_AVAILABLE,
       )
 
-      self.assertRaisesRegexp(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
+      self.assertRaisesRegex(stem.ProtocolError, "^Response should begin with HTTP success, but was 'HTTP/1.0 500 Kaboom'", request.run)
 
   @mock_download(TEST_DESCRIPTOR)
   def test_reply_header_data(self):

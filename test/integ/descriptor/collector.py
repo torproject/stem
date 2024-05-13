@@ -88,7 +88,7 @@ class TestCollector(unittest.TestCase):
     )
 
     for args, expected_msg in test_values:
-      self.assertRaisesRegexp(ValueError, re.escape(expected_msg), list, stem.descriptor.collector.get_consensus(**args))
+      self.assertRaisesRegex(ValueError, re.escape(expected_msg), list, stem.descriptor.collector.get_consensus(**args))
 
   def _test_index(self, compression):
     if compression and not compression.available:

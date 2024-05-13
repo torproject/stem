@@ -187,12 +187,12 @@ class TestConnection(unittest.TestCase):
   def test_download_retries(self, urlopen_mock):
     urlopen_mock.side_effect = urllib.request.URLError('boom')
 
-    self.assertRaisesRegexp(OSError, 'boom', stem.util.connection.download, URL)
+    self.assertRaisesRegex(OSError, 'boom', stem.util.connection.download, URL)
     self.assertEqual(1, urlopen_mock.call_count)
 
     urlopen_mock.reset_mock()
 
-    self.assertRaisesRegexp(OSError, 'boom', stem.util.connection.download, URL, retries = 4)
+    self.assertRaisesRegex(OSError, 'boom', stem.util.connection.download, URL, retries = 4)
     self.assertEqual(5, urlopen_mock.call_count)
 
   @patch('os.access')

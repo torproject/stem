@@ -89,7 +89,7 @@ class TestAddOnionResponse(unittest.TestCase):
     """
 
     response = ControlMessage.from_str(WRONG_FIRST_KEY, normalize = True)
-    self.assertRaisesRegexp(stem.ProtocolError, 'ADD_ONION response should start with', stem.response.convert, 'ADD_ONION', response)
+    self.assertRaisesRegex(stem.ProtocolError, 'ADD_ONION response should start with', stem.response.convert, 'ADD_ONION', response)
 
   def test_no_key_type(self):
     """
@@ -97,4 +97,4 @@ class TestAddOnionResponse(unittest.TestCase):
     """
 
     response = ControlMessage.from_str(MISSING_KEY_TYPE, normalize = True)
-    self.assertRaisesRegexp(stem.ProtocolError, 'ADD_ONION PrivateKey lines should be of the form', stem.response.convert, 'ADD_ONION', response)
+    self.assertRaisesRegex(stem.ProtocolError, 'ADD_ONION PrivateKey lines should be of the form', stem.response.convert, 'ADD_ONION', response)

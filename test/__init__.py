@@ -20,6 +20,8 @@ import os
 import stem.util.enum
 import stem.version
 
+from unittest import TestCase
+
 __all__ = [
   'network',
   'output',
@@ -78,6 +80,9 @@ if os.path.exists(GIT_IGNORE_PATH):
 if os.path.exists(os.path.join(STEM_BASE, '.travis.yml')):
     IGNORED_FILE_TYPES.append('.travis.yml')
 
+# Allow test cases to run on both Python2 and Python3
+if not hasattr(TestCase, 'assertRaisesRegex'):
+    TestCase.assertRaisesRegex = TestCase.assertRaisesRegexp
 
 def get_new_capabilities():
   """

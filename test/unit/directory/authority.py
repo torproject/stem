@@ -72,4 +72,4 @@ class TestAuthority(unittest.TestCase):
 
   @patch('urllib.request.urlopen', Mock(return_value = io.BytesIO(b'')))
   def test_from_remote_empty(self):
-    self.assertRaisesRegexp(stem.DownloadFailed, 'no content', stem.directory.Authority.from_remote)
+    self.assertRaisesRegex(stem.DownloadFailed, 'no content', stem.directory.Authority.from_remote)
